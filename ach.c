@@ -240,7 +240,7 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name ) {
   return ACH_OK;
   }*/
 
-int ach_get_last(ach_channel_t *chan, void *buf, size_t size ) {
+int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
     int retval;
     ach_header_t *shm = chan->shm;
 
@@ -277,12 +277,15 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size ) {
                 memcpy( (uint8_t*)buf, data_buf + index->offset, end_cnt );
                 memcpy( (uint8_t*)buf + end_cnt, data_buf, index->size - end_cnt );
             }
+            *size_written = index->size;
             retval = ACH_OK;
         } else { //stale
             assert( chan->seq_num == index->seq_num );
+            *size_written = 0;
             retval = ACH_STALE;
         }
     }else { // overflow
+        *size_written = 0;
         retval = ACH_OVERFLOW;
     }
     seq_num = index->seq_num;
