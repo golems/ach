@@ -36,9 +36,17 @@
 /** \file ach.h
  *  \author Neil T. Dantam
  *  \author Jon Scholz
+ *  \author Pushkar Kolhe
  */
 
 
+/** \mainpage
+ *
+ * ach is a library (and eventually daemon) that provides a
+ * publish-subscribe form of IPC. Clients may be publishers and or
+ * subscribers. Publishers create "channels" which they push data
+ * to. Clients can then poll then channels for data.
+ */
 
 
 /*
@@ -117,7 +125,7 @@ extern "C" {
 
     /** Header for shared memory area.
      */
-    typedef struct ach_header_struct {
+    typedef struct {
         uint32_t magic;          ///< magic number of ach shm files,
         size_t len;              ///< length of mmap'ed file
         size_t index_cnt;        ///< number of entries in index
@@ -133,7 +141,7 @@ extern "C" {
 
     /** Entry in shared memory index array
      */
-    typedef struct ach_index_struct {
+    typedef struct {
         uint64_t seq_num; ///< number of frame
         size_t size;      ///< size of frame
         size_t offset;    ///< byte offset of entry from beginning of data array
@@ -142,7 +150,7 @@ extern "C" {
 
     /** Descriptor for shared memory area
      */
-    typedef struct ach_channel_struct {
+    typedef struct {
         ach_header_t *shm; ///< pointer to mmap'ed block
         size_t len;        ///< length of memory mapping
         int fd;            ///< file descriptor of mmap'ed file
@@ -170,21 +178,36 @@ extern "C" {
     //#define ACH_SHM_DATA( shm ) (((uint8_t*) ((ach_header_t*)(shm) + 1)) + sizeof(ach_index_t)*(shm)->index_cnt + 2*sizeof(uint64_t))
 
 
+
     /** Establishes a new channel.
+
         \post A shared memory area is created for the channel and chan is initialized for writing
+
         \param chan The channel structure to initialize
         \param channel_name Name of the channel
         \param frame_cnt number of frames to hold in circular buffer
         \param frame_size nominal size of each frame
+
+        \return ACH_OK on success.  ACH_INVALID_NAME is the channel name
+        is invalid.  ACH_SYSCALL if a syscall fails.  In that case,
+        errno ma or may not be set.
     */
     int ach_publish(ach_channel_t *chan, char *channel_name,
                     size_t frame_cnt, size_t frame_size);
 
     /** Subscribes to a channel.
+
         \pre The channel has been published
+
         \post chan is initialized for reading
+
+        \return ACH_OK on success.  ACH_INVALID_NAME is the channel name
+        is invalid.  ACH_SYSCALL if a syscall fails.  ACH_BAD_SHM_FILE
+        if the shared memory file is broken or otherwise invalid.  In
+        that case, errno may or may not be set.
     */
     int ach_subscribe(ach_channel_t *chan, char *channel_name);
+
 
     /** Pulls the next message from a channel.
         \pre chan has been opened with ach_subscribe()
@@ -192,27 +215,57 @@ extern "C" {
     */
     int ach_get_next(ach_channel_t *chan, void *buf, size_t size);
 
+
     /** Pulls the most recent message from the channel.
         \pre chan has been opened with ach_subscribe()
-        \post buf contains the data for the last frame and chan.seq_num is set to the last frame
+
+        \post If buf is big enough to hold the next frame, buf contains
+        the data for the last frame and chan.seq_num is set to the last
+        frame.  If buf is too small to hold the next frame, no side
+        effects occur.
+
+        \param chan the channel to read from
+        \param buf (output) The buffer to write data to
+        \param size the maximum number of bytes that may be written to buf
+        \param size_written (output) The actual number of bytes written
+        to buf.  This will either be zero or the size of the entire
+        frame.
+
+        \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
+        to hold the frame.  ACH_STALE if a new frame is not yet
+        available.
     */
-    int ach_get_last(ach_channel_t *chan, void *buf, size_t size);
+    int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written);
+
 
     /** Writes a new message in the channel.
+
         \pre chan has been opened with ach_publish()
-        \post The contents of buf are copied into the channel and chan.seq_num is incremented.
+
+        \post The contents of buf are copied into the channel and the
+        sequence number of the channel is incremented.
+
+        \param chan (action) The channel to write to
+        \param buf The buffer containing the data to copy into the channel
+        \param len number of bytes in buf to copy
+        \return ACH_OK on success.
     */
     int ach_put(ach_channel_t *chan, void *buf, size_t len);
 
+
     /** Closes the shared memory block.
+
         \pre chan is an initialized ach channel with open shared memory area
+
         \post the shared memory file for chan is closed
     */
     int ach_close(ach_channel_t *chan);
 
+
     /** Converts return code from ach call to a human readable string;
      */
     char *ach_result_to_string(int result);
+
 
     /** Prints information about the channel shm to stderr
      */
