@@ -38,7 +38,10 @@
  *  \author Jon Scholz
  */
 
+#define _GNU_SOURCE
+
 #include <stdint.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <fcntl.h>
@@ -46,21 +49,365 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <ctype.h>
+
+#include <string.h>
 
 #include "ach.h"
 
+// verbosity output levels
+/*
+//#define WARN 0  ///< verbosity level for warnings
+//#define INFO 1  ///< verbosity level for info messages
+//#define DEBUG 2 ///< verbosity level for debug messages
+
+// print a debug messages at some level
+//#define DEBUGF(level, fmt, a... )\
+//(((args.verbosity) >= level )?fprintf( stderr, (fmt), ## a ) : 0);
+*/
+
+#define DEBUGF(fmt, a... )                      \
+    fprintf(stderr, (fmt), ## a )
+
+#define IFDEBUG( x ) (x)
+
+char *ach_result_to_string(int result) {
+    switch(result) {
+    case ACH_OK: return "ACH_OK";
+    case ACH_OVERFLOW: return "ACH_OVERFLOW";
+    case ACH_INVALID_NAME: return "ACH_INVALID_NAME";
+    case ACH_BAD_SHM_FILE: return "ACH_BAD_SHM_FILE";
+    case ACH_FAILED_SYSCALL: return "ACH_FAILED_SYSCALL";
+    case ACH_STALE: return "ACH_STALE";
+    }
+    return "UNKNOWN";
+}
+
+// returns 0 if channel name is bad
+static int channel_name_ok( char *name ) {
+    int len;
+    // check size
+    if( (len = strnlen( name, ACH_CHAN_NAME_MAX + 1 )) >= ACH_CHAN_NAME_MAX )
+        //if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
+        return 0;
+    // check hidden file
+    if( name[0] == '.' ) return 0;
+    // check bad characters
+    int i;
+    for( i = 0; i < len; i ++ ) {
+        if( ! ( isalnum( name[i] )
+                || (name[i] == '-' )
+                || (name[i] == '_' )
+                || (name[i] == '.' ) ) )
+            return 0;
+    }
+    return 1;
+}
+
 /** Opens shm file descriptor for a channel.
- */
-static int fd_for_channel_name( char *name);
+    \pre name is a valid channel name
+*/
+static int fd_for_channel_name( char *name ) {
+    char shm_name[ACH_CHAN_NAME_MAX + 16];
+    strncpy( shm_name, "/", 2 );
+    strncat( shm_name, name, ACH_CHAN_NAME_MAX );
+    int fd;
+    int i = 0;
+    do {
+        fd = shm_open( shm_name, O_RDWR | O_CREAT, 0666 );
+    }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
+    return fd;
+}
 
 
+int ach_publish(ach_channel_t *chan, char *channel_name,
+                size_t frame_cnt, size_t frame_size ) {
 
-ach_status_t ach_publish(ach_channel_t *chan, char *channel_name, int freq_hz);
+    ach_header_t *shm;
+    // open shm
+    if( ! channel_name_ok( channel_name ) )
+        return ACH_INVALID_NAME;
+    if( (chan->fd = fd_for_channel_name( channel_name )) < 0 )
+        return ACH_FAILED_SYSCALL;
+    chan->len = sizeof( ach_header_t) +
+        frame_cnt*sizeof( ach_index_t ) +
+        frame_cnt*frame_size +
+        3*sizeof(uint64_t);
+    if( (shm = mmap(NULL, chan->len, PROT_READ|PROT_WRITE, MAP_SHARED, chan->fd, 0) )
+        == MAP_FAILED )
+        return ACH_FAILED_SYSCALL;
 
-ach_status_t ach_subscribe(ach_channel_t *chan, char *channel_name, int freq_hz);
+    // initialize shm
+    { //make file proper size
+        int r;
+        int i = 0;
+        do {
+            r = ftruncate( chan->fd, chan->len );
+        }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
+        if( -1 == r )
+            return ACH_FAILED_SYSCALL;
+    }
+    bzero( shm, chan->len );
+    shm->len = chan->len;
+    {
+        // initiale shm rwlock
+        int r;
+        pthread_rwlockattr_t attr;
+        r = pthread_rwlockattr_init( &attr );
+        assert( 0 == r );
 
-ach_status_t ach_get_next(ach_channel_t *chan, char *buf, size_t size, size_t *size_written);
+        r = pthread_rwlockattr_setpshared( &attr, PTHREAD_PROCESS_SHARED );
+        assert( 0 == r );
 
-ach_status_t ach_get_last(ach_channel_t *chan, char *buf, size_t size, size_t *size_written);
+        if( pthread_rwlock_init( &(shm->rwlock), &attr ) ) {
+            r = pthread_rwlockattr_destroy( &attr );
+            assert( 0 == r );
+            return ACH_FAILED_SYSCALL;
+        }
+        r = pthread_rwlockattr_destroy( &attr );
+        assert( 0 == r );
+    }
+    shm->index_cnt = frame_cnt;
+    shm->index_head = 0;
+    shm->index_free = frame_cnt;
+    shm->data_head = 0;
+    shm->data_free = frame_cnt * frame_size;
+    shm->data_size = frame_cnt * frame_size;
+    assert( sizeof( ach_header_t ) +
+            shm->index_free * sizeof( ach_index_t ) +
+            shm->data_free + 3*sizeof(uint64_t) ==  chan->len );
 
-ach_status_t ach_put(ach_channel_t *chan, char *buf, size_t len);
+    *ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
+    *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
+    *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
+    shm->magic = ACH_SHM_MAGIC_NUM;
+    // initialize channel struct
+    chan->shm = shm;
+    chan->seq_num = 1;
+    chan->next_index = 0;
+
+    return ACH_OK;
+}
+
+int ach_subscribe(ach_channel_t *chan, char *channel_name ) {
+    if( ! channel_name_ok( channel_name ) )
+        return ACH_INVALID_NAME;
+
+    ach_header_t * shm;
+    size_t len;
+    int fd;
+
+    // open shm
+    if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
+    if( (fd = fd_for_channel_name( channel_name )) < 0 )
+        return ACH_FAILED_SYSCALL;
+    if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        == MAP_FAILED )
+        return ACH_FAILED_SYSCALL;
+    if( ACH_SHM_MAGIC_NUM != shm->magic )
+        return ACH_BAD_SHM_FILE;
+
+    // calculate mmaping size
+    len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+
+    // remap
+    if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
+        return ACH_FAILED_SYSCALL;
+
+    if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        == MAP_FAILED )
+        return ACH_FAILED_SYSCALL;
+    assert( ACH_SHM_MAGIC_NUM == shm->magic );
+
+    // initialize struct
+    chan->fd = fd;
+    chan->len = len;
+    chan->shm = shm;
+    chan->seq_num = 0;
+    chan->next_index = 1;
+
+    return ACH_OK;
+}
+
+/*int ach_get_next(ach_channel_t *chan, char *buf, size_t size,
+  size_t *size_written) {
+  // take read lock
+  // copy buffer
+  // increment count
+  // release read lock
+  return ACH_OK;
+  }*/
+
+int ach_get_last(ach_channel_t *chan, void *buf, size_t size ) {
+    int retval;
+    ach_header_t *shm = chan->shm;
+
+    assert( ACH_SHM_MAGIC_NUM == shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+    uint8_t *data_buf = ACH_SHM_DATA(shm);
+    ach_index_t *index;
+    uint64_t seq_num;
+    size_t next_index;
+
+    // take read lock
+    pthread_rwlock_rdlock( & shm->rwlock );
+
+    // copy buffer
+    next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+    index = index_ar + next_index;
+    assert( index->size );
+    assert( index->seq_num );
+    assert( index->offset < shm->data_size );
+    // checking for buffer overflow
+    if( index->size <= size ) {
+        // check for freshdata
+        if( chan->seq_num < index->seq_num ) {
+            if( index->offset + index->size < shm->data_size ) {
+                //simple memcpy
+                memcpy( (uint8_t*)buf, data_buf + index->offset, index->size );
+            }else {
+                // wraparound memcpy
+                size_t end_cnt = shm->data_size - index->offset;
+                memcpy( (uint8_t*)buf, data_buf + index->offset, end_cnt );
+                memcpy( (uint8_t*)buf + end_cnt, data_buf, index->size - end_cnt );
+            }
+            retval = ACH_OK;
+        } else { //stale
+            assert( chan->seq_num == index->seq_num );
+            retval = ACH_STALE;
+        }
+    }else { // overflow
+        retval = ACH_OVERFLOW;
+    }
+    seq_num = index->seq_num;
+
+    // release read lock
+    pthread_rwlock_unlock( & shm->rwlock );
+
+    // increment count
+    if( ACH_OK == retval ) {
+        chan->seq_num = seq_num;
+        chan->next_index = (next_index + 1) % shm->index_cnt;
+    }
+
+    return retval;
+}
+
+int ach_put(ach_channel_t *chan, void *buf, size_t len) {
+
+
+    int r;
+    ach_header_t *shm = chan->shm;
+
+
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+    uint8_t *data_ar = ACH_SHM_DATA(shm);
+
+    if( len > shm->data_size ) return ACH_OVERFLOW;
+
+    // take write lock
+    r = pthread_rwlock_wrlock( & shm->rwlock);
+
+    // find next index entry
+    ach_index_t *index = index_ar + shm->index_head;
+
+    // clear entry used by index
+    if( 0 == shm->index_free ) {
+        shm->data_free += index->size;
+        shm->index_free ++;
+        bzero( index, sizeof( ach_index_t ) );
+    }
+
+    // clear overlapping entries
+    size_t i;
+    for(i = shm->index_head + shm->index_free;
+        shm->data_free < len;
+        i = (i + 1) % shm->index_cnt) {
+        assert( i != shm->index_head );
+        assert( 0 == index_ar[i].size );
+
+        shm->data_free += index_ar[i].size;
+        shm->index_free ++;
+        bzero( index_ar + i, sizeof( ach_index_t ) );
+    }
+
+    // copy buffer
+    if( shm->data_size - shm->data_head >= len ) {
+        //simply copy
+        memcpy( data_ar + shm->data_head, buf, len );
+    } else {
+        //wraparound copy
+        size_t end_cnt = shm->data_size - shm->data_head;
+        memcpy( data_ar + shm->data_head, buf, end_cnt);
+        memcpy( data_ar, (uint8_t*)buf + end_cnt, len - end_cnt );
+    }
+
+    // modify counts
+    index->seq_num = ++shm->last_seq;
+    index->size = len;
+    index->offset = shm->data_head;
+
+    shm->data_head = (shm->data_head + len) % shm->data_size;
+    shm->data_free -= len;
+    shm->index_head = (shm->index_head + 1) % shm->index_cnt;
+    shm->index_free --;
+
+    assert( shm->index_free <= shm->index_cnt );
+    assert( shm->data_free <= shm->data_size );
+
+    // release write lock
+    r = pthread_rwlock_unlock( & shm->rwlock );
+    assert( 0 == r );
+    return ACH_OK;
+}
+
+int ach_close(ach_channel_t *chan) {
+
+
+    assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(chan->shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(chan->shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
+
+    int r;
+    // remove mapping
+    r = munmap(chan->shm, chan->len);
+    if( 0 != r ){
+        DEBUGF("Failed to munmap channel\n");
+        return ACH_FAILED_SYSCALL;
+    }
+    chan->shm = NULL;
+
+    // close file
+    int i = 0;
+    do {
+        IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
+        r = close(chan->fd);
+    }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
+    if( -1 == r ){
+        DEBUGF("Failed to close() channel fd\n");
+        return ACH_FAILED_SYSCALL;
+    }
+
+    return ACH_OK;
+}
+
+void ach_dump( ach_header_t *shm ) {
+    fprintf(stderr, "Magic: %x\n", shm->magic );
+    fprintf(stderr, "len: %d\n", shm->len );
+    fprintf(stderr, "data_size: %d\n", shm->data_size );
+    fprintf(stderr, "data_head: %d\n", shm->data_head );
+    fprintf(stderr, "data_free: %d\n", shm->data_free );
+    fprintf(stderr, "index_head: %d\n", shm->index_head );
+    fprintf(stderr, "index_free: %d\n", shm->index_free );
+    fprintf(stderr, "last_seq: %lld\n", shm->last_seq );
+    fprintf(stderr, "head guard:  %llX\n", * ACH_SHM_GUARD_HEADER(shm) );
+    fprintf(stderr, "index guard: %llX\n", * ACH_SHM_GUARD_INDEX(shm) );
+    fprintf(stderr, "data guard:  %llX\n", * ACH_SHM_GUARD_DATA(shm) );
+}
