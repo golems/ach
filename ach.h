@@ -47,8 +47,13 @@
  *    ________
  *   | Header |
  *   |--------|
+ *   | GUARDH |
+ *   |--------|
  *   | Index  |
  *   |        |
+ *   |        |
+ *   |--------|
+ *   | GUARDI |
  *   |--------|
  *   |  Data  |
  *   |        |
@@ -57,74 +62,161 @@
  *   |        |
  *   |        |
  *   |        |
+ *   |--------|
+ *   | GUARDD |
  *   |________|
  */
 
 #ifdef __cplusplus
-//extern "C" {
+extern "C" {
 #endif
 
-typedef enum {
-    ACH_OK = 0,
-    ACH_OVERFLOW
-} ach_status_t;
+    /// maximun size of a channel name
+#define ACH_CHAN_NAME_MAX 64
 
-typedef struct {
-    pthread_rwlock_t rwlock;
-    // should force our alignment to 8-bytes...
-    size_t index_count;     //< number of entries in index
-    size_t last_index;      //< offset from index start to last entry written
-} ach_header_t;
+    /// Number of times to retry a syscall on EINTR before giving up
+#define ACH_INTR_RETRY 8
 
-typedef struct {
-    uint64_t seq_num; //< number of frame
-    size_t size;      //< size of frame
-    size_t offset;    //< byte offset of entry from beginning of data array
-} ach_index_t ;
+    /** magic number that appears the the beginning of our mmaped files.
 
+        This is just to be used as a check.
+    */
+#define ACH_SHM_MAGIC_NUM 0xb07511f3
 
-typedef struct {
-    uint64_t seq_num;  //<last sequence number read or written
-    void *shm_ptr;
-} ach_channel_t;
+    /** A separator between different shm sections.
 
+        This one comes after the header.  Should aid debugging by
+        showing we don't overstep and bounds.  64-bit for alignment.
+    */
+#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8A)
+    /** A separator between different shm sections.
 
-// general idea here...
-#define ACH_SHM_INDEX( shm_ptr ) ( (shm_ptr) + sizeof(shm_header) )
-#define ACH_SHM_DATA( shm_ptr ) ( (shm_ptr) + sizeof(shm_header) + (shm_header*)(shm_ptr).index_size)
+        This ones comes after the index array.  Should aid debugging by
+        showing we don't overstep and bounds.  64-bit for alignment.
+    */
+#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8B)
 
+    /** A separator between different shm sections.
 
-/** Establishes a new channel.
-    \post A shared memory area is created for the channel and chan is initialized for writing
-*/
-ach_status_t ach_publish(ach_channel_t *chan, char *channel_name, int freq_hz);
+        This one comes after the data section (at the very end of the
+        file).  Should aid debugging by showing we don't overstep and
+        bounds.  64-bit for alignment.
+    */
+#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8C)
 
-/** Subscribes to a channel.
-    \pre The channel has been published
-    \post chan is initialized for reading
-*/
-ach_status_t ach_subscribe(ach_channel_t *chan, char *channel_name, int freq_hz);
-
-/** Pulls the next message from a channel.
-    \pre chan has been opened with ach_subscribe()
-    \post buf contains the data for the next frame and chan.seq_num is incremented
-*/
-ach_status_t ach_get_next(ach_channel_t *chan, char *buf, size_t size, size_t *size_written);
-
-/** Pulls the most recent message from the channel.
-    \pre chan has been opened with ach_subscribe()
-    \post buf contains the data for the last frame and chan.seq_num is set to the last frame
-*/
-ach_status_t ach_get_last(ach_channel_t *chan, char *buf, size_t size, size_t *size_written);
-
-/** Writes a new message in the channel.
-    \pre chan has been opened with ach_publish()
-    \post The contents of buf are copied into the channel and chan.seq_num is incremented.
-*/
-ach_status_t ach_put(ach_channel_t *chan, char *buf, size_t len);
+    /// return status codes for ach functions
+    typedef enum {
+        ACH_OK = 0,
+        ACH_OVERFLOW,
+        ACH_INVALID_NAME,
+        ACH_BAD_SHM_FILE,
+        ACH_FAILED_SYSCALL,
+        ACH_STALE
+    } ach_status_t;
 
 
+    /** Header for shared memory area.
+     */
+    typedef struct ach_header_struct {
+        uint32_t magic;          ///< magic number of ach shm files,
+        size_t len;              ///< length of mmap'ed file
+        size_t index_cnt;        ///< number of entries in index
+        size_t data_size;        ///< size of data bytes
+        size_t data_head;        ///< offset to first open byte of data
+        size_t data_free;        ///< number of free data bytes
+        size_t index_head;       ///< index into index array of first unused index entry
+        size_t index_free;       ///< number of unused index entries
+        // should force our alignment to 8-bytes...
+        uint64_t last_seq;       ///< last sequence number written
+        pthread_rwlock_t rwlock; ///< the lock
+    } ach_header_t;
 
+    /** Entry in shared memory index array
+     */
+    typedef struct ach_index_struct {
+        uint64_t seq_num; ///< number of frame
+        size_t size;      ///< size of frame
+        size_t offset;    ///< byte offset of entry from beginning of data array
+    } ach_index_t ;
+
+
+    /** Descriptor for shared memory area
+     */
+    typedef struct ach_channel_struct {
+        ach_header_t *shm; ///< pointer to mmap'ed block
+        size_t len;        ///< length of memory mapping
+        int fd;            ///< file descriptor of mmap'ed file
+        uint64_t seq_num;  ///<last sequence number read or written
+        size_t next_index; ///< next index entry to try to use
+    } ach_channel_t;
+
+    /// Gets pointer to guard uint64 following the header
+#define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))
+
+    /// Gets the pointer to the index array in the shm block
+#define ACH_SHM_INDEX( shm ) ((ach_index_t*)(ACH_SHM_GUARD_HEADER(shm) + 1))
+
+    /// gets pointer to the guard following the index section
+#define ACH_SHM_GUARD_INDEX( shm )                                      \
+    ((uint64_t*)(ACH_SHM_INDEX(shm) + ((ach_header_t*)(shm))->index_cnt))
+
+    /// Gets the pointer to the data buffer in the shm block
+#define ACH_SHM_DATA( shm ) ( (uint8_t*)(ACH_SHM_GUARD_INDEX(shm) + 1) )
+
+    /// Gets the pointer to the guard following data buffer in the shm block
+#define ACH_SHM_GUARD_DATA( shm )                                       \
+    ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
+
+    //#define ACH_SHM_DATA( shm ) (((uint8_t*) ((ach_header_t*)(shm) + 1)) + sizeof(ach_index_t)*(shm)->index_cnt + 2*sizeof(uint64_t))
+
+
+    /** Establishes a new channel.
+        \post A shared memory area is created for the channel and chan is initialized for writing
+        \param chan The channel structure to initialize
+        \param channel_name Name of the channel
+        \param frame_cnt number of frames to hold in circular buffer
+        \param frame_size nominal size of each frame
+    */
+    int ach_publish(ach_channel_t *chan, char *channel_name,
+                    size_t frame_cnt, size_t frame_size);
+
+    /** Subscribes to a channel.
+        \pre The channel has been published
+        \post chan is initialized for reading
+    */
+    int ach_subscribe(ach_channel_t *chan, char *channel_name);
+
+    /** Pulls the next message from a channel.
+        \pre chan has been opened with ach_subscribe()
+        \post buf contains the data for the next frame and chan.seq_num is incremented
+    */
+    int ach_get_next(ach_channel_t *chan, void *buf, size_t size);
+
+    /** Pulls the most recent message from the channel.
+        \pre chan has been opened with ach_subscribe()
+        \post buf contains the data for the last frame and chan.seq_num is set to the last frame
+    */
+    int ach_get_last(ach_channel_t *chan, void *buf, size_t size);
+
+    /** Writes a new message in the channel.
+        \pre chan has been opened with ach_publish()
+        \post The contents of buf are copied into the channel and chan.seq_num is incremented.
+    */
+    int ach_put(ach_channel_t *chan, void *buf, size_t len);
+
+    /** Closes the shared memory block.
+        \pre chan is an initialized ach channel with open shared memory area
+        \post the shared memory file for chan is closed
+    */
+    int ach_close(ach_channel_t *chan);
+
+    /** Converts return code from ach call to a human readable string;
+     */
+    char *ach_result_to_string(int result);
+
+    /** Prints information about the channel shm to stderr
+     */
+    void ach_dump( ach_header_t *shm);
 #ifdef __cplusplus
-//}
+}
 #endif
