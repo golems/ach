@@ -231,73 +231,100 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name ) {
     return ACH_OK;
 }
 
-/*int ach_get_next(ach_channel_t *chan, char *buf, size_t size,
-  size_t *size_written) {
-  // take read lock
-  // copy buffer
-  // increment count
-  // release read lock
-  return ACH_OK;
-  }*/
 
-int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
-    int retval;
+/** Copies frame pointed to by index entry at index_offset.
+
+    \pre hold read lock on the channel
+
+    \pre on success, buf holds the frame seq_num and next_index fields
+    are incremented. The variable pointed to by size_written holds the
+    number of bytes written to buf (0 on failure).
+*/
+static int ach_get_offset( ach_channel_t *chan, size_t index_offset,
+                           char *buf, size_t size, size_t *size_written ) {
     ach_header_t *shm = chan->shm;
+    assert( index_offset < shm->index_cnt );
+    ach_index_t *index = ACH_SHM_INDEX(shm) + index_offset;
+    assert( index->size );
+    assert( index->seq_num );
+    assert( index->offset < shm->data_size );
+    if( index->size > size ) {
+        // buffer overflow
+        *size_written = 0;
+        return ACH_OVERFLOW;
+    }else if( chan->seq_num >= index->seq_num ) {
+        // no new data
+        assert( chan->seq_num == index->seq_num );
+        *size_written = 0;
+        return ACH_STALE;
+    }else {
+        //good to copy
+        uint8_t *data_buf = ACH_SHM_DATA(shm);
+        if( index->offset + index->size < shm->data_size ) {
+            //simple memcpy
+            memcpy( (uint8_t*)buf, data_buf + index->offset, index->size );
+        }else {
+            // wraparound memcpy
+            size_t end_cnt = shm->data_size - index->offset;
+            memcpy( (uint8_t*)buf, data_buf + index->offset, end_cnt );
+            memcpy( (uint8_t*)buf + end_cnt, data_buf, index->size - end_cnt );
+        }
+        *size_written = index->size;
+        chan->seq_num = index->seq_num;
+        chan->next_index = (index_offset + 1) % shm->index_cnt;
+        return ACH_OK;
+    }
+}
 
+
+int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
+                 size_t *size_written) {
+    ach_header_t *shm = chan->shm;
     assert( ACH_SHM_MAGIC_NUM == shm->magic );
     assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
     assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
-    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    uint8_t *data_buf = ACH_SHM_DATA(shm);
-    ach_index_t *index;
-    uint64_t seq_num;
-    size_t next_index;
-
     // take read lock
     pthread_rwlock_rdlock( & shm->rwlock );
 
-    // copy buffer
-    next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-    index = index_ar + next_index;
-    assert( index->size );
-    assert( index->seq_num );
-    assert( index->offset < shm->data_size );
-    // checking for buffer overflow
-    if( index->size <= size ) {
-        // check for freshdata
-        if( chan->seq_num < index->seq_num ) {
-            if( index->offset + index->size < shm->data_size ) {
-                //simple memcpy
-                memcpy( (uint8_t*)buf, data_buf + index->offset, index->size );
-            }else {
-                // wraparound memcpy
-                size_t end_cnt = shm->data_size - index->offset;
-                memcpy( (uint8_t*)buf, data_buf + index->offset, end_cnt );
-                memcpy( (uint8_t*)buf + end_cnt, data_buf, index->size - end_cnt );
-            }
-            *size_written = index->size;
-            retval = ACH_OK;
-        } else { //stale
-            assert( chan->seq_num == index->seq_num );
-            *size_written = 0;
-            retval = ACH_STALE;
+    // get the next frame
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+    size_t next_index = chan->next_index;
+    int missed_frame = 0;
+    if( 0 == index_ar[next_index].size ||
+        index_ar[next_index].seq_num != chan->seq_num + 1 ) {
+        // we've missed a frame, find the oldest
+        missed_frame = 1;
+        next_index = shm->index_head;
+        while( 0 == index_ar[next_index].size ) {
+            next_index++;
         }
-    }else { // overflow
-        *size_written = 0;
-        retval = ACH_OVERFLOW;
     }
-    seq_num = index->seq_num;
+    int retval = 1;
 
     // release read lock
     pthread_rwlock_unlock( & shm->rwlock );
 
-    // increment count
-    if( ACH_OK == retval ) {
-        chan->seq_num = seq_num;
-        chan->next_index = (next_index + 1) % shm->index_cnt;
-    }
+    return retval;
+}
+
+int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
+    ach_header_t *shm = chan->shm;
+    assert( ACH_SHM_MAGIC_NUM == shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
+    // take read lock
+    pthread_rwlock_rdlock( & shm->rwlock );
+
+    // get the latest frame
+    size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+    int retval = ach_get_offset( chan, next_index, buf, size, size_written );
+
+    // release read lock
+    pthread_rwlock_unlock( & shm->rwlock );
 
     return retval;
 }
