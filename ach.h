@@ -46,6 +46,10 @@
  * publish-subscribe form of IPC. Clients may be publishers and or
  * subscribers. Publishers create "channels" which they push data
  * to. Clients can then poll then channels for data.
+ *
+ * \todo Write network daemon
+ * \todo finish ach_get_next()
+ * \todo test variable size frames
  */
 
 
@@ -213,7 +217,7 @@ extern "C" {
         \pre chan has been opened with ach_subscribe()
         \post buf contains the data for the next frame and chan.seq_num is incremented
     */
-    int ach_get_next(ach_channel_t *chan, void *buf, size_t size);
+    int ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_written);
 
 
     /** Pulls the most recent message from the channel.
@@ -222,7 +226,8 @@ extern "C" {
         \post If buf is big enough to hold the next frame, buf contains
         the data for the last frame and chan.seq_num is set to the last
         frame.  If buf is too small to hold the next frame, no side
-        effects occur.
+        effects occur.  The seq_num field of chan will be set to the
+        latest sequence number (that of the gotten frame).
 
         \param chan the channel to read from
         \param buf (output) The buffer to write data to
