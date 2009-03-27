@@ -73,7 +73,7 @@ int main(int argc, char **argv) {
     for( int i = 0;  i < 20; i++ ) {
         uint16_t v;
         size_t written;
-        r = ach_get_last( &chan, &v, sizeof(uint16_t), &written );
+        r = ach_get_next( &chan, &v, sizeof(uint16_t), &written );
         if(  ACH_STALE != r )
             fprintf(stderr, "Read %d: %s\n", v, ach_result_to_string( r ) );
         sleep(1);
