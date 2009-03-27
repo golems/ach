@@ -50,6 +50,9 @@
  * \todo Write network daemon
  * \todo finish ach_get_next()
  * \todo test variable size frames
+ *
+ * \bug could do better error checking on existence or non-existence
+ * of the shared memory file.
  */
 
 
@@ -123,7 +126,8 @@ extern "C" {
         ACH_INVALID_NAME,
         ACH_BAD_SHM_FILE,
         ACH_FAILED_SYSCALL,
-        ACH_STALE
+        ACH_STALE,
+        ACH_MISSED_FRAME
     } ach_status_t;
 
 
@@ -269,7 +273,7 @@ extern "C" {
 
     /** Converts return code from ach call to a human readable string;
      */
-    char *ach_result_to_string(int result);
+    char *ach_result_to_string(ach_status_t result);
 
 
     /** Prints information about the channel shm to stderr
