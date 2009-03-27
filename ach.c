@@ -73,7 +73,8 @@
 
 #define IFDEBUG( x ) (x)
 
-char *ach_result_to_string(int result) {
+char *ach_result_to_string(ach_status_t result) {
+
     switch(result) {
     case ACH_OK: return "ACH_OK";
     case ACH_OVERFLOW: return "ACH_OVERFLOW";
@@ -81,8 +82,10 @@ char *ach_result_to_string(int result) {
     case ACH_BAD_SHM_FILE: return "ACH_BAD_SHM_FILE";
     case ACH_FAILED_SYSCALL: return "ACH_FAILED_SYSCALL";
     case ACH_STALE: return "ACH_STALE";
+    case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
     }
     return "UNKNOWN";
+
 }
 
 // returns 0 if channel name is bad
@@ -240,8 +243,8 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name ) {
     are incremented. The variable pointed to by size_written holds the
     number of bytes written to buf (0 on failure).
 */
-static int ach_get_offset( ach_channel_t *chan, size_t index_offset,
-                           char *buf, size_t size, size_t *size_written ) {
+static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
+                                char *buf, size_t size, size_t *size_written ) {
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *index = ACH_SHM_INDEX(shm) + index_offset;
@@ -285,28 +288,26 @@ int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
     assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+    size_t next_index = chan->next_index;
+
     // take read lock
     pthread_rwlock_rdlock( & shm->rwlock );
 
     // get the next frame
-    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    size_t next_index = chan->next_index;
     int missed_frame = 0;
     if( 0 == index_ar[next_index].size ||
         index_ar[next_index].seq_num != chan->seq_num + 1 ) {
         // we've missed a frame, find the oldest
         missed_frame = 1;
-        next_index = shm->index_head;
-        while( 0 == index_ar[next_index].size ) {
-            next_index++;
-        }
+        next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
     }
-    int retval = 1;
+    int retval = ach_get_from_offset(chan, next_index, buf, size, size_written);
 
     // release read lock
     pthread_rwlock_unlock( & shm->rwlock );
 
-    return retval;
+    return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
 
 int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
@@ -321,7 +322,7 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writt
 
     // get the latest frame
     size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-    int retval = ach_get_offset( chan, next_index, buf, size, size_written );
+    int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
 
     // release read lock
     pthread_rwlock_unlock( & shm->rwlock );
