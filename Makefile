@@ -11,7 +11,7 @@ cc := gcc
 CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99
 
 ## You probably don't care aboute these
-VERSION := 0.20090323
+VERSION := 0.20090326
 PROJECT := ach
 PROJVER := $(PROJECT)-$(VERSION)
 
