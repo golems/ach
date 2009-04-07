@@ -37,6 +37,7 @@
  *  \author Neil T. Dantam
  *  \author Jon Scholz
  *  \author Pushkar Kolhe
+ *  \author Jon Olson
  */
 
 
@@ -48,7 +49,6 @@
  * to. Clients can then poll then channels for data.
  *
  * \todo Write network daemon
- * \todo finish ach_get_next()
  * \todo test variable size frames
  *
  * \bug could do better error checking on existence or non-existence
@@ -127,9 +127,15 @@ extern "C" {
         ACH_BAD_SHM_FILE,
         ACH_FAILED_SYSCALL,
         ACH_STALE,
-        ACH_MISSED_FRAME
+        ACH_MISSED_FRAME,
+        ACH_TIMEOUT
     } ach_status_t;
 
+    /// Whether a channel is opened to publish or subscribe
+    typedef enum {
+        ACH_MODE_PUBLISH = 'p',  ///< Channel opened to publish
+        ACH_MODE_SUBSCRIBE = 's' ///< Channel opened to subscribe
+    } ach_mode_t;
 
     /** Header for shared memory area.
      */
@@ -142,17 +148,17 @@ extern "C" {
         size_t data_free;        ///< number of free data bytes
         size_t index_head;       ///< index into index array of first unused index entry
         size_t index_free;       ///< number of unused index entries
+        pthread_rwlock_t rwlock; ///< the lock
         // should force our alignment to 8-bytes...
         uint64_t last_seq;       ///< last sequence number written
-        pthread_rwlock_t rwlock; ///< the lock
     } ach_header_t;
 
     /** Entry in shared memory index array
      */
     typedef struct {
-        uint64_t seq_num; ///< number of frame
         size_t size;      ///< size of frame
         size_t offset;    ///< byte offset of entry from beginning of data array
+        uint64_t seq_num; ///< number of frame
     } ach_index_t ;
 
 
@@ -182,9 +188,6 @@ extern "C" {
     /// Gets the pointer to the guard following data buffer in the shm block
 #define ACH_SHM_GUARD_DATA( shm )                                       \
     ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
-
-    //#define ACH_SHM_DATA( shm ) (((uint8_t*) ((ach_header_t*)(shm) + 1)) + sizeof(ach_index_t)*(shm)->index_cnt + 2*sizeof(uint64_t))
-
 
 
     /** Establishes a new channel.
@@ -246,6 +249,31 @@ extern "C" {
     */
     int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written);
 
+    /** Blocks until a new frame is availabel in the channel.
+        \pre chan has been opened with ach_subscribe()
+
+        \post Blocks until a new frame is available in the channel. If
+        buf is big enough to hold the next frame, buf contains the data
+        for the last frame and chan.seq_num is set to the last frame.
+        If buf is too small to hold the next frame, no side effects
+        occur.  The seq_num field of chan will be set to the latest
+        sequence number (that of the gotten frame).
+
+
+        \param chan the channel to read from
+        \param buf (output) The buffer to write data to
+        \param size the maximum number of bytes that may be written to buf
+        \param size_written (output) The actual number of bytes written
+        to buf.  This will either be zero or the size of the entire
+        frame.
+        \param timeout The amount of time to wait before giving up
+
+        \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
+        to hold the frame.  ACH_STALE if a new frame is not yet
+        available.  ACH_TIMEOUT if time waiting exceeds timeout
+
+    */
+    int ach_get_wait( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict timeout)
 
     /** Writes a new message in the channel.
 
@@ -259,7 +287,8 @@ extern "C" {
         \param len number of bytes in buf to copy
         \return ACH_OK on success.
     */
-    int ach_put(ach_channel_t *chan, void *buf, size_t len);
+        int ach_put(ach_channel_t *chan, void *buf, size_t len);
+
 
 
     /** Closes the shared memory block.
@@ -277,8 +306,12 @@ extern "C" {
 
 
     /** Prints information about the channel shm to stderr
-     */
+
+        This function is mostly for internal debugging.
+    */
     void ach_dump( ach_header_t *shm);
+
+
 #ifdef __cplusplus
 }
 #endif
