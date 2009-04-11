@@ -81,8 +81,9 @@ char *ach_result_to_string(ach_status_t result) {
     case ACH_INVALID_NAME: return "ACH_INVALID_NAME";
     case ACH_BAD_SHM_FILE: return "ACH_BAD_SHM_FILE";
     case ACH_FAILED_SYSCALL: return "ACH_FAILED_SYSCALL";
-    case ACH_STALE: return "ACH_STALE";
+    case ACH_STALE_FRAMES: return "ACH_STALE_FRAMES";
     case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
+    case ACH_TIMEOUT: return "ACH_TIMEOUT";
     }
     return "UNKNOWN";
 
@@ -124,6 +125,113 @@ static int fd_for_channel_name( char *name ) {
     return fd;
 }
 
+
+
+/* Our synchronization works roughly like a read-write lock with one
+ * one additional feature.  A reader may choose to block until the
+ * next write is performed.
+ *
+ * This behavior is implemented with a a state variable, a mutex, two
+ * condition variables, and three counters.  One condition variable is
+ * for writers, and the other for readers.  We count active readers,
+ * waiting readers, and waiting writers.  If a writer is waiting,
+ * readers will block until it finishes.
+ *
+ * It may be possible to make these locks run faster by doing some
+ * CASs on the state word to handle the uncontended case.  Of course,
+ * figuring out how to make this all lock free would really be
+ * ideal...
+ *
+ */
+
+/** \file ach.c
+ *  \bug synchronization should be robust against processes terminating
+ */
+
+static void rdlock( ach_header_t *shm ) {
+    pthread_mutex_lock( & shm->sync.mutex );
+    assert( ACH_CHAN_STATE_INIT != shm->sync.state );
+
+    // wait for the right state
+    switch( shm->sync.state ) {
+
+    case ACH_CHAN_STATE_RUN: // nothing's happening
+        shm->sync.state = ACH_CHAN_STATE_READING;
+    case ACH_CHAN_STATE_READING: break; // other readers
+
+    default: // wait for writers to finish
+        shm->sync.reader_wait_cnt++;
+        //loop over cond_wait() till writers are done
+        while(ACH_CHAN_STATE_WRITING == shm->sync.state ||
+              shm->sync.writer_wait_cnt > 0 ) {
+            int r = pthread_cond_wait( &shm->sync.read_cond,  &shm->sync.mutex );
+            assert( 0 == r );
+        }
+        shm->sync.reader_wait_cnt--;
+        shm->sync.state = ACH_CHAN_STATE_READING;
+    }
+
+    // note the read
+    shm->sync.reader_active_cnt++;
+
+    pthread_mutex_unlock( & shm->sync.mutex );
+}
+
+static void unrdlock( ach_header_t *shm ) {
+    //pthread_rwlock_unlock( & shm->rwlock );
+    pthread_mutex_lock( & shm->sync.mutex );
+    assert( ACH_CHAN_STATE_READING == shm->sync.state );
+
+    // dec read count
+    shm->sync.reader_active_cnt--;
+
+    // check state
+    if( 0 == shm->sync.reader_active_cnt ) {
+        shm->sync.state = ACH_CHAN_STATE_RUN;
+        // signal waiting writers
+        if( shm->sync.writer_wait_cnt > 0 ) {
+            pthread_cond_signal( & shm->sync.write_cond );
+        }
+    }
+
+    pthread_mutex_unlock( & shm->sync.mutex );
+}
+
+static void wrlock( ach_header_t *shm ) {
+    //pthread_rwlock_wrlock( & shm->rwlock );
+    pthread_mutex_lock( & shm->sync.mutex );
+    assert( ACH_CHAN_STATE_INIT != shm->sync.state );
+    assert( ACH_CHAN_STATE_WRITING != shm->sync.state );
+
+    if( ACH_CHAN_STATE_RUN != shm->sync.state ) { //wait, if needed
+        shm->sync.writer_wait_cnt++;
+        do{
+            pthread_cond_wait( &shm->sync.write_cond, &shm->sync.mutex );
+        } while( ACH_CHAN_STATE_RUN != shm->sync.state );
+        shm->sync.writer_wait_cnt--;
+    }
+
+    // set channel state
+    shm->sync.state = ACH_CHAN_STATE_WRITING;
+
+    pthread_mutex_unlock( & shm->sync.mutex );
+}
+
+static void unwrlock( ach_header_t *shm ) {
+    //pthread_rwlock_unlock( & shm->rwlock );
+    pthread_mutex_lock( & shm->sync.mutex );
+    assert( ACH_CHAN_STATE_WRITING == shm->sync.state );
+    assert( 0 == shm->sync.reader_active_cnt );
+
+    shm->sync.state = ACH_CHAN_STATE_RUN;
+    if( shm->sync.writer_wait_cnt > 0 ) {
+        assert(0); //single writer
+    }else if (shm->sync.reader_wait_cnt > 0 ) {
+        // wake up sleeping readers
+        pthread_cond_broadcast( & shm->sync.read_cond );
+    }
+    pthread_mutex_unlock( & shm->sync.mutex );
+}
 
 int ach_publish(ach_channel_t *chan, char *channel_name,
                 size_t frame_cnt, size_t frame_size ) {
@@ -172,6 +280,42 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
         r = pthread_rwlockattr_destroy( &attr );
         assert( 0 == r );
     }
+    { //initialize synchronization
+        shm->sync.state = ACH_CHAN_STATE_INIT;
+        shm->sync.reader_active_cnt = 0;
+        shm->sync.reader_wait_cnt = 0;
+        shm->sync.writer_wait_cnt = 0;
+        { //initialize condition variables
+            int r;
+            pthread_condattr_t cond_attr;
+            r = pthread_condattr_init( &cond_attr );
+            assert( 0 == r );
+            r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
+            assert( 0 == r );
+
+            r = pthread_cond_init( & shm->sync.write_cond, &cond_attr );
+            assert( 0 == r );
+            r = pthread_cond_init( & shm->sync.read_cond, &cond_attr );
+            assert( 0 == r );
+
+            r = pthread_condattr_destroy( &cond_attr );
+            assert( 0 == r );
+        }
+        { //initialize mutex
+            int r;
+            pthread_mutexattr_t mutex_attr;
+            r = pthread_mutexattr_init( &mutex_attr );
+            assert( 0 == r );
+            r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
+            assert( 0 == r );
+
+            r = pthread_mutex_init(& shm->sync.mutex, &mutex_attr );
+            assert( 0 == r );
+
+            r = pthread_mutexattr_destroy( &mutex_attr );
+            assert( 0 == r );
+        }
+    }
     shm->index_cnt = frame_cnt;
     shm->index_head = 0;
     shm->index_free = frame_cnt;
@@ -190,6 +334,8 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
     chan->shm = shm;
     chan->seq_num = 1;
     chan->next_index = 0;
+
+    shm->sync.state = ACH_CHAN_STATE_RUN;
 
     return ACH_OK;
 }
@@ -259,7 +405,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
         // no new data
         assert( chan->seq_num == index->seq_num );
         *size_written = 0;
-        return ACH_STALE;
+        return ACH_STALE_FRAMES;
     }else {
         //good to copy
         uint8_t *data_buf = ACH_SHM_DATA(shm);
@@ -292,7 +438,8 @@ int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
     size_t next_index = chan->next_index;
 
     // take read lock
-    pthread_rwlock_rdlock( & shm->rwlock );
+    //pthread_rwlock_rdlock( & shm->rwlock );
+    rdlock( shm );
 
     // get the next frame
     int missed_frame = 0;
@@ -305,7 +452,8 @@ int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
     int retval = ach_get_from_offset(chan, next_index, buf, size, size_written);
 
     // release read lock
-    pthread_rwlock_unlock( & shm->rwlock );
+    //pthread_rwlock_unlock( & shm->rwlock );
+    unrdlock( shm );
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
@@ -318,22 +466,22 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writt
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
     // take read lock
-    pthread_rwlock_rdlock( & shm->rwlock );
+    //pthread_rwlock_rdlock( & shm->rwlock );
+    rdlock( shm );
 
     // get the latest frame
     size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
     int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
 
     // release read lock
-    pthread_rwlock_unlock( & shm->rwlock );
+    //pthread_rwlock_unlock( & shm->rwlock );
+    unrdlock( shm );
 
     return retval;
 }
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
-
-    int r;
     ach_header_t *shm = chan->shm;
 
 
@@ -343,7 +491,8 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     if( len > shm->data_size ) return ACH_OVERFLOW;
 
     // take write lock
-    r = pthread_rwlock_wrlock( & shm->rwlock);
+    //r = pthread_rwlock_wrlock( & shm->rwlock);
+    wrlock( shm );
 
     // find next index entry
     ach_index_t *index = index_ar + shm->index_head;
@@ -393,8 +542,9 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     assert( shm->data_free <= shm->data_size );
 
     // release write lock
-    r = pthread_rwlock_unlock( & shm->rwlock );
-    assert( 0 == r );
+    //r = pthread_rwlock_unlock( & shm->rwlock );
+    //assert( 0 == r );
+    unwrlock( shm );
     return ACH_OK;
 }
 
