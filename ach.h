@@ -38,6 +38,7 @@
  *  \author Jon Scholz
  *  \author Pushkar Kolhe
  *  \author Jon Olson
+ *  \author Venkata Subramania Mahalingam
  */
 
 
@@ -50,6 +51,7 @@
  *
  * \todo Write network daemon
  * \todo test variable size frames
+ * \todo write blocking method calls
  *
  * \bug could do better error checking on existence or non-existence
  * of the shared memory file.
@@ -121,21 +123,28 @@ extern "C" {
 
     /// return status codes for ach functions
     typedef enum {
-        ACH_OK = 0,
-        ACH_OVERFLOW,
-        ACH_INVALID_NAME,
-        ACH_BAD_SHM_FILE,
-        ACH_FAILED_SYSCALL,
-        ACH_STALE,
-        ACH_MISSED_FRAME,
-        ACH_TIMEOUT
+        ACH_OK = 0,         ///< Call successful
+        ACH_OVERFLOW,       ///< buffer to small to hold frame
+        ACH_INVALID_NAME,   ///< invalid channel name
+        ACH_BAD_SHM_FILE,   ///< shared memory file didn't look right
+        ACH_FAILED_SYSCALL, ///< a system call failed
+        ACH_STALE_FRAMES,          ///< no new data in the channel
+        ACH_MISSED_FRAME,   ///< we missed the next frame
+        ACH_TIMEOUT         ///< timeout before frame received
     } ach_status_t;
 
     /// Whether a channel is opened to publish or subscribe
     typedef enum {
-        ACH_MODE_PUBLISH = 'p',  ///< Channel opened to publish
-        ACH_MODE_SUBSCRIBE = 's' ///< Channel opened to subscribe
+        ACH_MODE_PUBLISH,  ///< Channel opened to publish
+        ACH_MODE_SUBSCRIBE  ///< Channel opened to subscribe
     } ach_mode_t;
+
+    typedef enum {
+        ACH_CHAN_STATE_INIT,
+        ACH_CHAN_STATE_RUN,
+        ACH_CHAN_STATE_READING,
+        ACH_CHAN_STATE_WRITING,
+    } ach_chan_state_t;
 
     /** Header for shared memory area.
      */
@@ -149,6 +158,17 @@ extern "C" {
         size_t index_head;       ///< index into index array of first unused index entry
         size_t index_free;       ///< number of unused index entries
         pthread_rwlock_t rwlock; ///< the lock
+        struct /* anonymous structure */ {
+            int state;  ///< synchronization state of the channel, type ach_chan_state_t
+            unsigned int reader_active_cnt; ///< number of readers currently reading
+            /** number of readers waiting to read. includes both blocked by
+                lock and blocking while waiting for new data */
+            unsigned int reader_wait_cnt;
+            unsigned int writer_wait_cnt; ///< number of writers waiting to write
+            pthread_mutex_t mutex;     ///< mutex for condition variables
+            pthread_cond_t write_cond; ///< condition variable writers wait on
+            pthread_cond_t read_cond;  ///< condition variable readers wait on
+        } sync;
         // should force our alignment to 8-bytes...
         uint64_t last_seq;       ///< last sequence number written
     } ach_header_t;
@@ -194,6 +214,10 @@ extern "C" {
 
         \post A shared memory area is created for the channel and chan is initialized for writing
 
+        The size of the data array reserved in shared memory will be
+        frame_cnt*frame_size.  Frames of any size smaller than the size
+        of the data array may be sent over the channel.
+
         \param chan The channel structure to initialize
         \param channel_name Name of the channel
         \param frame_cnt number of frames to hold in circular buffer
@@ -220,11 +244,15 @@ extern "C" {
     int ach_subscribe(ach_channel_t *chan, char *channel_name);
 
 
-    /** Pulls the next message from a channel.
+    /** Pulls the next message from a channel following the most recent
+        message this subscriber has read.
+
+        see ach_get_last for parameter descriptions
+
         \pre chan has been opened with ach_subscribe()
         \post buf contains the data for the next frame and chan.seq_num is incremented
     */
-    int ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_written);
+    int ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
 
     /** Pulls the most recent message from the channel.
@@ -239,41 +267,47 @@ extern "C" {
         \param chan the channel to read from
         \param buf (output) The buffer to write data to
         \param size the maximum number of bytes that may be written to buf
-        \param size_written (output) The actual number of bytes written
-        to buf.  This will either be zero or the size of the entire
-        frame.
+        \param frame_size (output) The size of the frame.  This will be
+        the number of bytes that were written on ACH_SUCCESS or the
+        necessary size of the buffer on ACH_OVERFLOW.
 
         \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
-        to hold the frame.  ACH_STALE if a new frame is not yet
+        to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
         available.
     */
-    int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written);
+    int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
-    /** Blocks until a new frame is availabel in the channel.
-        \pre chan has been opened with ach_subscribe()
+    /* Blocks until a new frame is availabel in the channel.
+       \pre chan has been opened with ach_subscribe()
 
-        \post Blocks until a new frame is available in the channel. If
-        buf is big enough to hold the next frame, buf contains the data
-        for the last frame and chan.seq_num is set to the last frame.
-        If buf is too small to hold the next frame, no side effects
-        occur.  The seq_num field of chan will be set to the latest
-        sequence number (that of the gotten frame).
+       \post Blocks until a new frame is available in the channel. If
+       buf is big enough to hold the next frame, buf contains the data
+       for the last frame and chan.seq_num is set to the last frame.
+       If buf is too small to hold the next frame, no side effects
+       occur.  The seq_num field of chan will be set to the latest
+       sequence number (that of the gotten frame).
 
+       Note that if this function returns with ACH_OVERFLOW, there is
+       not guarantee that the next time you call it, the frame will be
+       the same size.  Ie, a new frame may very well be published
+       between your two calls.
 
-        \param chan the channel to read from
-        \param buf (output) The buffer to write data to
-        \param size the maximum number of bytes that may be written to buf
-        \param size_written (output) The actual number of bytes written
-        to buf.  This will either be zero or the size of the entire
-        frame.
-        \param timeout The amount of time to wait before giving up
+       \param chan the channel to read from
+       \param buf (output) The buffer to write data to
+       \param size the maximum number of bytes that may be written to buf
+       \param size_written (output) The actual number of bytes written
+       to buf.  This will either be zero or the size of the entire
+       frame.
+       \param timeout The amount of time to wait before giving up
 
-        \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
-        to hold the frame.  ACH_STALE if a new frame is not yet
-        available.  ACH_TIMEOUT if time waiting exceeds timeout
+       \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
+       to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
+       available.  ACH_TIMEOUT if time waiting exceeds timeout
 
     */
-    int ach_get_wait( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict timeout)
+
+    //int ach_get_wait( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict timeout)
+    //FIXME: super broken
 
     /** Writes a new message in the channel.
 
@@ -287,7 +321,7 @@ extern "C" {
         \param len number of bytes in buf to copy
         \return ACH_OK on success.
     */
-        int ach_put(ach_channel_t *chan, void *buf, size_t len);
+    int ach_put(ach_channel_t *chan, void *buf, size_t len);
 
 
 
