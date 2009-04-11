@@ -74,7 +74,7 @@ int main(int argc, char **argv) {
         uint16_t v;
         size_t written;
         r = ach_get_next( &chan, &v, sizeof(uint16_t), &written );
-        if(  ACH_STALE != r )
+        if(  ACH_STALE_FRAMES != r )
             fprintf(stderr, "Read %d: %s\n", v, ach_result_to_string( r ) );
         sleep(1);
     }
