@@ -8,7 +8,7 @@ STOWBASE := /usr/local/stow
 
 ## Mabe you care about these
 cc := gcc
-CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99
+CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC
 
 ## You probably don't care aboute these
 VERSION := 0.20090326
