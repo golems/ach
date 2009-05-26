@@ -157,7 +157,7 @@ extern "C" {
         size_t data_free;        ///< number of free data bytes
         size_t index_head;       ///< index into index array of first unused index entry
         size_t index_free;       ///< number of unused index entries
-        pthread_rwlock_t rwlock; ///< the lock
+        //pthread_rwlock_t rwlock; ///< the lock
         struct /* anonymous structure */ {
             int state;  ///< synchronization state of the channel, type ach_chan_state_t
             unsigned int reader_active_cnt; ///< number of readers currently reading
@@ -254,6 +254,9 @@ extern "C" {
     */
     int ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
+    /** like ach_get_next but blocks if no new data is there */
+    int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                      const struct timespec *abstime);
 
     /** Pulls the most recent message from the channel.
         \pre chan has been opened with ach_subscribe()
@@ -276,6 +279,10 @@ extern "C" {
         available.
     */
     int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
+
+    /** like ach_get_last but blocks if no new data is there */
+    int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                      const struct timespec *abstime);
 
     /* Blocks until a new frame is availabel in the channel.
        \pre chan has been opened with ach_subscribe()
@@ -305,9 +312,6 @@ extern "C" {
        available.  ACH_TIMEOUT if time waiting exceeds timeout
 
     */
-
-    //int ach_get_wait( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict timeout)
-    //FIXME: super broken
 
     /** Writes a new message in the channel.
 

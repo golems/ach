@@ -148,18 +148,34 @@ static int fd_for_channel_name( char *name ) {
  *  \bug synchronization should be robust against processes terminating
  */
 
-static void rdlock( ach_header_t *shm ) {
+
+static void rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
+                         const struct timespec *abstime ) {
     pthread_mutex_lock( & shm->sync.mutex );
     assert( ACH_CHAN_STATE_INIT != shm->sync.state );
 
     // wait for the right state
     switch( shm->sync.state ) {
-
     case ACH_CHAN_STATE_RUN: // nothing's happening
-        shm->sync.state = ACH_CHAN_STATE_READING;
-    case ACH_CHAN_STATE_READING: break; // other readers
-
+    case ACH_CHAN_STATE_READING:  // other readers
+        // check if we need to wait for new data
+        if( abstime && chan &&
+            chan->seq_num == shm->last_seq ) {
+            // wait for new data to be written
+            shm->sync.reader_wait_cnt ++;
+            while( chan->seq_num == shm->last_seq ||
+                   // also wait for writers to finish
+                   ACH_CHAN_STATE_WRITING == shm->sync.state ||
+                   shm->sync.write_wait_cnt > 0) {
+                int r = pthread_cond_wait( &shm->sync.read_cond,  &shm->sync.mutex );
+                assert( 0 == r );
+            }
+            shm->sync.reader_wait_cnt--;
+        }
+        // make sure state is correct
+        break;
     default: // wait for writers to finish
+        assert( ACH_CHAN_STATE_WRITING == shm->sync.state );
         shm->sync.reader_wait_cnt++;
         //loop over cond_wait() till writers are done
         while(ACH_CHAN_STATE_WRITING == shm->sync.state ||
@@ -168,13 +184,45 @@ static void rdlock( ach_header_t *shm ) {
             assert( 0 == r );
         }
         shm->sync.reader_wait_cnt--;
-        shm->sync.state = ACH_CHAN_STATE_READING;
     }
 
     // note the read
+    shm->sync.state = ACH_CHAN_STATE_READING;
     shm->sync.reader_active_cnt++;
 
     pthread_mutex_unlock( & shm->sync.mutex );
+}
+
+static void rdlock( ach_header_t *shm ) {
+    rdlock_wait( shm, NULL, NULL );
+    /*
+      pthread_mutex_lock( & shm->sync.mutex );
+      assert( ACH_CHAN_STATE_INIT != shm->sync.state );
+
+      // wait for the right state
+      switch( shm->sync.state ) {
+
+      case ACH_CHAN_STATE_RUN: // nothing's happening
+      shm->sync.state = ACH_CHAN_STATE_READING;
+      case ACH_CHAN_STATE_READING: break; // other readers
+
+      default: // wait for writers to finish
+      shm->sync.reader_wait_cnt++;
+      //loop over cond_wait() till writers are done
+      while(ACH_CHAN_STATE_WRITING == shm->sync.state ||
+      shm->sync.writer_wait_cnt > 0 ) {
+      int r = pthread_cond_wait( &shm->sync.read_cond,  &shm->sync.mutex );
+      assert( 0 == r );
+      }
+      shm->sync.reader_wait_cnt--;
+      shm->sync.state = ACH_CHAN_STATE_READING;
+      }
+
+      // note the read
+      shm->sync.reader_active_cnt++;
+
+      pthread_mutex_unlock( & shm->sync.mutex );
+    */
 }
 
 static void unrdlock( ach_header_t *shm ) {
@@ -478,6 +526,17 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writt
     unrdlock( shm );
 
     return retval;
+}
+
+
+int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+                  const struct timespec *abstime) {
+    ach_header_t *shm = chan->shm;
+    assert( ACH_SHM_MAGIC_NUM == shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
 }
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
