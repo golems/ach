@@ -66,17 +66,24 @@
 int main(int argc, char **argv) {
     ach_channel_t chan;
     int r;
+    struct timespec ts;
 
     r = ach_subscribe( &chan, "ach-test" );
     fprintf(stderr, "Subscribe: %s\n", ach_result_to_string( r ) );
 
+    r = clock_gettime(CLOCK_REALTIME, &ts);
+    printf("time (%d): %ld s, %ld ns\n", r, ts.tv_sec, ts.tv_nsec );
+    assert( 0 == r);
+    ts.tv_sec += 10;
+
     for( int i = 0;  i < 20; i++ ) {
         uint16_t v;
         size_t written;
-        r = ach_get_next( &chan, &v, sizeof(uint16_t), &written );
+        r = ach_wait_last( &chan, &v, sizeof(uint16_t), &written, &ts );
+        //r = ach_wait_next( &chan, &v, sizeof(uint16_t), &written);
         if(  ACH_STALE_FRAMES != r )
             fprintf(stderr, "Read %d: %s\n", v, ach_result_to_string( r ) );
-        sleep(1);
+        //sleep(1);
     }
 
     r = ach_close( &chan );
