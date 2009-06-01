@@ -139,11 +139,12 @@ extern "C" {
         ACH_MODE_SUBSCRIBE  ///< Channel opened to subscribe
     } ach_mode_t;
 
+    /// synchronization state of a channel
     typedef enum {
-        ACH_CHAN_STATE_INIT,
-        ACH_CHAN_STATE_RUN,
-        ACH_CHAN_STATE_READING,
-        ACH_CHAN_STATE_WRITING,
+        ACH_CHAN_STATE_INIT,    ///< channel is initializing
+        ACH_CHAN_STATE_RUN,     ///< channel is uncontended
+        ACH_CHAN_STATE_READING, ///< readers using channel
+        ACH_CHAN_STATE_WRITING, ///< writer modifying channel
     } ach_chan_state_t;
 
     /** Header for shared memory area.
@@ -168,7 +169,7 @@ extern "C" {
             pthread_mutex_t mutex;     ///< mutex for condition variables
             pthread_cond_t write_cond; ///< condition variable writers wait on
             pthread_cond_t read_cond;  ///< condition variable readers wait on
-        } sync;
+        } sync; ///< variables for synchronization
         // should force our alignment to 8-bytes...
         uint64_t last_seq;       ///< last sequence number written
     } ach_header_t;
@@ -280,38 +281,15 @@ extern "C" {
     */
     int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
-    /** like ach_get_last but blocks if no new data is there */
-    int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                      const struct timespec *abstime);
+    /** Blocks until a new message is available.
 
-    /* Blocks until a new frame is availabel in the channel.
-       \pre chan has been opened with ach_subscribe()
+        If the latest message is new than the most recently read
+        message, copy that message into buf.  Otherwise, sleep until a
+        new message is available.
 
-       \post Blocks until a new frame is available in the channel. If
-       buf is big enough to hold the next frame, buf contains the data
-       for the last frame and chan.seq_num is set to the last frame.
-       If buf is too small to hold the next frame, no side effects
-       occur.  The seq_num field of chan will be set to the latest
-       sequence number (that of the gotten frame).
-
-       Note that if this function returns with ACH_OVERFLOW, there is
-       not guarantee that the next time you call it, the frame will be
-       the same size.  Ie, a new frame may very well be published
-       between your two calls.
-
-       \param chan the channel to read from
-       \param buf (output) The buffer to write data to
-       \param size the maximum number of bytes that may be written to buf
-       \param size_written (output) The actual number of bytes written
-       to buf.  This will either be zero or the size of the entire
-       frame.
-       \param timeout The amount of time to wait before giving up
-
-       \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
-       to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
-       available.  ACH_TIMEOUT if time waiting exceeds timeout
-
+        See ach_get_next for parameters
     */
+    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict abstime);
 
     /** Writes a new message in the channel.
 

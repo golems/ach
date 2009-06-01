@@ -127,9 +127,11 @@ static int fd_for_channel_name( char *name ) {
 
 
 
-/* Our synchronization works roughly like a read-write lock with one
- * one additional feature.  A reader may choose to block until the
- * next write is performed.
+/*! \page synchronization Synchronization
+ *
+ * Our synchronization for shared memory works roughly like a
+ * read-write lock with one one additional feature.  A reader may
+ * choose to block until the next write is performed.
  *
  * This behavior is implemented with a a state variable, a mutex, two
  * condition variables, and three counters.  One condition variable is
@@ -142,10 +144,9 @@ static int fd_for_channel_name( char *name ) {
  * figuring out how to make this all lock free would really be
  * ideal...
  *
- */
-
-/** \file ach.c
  *  \bug synchronization should be robust against processes terminating
+ *  \bug our {rd,wr}lock functions should handle timeouts
+ *
  */
 
 
@@ -571,7 +572,6 @@ int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writ
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
     ach_header_t *shm = chan->shm;
-
 
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     uint8_t *data_ar = ACH_SHM_DATA(shm);
