@@ -36,6 +36,9 @@
 
 /** \file achcat.c
  *  \author Neil T. Dantam
+ *
+ *  This program copies lines of text from std{in,out} to or from an
+ *  ach channel.
  */
 
 #include <stdio.h>
@@ -44,8 +47,8 @@
 #include <argp.h>
 #include <stdint.h>
 #include <pthread.h>
-#include <semaphore.h>
 #include <sched.h>
+#include <unistd.h>
 #include "ach.h"
 
 
@@ -109,8 +112,6 @@ int opt_sub = 0;
 FILE *fin;
 FILE *fout;
 
-sem_t semaphore;
-
 void *publish_loop(void* pub) {
     publish(pub);
     return NULL;
@@ -138,8 +139,7 @@ int publish( ach_channel_t *chan) {
 
         //ach_dump( chan.shm );
     }
-    if( ! (opt_pub && opt_sub) )
-        ach_close( chan );
+    ach_close( chan );
     //fprintf(stderr,"end of publish\n");
     return r;
 }
@@ -159,8 +159,10 @@ int subscribe( ach_channel_t *chan) {
         r = ach_wait_next(chan, sbuffer, sizeof(sbuffer), &frame_size,  NULL );
         if( ACH_OK != r )  {
             if( ! (t0 && r == ACH_MISSED_FRAME) )
-                fprintf(stderr, "sub: ach_error: %s\n",
-                        ach_result_to_string(r));
+                if( ACH_CLOSED != r ) {
+                    fprintf(stderr, "sub: ach_error: %s\n",
+                            ach_result_to_string(r));
+                }
             if( r != ACH_MISSED_FRAME ) break;
 
         }
@@ -175,6 +177,7 @@ int subscribe( ach_channel_t *chan) {
         fflush(fout);
     }
     //fprintf(stderr,"end of subscribe\n");
+    ach_close( chan );
     return r;
 }
 
@@ -220,7 +223,8 @@ int main( int argc, char **argv ) {
         pthread_create( &pub_thread, NULL, publish_loop, &pub );
 
         subscribe(&sub);
-
+        void *v;
+        pthread_join(pub_thread, &v);
         return 0;
     }
     // normal cases
