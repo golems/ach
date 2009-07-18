@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4  -*- */
 /*
  * Copyright (c) 2008, Georgia Tech Research Corporation
  * All rights reserved.
@@ -64,11 +65,13 @@
 
 
 int main(int argc, char **argv) {
+    (void) argc;
+    (void) argv;
     ach_channel_t chan;
     int r;
     struct timespec ts;
 
-    r = ach_subscribe( &chan, "ach-test" );
+    r = ach_subscribe( &chan, "ach-test", NULL );
     fprintf(stderr, "Subscribe: %s\n", ach_result_to_string( r ) );
 
     r = clock_gettime(CLOCK_REALTIME, &ts);
