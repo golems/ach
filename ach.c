@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4  -*- */
 /*
  * Copyright (c) 2008, Georgia Tech Research Corporation
  * All rights reserved.
@@ -43,6 +44,7 @@
 #define _GNU_SOURCE
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/mman.h>
@@ -131,15 +133,20 @@ static int fd_for_channel_name( char *name ) {
 
 /*! \page synchronization Synchronization
  *
- * Our synchronization for shared memory works roughly like a
+ * Synchronization currently uses a simple mutex+condition variable
+ * around the whole shared memory block
+ *
+ * Possible Synchronization enhancement:
+ *
+ * Our synchronization for shared memory could work roughly like a
  * read-write lock with one one additional feature.  A reader may
  * choose to block until the next write is performed.
  *
- * This behavior is implemented with a a state variable, a mutex, two
- * condition variables, and three counters.  One condition variable is
- * for writers, and the other for readers.  We count active readers,
- * waiting readers, and waiting writers.  If a writer is waiting,
- * readers will block until it finishes.
+ * This behavior could be implemented with a a state variable, a
+ * mutex, two condition variables, and three counters.  One condition
+ * variable is for writers, and the other for readers.  We count
+ * active readers, waiting readers, and waiting writers.  If a writer
+ * is waiting, readers will block until it finishes.
  *
  * It may be possible to make these locks run faster by doing some
  * CASs on the state word to handle the uncontended case.  Of course,
@@ -154,173 +161,82 @@ static int fd_for_channel_name( char *name ) {
 
 static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
                         const struct timespec *abstime ) {
-    pthread_mutex_lock( & shm->sync.mutex );
-    assert( ACH_CHAN_STATE_INIT != shm->sync.state );
 
-    // wait for the right state
-    switch( shm->sync.state ) {
-    case ACH_CHAN_STATE_RUN: // nothing's happening
-    case ACH_CHAN_STATE_READING:  // other readers
-        // check if we need to wait for new data
-        if( abstime && chan &&
-            chan->seq_num == shm->last_seq ) {
-            // wait for new data to be written
-            shm->sync.reader_wait_cnt ++;
-            while( chan->seq_num == shm->last_seq ||
-                   // also wait for writers to finish
-                   ACH_CHAN_STATE_WRITING == shm->sync.state ||
-                   shm->sync.writer_wait_cnt > 0) {
-                int r = pthread_cond_timedwait( &shm->sync.read_cond,  &shm->sync.mutex, abstime );
-                if( ETIMEDOUT == r ) {
-                    shm->sync.reader_wait_cnt--;
-                    pthread_mutex_unlock( & shm->sync.mutex );
-                    return ACH_TIMEOUT;
-                }else if( EINTR == r ) {
-                    continue;
-                }
-                assert( 0 == r );
-            }
-            shm->sync.reader_wait_cnt--;
-        }
-        // make sure state is correct
-        break;
-    default: // wait for writers to finish
-        assert( ACH_CHAN_STATE_WRITING == shm->sync.state );
-        shm->sync.reader_wait_cnt++;
-        //loop over cond_wait() till writers are done
-        while(ACH_CHAN_STATE_WRITING == shm->sync.state ||
-              shm->sync.writer_wait_cnt > 0 ) {
-            int r = pthread_cond_wait( &shm->sync.read_cond,  &shm->sync.mutex );
-            assert( 0 == r );
-        }
-        shm->sync.reader_wait_cnt--;
+    int r;
+    r = pthread_mutex_lock( & shm->sync.mutex );
+    assert( 0 == r );
+    while( chan &&
+           chan->seq_num == shm->last_seq ) {
+        if( abstime ) {
+            r = pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime );
+            if( ETIMEDOUT == r ) return ACH_TIMEOUT;
+        } else
+            r = pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex );
     }
-
-    // note the read
-    shm->sync.state = ACH_CHAN_STATE_READING;
-    shm->sync.reader_active_cnt++;
-
-    pthread_mutex_unlock( & shm->sync.mutex );
     return ACH_OK;
 }
 
 static void rdlock( ach_header_t *shm ) {
     rdlock_wait( shm, NULL, NULL );
-    /*
-      pthread_mutex_lock( & shm->sync.mutex );
-      assert( ACH_CHAN_STATE_INIT != shm->sync.state );
-
-      // wait for the right state
-      switch( shm->sync.state ) {
-
-      case ACH_CHAN_STATE_RUN: // nothing's happening
-      shm->sync.state = ACH_CHAN_STATE_READING;
-      case ACH_CHAN_STATE_READING: break; // other readers
-
-      default: // wait for writers to finish
-      shm->sync.reader_wait_cnt++;
-      //loop over cond_wait() till writers are done
-      while(ACH_CHAN_STATE_WRITING == shm->sync.state ||
-      shm->sync.writer_wait_cnt > 0 ) {
-      int r = pthread_cond_wait( &shm->sync.read_cond,  &shm->sync.mutex );
-      assert( 0 == r );
-      }
-      shm->sync.reader_wait_cnt--;
-      shm->sync.state = ACH_CHAN_STATE_READING;
-      }
-
-      // note the read
-      shm->sync.reader_active_cnt++;
-
-      pthread_mutex_unlock( & shm->sync.mutex );
-    */
 }
 
 static void unrdlock( ach_header_t *shm ) {
-    //pthread_rwlock_unlock( & shm->rwlock );
-    pthread_mutex_lock( & shm->sync.mutex );
-    assert( ACH_CHAN_STATE_READING == shm->sync.state );
-
-    // dec read count
-    shm->sync.reader_active_cnt--;
-
-    // check state
-    if( 0 == shm->sync.reader_active_cnt ) {
-        shm->sync.state = ACH_CHAN_STATE_RUN;
-        // signal waiting writers
-        if( shm->sync.writer_wait_cnt > 0 ) {
-            pthread_cond_signal( & shm->sync.write_cond );
-        }
-    }
-
     pthread_mutex_unlock( & shm->sync.mutex );
 }
 
 static void wrlock( ach_header_t *shm ) {
-    //pthread_rwlock_wrlock( & shm->rwlock );
-    pthread_mutex_lock( & shm->sync.mutex );
-    assert( ACH_CHAN_STATE_INIT != shm->sync.state );
-    assert( ACH_CHAN_STATE_WRITING != shm->sync.state );
-
-    if( ACH_CHAN_STATE_RUN != shm->sync.state ) { //wait, if needed
-        shm->sync.writer_wait_cnt++;
-        do{
-            pthread_cond_wait( &shm->sync.write_cond, &shm->sync.mutex );
-        } while( ACH_CHAN_STATE_RUN != shm->sync.state );
-        shm->sync.writer_wait_cnt--;
-    }
-
-    // set channel state
-    shm->sync.state = ACH_CHAN_STATE_WRITING;
-
-    pthread_mutex_unlock( & shm->sync.mutex );
+    int r = pthread_mutex_lock( & shm->sync.mutex );
+    assert( 0 == r );
 }
 
 static void unwrlock( ach_header_t *shm ) {
-    //pthread_rwlock_unlock( & shm->rwlock );
-    pthread_mutex_lock( & shm->sync.mutex );
-    assert( ACH_CHAN_STATE_WRITING == shm->sync.state );
-    assert( 0 == shm->sync.reader_active_cnt );
-
-    shm->sync.state = ACH_CHAN_STATE_RUN;
-    if( shm->sync.writer_wait_cnt > 0 ) {
-        assert(0); //single writer
-    }else if (shm->sync.reader_wait_cnt > 0 ) {
-        // wake up sleeping readers
-        pthread_cond_broadcast( & shm->sync.read_cond );
-    }
+    pthread_cond_broadcast( & shm->sync.cond );
     pthread_mutex_unlock( & shm->sync.mutex );
 }
 
 int ach_publish(ach_channel_t *chan, char *channel_name,
-                size_t frame_cnt, size_t frame_size ) {
+                size_t frame_cnt, size_t frame_size,
+                ach_attr_t *attr) {
 
     ach_header_t *shm;
-    // open shm
-    if( ! channel_name_ok( channel_name ) )
-        return ACH_INVALID_NAME;
-    if( (chan->fd = fd_for_channel_name( channel_name )) < 0 )
-        return ACH_FAILED_SYSCALL;
-    chan->len = sizeof( ach_header_t) +
-        frame_cnt*sizeof( ach_index_t ) +
-        frame_cnt*frame_size +
-        3*sizeof(uint64_t);
-    if( (shm = mmap(NULL, chan->len, PROT_READ|PROT_WRITE, MAP_SHARED, chan->fd, 0) )
-        == MAP_FAILED )
-        return ACH_FAILED_SYSCALL;
 
-    // initialize shm
-    { //make file proper size
-        int r;
-        int i = 0;
-        do {
-            r = ftruncate( chan->fd, chan->len );
-        }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
-        if( -1 == r )
-            return ACH_FAILED_SYSCALL;
+    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
+    // open shm
+    {
+        chan->len = sizeof( ach_header_t) +
+            frame_cnt*sizeof( ach_index_t ) +
+            frame_cnt*frame_size +
+            3*sizeof(uint64_t);
+
+        if( attr && attr->map_anon ) {
+            shm = malloc( chan->len );
+            chan->fd = -1;
+        }else {
+            if( ! channel_name_ok( channel_name ) )
+                return ACH_INVALID_NAME;
+
+            if( (chan->fd = fd_for_channel_name( channel_name )) < 0 )
+                return ACH_FAILED_SYSCALL;
+
+            if( (shm = mmap(NULL, chan->len, PROT_READ|PROT_WRITE, MAP_SHARED, chan->fd, 0) )
+                == MAP_FAILED )
+                return ACH_FAILED_SYSCALL;
+
+            // initialize shm
+            { //make file proper size
+                int r;
+                int i = 0;
+                do {
+                    r = ftruncate( chan->fd, chan->len );
+                }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
+                if( -1 == r )
+                    return ACH_FAILED_SYSCALL;
+            }
+        }
+
+        bzero( shm, chan->len );
+        shm->len = chan->len;
     }
-    bzero( shm, chan->len );
-    shm->len = chan->len;
     /*{
     // initiale shm rwlock
     int r;
@@ -340,10 +256,10 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
     assert( 0 == r );
     }*/
     { //initialize synchronization
-        shm->sync.state = ACH_CHAN_STATE_INIT;
-        shm->sync.reader_active_cnt = 0;
-        shm->sync.reader_wait_cnt = 0;
-        shm->sync.writer_wait_cnt = 0;
+        //shm->sync.state = ACH_CHAN_STATE_INIT;
+        //shm->sync.reader_active_cnt = 0;
+        //shm->sync.reader_wait_cnt = 0;
+        //shm->sync.writer_wait_cnt = 0;
         { //initialize condition variables
             int r;
             pthread_condattr_t cond_attr;
@@ -352,9 +268,13 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
             assert( 0 == r );
 
-            r = pthread_cond_init( & shm->sync.write_cond, &cond_attr );
-            assert( 0 == r );
-            r = pthread_cond_init( & shm->sync.read_cond, &cond_attr );
+            //r = pthread_cond_init( & shm->sync.write_cond, &cond_attr );
+            //assert( 0 == r );
+            //r = pthread_cond_init( & shm->sync.read_cond, &cond_attr );
+            //assert( 0 == r );
+
+
+            r = pthread_cond_init( & shm->sync.cond, &cond_attr );
             assert( 0 == r );
 
             r = pthread_condattr_destroy( &cond_attr );
@@ -367,8 +287,12 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             assert( 0 == r );
             r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
             assert( 0 == r );
+            r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+            assert( 0 == r );
 
-            r = pthread_mutex_init(& shm->sync.mutex, &mutex_attr );
+            //r = pthread_mutex_init(& shm->sync.mutex, &mutex_attr );
+            //shm->sync.mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP ;
+
             assert( 0 == r );
 
             r = pthread_mutexattr_destroy( &mutex_attr );
@@ -394,39 +318,47 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
     chan->seq_num = 1;
     chan->next_index = 0;
 
-    shm->sync.state = ACH_CHAN_STATE_RUN;
+    //shm->sync.state = ACH_CHAN_STATE_RUN;
 
     return ACH_OK;
 }
 
-int ach_subscribe(ach_channel_t *chan, char *channel_name ) {
-    if( ! channel_name_ok( channel_name ) )
-        return ACH_INVALID_NAME;
+int ach_subscribe(ach_channel_t *chan, char *channel_name,
+                  ach_attr_t *attr) {
 
     ach_header_t * shm;
     size_t len;
-    int fd;
+    int fd = -1;
 
-    // open shm
-    if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
-    if( (fd = fd_for_channel_name( channel_name )) < 0 )
-        return ACH_FAILED_SYSCALL;
-    if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
-        == MAP_FAILED )
-        return ACH_FAILED_SYSCALL;
-    if( ACH_SHM_MAGIC_NUM != shm->magic )
-        return ACH_BAD_SHM_FILE;
+    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
 
-    // calculate mmaping size
-    len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+    if( attr && attr->map_anon ) {
+        shm = attr->shm;
+        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+    }else {
+        if( ! channel_name_ok( channel_name ) )
+            return ACH_INVALID_NAME;
+        // open shm
+        if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
+        if( (fd = fd_for_channel_name( channel_name )) < 0 )
+            return ACH_FAILED_SYSCALL;
+        if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            == MAP_FAILED )
+            return ACH_FAILED_SYSCALL;
+        if( ACH_SHM_MAGIC_NUM != shm->magic )
+            return ACH_BAD_SHM_FILE;
 
-    // remap
-    if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
-        return ACH_FAILED_SYSCALL;
+        // calculate mmaping size
+        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
 
-    if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
-        == MAP_FAILED )
-        return ACH_FAILED_SYSCALL;
+        // remap
+        if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
+            return ACH_FAILED_SYSCALL;
+
+        if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            == MAP_FAILED )
+            return ACH_FAILED_SYSCALL;
+    }
     assert( ACH_SHM_MAGIC_NUM == shm->magic );
 
     // initialize struct
@@ -485,41 +417,85 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
 }
 
 
-int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
-                 size_t *size_written) {
+static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+                    const struct timespec *abstime, int last, int wait ) {
+    //FIXME: somehow gives missed frame on first get...
     ach_header_t *shm = chan->shm;
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     assert( ACH_SHM_MAGIC_NUM == shm->magic );
     assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
     assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
-    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    size_t next_index = chan->next_index;
-
     // take read lock
-    //pthread_rwlock_rdlock( & shm->rwlock );
-    rdlock( shm );
+    int r;
+    if( wait ) {
+        if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
+            return r;
+    } else
+        rdlock( shm );
 
-    // get the next frame
+    // get frame
+    size_t next_index;
     int missed_frame = 0;
-    if( 0 == index_ar[next_index].size ||
-        index_ar[next_index].seq_num != chan->seq_num + 1 ) {
-        // we've missed a frame, find the oldest
-        missed_frame = 1;
-        next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+    if( last ) {
+        next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+    } else {
+        next_index = chan->next_index;
+        if( 0 == index_ar[next_index].size ||
+            index_ar[next_index].seq_num != chan->seq_num + 1 ) {
+            // we've missed a frame, find the oldest
+            missed_frame = 1;
+            next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+        }
     }
-    int retval = ach_get_from_offset(chan, next_index, buf, size, size_written);
+    int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
 
     // release read lock
-    //pthread_rwlock_unlock( & shm->rwlock );
     unrdlock( shm );
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+
+}
+
+int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
+                 size_t *size_written) {
+    return ach_get( chan, buf, size, size_written, NULL, 0, 0 );
+    /*
+      ach_header_t *shm = chan->shm;
+      assert( ACH_SHM_MAGIC_NUM == shm->magic );
+      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
+      ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+      size_t next_index = chan->next_index;
+
+      // take read lock
+      //pthread_rwlock_rdlock( & shm->rwlock );
+      rdlock( shm );
+
+      // get the next frame
+      int missed_frame = 0;
+      if( 0 == index_ar[next_index].size ||
+      index_ar[next_index].seq_num != chan->seq_num + 1 ) {
+      // we've missed a frame, find the oldest
+      missed_frame = 1;
+      next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+      }
+      int retval = ach_get_from_offset(chan, next_index, buf, size, size_written);
+
+      // release read lock
+      //pthread_rwlock_unlock( & shm->rwlock );
+      unrdlock( shm );
+
+      return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+    */
 }
 
 int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
 
-    return ach_wait_last( chan, buf, size, size_written, NULL );
+    return ach_get( chan, buf, size, size_written, NULL, 1, 0 );
     /*ach_header_t *shm = chan->shm;
       assert( ACH_SHM_MAGIC_NUM == shm->magic );
       assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
@@ -545,31 +521,71 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writt
 
 int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
                   const struct timespec *abstime) {
-    ach_header_t *shm = chan->shm;
-    assert( ACH_SHM_MAGIC_NUM == shm->magic );
-    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+    return ach_get( chan, buf, size, size_written, abstime, 1, 1 );
+    /*
+      ach_header_t *shm = chan->shm;
+      assert( ACH_SHM_MAGIC_NUM == shm->magic );
+      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
-    // take read lock
-    //pthread_rwlock_rdlock( & shm->rwlock );
-    if( abstime ) {
-        int r;
-        if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
-            return r;
-    } else
-        rdlock( shm );
+      // take read lock
+      {
+      int r;
+      if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
+      return r;
+      }
 
-    // get the latest frame
-    size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-    int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
+      // get the latest frame
+      size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+      int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
 
-    // release read lock
-    //pthread_rwlock_unlock( & shm->rwlock );
-    unrdlock( shm );
+      // release read lock
+      unrdlock( shm );
 
-    return retval;
+      return retval;
+    */
 }
+
+
+
+int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+                  const struct timespec *abstime) {
+    return ach_get( chan, buf, size, size_written, abstime, 0, 1 );
+    /*
+      ach_header_t *shm = chan->shm;
+      ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+      assert( ACH_SHM_MAGIC_NUM == shm->magic );
+      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
+      // take read lock
+      {
+      int r;
+      if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
+      return r;
+      }
+
+      // find next
+      // FIXME: copy/pasted from get_next, should factor out
+      size_t next_index = chan->next_index;
+      int missed_frame = 0;
+      if( 0 == index_ar[next_index].size ||
+      index_ar[next_index].seq_num != chan->seq_num + 1 ) {
+      // we've missed a frame, find the oldest
+      missed_frame = 1;
+      next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+      }
+      int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
+
+      // release read lock
+      unrdlock( shm );
+
+      return retval;
+    */
+}
+
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
@@ -581,7 +597,6 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     if( len > shm->data_size ) return ACH_OVERFLOW;
 
     // take write lock
-    //r = pthread_rwlock_wrlock( & shm->rwlock);
     wrlock( shm );
 
     // find next index entry
@@ -632,8 +647,6 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     assert( shm->data_free <= shm->data_size );
 
     // release write lock
-    //r = pthread_rwlock_unlock( & shm->rwlock );
-    //assert( 0 == r );
     unwrlock( shm );
     return ACH_OK;
 }
@@ -647,23 +660,27 @@ int ach_close(ach_channel_t *chan) {
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
 
     int r;
-    // remove mapping
-    r = munmap(chan->shm, chan->len);
-    if( 0 != r ){
-        DEBUGF("Failed to munmap channel\n");
-        return ACH_FAILED_SYSCALL;
-    }
-    chan->shm = NULL;
+    if( chan->attr.map_anon ) {
+        free( chan->shm );
+    } else {
+        // remove mapping
+        r = munmap(chan->shm, chan->len);
+        if( 0 != r ){
+            DEBUGF("Failed to munmap channel\n");
+            return ACH_FAILED_SYSCALL;
+        }
+        chan->shm = NULL;
 
-    // close file
-    int i = 0;
-    do {
-        IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
-        r = close(chan->fd);
-    }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
-    if( -1 == r ){
-        DEBUGF("Failed to close() channel fd\n");
-        return ACH_FAILED_SYSCALL;
+        // close file
+        int i = 0;
+        do {
+            IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
+            r = close(chan->fd);
+        }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
+        if( -1 == r ){
+            DEBUGF("Failed to close() channel fd\n");
+            return ACH_FAILED_SYSCALL;
+        }
     }
 
     return ACH_OK;
@@ -682,3 +699,9 @@ void ach_dump( ach_header_t *shm ) {
     fprintf(stderr, "index guard: %llX\n", * ACH_SHM_GUARD_INDEX(shm) );
     fprintf(stderr, "data guard:  %llX\n", * ACH_SHM_GUARD_DATA(shm) );
 }
+
+void ach_attr_init( ach_attr_t *attr ) {
+    attr->shm = NULL;
+    attr->map_anon = 0;
+}
+
