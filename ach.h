@@ -134,7 +134,8 @@ extern "C" {
         ACH_FAILED_SYSCALL, ///< a system call failed
         ACH_STALE_FRAMES,          ///< no new data in the channel
         ACH_MISSED_FRAME,   ///< we missed the next frame
-        ACH_TIMEOUT         ///< timeout before frame received
+        ACH_TIMEOUT,         ///< timeout before frame received
+        ACH_CLOSED
     } ach_status_t;
 
     /// Whether a channel is opened to publish or subscribe
@@ -147,8 +148,9 @@ extern "C" {
     typedef enum {
         ACH_CHAN_STATE_INIT,    ///< channel is initializing
         ACH_CHAN_STATE_RUN,     ///< channel is uncontended
-        ACH_CHAN_STATE_READING, ///< readers using channel
-        ACH_CHAN_STATE_WRITING, ///< writer modifying channel
+        //ACH_CHAN_STATE_READING, ///< readers using channel
+        //ACH_CHAN_STATE_WRITING, ///< writer modifying channel
+        ACH_CHAN_STATE_CLOSED ///< channel has been closed
     } ach_chan_state_t;
 
     /** Header for shared memory area.
@@ -162,9 +164,9 @@ extern "C" {
         size_t data_free;        ///< number of free data bytes
         size_t index_head;       ///< index into index array of first unused index entry
         size_t index_free;       ///< number of unused index entries
+        int state;  ///< state of the channel (ie open/closed)
         //pthread_rwlock_t rwlock; ///< the lock
         struct /* anonymous structure */ {
-            //int state;  ///< synchronization state of the channel, type ach_chan_state_t
             //unsigned int reader_active_cnt; ///< number of readers currently reading
             /** number of readers waiting to read. includes both blocked by
                 lock and blocking while waiting for new data */
@@ -206,6 +208,7 @@ extern "C" {
         uint64_t seq_num;  ///<last sequence number read or written
         size_t next_index; ///< next index entry to try to use
         ach_attr_t attr;
+        int mode; ///< whether channel was opened for publish or subscribe
     } ach_channel_t;
 
 
