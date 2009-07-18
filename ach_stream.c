@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4  -*- */
 /*
  * Copyright (c) 2009, Neil T. Dantam
  * All rights reserved.
