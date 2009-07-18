@@ -9,7 +9,7 @@ LIBFILES := libach.so
 
 DOXPATH := $(HOME)/prism/public_html/dox
 
-default: $(LIBFILES) test_sub test_pub
+default: $(LIBFILES) test_sub test_pub ach_stream.o
 
 include /usr/share/make-common/common.1.mk
 

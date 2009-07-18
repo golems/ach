@@ -35,10 +35,12 @@
 
 /** \file ach.h
  *  \author Neil T. Dantam
- *  \author Jon Scholz
- *  \author Pushkar Kolhe
- *  \author Jon Olson
- *  \author Venkata Subramania Mahalingam
+ *
+ *  Moral Support
+ *    Jon Scholz
+ *    Pushkar Kolhe
+ *    Jon Olson
+ *    Venkata Subramania Mahalingam
  */
 
 
@@ -99,6 +101,7 @@ extern "C" {
         This is just to be used as a check.
     */
 #define ACH_SHM_MAGIC_NUM 0xb07511f3
+
 
     /** A separator between different shm sections.
 

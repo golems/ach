@@ -35,7 +35,9 @@
 
 /** \file ach.c
  *  \author Neil T. Dantam
- *  \author Jon Scholz
+ *
+ *  Moral Support
+ *    Jon Scholz
  */
 
 #define _GNU_SOURCE
