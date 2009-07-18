@@ -60,14 +60,13 @@
 #include <string.h>
 
 
-
-
-
 int main(int argc, char **argv) {
+    (void) argc;
+    (void) argv;
     ach_channel_t chan;
     int r;
 
-    r = ach_publish( &chan, "ach-test", 10, sizeof(uint16_t) );
+    r = ach_publish( &chan, "ach-test", 10, sizeof(uint16_t), NULL );
     fprintf(stderr, "Publish: %s\n", ach_result_to_string( r ) );
 
     //fprintf(stderr, "\nInitial:\n----------\n");
@@ -81,7 +80,7 @@ int main(int argc, char **argv) {
     }
 
     //fprintf(stderr, "\nPut:\n----------\n");
-    //ach_dump( chan.shm );
+    ach_dump( chan.shm );
     //fprintf(stderr, "\n");
 
 
