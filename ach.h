@@ -1,3 +1,4 @@
+/* -*- mode: C; c-basic-offset: 4  -*- */
 /*
  * Copyright (c) 2008, Georgia Tech Research Corporation
  * All rights reserved.
@@ -163,15 +164,18 @@ extern "C" {
         size_t index_free;       ///< number of unused index entries
         //pthread_rwlock_t rwlock; ///< the lock
         struct /* anonymous structure */ {
-            int state;  ///< synchronization state of the channel, type ach_chan_state_t
-            unsigned int reader_active_cnt; ///< number of readers currently reading
+            //int state;  ///< synchronization state of the channel, type ach_chan_state_t
+            //unsigned int reader_active_cnt; ///< number of readers currently reading
             /** number of readers waiting to read. includes both blocked by
                 lock and blocking while waiting for new data */
-            unsigned int reader_wait_cnt;
-            unsigned int writer_wait_cnt; ///< number of writers waiting to write
+            //unsigned int reader_wait_cnt;
+            //unsigned int writer_wait_cnt; ///< number of writers waiting to write
+            //unsigned int reader_cnt;
+            //unsigned int writer_cnt;
             pthread_mutex_t mutex;     ///< mutex for condition variables
-            pthread_cond_t write_cond; ///< condition variable writers wait on
-            pthread_cond_t read_cond;  ///< condition variable readers wait on
+            //pthread_cond_t write_cond; ///< condition variable writers wait on
+            //pthread_cond_t read_cond;  ///< condition variable readers wait on
+            pthread_cond_t cond; ///< condition variable
         } sync; ///< variables for synchronization
         // should force our alignment to 8-bytes...
         uint64_t last_seq;       ///< last sequence number written
@@ -186,6 +190,13 @@ extern "C" {
     } ach_index_t ;
 
 
+    /** Attributes to pass to ach pub/sub */
+    typedef struct {
+        int map_anon; ///< anonymous channel (put it in process heap, not shm)
+        void *shm;
+    } ach_attr_t;
+
+
     /** Descriptor for shared memory area
      */
     typedef struct {
@@ -194,7 +205,9 @@ extern "C" {
         int fd;            ///< file descriptor of mmap'ed file
         uint64_t seq_num;  ///<last sequence number read or written
         size_t next_index; ///< next index entry to try to use
+        ach_attr_t attr;
     } ach_channel_t;
+
 
     /// Gets pointer to guard uint64 following the header
 #define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))
@@ -214,6 +227,8 @@ extern "C" {
     ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
 
 
+    void ach_attr_init( ach_attr_t *attr );
+
     /** Establishes a new channel.
 
         \post A shared memory area is created for the channel and chan is initialized for writing
@@ -232,7 +247,8 @@ extern "C" {
         errno ma or may not be set.
     */
     int ach_publish(ach_channel_t *chan, char *channel_name,
-                    size_t frame_cnt, size_t frame_size);
+                    size_t frame_cnt, size_t frame_size,
+                    ach_attr_t *attr);
 
     /** Subscribes to a channel.
 
@@ -245,7 +261,8 @@ extern "C" {
         if the shared memory file is broken or otherwise invalid.  In
         that case, errno may or may not be set.
     */
-    int ach_subscribe(ach_channel_t *chan, char *channel_name);
+    int ach_subscribe(ach_channel_t *chan, char *channel_name,
+                      ach_attr_t *attr);
 
 
     /** Pulls the next message from a channel following the most recent
@@ -330,6 +347,12 @@ extern "C" {
     */
     void ach_dump( ach_header_t *shm);
 
+
+    /** Writes message pointed to by but to stream fd */
+    int ach_stream_write_msg( int fd, char *buf, int cnt);
+
+    int ach_stream_read_msg_size( int fd, int *cnt);
+    int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size);
 
 #ifdef __cplusplus
 }
