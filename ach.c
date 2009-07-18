@@ -88,6 +88,7 @@ char *ach_result_to_string(ach_status_t result) {
     case ACH_STALE_FRAMES: return "ACH_STALE_FRAMES";
     case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
     case ACH_TIMEOUT: return "ACH_TIMEOUT";
+    case ACH_CLOSED: return "ACH_CLOSED";
     }
     return "UNKNOWN";
 
@@ -165,12 +166,22 @@ static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
     int r;
     r = pthread_mutex_lock( & shm->sync.mutex );
     assert( 0 == r );
+    // if chan is passed, we wait for new data
+    // otherwise just return holding the lock
     while( chan &&
            chan->seq_num == shm->last_seq ) {
-        if( abstime ) {
+        if( ACH_CHAN_STATE_CLOSED == shm->state ) {
+            pthread_mutex_unlock( &shm->sync.mutex );
+            return ACH_CLOSED;
+        }
+        if( abstime ) { // timed wait
             r = pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime );
-            if( ETIMEDOUT == r ) return ACH_TIMEOUT;
-        } else
+            // check for timeout
+            if( ETIMEDOUT == r ){
+                pthread_mutex_unlock( &shm->sync.mutex );
+                return ACH_TIMEOUT;
+            }
+        } else // wait forever
             r = pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex );
     }
     return ACH_OK;
@@ -236,30 +247,9 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
 
         bzero( shm, chan->len );
         shm->len = chan->len;
+        shm->state = ACH_CHAN_STATE_INIT;
     }
-    /*{
-    // initiale shm rwlock
-    int r;
-    pthread_rwlockattr_t attr;
-    r = pthread_rwlockattr_init( &attr );
-    assert( 0 == r );
-
-    r = pthread_rwlockattr_setpshared( &attr, PTHREAD_PROCESS_SHARED );
-    assert( 0 == r );
-
-    if( pthread_rwlock_init( &(shm->rwlock), &attr ) ) {
-    r = pthread_rwlockattr_destroy( &attr );
-    assert( 0 == r );
-    return ACH_FAILED_SYSCALL;
-    }
-    r = pthread_rwlockattr_destroy( &attr );
-    assert( 0 == r );
-    }*/
     { //initialize synchronization
-        //shm->sync.state = ACH_CHAN_STATE_INIT;
-        //shm->sync.reader_active_cnt = 0;
-        //shm->sync.reader_wait_cnt = 0;
-        //shm->sync.writer_wait_cnt = 0;
         { //initialize condition variables
             int r;
             pthread_condattr_t cond_attr;
@@ -267,12 +257,6 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             assert( 0 == r );
             r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
             assert( 0 == r );
-
-            //r = pthread_cond_init( & shm->sync.write_cond, &cond_attr );
-            //assert( 0 == r );
-            //r = pthread_cond_init( & shm->sync.read_cond, &cond_attr );
-            //assert( 0 == r );
-
 
             r = pthread_cond_init( & shm->sync.cond, &cond_attr );
             assert( 0 == r );
@@ -289,9 +273,6 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             assert( 0 == r );
             r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
             assert( 0 == r );
-
-            //r = pthread_mutex_init(& shm->sync.mutex, &mutex_attr );
-            //shm->sync.mutex = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP ;
 
             assert( 0 == r );
 
@@ -313,10 +294,13 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
     *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
     *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
     shm->magic = ACH_SHM_MAGIC_NUM;
+    shm->state = ACH_CHAN_STATE_RUN;
+
     // initialize channel struct
     chan->shm = shm;
     chan->seq_num = 1;
     chan->next_index = 0;
+    chan->mode = ACH_MODE_PUBLISH;
 
     //shm->sync.state = ACH_CHAN_STATE_RUN;
 
@@ -367,6 +351,7 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name,
     chan->shm = shm;
     chan->seq_num = 0;
     chan->next_index = 1;
+    chan->mode = ACH_MODE_SUBSCRIBE;
 
     return ACH_OK;
 }
@@ -396,7 +381,9 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
         // no new data
         assert( chan->seq_num == index->seq_num );
         *size_written = 0;
-        return ACH_STALE_FRAMES;
+        if( ACH_CHAN_STATE_CLOSED == shm->state )
+            return ACH_CLOSED;
+        else return ACH_STALE_FRAMES;
     }else {
         //good to copy
         uint8_t *data_buf = ACH_SHM_DATA(shm);
@@ -426,6 +413,7 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_wr
     assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
     assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+    assert( ACH_MODE_SUBSCRIBE == chan->mode );
 
     // take read lock
     int r;
@@ -461,90 +449,17 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_wr
 int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
                  size_t *size_written) {
     return ach_get( chan, buf, size, size_written, NULL, 0, 0 );
-    /*
-      ach_header_t *shm = chan->shm;
-      assert( ACH_SHM_MAGIC_NUM == shm->magic );
-      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-
-      ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-      size_t next_index = chan->next_index;
-
-      // take read lock
-      //pthread_rwlock_rdlock( & shm->rwlock );
-      rdlock( shm );
-
-      // get the next frame
-      int missed_frame = 0;
-      if( 0 == index_ar[next_index].size ||
-      index_ar[next_index].seq_num != chan->seq_num + 1 ) {
-      // we've missed a frame, find the oldest
-      missed_frame = 1;
-      next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
-      }
-      int retval = ach_get_from_offset(chan, next_index, buf, size, size_written);
-
-      // release read lock
-      //pthread_rwlock_unlock( & shm->rwlock );
-      unrdlock( shm );
-
-      return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
-    */
 }
 
 int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
 
     return ach_get( chan, buf, size, size_written, NULL, 1, 0 );
-    /*ach_header_t *shm = chan->shm;
-      assert( ACH_SHM_MAGIC_NUM == shm->magic );
-      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-
-      // take read lock
-      //pthread_rwlock_rdlock( & shm->rwlock );
-      rdlock( shm );
-
-      // get the latest frame
-      size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-      int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
-
-      // release read lock
-      //pthread_rwlock_unlock( & shm->rwlock );
-      unrdlock( shm );
-
-      return retval;
-    */
 }
 
 
 int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
                   const struct timespec *abstime) {
     return ach_get( chan, buf, size, size_written, abstime, 1, 1 );
-    /*
-      ach_header_t *shm = chan->shm;
-      assert( ACH_SHM_MAGIC_NUM == shm->magic );
-      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-
-      // take read lock
-      {
-      int r;
-      if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
-      return r;
-      }
-
-      // get the latest frame
-      size_t next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-      int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
-
-      // release read lock
-      unrdlock( shm );
-
-      return retval;
-    */
 }
 
 
@@ -552,42 +467,12 @@ int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_writ
 int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
                   const struct timespec *abstime) {
     return ach_get( chan, buf, size, size_written, abstime, 0, 1 );
-    /*
-      ach_header_t *shm = chan->shm;
-      ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-      assert( ACH_SHM_MAGIC_NUM == shm->magic );
-      assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-      assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-      assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-
-      // take read lock
-      {
-      int r;
-      if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
-      return r;
-      }
-
-      // find next
-      // FIXME: copy/pasted from get_next, should factor out
-      size_t next_index = chan->next_index;
-      int missed_frame = 0;
-      if( 0 == index_ar[next_index].size ||
-      index_ar[next_index].seq_num != chan->seq_num + 1 ) {
-      // we've missed a frame, find the oldest
-      missed_frame = 1;
-      next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
-      }
-      int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
-
-      // release read lock
-      unrdlock( shm );
-
-      return retval;
-    */
 }
 
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
+
+    assert( ACH_MODE_PUBLISH == chan->mode );
 
     ach_header_t *shm = chan->shm;
 
@@ -660,8 +545,18 @@ int ach_close(ach_channel_t *chan) {
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
 
     int r;
+    //fprintf(stderr, "Closing\n");
+    // note the close in the channel
+    if( ACH_MODE_PUBLISH == chan->mode ) {
+        //fprintf(stderr, "Marking close\n");
+        wrlock( chan->shm );
+        chan->shm->state = ACH_CHAN_STATE_CLOSED;
+        unwrlock( chan->shm );
+    }
     if( chan->attr.map_anon ) {
-        free( chan->shm );
+        // free heap channel
+        if (ACH_MODE_SUBSCRIBE == chan->mode )
+            free( chan->shm );
     } else {
         // remove mapping
         r = munmap(chan->shm, chan->len);
