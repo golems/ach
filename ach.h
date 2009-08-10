@@ -132,9 +132,10 @@ extern "C" {
         ACH_INVALID_NAME,   ///< invalid channel name
         ACH_BAD_SHM_FILE,   ///< shared memory file didn't look right
         ACH_FAILED_SYSCALL, ///< a system call failed
-        ACH_STALE_FRAMES,          ///< no new data in the channel
+        ACH_STALE_FRAMES,   ///< no new data in the channel
         ACH_MISSED_FRAME,   ///< we missed the next frame
-        ACH_TIMEOUT,         ///< timeout before frame received
+        ACH_TIMEOUT,        ///< timeout before frame received
+        ACH_EXIST,          ///< shm already exists
         ACH_CLOSED
     } ach_status_t;
 
@@ -165,6 +166,8 @@ extern "C" {
         size_t index_head;       ///< index into index array of first unused index entry
         size_t index_free;       ///< number of unused index entries
         int state;  ///< state of the channel (ie open/closed)
+        int refcount; ///< number of open handles to channel
+        int anon; ///< is channel in the heap?
         //pthread_rwlock_t rwlock; ///< the lock
         struct /* anonymous structure */ {
             //unsigned int reader_active_cnt; ///< number of readers currently reading
@@ -197,6 +200,15 @@ extern "C" {
         int map_anon; ///< anonymous channel (put it in process heap, not shm)
         void *shm;
     } ach_attr_t;
+
+
+
+    /** Attributes to pass to ach_create  */
+    typedef struct {
+        int truncate; ///< remove and recreate an existing shm file
+        int map_anon; ///< allocate channel in heap, rather than shm
+        ach_header_t *shm; ///< pointer to channel, set out output of create iff map_anon
+    } ach_create_attr_t;
 
 
     /** Descriptor for shared memory area
@@ -232,6 +244,22 @@ extern "C" {
 
     void ach_attr_init( ach_attr_t *attr );
 
+    void ach_create_attr_init( ach_attr_t *attr );
+
+    /** Creates a new channel
+        \param channel_name Name of the channel
+        \param frame_cnt number of frames to hold in circular buffer
+        \param frame_size nominal size of each frame
+    */
+    int ach_create( char *channel_name,
+                    size_t frame_cnt, size_t frame_size,
+                    ach_create_attr_t *attr);
+
+    /** Opens a handle to channel.
+     */
+    int ach_open(ach_channel_t *chan, char *channel_name,
+                 ach_attr_t *attr);
+
     /** Establishes a new channel.
 
         \post A shared memory area is created for the channel and chan is initialized for writing
@@ -242,8 +270,6 @@ extern "C" {
 
         \param chan The channel structure to initialize
         \param channel_name Name of the channel
-        \param frame_cnt number of frames to hold in circular buffer
-        \param frame_size nominal size of each frame
 
         \return ACH_OK on success.  ACH_INVALID_NAME is the channel name
         is invalid.  ACH_SYSCALL if a syscall fails.  In that case,
