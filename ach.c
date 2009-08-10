@@ -89,6 +89,7 @@ char *ach_result_to_string(ach_status_t result) {
     case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
     case ACH_TIMEOUT: return "ACH_TIMEOUT";
     case ACH_CLOSED: return "ACH_CLOSED";
+    case ACH_EXIST: return "ACH_EXIST";
     }
     return "UNKNOWN";
 
@@ -120,7 +121,7 @@ static int channel_name_ok( char *name ) {
 */
 static int fd_for_channel_name( char *name ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
-    strncpy( shm_name, "/", 2 );
+    strncpy( shm_name, "/achshm-", 9 );
     strncat( shm_name, name, ACH_CHAN_NAME_MAX );
     int fd;
     int i = 0;
@@ -203,6 +204,172 @@ static void wrlock( ach_header_t *shm ) {
 static void unwrlock( ach_header_t *shm ) {
     pthread_cond_broadcast( & shm->sync.cond );
     pthread_mutex_unlock( & shm->sync.mutex );
+}
+
+
+int ach_create( char *channel_name,
+                size_t frame_cnt, size_t frame_size,
+                ach_create_attr_t *attr) {
+    ach_header_t *shm;
+    int fd;
+    size_t len;
+    //fixme: truncate
+    // open shm
+    {
+        len = sizeof( ach_header_t) +
+            frame_cnt*sizeof( ach_index_t ) +
+            frame_cnt*frame_size +
+            3*sizeof(uint64_t);
+
+        if( attr && attr->map_anon ) {
+            // anonymous (heap)
+            shm = malloc( len );
+            fd = -1;
+        }else {
+            // shm
+            if( ! channel_name_ok( channel_name ) )
+                return ACH_INVALID_NAME;
+
+            if( (fd = fd_for_channel_name( channel_name )) < 0 )
+                return ACH_FAILED_SYSCALL;
+
+            if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+                == MAP_FAILED )
+                return ACH_FAILED_SYSCALL;
+
+            // initialize shm
+            { //make file proper size
+                int r;
+                int i = 0;
+                do {
+                    r = ftruncate( fd, len );
+                }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
+                if( -1 == r )
+                    return ACH_FAILED_SYSCALL;
+            }
+        }
+
+        bzero( shm, len );
+        shm->len = len;
+        shm->state = ACH_CHAN_STATE_INIT;
+    }
+
+    { //initialize synchronization
+        { //initialize condition variables
+            int r;
+            pthread_condattr_t cond_attr;
+            r = pthread_condattr_init( &cond_attr );
+            assert( 0 == r );
+            r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
+            assert( 0 == r );
+
+            r = pthread_cond_init( & shm->sync.cond, &cond_attr );
+            assert( 0 == r );
+
+            r = pthread_condattr_destroy( &cond_attr );
+            assert( 0 == r );
+        }
+        { //initialize mutex
+            int r;
+            pthread_mutexattr_t mutex_attr;
+            r = pthread_mutexattr_init( &mutex_attr );
+            assert( 0 == r );
+            r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
+            assert( 0 == r );
+            r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+            assert( 0 == r );
+
+            assert( 0 == r );
+
+            r = pthread_mutexattr_destroy( &mutex_attr );
+            assert( 0 == r );
+        }
+    }
+    shm->index_cnt = frame_cnt;
+    shm->index_head = 0;
+    shm->index_free = frame_cnt;
+    shm->data_head = 0;
+    shm->data_free = frame_cnt * frame_size;
+    shm->data_size = frame_cnt * frame_size;
+    assert( sizeof( ach_header_t ) +
+            shm->index_free * sizeof( ach_index_t ) +
+            shm->data_free + 3*sizeof(uint64_t) ==  len );
+
+    *ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
+    *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
+    *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
+    shm->magic = ACH_SHM_MAGIC_NUM;
+    shm->state = ACH_CHAN_STATE_RUN;
+
+    if( attr && attr->map_anon ) {
+        attr->shm = shm;
+    } else {
+        int r;
+        // remove mapping
+        r = munmap(shm, len);
+        if( 0 != r ){
+            DEBUGF("Failed to munmap channel\n");
+            return ACH_FAILED_SYSCALL;
+        }
+        // close file
+        int i = 0;
+        do {
+            IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
+            r = close(fd);
+        }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
+        if( -1 == r ){
+            DEBUGF("Failed to close() channel fd\n");
+            return ACH_FAILED_SYSCALL;
+        }
+    }
+    return ACH_OK;
+}
+
+int ach_open(ach_channel_t *chan, char *channel_name,
+             ach_attr_t *attr ) {
+    ach_header_t * shm;
+    size_t len;
+    int fd = -1;
+
+    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
+
+    if( attr && attr->map_anon ) {
+        shm = attr->shm;
+        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+    }else {
+        if( ! channel_name_ok( channel_name ) )
+            return ACH_INVALID_NAME;
+        // open shm
+        if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
+        if( (fd = fd_for_channel_name( channel_name )) < 0 )
+            return ACH_FAILED_SYSCALL;
+        if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            == MAP_FAILED )
+            return ACH_FAILED_SYSCALL;
+        if( ACH_SHM_MAGIC_NUM != shm->magic )
+            return ACH_BAD_SHM_FILE;
+
+        // calculate mmaping size
+        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+
+        // remap
+        if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
+            return ACH_FAILED_SYSCALL;
+
+        if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            == MAP_FAILED )
+            return ACH_FAILED_SYSCALL;
+    }
+    assert( ACH_SHM_MAGIC_NUM == shm->magic );
+
+    // initialize struct
+    chan->fd = fd;
+    chan->len = len;
+    chan->shm = shm;
+    chan->seq_num = 0;
+    chan->next_index = 1;
+
+    return ACH_OK;
 }
 
 int ach_publish(ach_channel_t *chan, char *channel_name,
