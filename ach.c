@@ -168,6 +168,11 @@ static int fd_for_channel_name( char *name, int oflag ) {
  *  \bug synchronization should be robust against processes terminating
  *  \bug our {rd,wr}lock functions should handle timeouts
  *
+ * Mostly Lock Free Synchronization:
+ * - Have a single word atomic sync variable
+ * - High order bits are counts of writers, lower bits are counts of readers
+ * - Fast path twiddles the counts.  Slow path deals with a mutex and cond-var.
+ * - downside: maybe no way for priority inheritance to happen...
  */
 
 

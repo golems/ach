@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20090718
+VERSION := 0.20090810
 
 LIBFILES := libach.so
 
@@ -15,7 +15,7 @@ default: $(LIBFILES) $(BINFILES) test_sub test_pub ach_stream.o
 
 include /usr/share/make-common/common.1.mk
 
-CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC
+CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\" -I$(INCLUDEDIR)
 
 $(call LINKLIB, ach, ach.o)
 

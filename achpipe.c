@@ -89,7 +89,7 @@ static struct argp_option options[] = {
 /// argp parsing function
 static int parse_opt( int key, char *arg, struct argp_state *state);
 /// argp program version
-const char *argp_program_version = "achproxy-0";
+const char *argp_program_version = "achpipe-" ACH_VERSION_STRING;
 /// argp program arguments documention
 static char args_doc[] = "[-p|-s] channel";
 /// argp program doc line
