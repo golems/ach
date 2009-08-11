@@ -249,7 +249,7 @@ int ach_create( char *channel_name,
             }
         }
 
-        bzero( shm, len );
+        memset( shm, 0, len );
         shm->len = len;
         shm->state = ACH_CHAN_STATE_INIT;
     }
@@ -412,7 +412,7 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             }
         }
 
-        bzero( shm, chan->len );
+        memset( shm, 0, chan->len );
         shm->len = chan->len;
         shm->state = ACH_CHAN_STATE_INIT;
     }
@@ -660,7 +660,7 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     if( 0 == shm->index_free ) {
         shm->data_free += index->size;
         shm->index_free ++;
-        bzero( index, sizeof( ach_index_t ) );
+        memset( index, 0, sizeof( ach_index_t ) );
     }
 
     // clear overlapping entries
@@ -673,7 +673,7 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
         shm->data_free += index_ar[i].size;
         shm->index_free ++;
-        bzero( index_ar + i, sizeof( ach_index_t ) );
+        memset( index_ar + i, 0, sizeof( ach_index_t ) );
     }
 
     // copy buffer
