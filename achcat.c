@@ -86,7 +86,7 @@ const char *argp_program_version = "achcat-0";
 /// argp program arguments documention
 static char args_doc[] = "[-p|-s] channel";
 /// argp program doc line
-static char doc[] = "copy ach frames to/from stdio";
+static char doc[] = "Copies ach frames as string lines to/from stdio.  Mostly intended as an ach testing tool.";
 /// argp object
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
@@ -118,7 +118,7 @@ void *publish_loop(void* pub) {
 }
 
 int pub_chan( ach_channel_t *chan, ach_attr_t *attr ) {
-    int r = ach_publish( chan, opt_chan_name, opt_msg_cnt, opt_msg_size, attr );
+    int r = ach_open( chan, opt_chan_name, attr );
     if( ACH_OK != r ) return 1;
     return 0;
 }
@@ -145,7 +145,7 @@ int publish( ach_channel_t *chan) {
 }
 
 int sub_chan( ach_channel_t *chan, ach_attr_t *attr ) {
-    int r = ach_subscribe( chan, opt_chan_name, attr );
+    int r = ach_open( chan, opt_chan_name, attr );
     if( r != ACH_OK ) return 1;
     return 0;
 }
@@ -205,11 +205,11 @@ int main( int argc, char **argv ) {
         int r;
         ach_attr_t attr;
         ach_attr_init( &attr );
-        attr.map_anon = opt_pub && opt_sub;
+        //attr.map_anon = opt_pub && opt_sub;
         if( opt_pub ) {
             r = pub_chan( &pub, &attr );
             assert( 0 == r );
-            attr.shm = pub.shm;
+            //attr.shm = pub.shm;
         }
         if( opt_sub ) {
             r = sub_chan( &sub, &attr );

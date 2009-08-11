@@ -580,7 +580,8 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_wr
     assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
     assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-    assert( ACH_MODE_SUBSCRIBE == chan->mode );
+    // not doing this mode stuff anymore
+    //assert( ACH_MODE_SUBSCRIBE == chan->mode );
 
     // take read lock
     int r;
@@ -639,7 +640,8 @@ int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_writ
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
-    assert( ACH_MODE_PUBLISH == chan->mode );
+    // not doing this mode stuff
+    //assert( ACH_MODE_PUBLISH == chan->mode );
 
     ach_header_t *shm = chan->shm;
 
