@@ -135,7 +135,8 @@ extern "C" {
         ACH_STALE_FRAMES,   ///< no new data in the channel
         ACH_MISSED_FRAME,   ///< we missed the next frame
         ACH_TIMEOUT,        ///< timeout before frame received
-        ACH_EXIST,          ///< shm already exists
+        ACH_EEXIST,          ///< shm already exists
+        ACH_ENOENT,        ///< shm doesn't
         ACH_CLOSED
     } ach_status_t;
 
@@ -244,7 +245,7 @@ extern "C" {
 
     void ach_attr_init( ach_attr_t *attr );
 
-    void ach_create_attr_init( ach_attr_t *attr );
+    void ach_create_attr_init( ach_create_attr_t *attr );
 
     /** Creates a new channel
         \param channel_name Name of the channel
@@ -338,7 +339,7 @@ extern "C" {
 
         See ach_get_next for parameters
     */
-    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *size_written, const struct timespec *restrict abstime);
+    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *restrict abstime);
 
     /** Writes a new message in the channel.
 

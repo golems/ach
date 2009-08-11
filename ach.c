@@ -89,11 +89,21 @@ char *ach_result_to_string(ach_status_t result) {
     case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
     case ACH_TIMEOUT: return "ACH_TIMEOUT";
     case ACH_CLOSED: return "ACH_CLOSED";
-    case ACH_EXIST: return "ACH_EXIST";
+    case ACH_EEXIST: return "ACH_EEXIST";
+    case ACH_ENOENT: return "ACH_ENOENT";
     }
     return "UNKNOWN";
 
 }
+
+static int check_errno() {
+    switch(errno) {
+    case EEXIST: return ACH_EEXIST;
+    case ENOENT: return ACH_ENOENT;
+    default: return ACH_FAILED_SYSCALL;
+    }
+}
+
 
 // returns 0 if channel name is bad
 static int channel_name_ok( char *name ) {
@@ -119,14 +129,14 @@ static int channel_name_ok( char *name ) {
 /** Opens shm file descriptor for a channel.
     \pre name is a valid channel name
 */
-static int fd_for_channel_name( char *name ) {
+static int fd_for_channel_name( char *name, int oflag ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
     strncpy( shm_name, "/achshm-", 9 );
     strncat( shm_name, name, ACH_CHAN_NAME_MAX );
     int fd;
     int i = 0;
     do {
-        fd = shm_open( shm_name, O_RDWR | O_CREAT, 0666 );
+        fd = shm_open( shm_name, O_RDWR | oflag, 0666 );
     }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
     return fd;
 }
@@ -207,6 +217,10 @@ static void unwrlock( ach_header_t *shm ) {
 }
 
 
+void ach_create_attr_init( ach_create_attr_t *attr ) {
+    memset( attr, 0, sizeof( ach_create_attr_t ) );
+}
+
 int ach_create( char *channel_name,
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr) {
@@ -226,12 +240,15 @@ int ach_create( char *channel_name,
             shm = malloc( len );
             fd = -1;
         }else {
+            int oflag = O_EXCL | O_CREAT;
             // shm
             if( ! channel_name_ok( channel_name ) )
                 return ACH_INVALID_NAME;
-
-            if( (fd = fd_for_channel_name( channel_name )) < 0 )
-                return ACH_FAILED_SYSCALL;
+            if( attr ) {
+                if( attr->truncate ) oflag &= ~O_EXCL;
+            }
+            if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 )
+                return check_errno();;
 
             if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
                 == MAP_FAILED )
@@ -341,7 +358,7 @@ int ach_open(ach_channel_t *chan, char *channel_name,
             return ACH_INVALID_NAME;
         // open shm
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
-        if( (fd = fd_for_channel_name( channel_name )) < 0 )
+        if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
             return ACH_FAILED_SYSCALL;
         if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
             == MAP_FAILED )
@@ -393,7 +410,7 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             if( ! channel_name_ok( channel_name ) )
                 return ACH_INVALID_NAME;
 
-            if( (chan->fd = fd_for_channel_name( channel_name )) < 0 )
+            if( (chan->fd = fd_for_channel_name( channel_name, O_CREAT )) < 0 )
                 return ACH_FAILED_SYSCALL;
 
             if( (shm = mmap(NULL, chan->len, PROT_READ|PROT_WRITE, MAP_SHARED, chan->fd, 0) )
@@ -491,7 +508,7 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name,
             return ACH_INVALID_NAME;
         // open shm
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
-        if( (fd = fd_for_channel_name( channel_name )) < 0 )
+        if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
             return ACH_FAILED_SYSCALL;
         if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
             == MAP_FAILED )
@@ -533,7 +550,7 @@ int ach_subscribe(ach_channel_t *chan, char *channel_name,
     number of bytes written to buf (0 on failure).
 */
 static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
-                                char *buf, size_t size, size_t *size_written ) {
+                                char *buf, size_t size, size_t *frame_size ) {
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *index = ACH_SHM_INDEX(shm) + index_offset;
@@ -542,12 +559,12 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     assert( index->offset < shm->data_size );
     if( index->size > size ) {
         // buffer overflow
-        *size_written = 0;
+        *frame_size = size;
         return ACH_OVERFLOW;
     }else if( chan->seq_num >= index->seq_num ) {
         // no new data
         assert( chan->seq_num == index->seq_num );
-        *size_written = 0;
+        *frame_size = 0;
         if( ACH_CHAN_STATE_CLOSED == shm->state )
             return ACH_CLOSED;
         else return ACH_STALE_FRAMES;
@@ -563,7 +580,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
             memcpy( (uint8_t*)buf, data_buf + index->offset, end_cnt );
             memcpy( (uint8_t*)buf + end_cnt, data_buf, index->size - end_cnt );
         }
-        *size_written = index->size;
+        *frame_size = index->size;
         chan->seq_num = index->seq_num;
         chan->next_index = (index_offset + 1) % shm->index_cnt;
         return ACH_OK;
@@ -571,7 +588,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
 }
 
 
-static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                     const struct timespec *abstime, int last, int wait ) {
     //FIXME: somehow gives missed frame on first get...
     ach_header_t *shm = chan->shm;
@@ -605,7 +622,7 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_wr
             next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
         }
     }
-    int retval = ach_get_from_offset( chan, next_index, buf, size, size_written );
+    int retval = ach_get_from_offset( chan, next_index, buf, size, frame_size );
 
     // release read lock
     unrdlock( shm );
@@ -615,26 +632,25 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *size_wr
 }
 
 int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
-                 size_t *size_written) {
-    return ach_get( chan, buf, size, size_written, NULL, 0, 0 );
+                 size_t *frame_size) {
+    return ach_get( chan, buf, size, frame_size, NULL, 0, 0 );
 }
 
-int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written ) {
-
-    return ach_get( chan, buf, size, size_written, NULL, 1, 0 );
+int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
+    return ach_get( chan, buf, size, frame_size, NULL, 1, 0 );
 }
 
 
-int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                   const struct timespec *abstime) {
-    return ach_get( chan, buf, size, size_written, abstime, 1, 1 );
+    return ach_get( chan, buf, size, frame_size, abstime, 1, 1 );
 }
 
 
 
-int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *size_written,
+int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                   const struct timespec *abstime) {
-    return ach_get( chan, buf, size, size_written, abstime, 0, 1 );
+    return ach_get( chan, buf, size, frame_size, abstime, 0, 1 );
 }
 
 

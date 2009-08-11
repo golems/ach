@@ -49,6 +49,7 @@
 #include "ach.h"
 
 int opt_msg_cnt = -1;
+int opt_truncate = 0;
 int opt_msg_size = -1;
 char *opt_chan_name = NULL;
 int opt_verbosity = 0;
@@ -108,6 +109,13 @@ static struct argp_option options[] = {
         .doc = "Number of messages to buffer"
     },
     {
+        .name = "truncate",
+        .key = 't',
+        .arg = NULL,
+        .flags = 0,
+        .doc = "truncate and reinit newly create channel (use only with -C).  WARNING: this will clobber processes currently using the channel."
+    },
+    {
         .name = NULL,
         .key = 0,
         .arg = NULL,
@@ -162,8 +170,17 @@ int cmd_create(void) {
         fprintf(stderr, "Message size must be greater than zero, not %d.\n", opt_msg_size);
         return -1;
     }
-    int i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, NULL );
-
+    int i;
+    {
+        ach_create_attr_t attr;
+        ach_create_attr_init(&attr);
+        if( opt_truncate ) attr.truncate = 1;
+        i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
+    }
+    if( i != ACH_OK ) {
+        fprintf(stderr, "Error creating channel %s: %s\n",
+                opt_chan_name, ach_result_to_string(i) );
+    }
     return i;
 }
 int cmd_unlink(void) {
@@ -221,6 +238,9 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         break;
     case 'm':
         opt_msg_cnt = atoi( arg );
+        break;
+    case 't':
+        opt_truncate++;
         break;
     case 'v':
         opt_verbosity++;

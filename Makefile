@@ -4,7 +4,7 @@ VERSION := 0.20090718
 
 LIBFILES := libach.so
 
-BINFILES := achcat achproxy.bin ach
+BINFILES := achcat achpipe.bin ach
 
 DOXPATH := $(HOME)/prism/public_html/dox
 
@@ -22,7 +22,7 @@ $(call LINKLIB, ach, ach.o)
 $(call LINKBIN, test_pub, test_pub.c ach.o, pthread rt)
 $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)
 $(call LINKBIN, achcat, achcat.o ach.o, pthread rt)
-$(call LINKBIN, achproxy.bin, achproxy.o ach_stream.o ach.o, pthread rt)
+$(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
 
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
