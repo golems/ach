@@ -169,19 +169,10 @@ extern "C" {
         int state;  ///< state of the channel (ie open/closed)
         int refcount; ///< number of open handles to channel
         int anon; ///< is channel in the heap?
-        //pthread_rwlock_t rwlock; ///< the lock
         struct /* anonymous structure */ {
-            //unsigned int reader_active_cnt; ///< number of readers currently reading
-            /** number of readers waiting to read. includes both blocked by
-                lock and blocking while waiting for new data */
-            //unsigned int reader_wait_cnt;
-            //unsigned int writer_wait_cnt; ///< number of writers waiting to write
-            //unsigned int reader_cnt;
-            //unsigned int writer_cnt;
             pthread_mutex_t mutex;     ///< mutex for condition variables
-            //pthread_cond_t write_cond; ///< condition variable writers wait on
-            //pthread_cond_t read_cond;  ///< condition variable readers wait on
             pthread_cond_t cond; ///< condition variable
+            int dirty;
         } sync; ///< variables for synchronization
         // should force our alignment to 8-bytes...
         uint64_t last_seq;       ///< last sequence number written
