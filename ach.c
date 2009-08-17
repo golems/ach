@@ -182,10 +182,12 @@ static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
     int r;
     r = pthread_mutex_lock( & shm->sync.mutex );
     assert( 0 == r );
+    assert( 0 == shm->sync.dirty );
     // if chan is passed, we wait for new data
     // otherwise just return holding the lock
     while( chan &&
            chan->seq_num == shm->last_seq ) {
+
         if( ACH_CHAN_STATE_CLOSED == shm->state ) {
             pthread_mutex_unlock( &shm->sync.mutex );
             return ACH_CLOSED;
@@ -197,8 +199,9 @@ static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
                 pthread_mutex_unlock( &shm->sync.mutex );
                 return ACH_TIMEOUT;
             }
-        } else // wait forever
+        } else { // wait forever
             r = pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex );
+        }
     }
     return ACH_OK;
 }
@@ -208,17 +211,26 @@ static void rdlock( ach_header_t *shm ) {
 }
 
 static void unrdlock( ach_header_t *shm ) {
-    pthread_mutex_unlock( & shm->sync.mutex );
+    int r;
+    assert( 0 == shm->sync.dirty );
+    r = pthread_mutex_unlock( & shm->sync.mutex );
+    assert( 0 == r );
 }
 
 static void wrlock( ach_header_t *shm ) {
     int r = pthread_mutex_lock( & shm->sync.mutex );
+    assert( 0 == shm->sync.dirty );
+    shm->sync.dirty = 1;
     assert( 0 == r );
 }
 
 static void unwrlock( ach_header_t *shm ) {
-    pthread_cond_broadcast( & shm->sync.cond );
-    pthread_mutex_unlock( & shm->sync.mutex );
+    int r;
+    r = pthread_cond_broadcast( & shm->sync.cond );
+    assert( 0 == r );
+    shm->sync.dirty = 0;
+    r = pthread_mutex_unlock( & shm->sync.mutex );
+    assert( 0 == r );
 }
 
 
@@ -383,6 +395,10 @@ int ach_open(ach_channel_t *chan, char *channel_name,
             return ACH_FAILED_SYSCALL;
     }
     assert( ACH_SHM_MAGIC_NUM == shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
+
 
     // initialize struct
     chan->fd = fd;
@@ -661,6 +677,12 @@ int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_siz
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
+
+    assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
+    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(chan->shm) );
+    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(chan->shm) );
+    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
+
     // not doing this mode stuff
     //assert( ACH_MODE_PUBLISH == chan->mode );
 
@@ -737,16 +759,9 @@ int ach_close(ach_channel_t *chan) {
     int r;
     //fprintf(stderr, "Closing\n");
     // note the close in the channel
-    if( ACH_MODE_PUBLISH == chan->mode ) {
-        //fprintf(stderr, "Marking close\n");
-        wrlock( chan->shm );
-        chan->shm->state = ACH_CHAN_STATE_CLOSED;
-        unwrlock( chan->shm );
-    }
     if( chan->attr.map_anon ) {
-        // free heap channel
-        if (ACH_MODE_SUBSCRIBE == chan->mode )
-            free( chan->shm );
+        //FIXME: what to do here??
+        ;
     } else {
         // remove mapping
         r = munmap(chan->shm, chan->len);
