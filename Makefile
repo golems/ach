@@ -6,7 +6,7 @@ LIBFILES := libach.so
 
 BINFILES := achcat achpipe.bin ach
 
-DOXPATH := $(HOME)/prism/public_html/dox
+#DOXPATH := $(HOME)/prism/public_html/dox
 
 LC_ALL := ascii
 LANG := ascii
@@ -29,6 +29,6 @@ $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 clean:
 	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES)
 
-doc: ach.h
+doc: $(INCLUDEDIR)/ach.h
 	doxygen
 
