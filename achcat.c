@@ -49,6 +49,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include "ach.h"
 
 
@@ -114,14 +115,10 @@ FILE *fout;
 
 void *publish_loop(void* pub) {
     publish(pub);
+    exit(0);
     return NULL;
 }
 
-int pub_chan( ach_channel_t *chan, ach_attr_t *attr ) {
-    int r = ach_open( chan, opt_chan_name, attr );
-    if( ACH_OK != r ) return 1;
-    return 0;
-}
 
 int publish( ach_channel_t *chan) {
     int r;
@@ -144,11 +141,6 @@ int publish( ach_channel_t *chan) {
     return r;
 }
 
-int sub_chan( ach_channel_t *chan, ach_attr_t *attr ) {
-    int r = ach_open( chan, opt_chan_name, attr );
-    if( r != ACH_OK ) return 1;
-    return 0;
-}
 
 int subscribe( ach_channel_t *chan) {
     int r;
@@ -201,19 +193,33 @@ int main( int argc, char **argv ) {
     }
 
     ach_channel_t pub, sub;
+    memset( &pub, 0, sizeof(pub));
+    memset( &sub, 0, sizeof(sub));
     {
         int r;
         ach_attr_t attr;
         ach_attr_init( &attr );
         //attr.map_anon = opt_pub && opt_sub;
-        if( opt_pub ) {
-            r = pub_chan( &pub, &attr );
+        if( opt_pub && ! opt_sub ) {
+            r = ach_open( &pub, opt_chan_name, &attr );
             assert( 0 == r );
-            //attr.shm = pub.shm;
-        }
-        if( opt_sub ) {
-            r = sub_chan( &sub, &attr );
+        } else if( opt_sub && !opt_pub ) {
+            r = ach_open( &sub, opt_chan_name, &attr );
             assert( 0 == r );
+        }else if (opt_pub && opt_sub ) {
+            ach_create_attr_t cattr;
+            ach_create_attr_init( &cattr );
+            cattr.map_anon = 1;
+            ach_create( opt_chan_name, 10, 512, &cattr );
+            assert( cattr.shm );
+            attr.map_anon = 1;
+            attr.shm = cattr.shm;
+            r = ach_open( &sub, opt_chan_name, &attr );
+            assert( 0 == r );
+            r = ach_open( &pub, opt_chan_name, &attr );
+            assert( 0 == r );
+        } else {
+            assert(0);
         }
     }
 
