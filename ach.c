@@ -708,11 +708,11 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
     // clear overlapping entries
     size_t i;
-    for(i = shm->index_head + shm->index_free;
+    for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
         shm->data_free < len;
         i = (i + 1) % shm->index_cnt) {
         assert( i != shm->index_head );
-        assert( 0 == index_ar[i].size );
+        assert( 0 != index_ar[i].size );
 
         shm->data_free += index_ar[i].size;
         shm->index_free ++;
