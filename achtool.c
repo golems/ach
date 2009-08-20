@@ -104,7 +104,7 @@ static struct argp_option options[] = {
     {
         .name = "msg_cnt",
         .key = 'm',
-        .arg = "bytes",
+        .arg = "count",
         .flags = 0,
         .doc = "Number of messages to buffer"
     },
