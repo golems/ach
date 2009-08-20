@@ -109,9 +109,12 @@ static int check_errno() {
 static int channel_name_ok( char *name ) {
     int len;
     // check size
+#ifdef HAVE_STRNLEN
     if( (len = strnlen( name, ACH_CHAN_NAME_MAX + 1 )) >= ACH_CHAN_NAME_MAX )
-        //if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
-        return 0;
+#else
+        if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
+#endif
+            return 0;
     // check hidden file
     if( name[0] == '.' ) return 0;
     // check bad characters
@@ -310,8 +313,10 @@ int ach_create( char *channel_name,
             assert( 0 == r );
             r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
             assert( 0 == r );
+#ifdef PTHREAD_MUTEX_ERRORCHECK_NP
             r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
             assert( 0 == r );
+#endif
 
             assert( 0 == r );
 
@@ -476,8 +481,10 @@ int ach_publish(ach_channel_t *chan, char *channel_name,
             assert( 0 == r );
             r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
             assert( 0 == r );
+#ifdef PTHREAD_MUTEX_ERRORCHECK_NP
             r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
             assert( 0 == r );
+#endif
 
             assert( 0 == r );
 

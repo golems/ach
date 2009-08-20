@@ -2,7 +2,7 @@ PROJECT := ach
 
 VERSION := 0.20090820
 
-LIBFILES := libach.so
+LIBFILES := libach
 
 BINFILES := achcat achpipe.bin ach
 
@@ -11,11 +11,17 @@ BINFILES := achcat achpipe.bin ach
 LC_ALL := ascii
 LANG := ascii
 
-default: $(LIBFILES) $(BINFILES) test_sub test_pub ach_stream.o
+all: default
 
 include /usr/share/make-common/common.1.mk
 
+default: $(LIBFILES) $(BINFILES) test_sub test_pub ach_stream.o
+
 CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\" -I$(INCLUDEDIR)
+
+ifneq ($(PLATFORM),Darwin)
+CFLAGS += -DHAVE_STRNLEN
+endif
 
 $(call LINKLIB, ach, ach.o)
 
