@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20090810
+VERSION := 0.20090820
 
 LIBFILES := libach.so
 
