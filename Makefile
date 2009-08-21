@@ -2,7 +2,7 @@ PROJECT := ach
 
 VERSION := 0.20090820
 
-LIBFILES := libach
+SHAREDLIBS := ach
 
 BINFILES := achcat achpipe.bin ach
 
