@@ -229,11 +229,17 @@ static void wrlock( ach_header_t *shm ) {
 
 static void unwrlock( ach_header_t *shm ) {
     int r;
-    r = pthread_cond_broadcast( & shm->sync.cond );
-    assert( 0 == r );
+
+    // unlock
+    assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
     r = pthread_mutex_unlock( & shm->sync.mutex );
     assert( 0 == r );
+
+    // broadcast
+    r = pthread_cond_broadcast( & shm->sync.cond );
+    assert( 0 == r );
+
 }
 
 

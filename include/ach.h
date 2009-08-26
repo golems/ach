@@ -52,12 +52,8 @@
  * subscribers. Publishers create "channels" which they push data
  * to. Clients can then poll then channels for data.
  *
- * \todo Write network daemon
- * \todo test variable size frames
- * \todo write blocking method calls
+ * \todo better networking
  *
- * \bug could do better error checking on existence or non-existence
- * of the shared memory file.
  */
 
 

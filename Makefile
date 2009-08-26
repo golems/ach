@@ -33,7 +33,8 @@ $(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
 clean:
-	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES)
+	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES) *.deb *.lzma
+	rm -rf debian doc $(PROJECT)-$(VERSION)
 
 doc: $(INCLUDEDIR)/ach.h
 	doxygen
