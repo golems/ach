@@ -230,6 +230,15 @@ static void wrlock( ach_header_t *shm ) {
 static void unwrlock( ach_header_t *shm ) {
     int r;
 
+    /* WTF: when we would broadcast within the locked section, then
+     *  killing and restarting a publisher would cause the subscriber to
+     *  hang 1 out of 5 times.  But when we unlock, and then broadcast,
+     *  everthing seems to work OK.  I do not understand why this is
+     *  happening, so it is possible that I've done something rather
+     *  wrong somewhere...
+     */
+
+
     // unlock
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
