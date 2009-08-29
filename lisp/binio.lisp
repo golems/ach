@@ -35,7 +35,7 @@
 
 (defpackage :binio
   (:use :cl)
-  (:export :decode-uint :decode-sint :encode-int))
+  (:export :decode-uint :decode-sint :encode-int :encode-double-float :decode-double-float))
 
 ;; types u?int{8,16,32,63}, double, float
 
@@ -108,15 +108,37 @@
       (decf result (ash 1 (* 8 count))))
     result))
 
-(defun encode-int (val endian &optional (start 0) (bits 32))
+(defun encode-int (val endian &optional buffer (start 0) (bits 32))
   (declare (integer val)
            (fixnum start bits)
            (symbol endian))
   (let* ((count (/ bits 8))
-         (buffer (make-array count
-                             :element-type 'unsigned-byte)))
+         (buffer (or buffer
+                     (make-array count
+                                 :element-type 'unsigned-byte))))
     (dotimes (i count)
       (setf (aref-endian buffer i start count endian)
             (ldb (byte 8 (* i 8)) val)))
     buffer))
 
+(defun decode-double-float (buffer endian &optional (start 0))
+  (let ((ilow  (decode-uint buffer endian start))
+        (ihi (decode-uint buffer endian (+ 4 start))))
+    (case endian
+      (:little (sb-kernel:make-double-float ihi ilow))
+      (:big (sb-kernel:make-double-float ilow ihi)))))
+
+(defun encode-double-float (val endian &optional buffer (start 0))
+  (let ((high (sb-kernel:double-float-high-bits val))
+        (low (sb-kernel:double-float-low-bits val))
+        (buffer (or buffer
+                    (make-array 8
+                                :element-type 'unsigned-byte))))
+    (encode-int (case endian
+                  (:little low)
+                  (:big high))
+                endian buffer start)
+    (encode-int (case endian
+                  (:little high)
+                  (:big low))
+                endian buffer (+ 4 start))))
