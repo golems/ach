@@ -124,16 +124,16 @@ extern "C" {
     /// return status codes for ach functions
     typedef enum {
         ACH_OK = 0,         ///< Call successful
-        ACH_OVERFLOW,       ///< buffer to small to hold frame
-        ACH_INVALID_NAME,   ///< invalid channel name
-        ACH_BAD_SHM_FILE,   ///< shared memory file didn't look right
-        ACH_FAILED_SYSCALL, ///< a system call failed
-        ACH_STALE_FRAMES,   ///< no new data in the channel
-        ACH_MISSED_FRAME,   ///< we missed the next frame
-        ACH_TIMEOUT,        ///< timeout before frame received
-        ACH_EEXIST,          ///< shm already exists
-        ACH_ENOENT,        ///< shm doesn't
-        ACH_CLOSED
+        ACH_OVERFLOW = 1,       ///< buffer to small to hold frame
+        ACH_INVALID_NAME = 2,   ///< invalid channel name
+        ACH_BAD_SHM_FILE = 3,   ///< shared memory file didn't look right
+        ACH_FAILED_SYSCALL = 4, ///< a system call failed
+        ACH_STALE_FRAMES = 5,   ///< no new data in the channel
+        ACH_MISSED_FRAME = 6,   ///< we missed the next frame
+        ACH_TIMEOUT = 7,        ///< timeout before frame received
+        ACH_EEXIST = 8,          ///< shm already exists
+        ACH_ENOENT = 9,        ///< shm doesn't
+        ACH_CLOSED = 10
     } ach_status_t;
 
     /// Whether a channel is opened to publish or subscribe
@@ -326,7 +326,11 @@ extern "C" {
 
         See ach_get_next for parameters
     */
+#ifdef __cplusplus
+    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *abstime);
+#else
     int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *restrict abstime);
+#endif
 
     /** Writes a new message in the channel.
 
