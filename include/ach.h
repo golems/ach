@@ -326,11 +326,7 @@ extern "C" {
 
         See ach_get_next for parameters
     */
-#ifdef __cplusplus
-    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *abstime);
-#else
     int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *restrict abstime);
-#endif
 
     /** Writes a new message in the channel.
 
