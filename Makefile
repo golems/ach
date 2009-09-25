@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20090826
+VERSION := 0.20090925
 
 SHAREDLIBS := ach
 
@@ -12,6 +12,8 @@ LC_ALL := ascii
 LANG := ascii
 
 all: default
+
+#cc := llvm-gcc
 
 include /usr/share/make-common/common.1.mk
 

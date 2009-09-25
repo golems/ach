@@ -242,10 +242,16 @@ static void unwrlock( ach_header_t *shm ) {
     // unlock
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
+
+
+    // broadcast
+    r = pthread_cond_broadcast( & shm->sync.cond );
+    assert( 0 == r );
+
     r = pthread_mutex_unlock( & shm->sync.mutex );
     assert( 0 == r );
 
-    // broadcast
+    // broadcast again to make damn sure they wake up
     r = pthread_cond_broadcast( & shm->sync.cond );
     assert( 0 == r );
 
