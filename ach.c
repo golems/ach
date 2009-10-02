@@ -339,6 +339,7 @@ int ach_create( char *channel_name,
             assert( 0 == r );
 #endif
 
+            pthread_mutex_init( &shm->sync.mutex, &mutex_attr );
             assert( 0 == r );
 
             r = pthread_mutexattr_destroy( &mutex_attr );
@@ -661,20 +662,25 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_s
         rdlock( shm );
 
     // get frame
+    int retval;
     size_t next_index;
     int missed_frame = 0;
-    if( last ) {
-        next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+    if( 0 == shm->last_seq ) { // no entries
+        retval = ACH_STALE_FRAMES;
     } else {
-        next_index = chan->next_index;
-        if( 0 == index_ar[next_index].size ||
-            index_ar[next_index].seq_num != chan->seq_num + 1 ) {
-            // we've missed a frame, find the oldest
-            missed_frame = 1;
-            next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+        if ( last ) {
+            next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
+        } else {
+            next_index = chan->next_index;
+            if( 0 == index_ar[next_index].size ||
+                index_ar[next_index].seq_num != chan->seq_num + 1 ) {
+                // we've missed a frame, find the oldest
+                missed_frame = 1;
+                next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
+            }
         }
+        retval = ach_get_from_offset( chan, next_index, buf, size, frame_size );
     }
-    int retval = ach_get_from_offset( chan, next_index, buf, size, frame_size );
 
     // release read lock
     unrdlock( shm );
