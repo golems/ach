@@ -165,6 +165,7 @@ extern "C" {
         int state;  ///< state of the channel (ie open/closed)
         int refcount; ///< number of open handles to channel
         int anon; ///< is channel in the heap?
+        char name[1+ACH_CHAN_NAME_MAX];
         struct /* anonymous structure */ {
             pthread_mutex_t mutex;     ///< mutex for condition variables
             pthread_cond_t cond; ///< condition variable

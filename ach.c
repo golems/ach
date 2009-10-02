@@ -345,6 +345,9 @@ int ach_create( char *channel_name,
             assert( 0 == r );
         }
     }
+    // initialize name
+    strncpy( shm->name, channel_name, ACH_CHAN_NAME_MAX );
+    //initialize counts
     shm->index_cnt = frame_cnt;
     shm->index_head = 0;
     shm->index_free = frame_cnt;
