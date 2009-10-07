@@ -249,39 +249,6 @@ extern "C" {
     int ach_open(ach_channel_t *chan, char *channel_name,
                  ach_attr_t *attr);
 
-    /** Establishes a new channel.
-
-        \post A shared memory area is created for the channel and chan is initialized for writing
-
-        The size of the data array reserved in shared memory will be
-        frame_cnt*frame_size.  Frames of any size smaller than the size
-        of the data array may be sent over the channel.
-
-        \param chan The channel structure to initialize
-        \param channel_name Name of the channel
-
-        \return ACH_OK on success.  ACH_INVALID_NAME is the channel name
-        is invalid.  ACH_SYSCALL if a syscall fails.  In that case,
-        errno ma or may not be set.
-    */
-    int ach_publish(ach_channel_t *chan, char *channel_name,
-                    size_t frame_cnt, size_t frame_size,
-                    ach_attr_t *attr);
-
-    /** Subscribes to a channel.
-
-        \pre The channel has been published
-
-        \post chan is initialized for reading
-
-        \return ACH_OK on success.  ACH_INVALID_NAME is the channel name
-        is invalid.  ACH_SYSCALL if a syscall fails.  ACH_BAD_SHM_FILE
-        if the shared memory file is broken or otherwise invalid.  In
-        that case, errno may or may not be set.
-    */
-    int ach_subscribe(ach_channel_t *chan, char *channel_name,
-                      ach_attr_t *attr);
-
 
     /** Pulls the next message from a channel following the most recent
         message this subscriber has read.

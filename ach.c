@@ -151,7 +151,7 @@ static int fd_for_channel_name( char *name, int oflag ) {
  * Synchronization currently uses a simple mutex+condition variable
  * around the whole shared memory block
  *
- * Possible Synchronization enhancement:
+ * Some idea for more complicated synchronization:
  *
  * Our synchronization for shared memory could work roughly like a
  * read-write lock with one one additional feature.  A reader may
@@ -169,7 +169,6 @@ static int fd_for_channel_name( char *name, int oflag ) {
  * ideal...
  *
  *  \bug synchronization should be robust against processes terminating
- *  \bug our {rd,wr}lock functions should handle timeouts
  *
  * Mostly Lock Free Synchronization:
  * - Have a single word atomic sync variable
@@ -230,29 +229,16 @@ static void wrlock( ach_header_t *shm ) {
 static void unwrlock( ach_header_t *shm ) {
     int r;
 
-    /* WTF: when we would broadcast within the locked section, then
-     *  killing and restarting a publisher would cause the subscriber to
-     *  hang 1 out of 5 times.  But when we unlock, and then broadcast,
-     *  everthing seems to work OK.  I do not understand why this is
-     *  happening, so it is possible that I've done something rather
-     *  wrong somewhere...
-     */
-
-
-    // unlock
+    // mark clean
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
 
-
-    // broadcast
+    // broadcast to wake up waiting readers
     r = pthread_cond_broadcast( & shm->sync.cond );
     assert( 0 == r );
 
+    // unlock
     r = pthread_mutex_unlock( & shm->sync.mutex );
-    assert( 0 == r );
-
-    // broadcast again to make damn sure they wake up
-    r = pthread_cond_broadcast( & shm->sync.cond );
     assert( 0 == r );
 
 }
@@ -440,159 +426,6 @@ int ach_open(ach_channel_t *chan, char *channel_name,
     return ACH_OK;
 }
 
-int ach_publish(ach_channel_t *chan, char *channel_name,
-                size_t frame_cnt, size_t frame_size,
-                ach_attr_t *attr) {
-
-    ach_header_t *shm;
-
-    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
-    // open shm
-    {
-        chan->len = sizeof( ach_header_t) +
-            frame_cnt*sizeof( ach_index_t ) +
-            frame_cnt*frame_size +
-            3*sizeof(uint64_t);
-
-        if( attr && attr->map_anon ) {
-            shm = malloc( chan->len );
-            chan->fd = -1;
-        }else {
-            if( ! channel_name_ok( channel_name ) )
-                return ACH_INVALID_NAME;
-
-            if( (chan->fd = fd_for_channel_name( channel_name, O_CREAT )) < 0 )
-                return ACH_FAILED_SYSCALL;
-
-            if( (shm = mmap(NULL, chan->len, PROT_READ|PROT_WRITE, MAP_SHARED, chan->fd, 0) )
-                == MAP_FAILED )
-                return ACH_FAILED_SYSCALL;
-
-            // initialize shm
-            { //make file proper size
-                int r;
-                int i = 0;
-                do {
-                    r = ftruncate( chan->fd, chan->len );
-                }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
-                if( -1 == r )
-                    return ACH_FAILED_SYSCALL;
-            }
-        }
-
-        memset( shm, 0, chan->len );
-        shm->len = chan->len;
-        shm->state = ACH_CHAN_STATE_INIT;
-    }
-    { //initialize synchronization
-        { //initialize condition variables
-            int r;
-            pthread_condattr_t cond_attr;
-            r = pthread_condattr_init( &cond_attr );
-            assert( 0 == r );
-            r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
-            assert( 0 == r );
-
-            r = pthread_cond_init( & shm->sync.cond, &cond_attr );
-            assert( 0 == r );
-
-            r = pthread_condattr_destroy( &cond_attr );
-            assert( 0 == r );
-        }
-        { //initialize mutex
-            int r;
-            pthread_mutexattr_t mutex_attr;
-            r = pthread_mutexattr_init( &mutex_attr );
-            assert( 0 == r );
-            r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
-            assert( 0 == r );
-#ifdef PTHREAD_MUTEX_ERRORCHECK_NP
-            r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
-            assert( 0 == r );
-#endif
-
-            assert( 0 == r );
-
-            r = pthread_mutexattr_destroy( &mutex_attr );
-            assert( 0 == r );
-        }
-    }
-    shm->index_cnt = frame_cnt;
-    shm->index_head = 0;
-    shm->index_free = frame_cnt;
-    shm->data_head = 0;
-    shm->data_free = frame_cnt * frame_size;
-    shm->data_size = frame_cnt * frame_size;
-    assert( sizeof( ach_header_t ) +
-            shm->index_free * sizeof( ach_index_t ) +
-            shm->data_free + 3*sizeof(uint64_t) ==  chan->len );
-
-    *ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
-    *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
-    *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
-    shm->magic = ACH_SHM_MAGIC_NUM;
-    shm->state = ACH_CHAN_STATE_RUN;
-
-    // initialize channel struct
-    chan->shm = shm;
-    chan->seq_num = 1;
-    chan->next_index = 0;
-    chan->mode = ACH_MODE_PUBLISH;
-
-    //shm->sync.state = ACH_CHAN_STATE_RUN;
-
-    return ACH_OK;
-}
-
-int ach_subscribe(ach_channel_t *chan, char *channel_name,
-                  ach_attr_t *attr) {
-
-    ach_header_t * shm;
-    size_t len;
-    int fd = -1;
-
-    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
-
-    if( attr && attr->map_anon ) {
-        shm = attr->shm;
-        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
-    }else {
-        if( ! channel_name_ok( channel_name ) )
-            return ACH_INVALID_NAME;
-        // open shm
-        if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
-        if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
-            return ACH_FAILED_SYSCALL;
-        if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
-            == MAP_FAILED )
-            return ACH_FAILED_SYSCALL;
-        if( ACH_SHM_MAGIC_NUM != shm->magic )
-            return ACH_BAD_SHM_FILE;
-
-        // calculate mmaping size
-        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
-
-        // remap
-        if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
-            return ACH_FAILED_SYSCALL;
-
-        if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
-            == MAP_FAILED )
-            return ACH_FAILED_SYSCALL;
-    }
-    assert( ACH_SHM_MAGIC_NUM == shm->magic );
-
-    // initialize struct
-    chan->fd = fd;
-    chan->len = len;
-    chan->shm = shm;
-    chan->seq_num = 0;
-    chan->next_index = 1;
-    chan->mode = ACH_MODE_SUBSCRIBE;
-
-    return ACH_OK;
-}
-
 
 /** Copies frame pointed to by index entry at index_offset.
 
@@ -688,6 +521,9 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_s
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 
 }
+
+/* The next few functions are variations on reading from an ach channel.
+ */
 
 int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
                  size_t *frame_size) {
