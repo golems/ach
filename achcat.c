@@ -148,14 +148,19 @@ int subscribe( ach_channel_t *chan) {
     while(1) {
         size_t frame_size = 0;
         size_t fr;
-        r = ach_wait_next(chan, sbuffer, sizeof(sbuffer), &frame_size,  NULL );
+        r = ach_get_last(chan, sbuffer, sizeof(sbuffer), &frame_size );
         if( ACH_OK != r )  {
-            if( ! (t0 && r == ACH_MISSED_FRAME) )
-                if( ACH_CLOSED != r ) {
-                    fprintf(stderr, "sub: ach_error: %s\n",
-                            ach_result_to_string(r));
-                }
-            if( r != ACH_MISSED_FRAME ) break;
+            if( ACH_STALE_FRAMES == r ) {
+                usleep(1000);
+            } else {
+                if( ! (t0 && r == ACH_MISSED_FRAME) )
+                    if( ACH_CLOSED != r ) {
+                        fprintf(stderr, "sub: ach_error: %s\n",
+                                ach_result_to_string(r));
+                    }
+                if( !  ( ACH_MISSED_FRAME == r ||
+                         ACH_STALE_FRAMES == r ) ) break;
+            }
 
         }
         //fprintf(stderr, "sub: got %d bytes\n", frame_size);

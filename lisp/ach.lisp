@@ -70,9 +70,9 @@
                                   :search t
                                   :wait nil
                                   :input proc-input
-                                  ;:input-element-type 'unsigned-byte
+                                  :input-element-type '(unsigned-byte 8)
                                   :output proc-output
-                                  ;:output-element-type 'unsigned-byte
+                                  :output-element-type '(unsigned-byte 8)
                                   :error *standard-output*))))
 
 
@@ -108,8 +108,10 @@
                (decode-uint size-buf :little 8)) ()
                "Invalid size delimiter: ~A" (subseq size-buf 8))
     (let* ((size (decode-uint size-buf :big 4))
-           (buffer (make-array size :element-type 'unsigned-byte)))
-      (read-bytes-dammit buffer s)
+           (buffer (make-array size :element-type '(unsigned-byte 8))))
+      (princ size)
+      ;(read-bytes-dammit buffer s)
+      (read-sequence buffer s)
       buffer)))
 
 
