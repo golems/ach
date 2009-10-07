@@ -17,7 +17,7 @@ all: default
 
 include /usr/share/make-common/common.1.mk
 
-default: $(LIBFILES) $(BINFILES) test_sub test_pub ach_stream.o
+default: $(LIBFILES) $(BINFILES) ach_stream.o
 
 CFLAGS := -g -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\" -I$(INCLUDEDIR)
 
