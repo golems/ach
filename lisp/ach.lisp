@@ -36,7 +36,8 @@
 
 
 (defpackage :ach
-  (:use :cl :binio))
+  (:use :cl :binio)
+  (:export :ach-open :ach-close :ach-read :ach-write))
 
 (in-package :ach)
 
@@ -46,8 +47,8 @@
 
 ;; let's make the delimiters int32s.  That'll be faster, right?
 
-(defparameter *size-delim* (decode-uint (map 'vector #'char-code "size") :little))
-(defparameter *data-delim* (decode-uint (map 'vector #'char-code "data") :little))
+(defparameter *size-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "size") :little))
+(defparameter *data-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "data") :little))
 
 (defun channel-input (channel)
   (sb-ext:process-input (channel-process channel)))
@@ -56,51 +57,56 @@
   (sb-ext:process-output (channel-process channel)))
 
 (defun ach-open (channel-name &key (direction :input))
+  "Open an ach channel"
   (let ((proc-input (if (eq direction :output) :stream))
         (proc-output (if (eq direction :input) :stream)))
     (make-channel
      :direction direction
-     :process (sb-ext:run-program "achpipe.bin"
-                                  (list (case direction
-                                          (:input "-s")
-                                          (:output "-p")
-                                          (otherwise (error "Invalid direction: ~A"
-                                                            direction)))
-                                        channel-name)
+     :process (sb-ext:run-program "achpipe"
+                                  (list ;;"-v"
+                                   (case direction
+                                     (:input "-s")
+                                     (:output "-p")
+                                     (otherwise (error "Invalid direction: ~A"
+                                                       direction)))
+                                   channel-name)
                                   :search t
                                   :wait nil
                                   :input proc-input
-                                  :input-element-type '(unsigned-byte 8)
+                                  ;;:input-element-type '(unsigned-byte 8)
                                   :output proc-output
-                                  :output-element-type '(unsigned-byte 8)
+                                  ;;:output-element-type '(unsigned-byte 8)
                                   :error *standard-output*))))
 
 
-;; Submitted a patch to SBCL on 20090827 to support binary io to
-;; run-program.  Let's workaround until it filters through.
 
-(defun read-bytes-dammit (buffer stream)
-  (declare (type (array unsigned-byte) buffer))
-  (if (eq (stream-element-type stream) 'unsigned-byte)
-      (read-sequence buffer stream)
-      (dotimes (i (length buffer))
-        (setf (aref buffer i)
-              (read-byte stream)))))
+;;(defun read-bytes-dammit (buffer stream)
+;;  (declare (octet-vector buffer))
+;;  (if (eq (stream-element-type stream) 'unsigned-byte)
+;;      (read-sequence buffer stream)
+;;      (dotimes (i (length buffer))
+;;        (setf (aref buffer i)
+;;              (read-byte stream)))))
 
-(defun write-bytes-dammit (buffer stream)
-  (declare (type (array unsigned-byte) buffer))
-  (if (eq (stream-element-type stream) 'unsigned-byte)
-      (write-sequence buffer stream)
-      (dotimes (i (length buffer))
-        (write-byte (aref buffer i) stream ))))
+;;(defun write-bytes-dammit (buffer stream)
+;;  (declare (octet-vector buffer))
+;;  (if (eq (stream-element-type stream) 'unsigned-byte)
+;;      (write-sequence buffer stream)
+;;      (dotimes (i (length buffer))
+;;        (write-byte (aref buffer i) stream ))))
+
+(defun make-size-buf ()
+  (make-octet-vector 12))
 
 (defun ach-read (channel)
+  "read a frame from the channel"
   (assert (eq :input (channel-direction channel)) ()
           "Channel direction must be :INPUT, not ~S"
           (channel-direction channel))
   (let ((s (channel-output channel))
-        (size-buf (make-array 12 :element-type 'unsigned-byte)))
-    (read-bytes-dammit size-buf s)
+        ;;(size-buf (make-array 12 :element-type 'unsigned-byte)))
+        (size-buf (make-size-buf)))
+    (read-sequence size-buf s)
     (assert (= *size-delim*
                (decode-uint size-buf :little 0)) ()
                "Invalid size delimiter: ~A" (subseq size-buf 0 4))
@@ -108,8 +114,8 @@
                (decode-uint size-buf :little 8)) ()
                "Invalid size delimiter: ~A" (subseq size-buf 8))
     (let* ((size (decode-uint size-buf :big 4))
-           (buffer (make-array size :element-type '(unsigned-byte 8))))
-      (princ size)
+           ;;(buffer (make-array size :element-type '(unsigned-byte 8))))
+           (buffer (make-octet-vector size)))
       ;(read-bytes-dammit buffer s)
       (read-sequence buffer s)
       buffer)))
@@ -117,12 +123,14 @@
 
 
 (defun ach-write (channel buffer)
-  (declare (type (array unsigned-byte) buffer))
+  "write a frame to the channel"
+  (declare (octet-vector buffer))
   (assert (eq :output (channel-direction channel)) ()
           "Channel direction must be :OUTPUT, not ~S"
           (channel-direction channel))
   (let ((s (channel-input channel))
-        (size-buf (make-array 12 :element-type 'unsigned-byte)))
+        ;;(size-buf (make-array 12 :element-type 'unsigned-byte)))
+        (size-buf (make-size-buf)))
     (encode-int *size-delim* :little 0)
     (encode-int (length buffer) :big 4)
     (encode-int *data-delim* :little 8)
@@ -130,9 +138,15 @@
     (write-bytes-dammit buffer s)))
 
 
+(defun ach-status (channel)
+ (sb-ext:process-status (channel-process channel)))
 
 (defun ach-close (channel)
+  "Close ach channel"
   (sb-ext:process-kill (channel-process channel) sb-posix:sigterm)
+  ;; don't try sb-ext:process-close, it creates zombies
+  ;; sb-ext:process-wait doesn't seem to return
+  ;;(sb-ext:process-wait (channel-process channel) t)
   (setf (channel-direction channel) nil)
   channel)
 
