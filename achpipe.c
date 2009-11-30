@@ -34,7 +34,7 @@
  *
  */
 
-/** \file achproxy.h
+/** \file achpipe.h
  *  \author Neil T. Dantam
  */
 
@@ -60,6 +60,7 @@ char *opt_chan_name = NULL;
 int opt_pub = 0;
 int opt_sub = 0;
 int opt_verbosity = 0;
+int opt_last = 0;
 
 /// argp junk
 
@@ -77,6 +78,13 @@ static struct argp_option options[] = {
         .arg = NULL,
         .flags = 0,
         .doc = "Subscribe to a channel and write to output"
+    },
+    {
+        .name = "last",
+        .key = 'l',
+        .arg = NULL,
+        .flags = 0,
+        .doc = "gets the most recent message in subscribe mode (default is next)"
     },
     {
         .name = "verbosity",
@@ -119,6 +127,14 @@ void verbprintf( int level, const char fmt[], ... ) {
 }
 
 
+static void *xmalloc( size_t size ) {
+    void *p = malloc( size );
+    if( NULL == p ) {
+        perror("malloc");
+        abort();
+    }
+}
+
 
 void publish( int fd, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
@@ -137,8 +153,7 @@ void publish( int fd, char *chan_name )  {
     { // publish loop
         int max = INIT_BUF_SIZE;
         int cnt;
-        char *buf = malloc( max );
-        assert(buf);
+        char *buf = xmalloc( max );
 
         while(1) {
             // get size
@@ -148,8 +163,7 @@ void publish( int fd, char *chan_name )  {
             if( cnt > max ) {
                 max = cnt;
                 free( buf );
-                buf = malloc( max );
-                assert(buf);
+                buf = xmalloc( max );
             }
             // get data
             r = ach_stream_read_msg_data( fd, buf, cnt, max );
@@ -172,19 +186,22 @@ void subscribe(int fd, char *chan_name) {
     {
         int r = ach_open( &chan, chan_name, NULL );
         if( ACH_OK != r ) {
-            fprintf(stderr, "Failed to open channel %s for publish: %s\n",
+            fprintf(stderr, "Failed to open channel %s for subscribe: %s\n",
                     chan_name, ach_result_to_string(r) );
             return;
         }
     }
     int max = INIT_BUF_SIZE;
-    char *buf = malloc(max);
+    char *buf = xmalloc(max);
     int t0 = 1;
 
     // read loop
     while(1) {
         size_t frame_size = -1;
-        int r = ach_wait_next(&chan, buf, max, &frame_size,  NULL );
+        int r = opt_last ?
+            ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
+            ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
+
         // check return code
         if( ACH_OK != r )  {
             if( ACH_OVERFLOW == r ) {
@@ -192,7 +209,7 @@ void subscribe(int fd, char *chan_name) {
                 assert(fs > max );
                 free(buf);
                 max = frame_size;
-                buf = malloc( max );
+                buf = xmalloc( max );
                 continue;
             }
             if( ! (t0 && r == ACH_MISSED_FRAME) ) {
@@ -246,6 +263,9 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         break;
     case 'v':
         opt_verbosity ++;
+        break;
+    case 'l':
+        opt_last = 1;
         break;
     case 0:
         opt_chan_name = arg;
