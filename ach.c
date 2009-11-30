@@ -36,11 +36,9 @@
 
 /** \file ach.c
  *  \author Neil T. Dantam
- *
- *  Moral Support
- *    Jon Scholz
  */
 
+/// Use handy GNU extensions
 #define _GNU_SOURCE
 
 #include <stdint.h>
@@ -72,9 +70,11 @@
 //(((args.verbosity) >= level )?fprintf( stderr, (fmt), ## a ) : 0);
 */
 
+/// macro to print debug messages
 #define DEBUGF(fmt, a... )                      \
     fprintf(stderr, (fmt), ## a )
 
+/// macro to do things when debugging
 #define IFDEBUG( x ) (x)
 
 char *ach_result_to_string(ach_status_t result) {
@@ -475,7 +475,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
 
 
 static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                    const struct timespec *abstime, int last, int wait ) {
+                    const struct timespec *ACH_RESTRICT abstime, int last, int wait ) {
     //FIXME: somehow gives missed frame on first get...
     ach_header_t *shm = chan->shm;
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
@@ -536,14 +536,14 @@ int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size
 
 
 int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *abstime) {
+                  const struct timespec *ACH_RESTRICT abstime) {
     return ach_get( chan, buf, size, frame_size, abstime, 1, 1 );
 }
 
 
 
 int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *abstime) {
+                  const struct timespec *ACH_RESTRICT abstime) {
     return ach_get( chan, buf, size, frame_size, abstime, 0, 1 );
 }
 

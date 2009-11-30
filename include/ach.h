@@ -37,22 +37,31 @@
 /** \file ach.h
  *  \author Neil T. Dantam
  *
- *  Moral Support
- *    Jon Scholz
- *    Pushkar Kolhe
- *    Jon Olson
+ *  Moral Support:
+ *    Jon Scholz,
+ *    Pushkar Kolhe,
+ *    Jon Olson,
  *    Venkata Subramania Mahalingam
  */
 
 
 /** \mainpage
  *
- * ach is a library (and eventually daemon) that provides a
- * publish-subscribe form of IPC. Clients may be publishers and or
- * subscribers. Publishers create "channels" which they push data
- * to. Clients can then poll then channels for data.
+ * \brief Ach is a library that provides a publish-subscribe form of
+ * IPC.
+ *
+ * Clients may be publishers and or subscribers. Publishers they push
+ * data to channels, and subscribers can then poll or wait on the
+ * channels for data.
+ *
+ * Ach deals only with byte arrays.  Any higher level data
+ * organization (records, dictionaries, etc) must be handled in the
+ * client application.
+ *
+ * \author Neil T. Dantam, MacOSX porting: Jon Olson
  *
  * \todo better networking
+ *
  *
  */
 
@@ -87,7 +96,12 @@
 #define ACH_H
 
 #ifdef __cplusplus
+/// abstract restrict keyword to play nice with C++
+#define ACH_RESTRICT
 extern "C" {
+#else
+/// abstract restrict keyword to play nice with C++
+#define ACH_RESTRICT restrict
 #endif
 
     /// maximun size of a channel name
@@ -168,7 +182,7 @@ extern "C" {
         int state;  ///< state of the channel (ie open/closed)
         int refcount; ///< number of open handles to channel
         int anon; ///< is channel in the heap?
-        char name[1+ACH_CHAN_NAME_MAX];
+        char name[1+ACH_CHAN_NAME_MAX]; ///< Name of this channel
         struct /* anonymous structure */ {
             pthread_mutex_t mutex;     ///< mutex for condition variables
             pthread_cond_t cond; ///< condition variable
@@ -187,10 +201,10 @@ extern "C" {
     } ach_index_t ;
 
 
-    /** Attributes to pass to ach pub/sub */
+    /** Attributes to pass to ach_open */
     typedef struct {
         int map_anon; ///< anonymous channel (put it in process heap, not shm)
-        void *shm;
+        void *shm;   ///< the memory buffer used by anonymous channels
     } ach_attr_t;
 
 
@@ -211,7 +225,7 @@ extern "C" {
         int fd;            ///< file descriptor of mmap'ed file
         uint64_t seq_num;  ///<last sequence number read or written
         size_t next_index; ///< next index entry to try to use
-        ach_attr_t attr;
+        ach_attr_t attr; ///< attributes used to create this channel
         int mode; ///< whether channel was opened for publish or subscribe
     } ach_channel_t;
 
@@ -234,14 +248,17 @@ extern "C" {
     ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
 
 
+    /** Initialize attributes for opening channels. */
     void ach_attr_init( ach_attr_t *attr );
 
+    /** Initialize attributes for creating channels. */
     void ach_create_attr_init( ach_create_attr_t *attr );
 
-    /** Creates a new channel
+    /** Creates a new channel.
         \param channel_name Name of the channel
         \param frame_cnt number of frames to hold in circular buffer
         \param frame_size nominal size of each frame
+        \param attr options
     */
     int ach_create( char *channel_name,
                     size_t frame_cnt, size_t frame_size,
@@ -265,10 +282,10 @@ extern "C" {
 
     /** like ach_get_next but blocks if no new data is there */
     int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                      const struct timespec *abstime);
+                      const struct timespec *ACH_RESTRICT abstime);
 
     /** Pulls the most recent message from the channel.
-        \pre chan has been opened with ach_subscribe()
+        \pre chan has been opened with ach_open()
 
         \post If buf is big enough to hold the next frame, buf contains
         the data for the last frame and chan.seq_num is set to the last
@@ -297,15 +314,12 @@ extern "C" {
 
         See ach_get_next for parameters
     */
-#ifdef __cplusplus
-    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *abstime);
-#else
-    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *restrict abstime);
-#endif
+    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                       const struct timespec *ACH_RESTRICT abstime);
 
     /** Writes a new message in the channel.
 
-        \pre chan has been opened with ach_publish()
+        \pre chan has been opened with ach_open()
 
         \post The contents of buf are copied into the channel and the
         sequence number of the channel is incremented.
@@ -343,7 +357,10 @@ extern "C" {
     /** Writes message pointed to by but to stream fd */
     int ach_stream_write_msg( int fd, char *buf, int cnt);
 
+    /** Reads the size of a message from fd and stores in cnt. */
     int ach_stream_read_msg_size( int fd, int *cnt);
+
+    /** Reads msg_size bytes of data from fd and stores in buf. */
     int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size);
 
 #ifdef __cplusplus
