@@ -36,7 +36,7 @@ $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
 clean:
 	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES) *.deb *.lzma
-	rm -rf debian doc $(PROJECT)-$(VERSION)
+	rm -rf debian doc $(PROJECT)-$(VERSION) .deps
 
 doc: $(INCLUDEDIR)/ach.h
 	doxygen

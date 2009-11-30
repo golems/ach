@@ -45,6 +45,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include "ach.h"
 
 
@@ -52,12 +53,13 @@
 #define INIT_BUF_SIZE 512
 
 //#define DEBUGF(fmt, a... )
-#define DEBUGF(fmt, a... )                      \
-    fprintf(stderr, (fmt), ## a )
+//#define DEBUGF(fmt, a... )
+//fprintf(stderr, (fmt), ## a )
 
 char *opt_chan_name = NULL;
 int opt_pub = 0;
 int opt_sub = 0;
+int opt_verbosity = 0;
 
 /// argp junk
 
@@ -75,6 +77,13 @@ static struct argp_option options[] = {
         .arg = NULL,
         .flags = 0,
         .doc = "Subscribe to a channel and write to output"
+    },
+    {
+        .name = "verbosity",
+        .key = 'v',
+        .arg = NULL,
+        .flags = 0,
+        .doc = "say more stuff"
     },
     {
         .name = NULL,
@@ -98,8 +107,21 @@ static char doc[] = "copy ach frames to/from stdio";
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
+
+void verbprintf( int level, const char fmt[], ... ) {
+    va_list argp;
+    va_start( argp, fmt );
+    if( level <= opt_verbosity ) {
+        fprintf(stderr, "srd: ");
+        vfprintf( stderr, fmt, argp );
+    }
+    va_end( argp );
+}
+
+
+
 void publish( int fd, char *chan_name )  {
-    DEBUGF("publish()\n");
+    verbprintf(1, "Publishing()\n");
     ach_channel_t chan;
     int r;
 
@@ -144,7 +166,7 @@ void publish( int fd, char *chan_name )  {
 }
 
 void subscribe(int fd, char *chan_name) {
-    DEBUGF("subscribe()\n");
+    verbprintf(1, "Subscribing()\n");
     // get channel
     ach_channel_t chan;
     {
@@ -161,15 +183,10 @@ void subscribe(int fd, char *chan_name) {
 
     // read loop
     while(1) {
-        size_t frame_size;
+        size_t frame_size = -1;
         int r = ach_wait_next(&chan, buf, max, &frame_size,  NULL );
+        // check return code
         if( ACH_OK != r )  {
-            if( ! (t0 && r == ACH_MISSED_FRAME) ) {
-                if( ACH_CLOSED != r ) {
-                    fprintf(stderr, "sub: ach_error: %s\n",
-                            ach_result_to_string(r));
-                }
-            }
             if( ACH_OVERFLOW == r ) {
                 int fs = frame_size;
                 assert(fs > max );
@@ -177,6 +194,12 @@ void subscribe(int fd, char *chan_name) {
                 max = frame_size;
                 buf = malloc( max );
                 continue;
+            }
+            if( ! (t0 && r == ACH_MISSED_FRAME) ) {
+                if( ACH_CLOSED != r ) {
+                    fprintf(stderr, "sub: ach_error: %s\n",
+                            ach_result_to_string(r));
+                }
             }
             if( r != ACH_MISSED_FRAME ) break;
         }
@@ -220,6 +243,9 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         break;
     case 's':
         opt_sub = 1;
+        break;
+    case 'v':
+        opt_verbosity ++;
         break;
     case 0:
         opt_chan_name = arg;

@@ -445,7 +445,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     assert( index->offset < shm->data_size );
     if( index->size > size ) {
         // buffer overflow
-        *frame_size = size;
+        *frame_size = index->size;
         return ACH_OVERFLOW;
     }else if( chan->seq_num >= index->seq_num ) {
         // no new data
