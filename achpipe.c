@@ -48,6 +48,12 @@
  * bytes of the frame, the four ascii bytes "data", and the proper
  * number of data bytes.
  *
+ *
+ * Note that ach normally communicates using shared memory.  The pipe
+ * protocol is only for intermachine communication or increasing
+ * robustness if one does not want a process to touch shared memory
+ * directly.
+ *
  * <tt>
  * -----------------------------------\n
  * | "size" | int32 | "data" | $DATA |\n
