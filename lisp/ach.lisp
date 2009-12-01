@@ -37,9 +37,13 @@
 
 (defpackage :ach
   (:use :cl :binio)
-  (:export :ach-open :ach-close :ach-read :ach-write))
+  (:export :ach-open :ach-close :ach-read :ach-write :make-listener))
 
 (in-package :ach)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; GENERAL INTERACTION ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defstruct channel
   direction
@@ -56,20 +60,21 @@
 (defun channel-output (channel)
   (sb-ext:process-output (channel-process channel)))
 
-(defun ach-open (channel-name &key (direction :input))
+(defun ach-open (channel-name &key (direction :input) last)
   "Open an ach channel"
   (let ((proc-input (if (eq direction :output) :stream))
         (proc-output (if (eq direction :input) :stream)))
     (make-channel
      :direction direction
      :process (sb-ext:run-program "achpipe"
-                                  (list ;;"-v"
-                                   (case direction
-                                     (:input "-s")
-                                     (:output "-p")
-                                     (otherwise (error "Invalid direction: ~A"
-                                                       direction)))
-                                   channel-name)
+                                  `(
+                                    ,(case direction
+                                           (:input "-s")
+                                           (:output "-p")
+                                           (otherwise (error "Invalid direction: ~A"
+                                                             direction)))
+                                     ,channel-name
+                                     ,@(when last (list "--last")))
                                   :search t
                                   :wait nil
                                   :input proc-input
@@ -98,8 +103,9 @@
 (defun make-size-buf ()
   (make-octet-vector 12))
 
-(defun ach-read (channel)
+(defun ach-read (channel &optional buffer)
   "read a frame from the channel"
+  (declare (type (or null octet-vector) buffer))
   (assert (eq :input (channel-direction channel)) ()
           "Channel direction must be :INPUT, not ~S"
           (channel-direction channel))
@@ -115,7 +121,8 @@
                "Invalid size delimiter: ~A" (subseq size-buf 8))
     (let* ((size (decode-uint size-buf :big 4))
            ;;(buffer (make-array size :element-type '(unsigned-byte 8))))
-           (buffer (make-octet-vector size)))
+           (buffer (if (= size (length buffer)) buffer
+                       (make-octet-vector size))))
       ;(read-bytes-dammit buffer s)
       (read-sequence buffer s)
       buffer)))
@@ -134,8 +141,10 @@
     (encode-int *size-delim* :little 0)
     (encode-int (length buffer) :big 4)
     (encode-int *data-delim* :little 8)
-    (write-bytes-dammit size-buf s)
-    (write-bytes-dammit buffer s)))
+    (write-sequence size-buf s)
+    (write-sequence buffer s)))
+    ;;(write-bytes-dammit size-buf s)
+    ;;(write-bytes-dammit buffer s)))
 
 
 (defun ach-status (channel)
@@ -149,5 +158,41 @@
   ;;(sb-ext:process-wait (channel-process channel) t)
   (setf (channel-direction channel) nil)
   channel)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; CONTINUOUS READING ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;; maintain a background thread that will continuously read the
+;;; channel
+
+(defun make-listener (channel-name &key last)
+  (let ((lock (sb-thread:make-mutex))
+        (buffer nil)
+        (continue t))
+    (let ((thread  ; start the listening thread
+           (sb-thread:make-thread
+            (lambda () (let ((channel (ach-open channel-name
+                                           :direction :input :last last)))
+                    (unwind-protect (loop
+                                       while continue
+                                       for tmp-buffer = (ach-read channel)
+                                       do (sb-thread:with-mutex (lock)
+                                            (setq buffer tmp-buffer)))
+                      (ach-close channel))))
+            :name (concatenate 'string "ach-listener-" channel-name))))
+      ;; return a closure to get the next buffer or terminate the listener
+      (lambda (&key terminate)
+        (if terminate
+            ;; stop the listener
+            (progn
+              ;; FIXME: be more robust
+              (setq continue nil)
+              (sb-thread:join-thread thread))
+            ;; get the buffer
+            (progn
+              (sb-thread:with-mutex (lock)
+                (copy-seq buffer))))))))
 
 
