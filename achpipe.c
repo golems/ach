@@ -34,10 +34,28 @@
  *
  */
 
-/** \file achpipe.h
+/** \file achpipe.c
  *  \author Neil T. Dantam
+ *
+ * \todo Extend protocol so that it only sends frames when requested
  */
 
+
+/** \page "Pipe Protocol"
+ *
+ * Simple Mode: Ach frames are sent across the pipe as the four ascii
+ * bytes "size", and big-endian 32-bit integer indicating the size in
+ * bytes of the frame, the four ascii bytes "data", and the proper
+ * number of data bytes.
+ *
+ * <tt>
+ * -----------------------------------\n
+ * | "size" | int32 | "data" | $DATA |\n
+ * -----------------------------------\n
+ * </tt>
+ *
+ * \sa Todo List
+ */
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,16 +68,22 @@
 
 
 // lets pick the number POSIX specifies for atomic reads/writes
+/// Initial size of ach frame buffer
 #define INIT_BUF_SIZE 512
 
 //#define DEBUGF(fmt, a... )
 //#define DEBUGF(fmt, a... )
 //fprintf(stderr, (fmt), ## a )
 
+/// CLI option: channel name
 char *opt_chan_name = NULL;
+/// CLI option: publish mode
 int opt_pub = 0;
+/// CLI option: subscribe mode
 int opt_sub = 0;
+/// CLI option: verbosity level
 int opt_verbosity = 0;
+/// CLI option: send only most recent frames
 int opt_last = 0;
 
 /// argp junk
@@ -115,7 +139,7 @@ static char doc[] = "copy ach frames to/from stdio";
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
-
+/// print stuff based on verbosity level
 void verbprintf( int level, const char fmt[], ... ) {
     va_list argp;
     va_start( argp, fmt );
@@ -135,7 +159,7 @@ static void *xmalloc( size_t size ) {
     }
 }
 
-
+/// publishing loop
 void publish( int fd, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
     ach_channel_t chan;
@@ -179,6 +203,7 @@ void publish( int fd, char *chan_name )  {
 
 }
 
+/// subscribing loop
 void subscribe(int fd, char *chan_name) {
     verbprintf(1, "Subscribing()\n");
     // get channel
@@ -227,7 +252,7 @@ void subscribe(int fd, char *chan_name) {
     ach_close( &chan );
 }
 
-
+/// main
 int main( int argc, char **argv ) {
     argp_parse (&argp, argc, argv, 0, NULL, NULL);
 

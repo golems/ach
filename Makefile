@@ -6,8 +6,6 @@ SHAREDLIBS := ach
 
 BINFILES := achcat achpipe.bin ach
 
-#DOXPATH := $(HOME)/prism/public_html/dox
-
 LC_ALL := ascii
 LANG := ascii
 
