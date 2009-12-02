@@ -43,22 +43,52 @@
 
 /** \page "Pipe Protocol"
  *
- * Simple Mode: Ach frames are sent across the pipe as the four ascii
- * bytes "size", and big-endian 32-bit integer indicating the size in
- * bytes of the frame, the four ascii bytes "data", and the proper
- * number of data bytes.
- *
- *
- * Note that ach normally communicates using shared memory.  The pipe
- * protocol is only for intermachine communication or increasing
- * robustness if one does not want a process to touch shared memory
- * directly.
+ * \section frame-format Frame Format
  *
  * <tt>
  * -----------------------------------\n
  * | "size" | int32 | "data" | $DATA |\n
  * -----------------------------------\n
  * </tt>
+ *
+ *
+ * Ach frames are sent across the pipe as the
+ * four ascii bytes "size", and big-endian 32-bit integer indicating
+ * the size in bytes of the frame, the four ascii bytes "data", and
+ * the proper number of data bytes.
+ *
+ * \section simple-mode
+ *
+ * A subscribing achpipe process will push frames across the pipe as
+ * soon as they appear in the channel.  A publishing achpipe process
+ * will read a frame from the pipe and the put it on the channel.
+ *
+ * \section sync-mode Synchronous Mode
+ *
+ * Subscribing achpipe processes can operate in synchronous mode.  In
+ * this case, the process will read a command from the pipe and then
+ * perform an action based on that command.  Current commands are:
+ *
+ *
+ * <ul>
+ * <li> \c next Send the next frame from channel. \sa ach_wait_next </li>
+ * <li> \c last Send the last frame from channel. \sa ach_wait_last </li>
+ * </ul>
+ *
+ * These commands are sent as four ascii bytes, no '\\n' and no '\\0',
+ * just like the aforementioned "size" and "data" delimiters.  If
+ * future commands need arguments, it may be best in increase the
+ * length of all commands to 8 bytes so that a command can be obtained
+ * with a single read().  That would avoid the additional system
+ * call without having to resort to userspace buffering.
+ *
+ * \section comparison-proper
+ *
+ * Note that ach normally communicates using shared memory.  The pipe
+ * protocol is only for intermachine communication or increasing
+ * robustness if one does not want a process to touch shared memory
+ * directly.
+ *
  *
  * \sa Todo List
  */
@@ -166,6 +196,7 @@ void verbprintf( int level, const char fmt[], ... ) {
     va_end( argp );
 }
 
+/// Check test, if false, print error and abort.
 void hard_assert(int test, const char fmt[], ... ) {
     if( !test ) {
         va_list argp;

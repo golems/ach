@@ -304,7 +304,8 @@ extern "C" {
         to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
         available.
     */
-    int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
+    int ach_get_last(ach_channel_t *chan, void *buf,
+                     size_t size, size_t *frame_size);
 
     /** Blocks until a new message is available.
 
