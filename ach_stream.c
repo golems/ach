@@ -52,7 +52,7 @@
 char ach_stream_presize[5] = "size";
 char ach_stream_postsize[5] = "data";
 
-static int read_fill(int fd, char *buf, int cnt ) {
+int ach_stream_read_fill(int fd, char *buf, int cnt ) {
     int r;
     int n = 0;
     do {
@@ -63,7 +63,11 @@ static int read_fill(int fd, char *buf, int cnt ) {
     return cnt;
 }
 
-static int write_fill(int fd, char *buf, int cnt ) {
+static int read_fill(int fd, char *buf, int cnt ) {
+    return ach_stream_read_fill( fd, buf, cnt );
+}
+
+int ach_stream_write_fill(int fd, char *buf, int cnt ) {
     int r;
     int n = 0;
     do {
@@ -72,6 +76,10 @@ static int write_fill(int fd, char *buf, int cnt ) {
         else return r;
     }while( n < cnt);
     return cnt;
+}
+
+static int write_fill(int fd, char *buf, int cnt ) {
+    return ach_stream_write_fill( fd, buf, cnt );
 }
 
 int ach_stream_write_msg( int fd, char *buf, int cnt) {

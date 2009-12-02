@@ -45,13 +45,14 @@ import os
 def parse():
     p = OptionParser()
     p.add_option("-v", "--verbose",
-                 action="store_true", dest="verbose")
+                 action="count", dest="verbose")
     p.add_option("-H", "--help.bin",
                  action="store_true", dest="help_bin")
     p.add_option("-l", "--last",
                  action="store_true", dest="last")
     p.add_option("-p", "--publish", dest="publish_channel")
     p.add_option("-s", "--subscribe", dest="subscribe_channel")
+    p.add_option("-S", "--subscribe-synchronous", dest="sync_channel")
     (options, args) = p.parse_args()
     return options
     
@@ -60,7 +61,8 @@ def make_args(opts):
     if opts.help_bin :
         args.append("--help")
     if opts.verbose :
-        args.append("--verbose")
+        for i in range(0, opts.verbose):
+            args.append("--verbose")
     if opts.last:
         args.append("--last")
     if opts.publish_channel:
@@ -69,6 +71,10 @@ def make_args(opts):
     if opts.subscribe_channel :
         args.append("--subscribe")
         args.append(opts.subscribe_channel)
+    if opts.sync_channel :
+        args.append("--subscribe")
+        args.append(opts.sync_channel)
+        args.append("--synchronous")
     return args
 
 def setup_streams(opts):
@@ -79,7 +85,7 @@ def main():
     options = parse()
     setup_streams(options)
     args = make_args(options)
-    print args
+    #print args
     os.execvp( "achpipe.bin", args )
     
 

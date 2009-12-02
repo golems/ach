@@ -70,6 +70,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <string.h>
 #include "ach.h"
 
 
@@ -91,6 +92,8 @@ int opt_sub = 0;
 int opt_verbosity = 0;
 /// CLI option: send only most recent frames
 int opt_last = 0;
+/// CLI option: synchronous mode
+int opt_sync = 0;
 
 /// argp junk
 
@@ -110,6 +113,13 @@ static struct argp_option options[] = {
         .doc = "Subscribe to a channel and write to output"
     },
     {
+        .name = "synchronous",
+        .key = 'c',
+        .arg = NULL,
+        .flags = 0,
+        .doc = "Operate synchronously, only in subscribe mode"
+    },
+    {
         .name = "last",
         .key = 'l',
         .arg = NULL,
@@ -117,7 +127,7 @@ static struct argp_option options[] = {
         .doc = "gets the most recent message in subscribe mode (default is next)"
     },
     {
-        .name = "verbosity",
+        .name = "verbose",
         .key = 'v',
         .arg = NULL,
         .flags = 0,
@@ -156,6 +166,17 @@ void verbprintf( int level, const char fmt[], ... ) {
     va_end( argp );
 }
 
+void hard_assert(int test, const char fmt[], ... ) {
+    if( !test ) {
+        va_list argp;
+        va_start( argp, fmt );
+        fprintf(stderr, "srd FAIL: ");
+        vfprintf( stderr, fmt, argp );
+        va_end( argp );
+        abort();
+        exit(1);
+    }
+}
 
 static void *xmalloc( size_t size ) {
     void *p = malloc( size );
@@ -163,11 +184,13 @@ static void *xmalloc( size_t size ) {
         perror("malloc");
         abort();
     }
+    return p;
 }
 
 /// publishing loop
 void publish( int fd, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
+    assert(STDIN_FILENO == fd );
     ach_channel_t chan;
     int r;
 
@@ -201,6 +224,8 @@ void publish( int fd, char *chan_name )  {
             assert( cnt == r );
             // put data
             r = ach_put( &chan, buf, cnt );
+            hard_assert( r == ACH_OK, "Invalid ach put %s\n",
+                         ach_result_to_string( r ) );
         }
         free(buf);
 
@@ -209,9 +234,13 @@ void publish( int fd, char *chan_name )  {
 
 }
 
+
+
 /// subscribing loop
 void subscribe(int fd, char *chan_name) {
     verbprintf(1, "Subscribing()\n");
+    verbprintf(1, "Synchronous: %s\n", opt_sync ? "yes" : "no");
+    assert(STDOUT_FILENO == fd);
     // get channel
     ach_channel_t chan;
     {
@@ -222,36 +251,75 @@ void subscribe(int fd, char *chan_name) {
             return;
         }
     }
+    // frame buffer
     int max = INIT_BUF_SIZE;
     char *buf = xmalloc(max);
     int t0 = 1;
 
+    char cmd[5] = {0};
+
     // read loop
     while(1) {
         size_t frame_size = -1;
-        int r = opt_last ?
-            ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
-            ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
-
-        // check return code
-        if( ACH_OK != r )  {
-            if( ACH_OVERFLOW == r ) {
-                int fs = frame_size;
-                assert(fs > max );
-                free(buf);
-                max = frame_size;
-                buf = xmalloc( max );
-                continue;
-            }
-            if( ! (t0 && r == ACH_MISSED_FRAME) ) {
-                if( ACH_CLOSED != r ) {
-                    fprintf(stderr, "sub: ach_error: %s\n",
-                            ach_result_to_string(r));
-                }
-            }
-            if( r != ACH_MISSED_FRAME ) break;
+        int r = -1;
+        int got_frame = 0;
+        if( opt_sync ) {
+            // wait for the pull command
+            int rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
+            hard_assert(4 == rc, "Invalid command read: %d\n", rc );
+            verbprintf(2, "Command %s\n", cmd );
         }
-        r = ach_stream_write_msg( fd, buf, frame_size );
+        // read the data
+        do {
+            if( opt_sync ) {
+                // parse command
+                if ( 0 == strcmp("next", cmd ) ) {
+                    r = ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
+                }else if ( 0 == strcmp("last", cmd ) ){
+                    r = ach_wait_last(&chan, buf, max, &frame_size,  NULL ) ;
+                }else {
+                    hard_assert(0, "Invalid command: %s\n", cmd );
+                }
+            } else {
+                // push the data
+                r = opt_last ?
+                    ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
+                    ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
+            }
+            // check return code
+            if( ACH_OK != r )  {
+                // enlarge buffer and retry on overflow
+                if( ACH_OVERFLOW == r ) {
+                    int fs = frame_size;
+                    assert(fs > max );
+                    free(buf);
+                    max = frame_size;
+                    buf = xmalloc( max );
+                }else {
+                    // abort on other errors
+                    hard_assert( t0 || r == ACH_MISSED_FRAME,
+                                 "sub: ach_error: %s\n",
+                                 ach_result_to_string(r) );
+                    got_frame = 1;
+                }
+            } else {
+                got_frame = 1;
+            }
+        }while( !got_frame );
+
+        verbprintf(2, "Got ach frame %d\n", frame_size );
+
+        // stream send
+        {
+            size_t r = ach_stream_write_msg( fd, buf, frame_size );
+            hard_assert( r == frame_size + ACH_STREAM_PREFIX_SIZE,
+                         "Invalid data write, r: %d, frame: %d\n",
+                         r, frame_size );
+            if( opt_sync ) {
+                fsync( fd ); // fails w/ sbcl, and maybe that's ok
+            }
+            verbprintf( 2, "Printed output\n");
+        }
         t0 = 0;
     }
     free(buf);
@@ -297,6 +365,9 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         break;
     case 'l':
         opt_last = 1;
+        break;
+    case 'c':
+        opt_sync = 1;
         break;
     case 0:
         opt_chan_name = arg;

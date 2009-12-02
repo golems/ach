@@ -353,6 +353,8 @@ extern "C" {
     */
     void ach_dump( ach_header_t *shm);
 
+    /// size of stream prefix (guard words and size word)
+#define ACH_STREAM_PREFIX_SIZE  12
 
     /** Writes message pointed to by but to stream fd */
     int ach_stream_write_msg( int fd, char *buf, int cnt);
@@ -362,6 +364,13 @@ extern "C" {
 
     /** Reads msg_size bytes of data from fd and stores in buf. */
     int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size);
+
+
+    /** Reads from fd into buffer completely */
+    int ach_stream_read_fill( int fd, char *buf, int cnt );
+
+    /** Writes from buffer into fd completely */
+    int ach_stream_write_fill( int fd, char *buf, int cnt );
 
 #ifdef __cplusplus
 }

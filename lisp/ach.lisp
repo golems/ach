@@ -37,7 +37,7 @@
 
 (defpackage :ach
   (:use :cl :binio)
-  (:export :ach-open :ach-close :ach-read :ach-write :make-listener))
+  (:export :ach-open :ach-close :ach-read :ach-write :make-listener :make-ach-sync))
 
 (in-package :ach)
 
@@ -54,6 +54,11 @@
 (defparameter *size-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "size") :little))
 (defparameter *data-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "data") :little))
 
+(defparameter +next-cmd+ (sb-ext:string-to-octets "next"))
+(defparameter +last-cmd+ (sb-ext:string-to-octets "last"))
+;(defparameter +next-cmd+ "next")
+;(defparameter +last-cmd+ "last")
+
 (defun channel-input (channel)
   (sb-ext:process-input (channel-process channel)))
 
@@ -62,14 +67,19 @@
 
 (defun ach-open (channel-name &key (direction :input) last)
   "Open an ach channel"
-  (let ((proc-input (if (eq direction :output) :stream))
-        (proc-output (if (eq direction :input) :stream)))
+  (let ((proc-input (when (or (eq direction :output)
+                              (eq direction :input-sync))
+                      :stream))
+        (proc-output (when (or (eq direction :input)
+                               (eq direction :input-sync))
+                       :stream)))
     (make-channel
      :direction direction
      :process (sb-ext:run-program "achpipe"
                                   `(
                                     ,(case direction
                                            (:input "-s")
+                                           (:input-sync "-S")
                                            (:output "-p")
                                            (otherwise (error "Invalid direction: ~A"
                                                              direction)))
@@ -82,6 +92,7 @@
                                   :output proc-output
                                   ;;:output-element-type '(unsigned-byte 8)
                                   :error *standard-output*))))
+                                  ;;:error "/tmp/achlisperr"))))
 
 
 
@@ -93,12 +104,12 @@
 ;;        (setf (aref buffer i)
 ;;              (read-byte stream)))))
 
-;;(defun write-bytes-dammit (buffer stream)
-;;  (declare (octet-vector buffer))
-;;  (if (eq (stream-element-type stream) 'unsigned-byte)
-;;      (write-sequence buffer stream)
-;;      (dotimes (i (length buffer))
-;;        (write-byte (aref buffer i) stream ))))
+(defun write-bytes-dammit (buffer stream)
+  (declare (octet-vector buffer))
+  (if (eq (stream-element-type stream) 'unsigned-byte)
+      (write-sequence buffer stream)
+      (dotimes (i (length buffer))
+        (write-byte (aref buffer i) stream ))))
 
 (defun make-size-buf ()
   (make-octet-vector 12))
@@ -106,8 +117,9 @@
 (defun ach-read (channel &optional buffer)
   "read a frame from the channel"
   (declare (type (or null octet-vector) buffer))
-  (assert (eq :input (channel-direction channel)) ()
-          "Channel direction must be :INPUT, not ~S"
+  (assert (or (eq :input (channel-direction channel))
+              (eq :input-sync (channel-direction channel)))
+          () "Channel direction must be :INPUT, not ~S"
           (channel-direction channel))
   (let ((s (channel-output channel))
         ;;(size-buf (make-array 12 :element-type 'unsigned-byte)))
@@ -153,9 +165,8 @@
 (defun ach-close (channel)
   "Close ach channel"
   (sb-ext:process-kill (channel-process channel) sb-posix:sigterm)
-  ;; don't try sb-ext:process-close, it creates zombies
-  ;; sb-ext:process-wait doesn't seem to return
-  ;;(sb-ext:process-wait (channel-process channel) t)
+  (sb-ext:process-wait (channel-process channel) t)
+  (sb-ext:process-close (channel-process channel))
   (setf (channel-direction channel) nil)
   channel)
 
@@ -168,9 +179,11 @@
 ;;; channel
 
 (defun make-listener (channel-name &key last)
+  ;;(declare (optimize (speed 3) (safety 0)))
   (let ((lock (sb-thread:make-mutex))
-        (buffer nil)
+        (buffer (make-octet-vector 0))
         (continue t))
+    (declare (octet-vector buffer))
     (let ((thread  ; start the listening thread
            (sb-thread:make-thread
             (lambda () (let ((channel (ach-open channel-name
@@ -194,5 +207,30 @@
             (progn
               (sb-thread:with-mutex (lock)
                 (copy-seq buffer))))))))
+
+
+(defun send-sync-cmd (channel last)
+  (write-sequence (if last +last-cmd+ +next-cmd+)
+                  (channel-input channel))
+  (finish-output (channel-input channel)))
+
+(defun make-ach-sync (channel-name)
+  (let ((channel (ach-open channel-name :direction :input-sync)))
+    (let ((fun (lambda (&key (last t) terminate channel-hook)
+                 (cond
+                   (terminate
+                    ;; close channel
+                    (ach-close channel))
+                   (channel-hook
+                    (funcall channel-hook channel))
+                   (t
+                    ;; read channel
+                    (progn
+                      ;; send cmd
+                      (send-sync-cmd channel last)
+                      ;; get data
+                      (ach-read channel)))))))
+      (sb-ext:finalize fun (lambda () (ach-close channel)))
+      fun)))
 
 
