@@ -151,7 +151,7 @@ int main( int argc, char **argv ) {
     if( opt_command ) {
         r = opt_command();
     }else{
-        fprintf(stderr, "Must specify a command");
+        fprintf(stderr, "Must specify a command\n");
         r = 1;
     }
     cleanup();

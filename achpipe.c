@@ -118,6 +118,8 @@
 
 /// CLI option: channel name
 char opt_chan_name[ACH_CHAN_NAME_MAX + 2] = {0};
+/// CLI option: remote channel name
+char opt_remote_chan_name[ACH_CHAN_NAME_MAX + 2] = {0};
 /// CLI option: publish mode
 int opt_pub = 0;
 /// CLI option: subscribe mode
@@ -177,6 +179,13 @@ static struct argp_option options[] = {
         .arg = NULL,
         .flags = 0,
         .doc = "Write options to stdout"
+    },
+    {
+        .name = "remote-channel",
+        .key = 'z',
+        .arg = "channel",
+        .flags = 0,
+        .doc = "Channel on other end of pipe for reader writing"
     },
     {
         .name = "verbose",
@@ -304,8 +313,6 @@ void parse_headers() {
     char label[HEADER_LABEL_MAX];
     char value[HEADER_VALUE_MAX];
 
-    fprintf(stderr, "Reading Headers\n");
-
     while( 0 == read_header( label, value ) )  {
         if( 0 == strcasecmp( "mode", label ) ) {
             if( 0 == strcasecmp( "publish", value ) ) {
@@ -323,7 +330,6 @@ void parse_headers() {
             hard_assert( 0, "Invalid header label: %s", label );
         }
     }
-    fprintf(stderr, "done\n");
 }
 
 void write_header( char *label, char *value ) {
@@ -345,7 +351,7 @@ void write_header( char *label, char *value ) {
 
 void write_headers() {
     write_header( "mode", opt_pub ? "subscribe" : "publish" );
-    write_header( "channel", opt_chan_name );
+    write_header( "channel", opt_remote_chan_name[0] ? opt_remote_chan_name : opt_chan_name );
     int r = ach_stream_write_fill( STDOUT_FILENO, "\n", 1 );
     hard_assert( 1 == r, "Couldn't write header newline\n" );
 }
@@ -551,6 +557,10 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
     case 'W':
         opt_write_headers = 1;
         break;
+    case 'z':
+        hard_assert( strlen( arg ) < ACH_CHAN_NAME_MAX-1,
+                     "Channel name argument to long" );
+        strncpy( opt_remote_chan_name, arg, ACH_CHAN_NAME_MAX );
     case 0:
         hard_assert( strlen( arg ) < ACH_CHAN_NAME_MAX-1,
                      "Channel name argument to long" );
