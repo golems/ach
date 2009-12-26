@@ -48,6 +48,10 @@
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
+#include <errno.h>
+
+#include <pthread.h>
+#include "ach.h"
 
 char ach_stream_presize[5] = "size";
 char ach_stream_postsize[5] = "data";
@@ -133,3 +137,29 @@ int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size) {
 
     return r;
 }
+
+int ach_read_line( int fd, char *buf, size_t n ) {
+    // bit-bang cause it doesn't really matter
+    int r = 0;
+    size_t i = 0;
+    while(i < n - 1) {
+        int tries = 0;
+        // get a byte
+        do {
+            r = read( fd, buf + i, 1 );
+        } while( r != 1 &&
+                 EINTR == errno &&
+                 tries++ < ACH_INTR_RETRY );
+        // check for end
+        if( r != 1 || '\n' == buf[i] ){
+            buf[++i] = '\0';
+            return i;
+        }
+        // increment
+        i++;
+    }
+    assert( buf[i - 1] != '\n' );
+    buf[i] = '\0';
+    return i;
+}
+

@@ -373,6 +373,11 @@ extern "C" {
     /** Writes from buffer into fd completely */
     int ach_stream_write_fill( int fd, char *buf, int cnt );
 
+
+    /** Reads a line from fd */
+    int ach_read_line( int fd, char *buf, size_t cnt );
+
+
 #ifdef __cplusplus
 }
 #endif
