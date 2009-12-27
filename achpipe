@@ -41,18 +41,27 @@
 
 from optparse import OptionParser
 import os
+import socket
 
 def parse():
     p = OptionParser()
     p.add_option("-v", "--verbose",
                  action="count", dest="verbose")
-    p.add_option("-H", "--help.bin",
+    p.add_option("-L", "--help.bin",
                  action="store_true", dest="help_bin")
     p.add_option("-l", "--last",
                  action="store_true", dest="last")
     p.add_option("-p", "--publish", dest="publish_channel")
     p.add_option("-s", "--subscribe", dest="subscribe_channel")
+    p.add_option("-z", "--remote-channel", dest="remote_channel")
     p.add_option("-S", "--subscribe-synchronous", dest="sync_channel")
+    p.add_option("-R", "--read-headers",
+                 action="store_true", dest="read_headers")
+    p.add_option("-W", "--write-headers",
+                 action="store_true", dest="write_headers")
+    p.add_option("-H", "--host", dest="host")
+    p.add_option("-P", "--port", dest="port", 
+                 type="int", default=8075)
     (options, args) = p.parse_args()
     return options
     
@@ -71,14 +80,28 @@ def make_args(opts):
     if opts.subscribe_channel :
         args.append("--subscribe")
         args.append(opts.subscribe_channel)
+    if opts.remote_channel :
+        args.append("--remote-channel")
+        args.append(opts.remote_channel)
     if opts.sync_channel :
         args.append("--subscribe")
         args.append(opts.sync_channel)
         args.append("--synchronous")
+    if opts.read_headers:
+        args.append("--read-headers")
+    if opts.write_headers:
+        args.append("--write-headers")
+
     return args
 
 def setup_streams(opts):
     ## TODO: dup TCP streams
+    if opts.host :
+        sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+        sock.connect( (opts.host, opts.port) )
+        fd = sock.fileno()
+        os.dup2( fd, 0 )
+        os.dup2( fd, 1 )
     return
 
 def main():
