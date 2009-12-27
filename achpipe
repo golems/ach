@@ -42,6 +42,82 @@
 from optparse import OptionParser
 import os
 import socket
+import re
+
+def fail( fmt, args = () ) :
+    print fmt%args
+    exit(1)
+
+def hard_assert( test, fmt, args = () ):
+    if not test :
+        fail( fmt, args )
+
+### HEADERS ###
+def fd_readline( fd ) :
+    s = os.read(fd, 1)
+    buf = ""
+    while len(s) == 1 and s != "\n" :
+        buf += s
+        s = os.read(fd, 1)
+    hard_assert( "\n" == s, "Invalid header line" )
+    buf += "\n"
+    return buf
+
+header_end_pattern = re.compile( '^\\W*$' )
+header_split_pattern = re.compile( '^\\W*([^:]+):\\W*(.+)\\W*$' )
+
+def read_header():
+    line = fd_readline( 0 )
+    assert( len(line) > 0 )
+    if header_end_pattern.match( line ):
+        return None
+    else :
+        m = header_split_pattern.match( line )
+        hard_assert( m, "Line isn't valid header `%s'", line )
+        return (m.group(1), m.group(2))
+
+def parse_header( header, opts ) :
+    (label, value) = header
+    if "mode" == label:
+        if "publish" == value :
+            opts['publish'] = True
+        elif "subscribe" == value :
+            opts['subscribe'] = True
+        else : fail( "Invalid mode: %s", value )
+    elif "channel" == label :
+        opts['channel'] = value
+    else: fail( "Invalid header label %s", label )
+
+def read_headers( opts ):
+    hopts = {}
+    # read headers
+    header = read_header()
+    while header :
+        parse_header( header, hopts )
+        header = read_header()
+    # adjust options
+    if hopts['subscribe'] and hopts['channel'] :
+        opts.subscribe_channel = hopts['channel']
+    elif hopts['publish'] and hopts['channel']:
+        opts.publish_channel = hopts['channel']
+    else :
+        fail("Invalid header set")
+    return opts
+
+def write_headers(opts):
+    if opts.publish_channel:
+        mode = "subscribe"
+        channel = opts.publish_channel
+    elif opts.subscribe_channel:
+        mode = "publish"
+        channel = opts.subscribe_channel
+    else: fail("Need to specify publish or subscribe")
+    if opts.remote_channel:
+        channel = opts.remote_channel
+    os.write( 1, "mode: %s\nchannel: %s\n\n" % (mode, channel) )
+    
+    
+### CLI ARGS ###
 
 def parse():
     p = OptionParser()
@@ -87,15 +163,12 @@ def make_args(opts):
         args.append("--subscribe")
         args.append(opts.sync_channel)
         args.append("--synchronous")
-    if opts.read_headers:
-        args.append("--read-headers")
-    if opts.write_headers:
-        args.append("--write-headers")
-
     return args
 
+
+### DO THINGS ###
+
 def setup_streams(opts):
-    ## TODO: dup TCP streams
     if opts.host :
         sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
         sock.connect( (opts.host, opts.port) )
@@ -107,6 +180,12 @@ def setup_streams(opts):
 def main():
     options = parse()
     setup_streams(options)
+    hard_assert( not (options.read_headers and options.write_headers),
+                 "Can't both read and write headers" )
+    if options.read_headers:
+        read_headers( options )
+    if options.write_headers :
+        write_headers( options )
     args = make_args(options)
     #print args
     os.execvp( "achpipe.bin", args )

@@ -108,9 +108,11 @@
 /// Initial size of ach frame buffer
 #define INIT_BUF_SIZE 512
 
-#define HEADER_LINE_MAX 4096
-#define HEADER_LABEL_MAX 512
-#define HEADER_VALUE_MAX 4096
+/*
+  #define HEADER_LINE_MAX 4096
+  #define HEADER_LABEL_MAX 512
+  #define HEADER_VALUE_MAX 4096
+*/
 
 //#define DEBUGF(fmt, a... )
 //#define DEBUGF(fmt, a... )
@@ -130,10 +132,12 @@ int opt_verbosity = 0;
 int opt_last = 0;
 /// CLI option: synchronous mode
 int opt_sync = 0;
+/*
 /// CLI option: read option headers
 int opt_read_headers = 0;
 /// CLI option: write option headers
 int opt_write_headers = 0;
+*/
 
 /// argp junk
 
@@ -166,20 +170,22 @@ static struct argp_option options[] = {
         .flags = 0,
         .doc = "gets the most recent message in subscribe mode (default is next)"
     },
-    {
-        .name = "read-headers",
-        .key = 'R',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Reads options from stdin"
-    },
-    {
-        .name = "write-headers",
-        .key = 'W',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Write options to stdout"
-    },
+    /*
+      {
+      .name = "read-headers",
+      .key = 'R',
+      .arg = NULL,
+      .flags = 0,
+      .doc = "Reads options from stdin"
+      },
+      {
+      .name = "write-headers",
+      .key = 'W',
+      .arg = NULL,
+      .flags = 0,
+      .doc = "Write options to stdout"
+      },
+    */
     {
         .name = "remote-channel",
         .key = 'z',
@@ -249,112 +255,113 @@ static void *xmalloc( size_t size ) {
     }
     return p;
 }
+/*
+  int read_header( char label[HEADER_LABEL_MAX],
+  char value[HEADER_VALUE_MAX] ) {
+  // read line
+  char line[HEADER_LINE_MAX];
+  size_t n_line = ach_read_line( STDIN_FILENO, line,
+  HEADER_LINE_MAX );
+  assert( '\0' == line[n_line] );
+  hard_assert( '\n' == line[n_line-1],
+  "Couldn't read header line: %s", line );
+  size_t i = 0;
+  // skip whitespace
+  while( (' ' ==  line[i] || '\t' == line[i]) &&
+  i < HEADER_LINE_MAX - 1 ) {
+  i++;
+  }
+  assert( i < HEADER_LINE_MAX );
+  // check for blank line
+  if( '\n' == line[i] ) {
+  assert( i + 1 == n_line );
+  return 1;
+  }
+  // split label
+  {
+  size_t j = 0;
+  while( line[i] != ':' &&
+  j < HEADER_LABEL_MAX - 1 &&
+  i < HEADER_LINE_MAX - 1) {
+  label[j++] = line[i++];
+  }
+  hard_assert( i < HEADER_LABEL_MAX,
+  "Label too long in header: %s", line);
+  assert( ':' == line[i] );
+  label[i++] = '\0';
+  }
+  // skip white space
+  while( (' ' ==  line[i] || '\t' == line[i]) &&
+  i < HEADER_LINE_MAX ) {
+  i++;
+  }
+  // split value
+  {
+  size_t j = 0;
+  while( line[i] != '\n' &&
+  i < HEADER_LINE_MAX - 1 &&
+  j < HEADER_VALUE_MAX - 1) {
+  assert( '\0' != line[i] );
+  value[j++] = line[i++];
+  }
+  assert( i < HEADER_LINE_MAX - 1  );
+  assert( '\0' == line[i+1] );
+  assert( i + 1 == n_line );
+  hard_assert( j < HEADER_VALUE_MAX,
+  "Value too long in header: %s", line);
+  value[j] = '\0';
+  }
 
-int read_header( char label[HEADER_LABEL_MAX],
-                 char value[HEADER_VALUE_MAX] ) {
-    // read line
-    char line[HEADER_LINE_MAX];
-    size_t n_line = ach_read_line( STDIN_FILENO, line,
-                                   HEADER_LINE_MAX );
-    assert( '\0' == line[n_line] );
-    hard_assert( '\n' == line[n_line-1],
-                 "Couldn't read header line: %s", line );
-    size_t i = 0;
-    // skip whitespace
-    while( (' ' ==  line[i] || '\t' == line[i]) &&
-           i < HEADER_LINE_MAX - 1 ) {
-        i++;
-    }
-    assert( i < HEADER_LINE_MAX );
-    // check for blank line
-    if( '\n' == line[i] ) {
-        assert( i + 1 == n_line );
-        return 1;
-    }
-    // split label
-    {
-        size_t j = 0;
-        while( line[i] != ':' &&
-               j < HEADER_LABEL_MAX - 1 &&
-               i < HEADER_LINE_MAX - 1) {
-            label[j++] = line[i++];
-        }
-        hard_assert( i < HEADER_LABEL_MAX,
-                     "Label too long in header: %s", line);
-        assert( ':' == line[i] );
-        label[i++] = '\0';
-    }
-    // skip white space
-    while( (' ' ==  line[i] || '\t' == line[i]) &&
-           i < HEADER_LINE_MAX ) {
-        i++;
-    }
-    // split value
-    {
-        size_t j = 0;
-        while( line[i] != '\n' &&
-               i < HEADER_LINE_MAX - 1 &&
-               j < HEADER_VALUE_MAX - 1) {
-            assert( '\0' != line[i] );
-            value[j++] = line[i++];
-        }
-        assert( i < HEADER_LINE_MAX - 1  );
-        assert( '\0' == line[i+1] );
-        assert( i + 1 == n_line );
-        hard_assert( j < HEADER_VALUE_MAX,
-                     "Value too long in header: %s", line);
-        value[j] = '\0';
-    }
+  return 0;
+  }
 
-    return 0;
-}
+  void parse_headers() {
+  char label[HEADER_LABEL_MAX];
+  char value[HEADER_VALUE_MAX];
 
-void parse_headers() {
-    char label[HEADER_LABEL_MAX];
-    char value[HEADER_VALUE_MAX];
+  while( 0 == read_header( label, value ) )  {
+  if( 0 == strcasecmp( "mode", label ) ) {
+  if( 0 == strcasecmp( "publish", value ) ) {
+  opt_pub = 1;
+  } else if ( 0 == strcasecmp( "subscribe", value ) ) {
+  opt_sub = 1;
+  } else {
+  hard_assert( 0, "Invalid mode header: %s", value );
+  }
+  } else if( 0 == strcasecmp( "channel", label ) ) {
+  hard_assert( strlen( label ) < ACH_CHAN_NAME_MAX-1,
+  "Channel name too long" );
+  strcpy( opt_chan_name, value );
+  } else {
+  hard_assert( 0, "Invalid header label: %s", label );
+  }
+  }
+  }
 
-    while( 0 == read_header( label, value ) )  {
-        if( 0 == strcasecmp( "mode", label ) ) {
-            if( 0 == strcasecmp( "publish", value ) ) {
-                opt_pub = 1;
-            } else if ( 0 == strcasecmp( "subscribe", value ) ) {
-                opt_sub = 1;
-            } else {
-                hard_assert( 0, "Invalid mode header: %s", value );
-            }
-        } else if( 0 == strcasecmp( "channel", label ) ) {
-            hard_assert( strlen( label ) < ACH_CHAN_NAME_MAX-1,
-                         "Channel name too long" );
-            strcpy( opt_chan_name, value );
-        } else {
-            hard_assert( 0, "Invalid header label: %s", label );
-        }
-    }
-}
+  void write_header( char *label, char *value ) {
+  char line[HEADER_LINE_MAX];
+  size_t n_label = strnlen( label, HEADER_LINE_MAX );
+  size_t n_value = strnlen( value, HEADER_LINE_MAX );
+  hard_assert( n_label + n_value + 5 < HEADER_LINE_MAX,
+  "trying to write too long header\n" );
+  strcpy( line, label );
+  strcat( line, ": " );
+  strcat( line, value );
+  strcat( line, "\n" );
+  int n = strlen( line );
+  assert( n + 1 < HEADER_LINE_MAX );
+  int r = ach_stream_write_fill( STDOUT_FILENO, line, n );
+  hard_assert( n == r,
+  "Failed to write header, n = %d, r = %d\n", n, r );
+  }
 
-void write_header( char *label, char *value ) {
-    char line[HEADER_LINE_MAX];
-    size_t n_label = strnlen( label, HEADER_LINE_MAX );
-    size_t n_value = strnlen( value, HEADER_LINE_MAX );
-    hard_assert( n_label + n_value + 5 < HEADER_LINE_MAX,
-                 "trying to write too long header\n" );
-    strcpy( line, label );
-    strcat( line, ": " );
-    strcat( line, value );
-    strcat( line, "\n" );
-    int n = strlen( line );
-    assert( n + 1 < HEADER_LINE_MAX );
-    int r = ach_stream_write_fill( STDOUT_FILENO, line, n );
-    hard_assert( n == r,
-                 "Failed to write header, n = %d, r = %d\n", n, r );
-}
-
-void write_headers() {
-    write_header( "mode", opt_pub ? "subscribe" : "publish" );
-    write_header( "channel", opt_remote_chan_name[0] ? opt_remote_chan_name : opt_chan_name );
-    int r = ach_stream_write_fill( STDOUT_FILENO, "\n", 1 );
-    hard_assert( 1 == r, "Couldn't write header newline\n" );
-}
+  void write_headers() {
+  write_header( "mode", opt_pub ? "subscribe" : "publish" );
+  write_header( "channel", opt_remote_chan_name[0] ? opt_remote_chan_name : opt_chan_name );
+  int r = ach_stream_write_fill( STDOUT_FILENO, "\n", 1 );
+  hard_assert( 1 == r, "Couldn't write header newline\n" );
+  }
+*/
 
 /// publishing loop
 void publish( int fd, char *chan_name )  {
@@ -499,14 +506,16 @@ void subscribe(int fd, char *chan_name) {
 int main( int argc, char **argv ) {
     argp_parse (&argp, argc, argv, 0, NULL, NULL);
 
-    hard_assert( ! ( opt_write_headers &&  opt_read_headers ),
-                 "can't read and write headers\n" );
+    /*
+      hard_assert( ! ( opt_write_headers &&  opt_read_headers ),
+      "can't read and write headers\n" );
 
-    if( opt_read_headers ) {
-        parse_headers();
-    }else if( opt_write_headers ) {
-        write_headers();
-    }
+      if( opt_read_headers ) {
+      parse_headers();
+      }else if( opt_write_headers ) {
+      write_headers();
+      }
+    */
 
     // validate arguments
     hard_assert( 0 < strlen( opt_chan_name ),
@@ -551,12 +560,14 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
     case 'c':
         opt_sync = 1;
         break;
-    case 'R':
-        opt_read_headers = 1;
-        break;
-    case 'W':
-        opt_write_headers = 1;
-        break;
+        /*
+          case 'R':
+          opt_read_headers = 1;
+          break;
+          case 'W':
+          opt_write_headers = 1;
+          break;
+        */
     case 'z':
         hard_assert( strlen( arg ) < ACH_CHAN_NAME_MAX-1,
                      "Channel name argument to long" );
