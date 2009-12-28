@@ -76,16 +76,42 @@ def read_header():
         hard_assert( m, "Line isn't valid header `%s'", line )
         return (m.group(1), m.group(2))
 
+def is_true_string( s ):
+    sl = s.lower()
+    is_true = ("yes" == sl or
+               "true" == sl or
+               "1" == sl or
+               "affirmative" == sl or
+               "sure" == sl or
+               "yeah" == sl or
+               "hotdog" == sl or
+               "perry" == sl
+               )
+    is_false = ("no" == sl or
+                "false" == sl or
+                "negative" == sl or
+                "0" == sl or
+                "nope" == sl or
+                "nah" == sl or
+                "bagel" == sl or
+                "dorian" == sl
+                )
+    assert( not (is_true and is_false) )
+    hard_assert( is_true or is_false, "Invalid boolean header value: %s", s )
+    return is_true
+    
 def parse_header( header, opts ) :
     (label, value) = header
     if "mode" == label:
-        if "publish" == value :
+        if "publish" == value:
             opts['publish'] = True
-        elif "subscribe" == value :
+        elif "subscribe" == value:
             opts['subscribe'] = True
         else : fail( "Invalid mode: %s", value )
-    elif "channel" == label :
+    elif "channel" == label:
         opts['channel'] = value
+    elif "synchronous" == label:
+        opts['synchronous'] = value
     else: fail( "Invalid header label %s", label )
 
 def read_headers( opts ):
@@ -96,7 +122,9 @@ def read_headers( opts ):
         parse_header( header, hopts )
         header = read_header()
     # adjust options
-    if hopts['subscribe'] and hopts['channel'] :
+    if hopts['synchronous'] and hopts['channel']:
+        opts.sync_channel = hopts['channel']
+    elif hopts['subscribe'] and hopts['channel'] :
         opts.subscribe_channel = hopts['channel']
     elif hopts['publish'] and hopts['channel']:
         opts.publish_channel = hopts['channel']
