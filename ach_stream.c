@@ -112,15 +112,19 @@ int ach_stream_read_msg_size( int fd, int *cnt) {
     char buf[4+4+4];
     int r;
 
+    cnt = -1;
+
     r = read_fill( fd, buf, sizeof(buf) );
+
     if( r <= 0 ) return r;
+
     assert( sizeof(buf) == r );
 
-    if( 0 == memcpy( ach_stream_presize,  & buf[0], 4 ) &&
-        0 == memcpy( ach_stream_postsize, & buf[8], 4 ) ) {
-        *cnt = -1;
-    } else {
+    if( 0 == memcmp( ach_stream_presize,  & buf[0], 4 ) &&
+        0 == memcmp( ach_stream_postsize, & buf[8], 4 ) ) {
         *cnt = endconv_ld_be_i32( & buf[4] );
+    } else {
+        *cnt = -1;
     }
     return r;
 }

@@ -116,13 +116,15 @@ def parse_header( header, opts ) :
 
 def read_headers( opts ):
     hopts = {}
+    for i in [ 'synchronous', 'subscribe',  'publish', 'channel' ]:
+        hopts[i] = False
     # read headers
     header = read_header()
     while header :
         parse_header( header, hopts )
         header = read_header()
     # adjust options
-    if hopts['synchronous'] and hopts['channel']:
+    if  hopts['synchronous'] and hopts['channel']:
         opts.sync_channel = hopts['channel']
     elif hopts['subscribe'] and hopts['channel'] :
         opts.subscribe_channel = hopts['channel']

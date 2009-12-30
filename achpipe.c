@@ -37,6 +37,7 @@
 /** \file achpipe.c
  *  \author Neil T. Dantam
  *
+ *  \bug does not fail gracefully when the channel can't be opened
  * \todo Extend protocol so that it only sends frames when requested
  */
 
@@ -250,6 +251,7 @@ void hard_assert(int test, const char fmt[], ... ) {
 static void *xmalloc( size_t size ) {
     void *p = malloc( size );
     if( NULL == p ) {
+        fprintf(stderr, "Couldn't allocate %d bytes\n", size );
         perror("malloc");
         abort();
     }
@@ -372,11 +374,9 @@ void publish( int fd, char *chan_name )  {
 
     { // open channel
         r = ach_open( &chan, chan_name, NULL );
-        if( ACH_OK != r ) {
-            fprintf(stderr, "Failed to open channel %s for publish: %s\n",
+        hard_assert(ACH_OK == r,
+                    "Failed to open channel %s for publish: %s\n",
                     chan_name, ach_result_to_string(r) );
-            return;
-        }
     }
 
     { // publish loop
@@ -387,7 +387,9 @@ void publish( int fd, char *chan_name )  {
         while(1) {
             // get size
             r = ach_stream_read_msg_size( fd, &cnt );
+            verbprintf( 1, "Read %d bytes\n", r );
             if( r <= 0 ) break;
+            hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
             // make sure buf can hold it
             if( cnt > max ) {
                 max = cnt;
@@ -421,11 +423,9 @@ void subscribe(int fd, char *chan_name) {
     ach_channel_t chan;
     {
         int r = ach_open( &chan, chan_name, NULL );
-        if( ACH_OK != r ) {
-            fprintf(stderr, "Failed to open channel %s for subscribe: %s\n",
-                    chan_name, ach_result_to_string(r) );
-            return;
-        }
+        hard_assert( ACH_OK == r,
+                     "Failed to open channel %s for subscribe: %s\n",
+                     chan_name, ach_result_to_string(r) );
     }
     // frame buffer
     int max = INIT_BUF_SIZE;
