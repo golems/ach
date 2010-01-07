@@ -112,7 +112,7 @@ int ach_stream_read_msg_size( int fd, int *cnt) {
     char buf[4+4+4];
     int r;
 
-    cnt = -1;
+    *cnt = -1;
 
     r = read_fill( fd, buf, sizeof(buf) );
 
