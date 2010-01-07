@@ -34,6 +34,7 @@
 ## Author: Neil T. Dantam
 
 import socket
+import struct
 
 class Channel:
     def __init__(self, name, mode, host="localhost", port=8075):
