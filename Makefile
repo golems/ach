@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20091230
+VERSION := 0.20100106
 
 SHAREDLIBS := ach
 
@@ -15,7 +15,7 @@ all: default
 
 include /usr/share/make-common/common.1.mk
 
-default: $(LIBFILES) $(BINFILES) ach_stream.o
+default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc
 
 CFLAGS += -O2 -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
 
@@ -32,8 +32,11 @@ $(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
 
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
+ach.pyc: ach.py
+	./pycompile
+
 clean:
-	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES) *.deb *.lzma
+	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES) *.deb *.lzma *.pyc
 	rm -rf debian doc $(PROJECT)-$(VERSION) .deps
 
 .PHONY: doc
