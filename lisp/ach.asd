@@ -41,5 +41,5 @@
 (asdf:defsystem ach
   ;; The version should get updated from the Makefile via sed
   :description "ach publish-subscribe IPC"
-  :depends-on ("s-protobuf") ; for binio, which could live independently
+  :depends-on ("s-protobuf" "usocket") ; for binio, which could live independently
   :components ((:file "ach")))

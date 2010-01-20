@@ -53,12 +53,12 @@
  * </tt>
  *
  *
- * Ach frames are sent across the pipe as the
- * four ascii bytes "size", and big-endian 32-bit integer indicating
- * the size in bytes of the frame, the four ascii bytes "data", and
- * the proper number of data bytes.
+ * Ach frames are sent across the pipe as the four ascii bytes "size",
+ * a big-endian 32-bit integer indicating the size in bytes of the
+ * frame, the four ascii bytes "data", and the proper number of data
+ * bytes.
  *
- * \section simple-mode
+ * \section simple-mode Simple Mode
  *
  * A subscribing achpipe process will push frames across the pipe as
  * soon as they appear in the channel.  A publishing achpipe process
@@ -83,7 +83,7 @@
  * with a single read().  That would avoid the additional system
  * call without having to resort to userspace buffering.
  *
- * \section comparison-proper
+ * \section comparison-proper Comparison to Ach Proper
  *
  * Note that ach normally communicates using shared memory.  The pipe
  * protocol is only for intermachine communication or increasing

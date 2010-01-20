@@ -48,7 +48,7 @@
 /** \mainpage
  *
  * \brief Ach is a library that provides a publish-subscribe form of
- * IPC.
+ * IPC based on POSIX shared memory.
  *
  * Clients may be publishers and or subscribers. Publishers they push
  * data to channels, and subscribers can then poll or wait on the

@@ -37,7 +37,9 @@
 
 (defpackage :ach
   (:use :cl :binio :usocket)
-  (:export :ach-open :ach-close :ach-read :ach-write :make-listener :make-ach-sync))
+  (:export :ach-open :ach-connect :ach-close :ach-read :ach-write
+           :ach-next :ach-last
+           :make-listener :make-ach-syncpipe))
 
 (in-package :ach)
 
@@ -48,11 +50,16 @@
 
 ;; let's make the delimiters int32s.  That'll be faster to compare, right?
 
-(defparameter *size-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "size") :little))
-(defparameter *data-delim* (decode-uint (map-into (make-octet-vector 4) #'char-code "data") :little))
+(defparameter *size-delim* (decode-uint (map-into (make-octet-vector 4)
+                                                  #'char-code "size") :little))
+(defparameter *data-delim* (decode-uint (map-into (make-octet-vector 4)
+                                                  #'char-code "data") :little))
 
-(defparameter +next-cmd+ (sb-ext:string-to-octets "next"))
-(defparameter +last-cmd+ (sb-ext:string-to-octets "last"))
+(defparameter +next-cmd+ (map-into (make-octet-vector 4)
+                                   #'char-code "next"))
+(defparameter +last-cmd+ (map-into (make-octet-vector 4)
+                                   #'char-code "last"))
+
 
 ;(defparameter +next-cmd+ "next")
 ;(defparameter +last-cmd+ "last")
@@ -82,10 +89,10 @@
     (read-sequence size-buf stream)
     (assert (= *size-delim*
                (decode-uint size-buf :little 0)) ()
-               "Invalid size delimiter: ~A" (subseq size-buf 0 4))
+               "Invalid size delimiter: ~A, ~&buffer: ~A" (subseq size-buf 0 4) size-buf)
     (assert (= *data-delim*
                (decode-uint size-buf :little 8)) ()
-               "Invalid size delimiter: ~A" (subseq size-buf 8))
+               "Invalid size delimiter: ~A, ~&buffer" (subseq size-buf 8) size-buf)
     (let* ((size (decode-uint size-buf :big 4))
            (buffer (if (= size (length buffer)) buffer
                        (make-octet-vector size))))
@@ -109,7 +116,6 @@
                             #'char-code string)
                   stream))
 
-(defun ach-stream-write (stream))
 
 ;;;;;;;;;;;;;;;
 ;;; SOCKETS ;;;
@@ -278,7 +284,6 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ;;; CONTINUOUS READING ;;;
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 ;; ;;; maintain a background thread that will continuously read the
 ;; ;;; channel
 
@@ -313,6 +318,9 @@
 ;;                 (copy-seq buffer))))))))
 
 
+
+;;; Synchronous communication
+
 ;; (defun send-sync-cmd (channel last)
 ;;   (write-sequence (if last +last-cmd+ +next-cmd+)
 ;;                   (channel-input channel))
@@ -336,5 +344,4 @@
 ;;                       (ach-read channel)))))))
 ;;       (sb-ext:finalize fun (lambda () (ach-close channel)))
 ;;       fun)))
-
 
