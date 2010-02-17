@@ -77,7 +77,7 @@
 /// macro to do things when debugging
 #define IFDEBUG( x ) (x)
 
-char *ach_result_to_string(ach_status_t result) {
+const char *ach_result_to_string(ach_status_t result) {
 
     switch(result) {
     case ACH_OK: return "ACH_OK";
@@ -106,7 +106,7 @@ static int check_errno() {
 
 
 // returns 0 if channel name is bad
-static int channel_name_ok( char *name ) {
+static int channel_name_ok( const char *name ) {
     int len;
     // check size
 #ifdef HAVE_STRNLEN
@@ -132,7 +132,7 @@ static int channel_name_ok( char *name ) {
 /** Opens shm file descriptor for a channel.
     \pre name is a valid channel name
 */
-static int fd_for_channel_name( char *name, int oflag ) {
+static int fd_for_channel_name( const char *name, int oflag ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
     strncpy( shm_name, "/achshm-", 9 );
     strncat( shm_name, name, ACH_CHAN_NAME_MAX );
@@ -375,7 +375,7 @@ int ach_create( char *channel_name,
     return ACH_OK;
 }
 
-int ach_open(ach_channel_t *chan, char *channel_name,
+int ach_open(ach_channel_t *chan, const char *channel_name,
              ach_attr_t *attr ) {
     ach_header_t * shm;
     size_t len;

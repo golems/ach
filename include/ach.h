@@ -266,7 +266,7 @@ extern "C" {
 
     /** Opens a handle to channel.
      */
-    int ach_open(ach_channel_t *chan, char *channel_name,
+    int ach_open(ach_channel_t *chan, const char *channel_name,
                  ach_attr_t *attr);
 
 
@@ -345,7 +345,7 @@ extern "C" {
 
     /** Converts return code from ach call to a human readable string;
      */
-    char *ach_result_to_string(ach_status_t result);
+    const char *ach_result_to_string(ach_status_t result);
 
 
     /** Prints information about the channel shm to stderr
@@ -358,7 +358,7 @@ extern "C" {
 #define ACH_STREAM_PREFIX_SIZE  12
 
     /** Writes message pointed to by but to stream fd */
-    int ach_stream_write_msg( int fd, char *buf, int cnt);
+    int ach_stream_write_msg( int fd, const char *buf, int cnt);
 
     /** Reads the size of a message from fd and stores in cnt. */
     int ach_stream_read_msg_size( int fd, int *cnt);
@@ -371,7 +371,7 @@ extern "C" {
     int ach_stream_read_fill( int fd, char *buf, int cnt );
 
     /** Writes from buffer into fd completely */
-    int ach_stream_write_fill( int fd, char *buf, int cnt );
+    int ach_stream_write_fill( int fd, const char *buf, int cnt );
 
 
     /** Reads a line from fd */

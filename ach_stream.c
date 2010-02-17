@@ -71,7 +71,7 @@ static int read_fill(int fd, char *buf, int cnt ) {
     return ach_stream_read_fill( fd, buf, cnt );
 }
 
-int ach_stream_write_fill(int fd, char *buf, int cnt ) {
+int ach_stream_write_fill(int fd, const char *buf, int cnt ) {
     int r;
     int n = 0;
     do {
@@ -82,11 +82,11 @@ int ach_stream_write_fill(int fd, char *buf, int cnt ) {
     return cnt;
 }
 
-static int write_fill(int fd, char *buf, int cnt ) {
+static int write_fill(int fd, const char *buf, int cnt ) {
     return ach_stream_write_fill( fd, buf, cnt );
 }
 
-int ach_stream_write_msg( int fd, char *buf, int cnt) {
+int ach_stream_write_msg( int fd, const char *buf, int cnt) {
     char sizebuf[4+4+4];
     int r;
 
