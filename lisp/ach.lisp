@@ -37,8 +37,8 @@
 
 (defpackage :ach
   (:use :cl :binio :usocket)
-  (:export :ach-open :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last
+  (:export :ach-connect :ach-close :ach-read :ach-write
+           :ach-next :ach-last :ach-put
            :make-listener :make-ach-syncpipe))
 
 (in-package :ach)
@@ -105,9 +105,9 @@
   (declare (stream stream)
            (octet-vector buffer))
   (let ((size-buf (make-size-buf)))
-    (encode-int *size-delim* :little 0)
-    (encode-int (length buffer) :big 4)
-    (encode-int *data-delim* :little 8)
+    (encode-int *size-delim* :little size-buf 0)
+    (encode-int (length buffer) :big size-buf 4)
+    (encode-int *data-delim* :little size-buf 8)
     (write-sequence size-buf stream)
     (write-sequence buffer stream)))
 
@@ -172,6 +172,12 @@
           () "Invalid channel for synchronous command: ~A" channel)
   (ach-sock-sync-cmd (channel-input channel) +last-cmd+)
   (ach-stream-read (channel-output channel) buffer))
+
+(defun ach-put (channel buffer)
+  (assert (eq (channel-mode channel) :publish)
+          () "Invalid channel mode for put")
+  (ach-stream-write (channel-input channel) buffer)
+  (force-output (channel-output channel)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;
 ;; ;;; CHILD PROCESS ;;;
