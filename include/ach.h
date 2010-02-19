@@ -333,6 +333,10 @@ extern "C" {
     int ach_put(ach_channel_t *chan, void *buf, size_t len);
 
 
+    /** Discards all previously received messages for this handle.  Does
+        not change the actual channel, just resets the sequence number in
+        the handle.*/
+    int ach_flush( ach_channel_t *chan );
 
     /** Closes the shared memory block.
 

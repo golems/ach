@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20100217
+VERSION := 0.20100218
 
 SHAREDLIBS := ach
 
@@ -17,7 +17,7 @@ include /usr/share/make-common/common.1.mk
 
 default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc
 
-CFLAGS += -O2 -Wall -Wextra -Wpointer-arith --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
+CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN
