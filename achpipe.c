@@ -225,23 +225,23 @@ static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL }
 
 /// print stuff based on verbosity level
 void verbprintf( int level, const char fmt[], ... ) {
-    va_list argp;
-    va_start( argp, fmt );
+    va_list args;
+    va_start( args, fmt );
     if( level <= opt_verbosity ) {
         fprintf(stderr, "achpipe: ");
-        vfprintf( stderr, fmt, argp );
+        vfprintf( stderr, fmt, args );
     }
-    va_end( argp );
+    va_end( args );
 }
 
 /// Check test, if false, print error and abort.
 void hard_assert(int test, const char fmt[], ... ) {
     if( !test ) {
-        va_list argp;
-        va_start( argp, fmt );
+        va_list args;
+        va_start( args, fmt );
         fprintf(stderr, "achpipe FAIL: ");
-        vfprintf( stderr, fmt, argp );
-        va_end( argp );
+        vfprintf( stderr, fmt, args );
+        va_end( args );
         putc( '\n', stderr );
         abort();
         exit(1);
@@ -380,9 +380,9 @@ void publish( int fd, char *chan_name )  {
     }
 
     { // publish loop
-        int max = INIT_BUF_SIZE;
+        size_t max = INIT_BUF_SIZE;
         int cnt;
-        char *buf = xmalloc( max );
+        char *buf = (char*)xmalloc( max );
 
         while(1) {
             // get size
@@ -391,17 +391,17 @@ void publish( int fd, char *chan_name )  {
             if( r <= 0 ) break;
             hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
             // make sure buf can hold it
-            if( cnt > max ) {
-                max = cnt;
+            if( (size_t)cnt > max ) {
+                max = (size_t)cnt;
                 free( buf );
-                buf = xmalloc( max );
+                buf = (char*)xmalloc( max );
             }
             // get data
-            r = ach_stream_read_msg_data( fd, buf, cnt, max );
+            r = ach_stream_read_msg_data( fd, buf, (size_t)cnt, max );
             if( r <= 0 ) break;
             assert( cnt == r );
             // put data
-            r = ach_put( &chan, buf, cnt );
+            r = ach_put( &chan, buf, (size_t)cnt );
             hard_assert( r == ACH_OK, "Invalid ach put %s\n",
                          ach_result_to_string( r ) );
         }
@@ -428,16 +428,15 @@ void subscribe(int fd, char *chan_name) {
                      chan_name, ach_result_to_string(r) );
     }
     // frame buffer
-    int max = INIT_BUF_SIZE;
-    char *buf = xmalloc(max);
+    size_t max = INIT_BUF_SIZE;
+    char *buf = (char*)xmalloc(max);
     int t0 = 1;
 
     char cmd[5] = {0};
 
     // read loop
     while(1) {
-        size_t frame_size = -1;
-        int r = -1;
+        size_t frame_size = 0;
         int got_frame = 0;
         if( opt_sync ) {
             // wait for the pull command
@@ -447,6 +446,7 @@ void subscribe(int fd, char *chan_name) {
         }
         // read the data
         do {
+            int r = -1;
             if( opt_sync ) {
                 // parse command
                 if ( 0 == strcmp("next", cmd ) ) {
@@ -466,11 +466,11 @@ void subscribe(int fd, char *chan_name) {
             if( ACH_OK != r )  {
                 // enlarge buffer and retry on overflow
                 if( ACH_OVERFLOW == r ) {
-                    int fs = frame_size;
+                    size_t fs = frame_size;
                     assert(fs > max );
                     free(buf);
                     max = frame_size;
-                    buf = xmalloc( max );
+                    buf = (char*)xmalloc( max );
                 }else {
                     // abort on other errors
                     hard_assert( t0 || r == ACH_MISSED_FRAME,
@@ -487,8 +487,8 @@ void subscribe(int fd, char *chan_name) {
 
         // stream send
         {
-            size_t r = ach_stream_write_msg( fd, buf, frame_size );
-            hard_assert( r == frame_size + ACH_STREAM_PREFIX_SIZE,
+            int r = ach_stream_write_msg( fd, buf, frame_size );
+            hard_assert( (size_t)r == frame_size + ACH_STREAM_PREFIX_SIZE,
                          "Invalid data write, r: %d, frame: %d\n",
                          r, frame_size );
             if( opt_sync ) {

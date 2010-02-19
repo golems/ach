@@ -56,43 +56,43 @@
 char ach_stream_presize[5] = "size";
 char ach_stream_postsize[5] = "data";
 
-int ach_stream_read_fill(int fd, char *buf, int cnt ) {
-    int r;
-    int n = 0;
+int ach_stream_read_fill(int fd, char *buf, size_t cnt ) {
+    ssize_t r;
+    size_t n = 0;
     do {
         r = read( fd, buf+n, cnt-n );
-        if( r > 0 ) n += r;
+        if( r > 0 ) n += (size_t)r;
         else return r;
     }while( n < cnt);
-    return cnt;
+    return (int)cnt;
 }
 
-static int read_fill(int fd, char *buf, int cnt ) {
+static int read_fill(int fd, char *buf, size_t cnt ) {
     return ach_stream_read_fill( fd, buf, cnt );
 }
 
-int ach_stream_write_fill(int fd, const char *buf, int cnt ) {
+int ach_stream_write_fill(int fd, const char *buf, size_t cnt ) {
     int r;
-    int n = 0;
+    size_t n = 0;
     do {
         r = write( fd, buf+n, cnt-n );
-        if( r > 0 ) n += r;
+        if( r > 0 ) n += (size_t)r;
         else return r;
     }while( n < cnt);
-    return cnt;
+    return (int)cnt;
 }
 
-static int write_fill(int fd, const char *buf, int cnt ) {
+static int write_fill(int fd, const char *buf, size_t cnt ) {
     return ach_stream_write_fill( fd, buf, cnt );
 }
 
-int ach_stream_write_msg( int fd, const char *buf, int cnt) {
+int ach_stream_write_msg( int fd, const char *buf, size_t cnt) {
     char sizebuf[4+4+4];
     int r;
 
     // make size field
     memcpy( & sizebuf[0], ach_stream_presize, 4);
-    endconv_st_be_i32( & sizebuf[4], cnt );
+    endconv_st_be_u32( & sizebuf[4], cnt );
     memcpy( & sizebuf[8], ach_stream_postsize, 4);
 
     // send size
@@ -102,9 +102,9 @@ int ach_stream_write_msg( int fd, const char *buf, int cnt) {
 
     // send data
     r = write_fill( fd, buf, cnt );
-    assert( cnt == r || r <= 0 );
+    assert( (int)cnt == r || r <= 0 );
 
-    return r + sizeof(sizebuf);
+    return r + (int)sizeof(sizebuf);
 }
 
 
@@ -129,7 +129,7 @@ int ach_stream_read_msg_size( int fd, int *cnt) {
     return r;
 }
 
-int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size) {
+int ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size) {
     int r = 0;
 
     assert( buf_size >= msg_size );
@@ -137,7 +137,7 @@ int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size) {
 
     r = read_fill( fd, buf, msg_size );
     if( r <= 0 ) return r;
-    assert( msg_size == r );
+    assert( msg_size == (size_t) r );
 
     return r;
 }
@@ -157,13 +157,13 @@ int ach_read_line( int fd, char *buf, size_t n ) {
         // check for end
         if( r != 1 || '\n' == buf[i] ){
             buf[++i] = '\0';
-            return i;
+            return (int)i;
         }
         // increment
         i++;
     }
     assert( buf[i - 1] != '\n' );
     buf[i] = '\0';
-    return i;
+    return (int)i;
 }
 

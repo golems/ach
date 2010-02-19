@@ -114,7 +114,7 @@ FILE *fin;
 FILE *fout;
 
 void *publish_loop(void* pub) {
-    publish(pub);
+    publish((ach_channel_t*)pub);
     exit(0);
     return NULL;
 }

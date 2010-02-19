@@ -263,7 +263,7 @@ int ach_create( char *channel_name,
 
         if( attr && attr->map_anon ) {
             // anonymous (heap)
-            shm = malloc( len );
+            shm = (ach_header_t *) malloc( len );
             fd = -1;
         }else {
             int oflag = O_EXCL | O_CREAT;
@@ -276,7 +276,7 @@ int ach_create( char *channel_name,
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 )
                 return check_errno();;
 
-            if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            if( (shm = (ach_header_t *)mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
                 == MAP_FAILED )
                 return ACH_FAILED_SYSCALL;
 
@@ -392,7 +392,8 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
             return ACH_FAILED_SYSCALL;
-        if( (shm = mmap(NULL, sizeof(ach_header_t), PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        if( (shm = (ach_header_t*) mmap(NULL, sizeof(ach_header_t),
+                                        PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
             == MAP_FAILED )
             return ACH_FAILED_SYSCALL;
         if( ACH_SHM_MAGIC_NUM != shm->magic )
@@ -405,7 +406,7 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
             return ACH_FAILED_SYSCALL;
 
-        if( (shm = mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        if( (shm = (ach_header_t*) mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
             == MAP_FAILED )
             return ACH_FAILED_SYSCALL;
     }
@@ -521,7 +522,7 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_s
                 next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
             }
         }
-        retval = ach_get_from_offset( chan, next_index, buf, size, frame_size );
+        retval = ach_get_from_offset( chan, next_index, (char*)buf, size, frame_size );
     }
 
     // release read lock

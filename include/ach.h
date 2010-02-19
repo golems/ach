@@ -204,7 +204,7 @@ extern "C" {
     /** Attributes to pass to ach_open */
     typedef struct {
         int map_anon; ///< anonymous channel (put it in process heap, not shm)
-        void *shm;   ///< the memory buffer used by anonymous channels
+        ach_header_t *shm;   ///< the memory buffer used by anonymous channels
     } ach_attr_t;
 
 
@@ -362,20 +362,20 @@ extern "C" {
 #define ACH_STREAM_PREFIX_SIZE  12
 
     /** Writes message pointed to by but to stream fd */
-    int ach_stream_write_msg( int fd, const char *buf, int cnt);
+    int ach_stream_write_msg( int fd, const char *buf, size_t cnt);
 
     /** Reads the size of a message from fd and stores in cnt. */
     int ach_stream_read_msg_size( int fd, int *cnt);
 
     /** Reads msg_size bytes of data from fd and stores in buf. */
-    int ach_stream_read_msg_data( int fd, char *buf, int msg_size, int buf_size);
+    int ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size);
 
 
     /** Reads from fd into buffer completely */
-    int ach_stream_read_fill( int fd, char *buf, int cnt );
+    int ach_stream_read_fill( int fd, char *buf, size_t cnt );
 
     /** Writes from buffer into fd completely */
-    int ach_stream_write_fill( int fd, const char *buf, int cnt );
+    int ach_stream_write_fill( int fd, const char *buf, size_t cnt );
 
 
     /** Reads a line from fd */
