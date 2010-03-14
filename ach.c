@@ -480,6 +480,7 @@ int ach_flush( ach_channel_t *chan ) {
     if( ACH_OK != (r = rdlock_wait( shm, chan, NULL ) ) )
         return r;
     chan->seq_num = shm->last_seq;
+    chan->next_index = shm->index_head;
     unrdlock(shm);
     return ACH_OK;
 }

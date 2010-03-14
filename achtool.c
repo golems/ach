@@ -48,9 +48,9 @@
 #include <string.h>
 #include "ach.h"
 
-int opt_msg_cnt = -1;
+size_t opt_msg_cnt = 0;
 int opt_truncate = 0;
-int opt_msg_size = -1;
+size_t opt_msg_size = 0;
 char *opt_chan_name = NULL;
 int opt_verbosity = 0;
 
@@ -234,10 +234,10 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         parse_cmd( cmd_dump, arg );
         break;
     case 'n':
-        opt_msg_size = atoi( arg );
+        opt_msg_size = (size_t)atoi( arg );
         break;
     case 'm':
-        opt_msg_cnt = atoi( arg );
+        opt_msg_cnt = (size_t)atoi( arg );
         break;
     case 't':
         opt_truncate++;
