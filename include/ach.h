@@ -307,6 +307,11 @@ extern "C" {
     int ach_get_last(ach_channel_t *chan, void *buf,
                      size_t size, size_t *frame_size);
 
+    /// always copies the last message, even if it is stale
+    int ach_copy_last(ach_channel_t *chan, void *buf,
+                      size_t size, size_t *frame_size);
+
+
     /** Blocks until a new message is available.
 
         If the latest message is new than the most recently read
