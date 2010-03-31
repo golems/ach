@@ -426,6 +426,10 @@ void subscribe(int fd, char *chan_name) {
         hard_assert( ACH_OK == r,
                      "Failed to open channel %s for subscribe: %s\n",
                      chan_name, ach_result_to_string(r) );
+        r = ach_flush( &chan );
+        hard_assert( ACH_OK == r,
+                     "Failed to flush channel %s for on: %s\n",
+                     chan_name, ach_result_to_string(r) );
     }
     // frame buffer
     size_t max = INIT_BUF_SIZE;

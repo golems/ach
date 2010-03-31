@@ -89,10 +89,14 @@
     (read-sequence size-buf stream)
     (assert (= *size-delim*
                (decode-uint size-buf :little 0)) ()
-               "Invalid size delimiter: ~A, ~&buffer: ~A" (subseq size-buf 0 4) size-buf)
+               "Invalid size delimiter: ~A, ~&buffer: ~A~&msg: ~A"
+               (subseq size-buf 0 4) size-buf
+               (map 'string #'code-char size-buf))
     (assert (= *data-delim*
                (decode-uint size-buf :little 8)) ()
-               "Invalid size delimiter: ~A, ~&buffer" (subseq size-buf 8) size-buf)
+               "Invalid data delimiter: ~A, ~&buffer: ~A~&msg: ~A"
+               (subseq size-buf 8) size-buf
+               (map 'string #'code-char size-buf))
     (let* ((size (decode-uint size-buf :big 4))
            (buffer (if (= size (length buffer)) buffer
                        (make-octet-vector size))))
