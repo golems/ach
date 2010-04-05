@@ -1,0 +1,103 @@
+#!/usr/bin/env python
+
+## Copyright (c) 2010, Georgia Tech Research Corporation
+## All rights reserved.
+##
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions
+## are met:
+##
+##     * Redistributions of source code must retain the above
+##       copyright notice, this list of conditions and the following
+##       disclaimer.
+##     * Redistributions in binary form must reproduce the above
+##       copyright notice, this list of conditions and the following
+##       disclaimer in the documentation and/or other materials
+##       provided with the distribution.
+##     * Neither the name of the Georgia Tech Research Corporation nor
+##       the names of its contributors may be used to endorse or
+##       promote products derived from this software without specific
+##       prior written permission.
+##
+## THIS SOFTWARE IS PROVIDED BY GEORGIA TECH RESEARCH CORPORATION ''AS
+## IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GEORGIA
+## TECH RESEARCH CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT,
+## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+## (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+## SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+## STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+## OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## FILE: achlog
+## DESC: Logs ach frames to file
+## AUTHOR: Neil Dantam
+
+
+from optparse import OptionParser
+from subprocess import  Popen
+from time import  sleep, strftime
+import signal
+
+
+timestring = strftime("%Y%m%dT%H%m%S")    
+
+def parse():
+    p = OptionParser()
+    p.add_option("-v", "--verbose",
+                 action="count", dest="verbose" )
+    (options, args) = p.parse_args()
+    return (options, args)
+
+
+def main():
+    (options, args) = parse()
+    if( not  args ):
+        print "Must specify channel(s) to log"
+        exit()
+
+    ## START CHILDREN
+    def start_child(channel):
+        filename = channel + "." + timestring + ".achlog"
+        if (options.verbose):
+            print "Logging `" + channel + "' to " + filename
+        fd = open( filename, 'a' )
+        child = Popen(["achpipe", "-s", channel], stdout=fd)
+        fd.close()
+        return child
+
+    children = map( start_child, args )
+
+    ## INSTALL SIGNAL HANDLER
+    def handler( signum, frame ):
+        # send sigterm
+        def stop_child(child):
+            child.terminate()
+        if options.verbose :
+            print "Sending SIGTERM..."
+        map( stop_child, children )
+        # wait for exit
+        def finish_child(child):
+            child.wait()
+        if options.verbose :
+            print "Waiting for exit..."
+        map( finish_child, children )
+        if options.verbose :
+            print "done"
+        # close this parent
+        exit()
+
+    signal.signal( signal.SIGTERM, handler )
+    signal.signal( signal.SIGINT, handler )
+
+    ## WAIT FOR SIGNAL
+    while(1):
+        sleep(3600)
+    
+
+
+if __name__ == "__main__":
+    main()
