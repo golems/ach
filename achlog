@@ -46,7 +46,9 @@ import signal
 timestring = strftime("%Y%m%dT%H%m%S")    
 
 def parse():
-    p = OptionParser()
+    usage = "usage: %prog [options] channel-1 ... channel-n"
+    description = "Logs ach frames to files"
+    p = OptionParser(usage=usage, description=description)
     p.add_option("-v", "--verbose",
                  action="count", dest="verbose" )
     (options, args) = p.parse_args()
