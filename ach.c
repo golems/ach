@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -694,3 +695,6 @@ void ach_attr_init( ach_attr_t *attr ) {
     attr->map_anon = 0;
 }
 
+int ach_chmod( ach_channel_t *chan, mode_t mode ) {
+    return (fchmod( chan->fd, mode ));
+}

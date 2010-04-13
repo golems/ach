@@ -138,6 +138,11 @@ extern "C" {
     */
 #define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8C)
 
+#ifndef __mode_t_defined
+    typedef __mode_t mode_t;
+# define __mode_t_defined
+#endif
+
     /// return status codes for ach functions
     typedef enum {
         ACH_OK = 0,         ///< Call successful
@@ -382,10 +387,11 @@ extern "C" {
     /** Writes from buffer into fd completely */
     int ach_stream_write_fill( int fd, const char *buf, size_t cnt );
 
-
     /** Reads a line from fd */
     int ach_read_line( int fd, char *buf, size_t cnt );
 
+    /** Sets permissions of chan to specified mode */
+    int ach_chmod( ach_channel_t *chan, mode_t mode );
 
 #ifdef __cplusplus
 }
