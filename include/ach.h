@@ -138,11 +138,6 @@ extern "C" {
     */
 #define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8C)
 
-#ifndef __mode_t_defined
-    typedef __mode_t mode_t;
-# define __mode_t_defined
-#endif
-
     /// return status codes for ach functions
     typedef enum {
         ACH_OK = 0,         ///< Call successful
