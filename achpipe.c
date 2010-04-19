@@ -94,6 +94,7 @@
  * \sa Todo List
  */
 #include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <argp.h>
@@ -139,6 +140,9 @@ int opt_read_headers = 0;
 /// CLI option: write option headers
 int opt_write_headers = 0;
 */
+
+
+int sig_received = 0;
 
 /// argp junk
 
@@ -384,10 +388,10 @@ void publish( int fd, char *chan_name )  {
         int cnt;
         char *buf = (char*)xmalloc( max );
 
-        while(1) {
+        while( ! sig_received ) {
             // get size
             r = ach_stream_read_msg_size( fd, &cnt );
-            verbprintf( 1, "Read %d bytes\n", r );
+            verbprintf( 2, "Read %d bytes\n", r );
             if( r <= 0 ) break;
             hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
             // make sure buf can hold it
@@ -409,7 +413,6 @@ void publish( int fd, char *chan_name )  {
 
     }
     ach_close( &chan );
-
 }
 
 
@@ -439,7 +442,7 @@ void subscribe(int fd, char *chan_name) {
     char cmd[5] = {0};
 
     // read loop
-    while(1) {
+    while( ! sig_received ) {
         size_t frame_size = 0;
         int got_frame = 0;
         if( opt_sync ) {
@@ -492,9 +495,9 @@ void subscribe(int fd, char *chan_name) {
         // stream send
         {
             int r = ach_stream_write_msg( fd, buf, frame_size );
-            hard_assert( (size_t)r == frame_size + ACH_STREAM_PREFIX_SIZE,
-                         "Invalid data write, r: %d, frame: %d\n",
-                         r, frame_size );
+            if( frame_size + ACH_STREAM_PREFIX_SIZE !=  (size_t)r ) {
+                break;
+            }
             if( opt_sync ) {
                 fsync( fd ); // fails w/ sbcl, and maybe that's ok
             }
@@ -505,6 +508,40 @@ void subscribe(int fd, char *chan_name) {
     free(buf);
     ach_close( &chan );
 }
+
+
+static void sighandler(int sig, siginfo_t *siginfo, void *context) {
+    (void) context;
+    verbprintf (1,
+                "Received Signal: %d, Sending PID: %ld, UID: %ld\n",
+                sig, (long)siginfo->si_pid, (long)siginfo->si_uid);
+    sig_received = 1;
+}
+
+void sighandler_install() {
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+
+    act.sa_sigaction = &sighandler;
+
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
+       not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGTERM, &act, NULL) < 0) {
+        perror ("sigaction");
+        fprintf(stderr, "Couldn't install handler\n");
+        abort();
+    }
+
+    if (sigaction(SIGINT, &act, NULL) < 0) {
+        perror ("sigaction");
+        fprintf(stderr, "Couldn't install handler\n");
+        abort();
+    }
+}
+
+
 
 /// main
 int main( int argc, char **argv ) {
@@ -533,6 +570,9 @@ int main( int argc, char **argv ) {
     verbprintf( 1, "Channel: %s\n", opt_chan_name );
     verbprintf( 1, "Publish: %s\n",  opt_pub ? "yes" : "no" );
     verbprintf( 1, "Subscribe: %s\n", opt_sub ? "yes" : "no" );
+
+    // install sighandler
+    sighandler_install();
 
     // run
     if (opt_pub) {
