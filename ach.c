@@ -379,7 +379,8 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
     size_t len;
     int fd = -1;
 
-    if( attr ) memcpy( &chan->attr, attr, sizeof(attr) );
+    if( attr ) memcpy( &chan->attr, attr, sizeof(chan->attr) );
+    else memset( &chan->attr, 0, sizeof(chan->attr) );
 
     if( attr && attr->map_anon ) {
         shm = attr->shm;
