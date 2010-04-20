@@ -38,7 +38,7 @@
 (defpackage :ach
   (:use :cl :binio :usocket)
   (:export :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last :ach-put
+           :ach-next :ach-last :ach-put :ach-map
            :make-listener :make-ach-syncpipe))
 
 (in-package :ach)
@@ -71,7 +71,9 @@
 (defstruct channel
   mode
   synchronous
-  transport)
+  transport
+  name
+  host)
 
 (defun channel-input (channel)
   (socket-stream (channel-transport channel)))
@@ -83,25 +85,26 @@
   (make-octet-vector 12))
 
 (defun ach-stream-read (stream &optional buffer)
-  "read a frame from the stream"
+  "read a frame from the stream or return nil if closed"
   (declare (type (or null octet-vector) buffer))
-  (let ((size-buf (make-size-buf)))
-    (read-sequence size-buf stream)
-    (assert (= *size-delim*
-               (decode-uint size-buf :little 0)) ()
-               "Invalid size delimiter: ~A, ~&buffer: ~A~&msg: ~A"
-               (subseq size-buf 0 4) size-buf
-               (map 'string #'code-char size-buf))
-    (assert (= *data-delim*
-               (decode-uint size-buf :little 8)) ()
-               "Invalid data delimiter: ~A, ~&buffer: ~A~&msg: ~A"
-               (subseq size-buf 8) size-buf
-               (map 'string #'code-char size-buf))
-    (let* ((size (decode-uint size-buf :big 4))
-           (buffer (if (= size (length buffer)) buffer
-                       (make-octet-vector size))))
-      (read-sequence buffer stream)
-      buffer)))
+  (let* ((size-buf (make-size-buf))
+         (n-read (read-sequence size-buf stream)))
+    (unless (zerop n-read)
+      (assert (= *size-delim*
+                 (decode-uint size-buf :little 0)) ()
+                 "Invalid size delimiter: ~A, ~&buffer: ~A~&msg: ~A"
+                 (subseq size-buf 0 4) size-buf
+                 (map 'string #'code-char size-buf))
+      (assert (= *data-delim*
+                 (decode-uint size-buf :little 8)) ()
+                 "Invalid data delimiter: ~A, ~&buffer: ~A~&msg: ~A"
+                 (subseq size-buf 8) size-buf
+                 (map 'string #'code-char size-buf))
+      (let* ((size (decode-uint size-buf :big 4))
+             (buffer (if (= size (length buffer)) buffer
+                         (make-octet-vector size))))
+        (read-sequence buffer stream)
+      buffer))))
 
 
 (defun ach-stream-write (stream buffer)
@@ -152,7 +155,9 @@
     (force-output s)
     (make-channel :mode mode
                   :synchronous synchronous
-                  :transport sock)))
+                  :transport sock
+                  :name channel-name
+                  :host host)))
 
 (defun ach-close (channel)
   (socket-close (channel-transport channel)))
@@ -182,6 +187,32 @@
           () "Invalid channel mode for put")
   (ach-stream-write (channel-input channel) buffer)
   (force-output (channel-output channel)))
+
+
+;;;;;;;;;;;;;
+;;; UTILS ;;;
+;;;;;;;;;;;;;
+
+(defgeneric ach-map (result-type function thing))
+
+(defmethod ach-map ((result-type (eql nil)) (function function) (thing stream))
+  (loop
+     for frame = (ach-stream-read thing)
+     while frame
+     do (funcall function frame)))
+
+(defmethod ach-map ((result-type (eql 'list)) (function function) (thing stream))
+  (loop
+     for frame = (ach-stream-read thing)
+     while frame
+     collect (funcall function frame)))
+
+(defmethod ach-map (result-type (function function) (thing string))
+  (with-open-file (file thing
+                        :direction :input
+                        :element-type '(unsigned-byte 8))
+    (ach-map result-type function file)))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;
 ;; ;;; CHILD PROCESS ;;;
