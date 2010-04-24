@@ -41,6 +41,7 @@ from optparse import OptionParser
 from subprocess import  Popen
 from time import  sleep, strftime
 import signal
+import os
 
 
 timestring = strftime("%Y%m%dT%H%m%S")    
@@ -51,6 +52,8 @@ def parse():
     p = OptionParser(usage=usage, description=description)
     p.add_option("-v", "--verbose",
                  action="count", dest="verbose" )
+    p.add_option("-d", "--directory",
+                 dest="directory")
     (options, args) = p.parse_args()
     return (options, args)
 
@@ -61,6 +64,10 @@ def main():
         print "Must specify channel(s) to log"
         exit()
 
+    ## Handle Options
+    if( options.directory ) :
+        os.chdir( options.directory )
+        
     ## START CHILDREN
     def start_child(channel):
         filename = channel + "." + timestring + ".achlog"

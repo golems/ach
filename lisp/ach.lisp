@@ -38,8 +38,9 @@
 (defpackage :ach
   (:use :cl :binio :usocket)
   (:export :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last :ach-put :ach-map
-           :make-listener :make-ach-syncpipe))
+           :ach-next :ach-last :ach-put
+           :ach-map :with-ach-log
+           ))
 
 (in-package :ach)
 
@@ -207,12 +208,36 @@
      while frame
      collect (funcall function frame)))
 
-(defmethod ach-map (result-type (function function) (thing string))
+
+(defmethod ach-map (result-type (function function) (thing pathname))
   (with-open-file (file thing
                         :direction :input
                         :element-type '(unsigned-byte 8))
     (ach-map result-type function file)))
 
+
+(defmethod ach-map (result-type (function function) (thing string))
+  (ach-map result-type function (pathname thing)))
+
+
+(defun ach-log-start (directory &rest channels)
+  (sb-ext:run-program "achlog" (concatenate 'list
+                                            (list "-d" directory) channels)
+                      :output t
+                      :search t
+                      :wait nil))
+
+
+(defun ach-log-stop (process)
+  (sb-ext:process-kill process 15)
+  ;(sb-ext:process-close process)
+  nil)
+
+(defmacro with-ach-log ((directory &rest channels) &body body)
+  (let ((var (gensym)))
+    `(let ((,var (ach-log-start ,directory ,@channels)))
+       (unwind-protect (progn ,@body)
+         (ach-log-stop ,var)))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;
 ;; ;;; CHILD PROCESS ;;;
