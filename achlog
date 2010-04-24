@@ -44,11 +44,9 @@ import signal
 import os
 
 
-timestring = strftime("%Y%m%dT%H%m%S")    
-
 def parse():
     usage = "usage: %prog [options] channel-1 ... channel-n"
-    description = "Logs ach frames to files"
+    description = "Logs ach frames to files until given SIGTERM or SIGINT"
     p = OptionParser(usage=usage, description=description)
     p.add_option("-v", "--verbose",
                  action="count", dest="verbose" )
@@ -57,56 +55,71 @@ def parse():
     (options, args) = p.parse_args()
     return (options, args)
 
-
-def main():
-    (options, args) = parse()
-    if( not  args ):
-        print "Must specify channel(s) to log"
-        exit()
-
-    ## Handle Options
-    if( options.directory ) :
-        os.chdir( options.directory )
-        
-    ## START CHILDREN
+def start_children( channels, verbose ):
+    timestring = strftime("%Y%m%dT%H%m%S")    
     def start_child(channel):
         filename = channel + "." + timestring + ".achlog"
-        if (options.verbose):
+        if (verbose):
             print "Logging `" + channel + "' to " + filename
         fd = open( filename, 'a' )
         child = Popen(["achpipe", "-s", channel], stdout=fd)
         fd.close()
         return child
 
-    children = map( start_child, args )
+    return map( start_child, channels )
 
-    ## INSTALL SIGNAL HANDLER
+def stop_children( children, verbose ):
+    # send sigterm
+    if verbose:
+        print "Sending SIGTERM..."
+    map( lambda child: child.terminate(), children )
+
+    # wait for exit
+    if verbose:
+        print "Waiting for exit..."
+    map( lambda child: child.wait(), children )
+
+# Fuck python and their brain-damaged closures
+signal_count = [0]
+
+def install_signals( verbose ):
     def handler( signum, frame ):
-        # send sigterm
-        def stop_child(child):
-            child.terminate()
-        if options.verbose :
-            print "Sending SIGTERM..."
-        map( stop_child, children )
-        # wait for exit
-        def finish_child(child):
-            child.wait()
-        if options.verbose :
-            print "Waiting for exit..."
-        map( finish_child, children )
-        if options.verbose :
-            print "done"
-        # close this parent
-        exit()
-
+        if verbose :
+            print "Received signal %d" % signum
+        signal_count[0] += 1
     signal.signal( signal.SIGTERM, handler )
     signal.signal( signal.SIGINT, handler )
 
-    ## WAIT FOR SIGNAL
-    while(1):
-        sleep(3600)
-    
+def wait_for_signal( verbose ):
+    while( 0 == signal_count[0] ):
+        signal.pause()
+        if verbose :
+            print "Woke up, signal_count: %d" % signal_count[0]
 
+def main():
+    ## Options
+    (options, args) = parse()
+    if( not  args ):
+        print "Must specify channel(s) to log"
+        exit()
+
+    if( options.directory ) :
+        os.chdir( options.directory )
+
+    ## Signal
+    install_signals( options.verbose )
+        
+    ## Start
+    children = start_children( args, options.verbose )
+
+    ## Wait
+    wait_for_signal( options.verbose )
+
+    ## Stop
+    stop_children( children, options.verbose )
+
+    if options.verbose :
+        print "done"
 
 if __name__ == "__main__":
     main()
