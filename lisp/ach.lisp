@@ -151,7 +151,7 @@
                                  ((eq mode :publish) "publish")
                                  (t (error "Invalid mode, again...: ~A" mode))))
       (when synchronous
-        (write-header "synchronous" (if synchronous "perry" "dorian"))))
+        (write-header "synchronous" "perry")))
     (write-byte (char-code #\Newline) s)
     (force-output s)
     (make-channel :mode mode
