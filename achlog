@@ -56,7 +56,7 @@ def parse():
     return (options, args)
 
 def start_children( channels, verbose ):
-    timestring = strftime("%Y%m%dT%H%m%S")    
+    timestring = strftime("%Y%m%dT%H%M%S")    
     def start_child(channel):
         filename = channel + "." + timestring + ".achlog"
         if (verbose):
