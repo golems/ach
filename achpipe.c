@@ -243,7 +243,7 @@ void hard_assert(int test, const char fmt[], ... ) {
     if( !test ) {
         va_list args;
         va_start( args, fmt );
-        fprintf(stderr, "achpipe FAIL: ");
+        fprintf(stderr, "ERR: ");
         vfprintf( stderr, fmt, args );
         va_end( args );
         putc( '\n', stderr );
@@ -416,6 +416,9 @@ void publish( int fd, char *chan_name )  {
 }
 
 
+static int streq32( const char *a, const char *b ) {
+    return 0 == strcmp(a,b);
+}
 
 /// subscribing loop
 void subscribe(int fd, char *chan_name) {
@@ -440,10 +443,11 @@ void subscribe(int fd, char *chan_name) {
     int t0 = 1;
 
     char cmd[5] = {0};
+    size_t frame_size = 0;
+
 
     // read loop
     while( ! sig_received ) {
-        size_t frame_size = 0;
         int got_frame = 0;
         if( opt_sync ) {
             // wait for the pull command
@@ -456,11 +460,13 @@ void subscribe(int fd, char *chan_name) {
             int r = -1;
             if( opt_sync ) {
                 // parse command
-                if ( 0 == strcmp("next", cmd ) ) {
+                if ( streq32("next", cmd ) ) {
                     r = ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
-                }else if ( 0 == strcmp("last", cmd ) ){
+                }else if ( streq32("last", cmd ) ){
                     r = ach_wait_last(&chan, buf, max, &frame_size,  NULL ) ;
-                }else {
+                } else if ( streq32("poll", cmd) ) {
+                    r = ach_copy_last(&chan, buf, max, &frame_size ) ;
+                } else {
                     hard_assert(0, "Invalid command: %s\n", cmd );
                 }
             } else {
@@ -478,6 +484,8 @@ void subscribe(int fd, char *chan_name) {
                     free(buf);
                     max = frame_size;
                     buf = (char*)xmalloc( max );
+                } else if ( streq32("poll", cmd) && ACH_MISSED_FRAME == r) {
+                    got_frame = 1;
                 }else {
                     // abort on other errors
                     hard_assert( t0 || r == ACH_MISSED_FRAME,

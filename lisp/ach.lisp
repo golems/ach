@@ -38,7 +38,7 @@
 (defpackage :ach
   (:use :cl :binio :usocket)
   (:export :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last :ach-put
+           :ach-next :ach-last :ach-poll :ach-put
            :ach-map :with-ach-log
            ))
 
@@ -60,7 +60,8 @@
                                    #'char-code "next"))
 (defparameter +last-cmd+ (map-into (make-octet-vector 4)
                                    #'char-code "last"))
-
+(defparameter +poll-cmd+ (map-into (make-octet-vector 4)
+                                   #'char-code "poll"))
 
 ;(defparameter +next-cmd+ "next")
 ;(defparameter +last-cmd+ "last")
@@ -95,7 +96,13 @@
                  (decode-uint size-buf :little 0)) ()
                  "Invalid size delimiter: ~A, ~&buffer: ~A~&msg: ~A"
                  (subseq size-buf 0 4) size-buf
-                 (map 'string #'code-char size-buf))
+                 (concatenate 'string
+                              (map 'string #'code-char size-buf)
+                              (loop
+                                 for i below 80
+                                 for c = (code-char (read-byte stream))
+                                 collect c
+                                 until (char-equal c #\Newline))))
       (assert (= *data-delim*
                  (decode-uint size-buf :little 8)) ()
                  "Invalid data delimiter: ~A, ~&buffer: ~A~&msg: ~A"
@@ -183,6 +190,13 @@
   (ach-sock-sync-cmd (channel-input channel) +last-cmd+)
   (ach-stream-read (channel-output channel) buffer))
 
+(defun ach-poll (channel &optional buffer)
+  (assert (and (eq (channel-mode channel) :subscribe)
+               (channel-synchronous channel))
+          () "Invalid channel for synchronous command: ~A" channel)
+  (ach-sock-sync-cmd (channel-input channel) +poll-cmd+)
+  (ach-stream-read (channel-output channel) buffer))
+
 (defun ach-put (channel buffer)
   (assert (eq (channel-mode channel) :publish)
           () "Invalid channel mode for put")
@@ -222,7 +236,8 @@
 
 (defun ach-log-start (directory &rest channels)
   (sb-ext:run-program "achlog" (concatenate 'list
-                                            (list "-d" directory) channels)
+                                            (list "-v" "-d" directory)
+                                            channels)
                       :output t
                       :search t
                       :wait nil))
