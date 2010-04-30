@@ -39,6 +39,7 @@
   (:use :cl :binio :usocket)
   (:export :ach-connect :ach-close :ach-read :ach-write
            :ach-next :ach-last :ach-poll :ach-put
+           :ach-closef
            :ach-map :with-ach-log
            ))
 
@@ -135,6 +136,7 @@
 ;;;;;;;;;;;;;;;
 ;;; SOCKETS ;;;
 ;;;;;;;;;;;;;;;
+
 (defun ach-connect (channel-name &key
                     (host "localhost")
                     (port 8075)
@@ -207,6 +209,15 @@
 ;;;;;;;;;;;;;
 ;;; UTILS ;;;
 ;;;;;;;;;;;;;
+
+(defmacro ach-closef (&rest places)
+  `(progn
+     ,@(loop
+          for place in places
+          collect
+            `(when (and (boundp ',place)  ,place)
+               (ach:ach-close ,place)
+               (setq ,place nil)))))
 
 (defgeneric ach-map (result-type function thing))
 
