@@ -1,0 +1,226 @@
+#!/usr/bin/env python
+
+
+## Copyright (c) 2008, Georgia Tech Research Corporation
+## All rights reserved.
+##
+## Redistribution and use in source and binary forms, with or without
+## modification, are permitted provided that the following conditions
+## are met:
+##
+##     * Redistributions of source code must retain the above
+##       copyright notice, this list of conditions and the following
+##       disclaimer.
+##     * Redistributions in binary form must reproduce the above
+##       copyright notice, this list of conditions and the following
+##       disclaimer in the documentation and/or other materials
+##       provided with the distribution.
+##     * Neither the name of the Georgia Tech Research Corporation nor
+##       the names of its contributors may be used to endorse or
+##       promote products derived from this software without specific
+##       prior written permission.
+##
+## THIS SOFTWARE IS PROVIDED BY GEORGIA TECH RESEARCH CORPORATION ''AS
+## IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+## LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+## FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GEORGIA
+## TECH RESEARCH CORPORATION BE LIABLE FOR ANY DIRECT, INDIRECT,
+## INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+## (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+## SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+## HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+## STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+## ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+## OF THE POSSIBILITY OF SUCH DAMAGE.
+
+## FILE: achpipe
+## DESC: Wrapper for achpipe.bin to setup streams
+
+## When it becomes necessary, this wrapper can be used to set up a TCP
+## connection and dup it to stdin/stdout before exec'ing achpipe.bin
+
+from optparse import OptionParser
+import os
+import socket
+import re
+
+def fail( fmt, args = () ) :
+    print fmt%args
+    exit(1)
+
+def hard_assert( test, fmt, args = () ):
+    if not test :
+        fail( fmt, args )
+
+### HEADERS ###
+def fd_readline( fd ) :
+    s = os.read(fd, 1)
+    buf = ""
+    while len(s) == 1 and s != "\n" :
+        buf += s
+        s = os.read(fd, 1)
+    hard_assert( "\n" == s, "Invalid header line" )
+    buf += "\n"
+    return buf
+
+header_end_pattern = re.compile( '^\\W*$' )
+header_split_pattern = re.compile( '^\\W*([^:]+):\\W*(.+)\\W*$' )
+
+def read_header():
+    line = fd_readline( 0 )
+    assert( len(line) > 0 )
+    if header_end_pattern.match( line ):
+        return None
+    else :
+        m = header_split_pattern.match( line )
+        hard_assert( m, "Line isn't valid header `%s'", line )
+        return (m.group(1), m.group(2))
+
+def is_true_string( s ):
+    sl = s.lower()
+    is_true = ("yes" == sl or
+               "true" == sl or
+               "1" == sl or
+               "affirmative" == sl or
+               "sure" == sl or
+               "yeah" == sl or
+               "hotdog" == sl or
+               "perry" == sl
+               )
+    is_false = ("no" == sl or
+                "false" == sl or
+                "negative" == sl or
+                "0" == sl or
+                "nope" == sl or
+                "nah" == sl or
+                "bagel" == sl or
+                "dorian" == sl
+                )
+    assert( not (is_true and is_false) )
+    hard_assert( is_true or is_false, "Invalid boolean header value: %s", s )
+    return is_true
+    
+def parse_header( header, opts ) :
+    (label, value) = header
+    if "mode" == label:
+        if "publish" == value:
+            opts['publish'] = True
+        elif "subscribe" == value:
+            opts['subscribe'] = True
+        else : fail( "Invalid mode: %s", value )
+    elif "channel" == label:
+        opts['channel'] = value
+    elif "synchronous" == label:
+        opts['synchronous'] = value
+    else: fail( "Invalid header label %s", label )
+
+def read_headers( opts ):
+    hopts = {}
+    for i in [ 'synchronous', 'subscribe',  'publish', 'channel' ]:
+        hopts[i] = False
+    # read headers
+    header = read_header()
+    while header :
+        parse_header( header, hopts )
+        header = read_header()
+    # adjust options
+    if  hopts['synchronous'] and hopts['channel']:
+        opts.sync_channel = hopts['channel']
+    elif hopts['subscribe'] and hopts['channel'] :
+        opts.subscribe_channel = hopts['channel']
+    elif hopts['publish'] and hopts['channel']:
+        opts.publish_channel = hopts['channel']
+    else :
+        fail("Invalid header set")
+    return opts
+
+def write_headers(opts):
+    if opts.publish_channel:
+        mode = "subscribe"
+        channel = opts.publish_channel
+    elif opts.subscribe_channel:
+        mode = "publish"
+        channel = opts.subscribe_channel
+    else: fail("Need to specify publish or subscribe")
+    if opts.remote_channel:
+        channel = opts.remote_channel
+    os.write( 1, "mode: %s\nchannel: %s\n\n" % (mode, channel) )
+    
+    
+### CLI ARGS ###
+
+def parse():
+    p = OptionParser()
+    p.add_option("-v", "--verbose",
+                 action="count", dest="verbose")
+    p.add_option("-L", "--help.bin",
+                 action="store_true", dest="help_bin")
+    p.add_option("-l", "--last",
+                 action="store_true", dest="last")
+    p.add_option("-p", "--publish", dest="publish_channel")
+    p.add_option("-s", "--subscribe", dest="subscribe_channel")
+    p.add_option("-z", "--remote-channel", dest="remote_channel")
+    p.add_option("-S", "--subscribe-synchronous", dest="sync_channel")
+    p.add_option("-R", "--read-headers",
+                 action="store_true", dest="read_headers")
+    p.add_option("-W", "--write-headers",
+                 action="store_true", dest="write_headers")
+    p.add_option("-H", "--host", dest="host")
+    p.add_option("-P", "--port", dest="port", 
+                 type="int", default=8075)
+    (options, args) = p.parse_args()
+    return options
+    
+def make_args(opts):
+    args = ["achpipe.bin"]
+    if opts.help_bin :
+        args.append("--help")
+    if opts.verbose :
+        for i in range(0, opts.verbose):
+            args.append("--verbose")
+    if opts.last:
+        args.append("--last")
+    if opts.publish_channel:
+        args.append("--publish")
+        args.append(opts.publish_channel)
+    if opts.subscribe_channel :
+        args.append("--subscribe")
+        args.append(opts.subscribe_channel)
+    if opts.remote_channel :
+        args.append("--remote-channel")
+        args.append(opts.remote_channel)
+    if opts.sync_channel :
+        args.append("--subscribe")
+        args.append(opts.sync_channel)
+        args.append("--synchronous")
+    return args
+
+
+### DO THINGS ###
+
+def setup_streams(opts):
+    if opts.host :
+        sock = socket.socket( socket.AF_INET, socket.SOCK_STREAM )
+        sock.connect( (opts.host, opts.port) )
+        fd = sock.fileno()
+        os.dup2( fd, 0 )
+        os.dup2( fd, 1 )
+    return
+
+def main():
+    options = parse()
+    setup_streams(options)
+    hard_assert( not (options.read_headers and options.write_headers),
+                 "Can't both read and write headers" )
+    if options.read_headers:
+        read_headers( options )
+    if options.write_headers :
+        write_headers( options )
+    args = make_args(options)
+    #print args
+    os.execvp( "achpipe.bin", args )
+    
+
+
+if __name__ == "__main__":
+    main()
