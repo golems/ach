@@ -105,6 +105,13 @@
 #include <string.h>
 #include "ach.h"
 
+/* FIXME: It seems that the kernel buffers very small messages.  This
+ * is really bad, because we want the data fast.  Should come up with
+ * some way to force TCP to just send it.
+ *
+ */
+
+
 
 // lets pick the number POSIX specifies for atomic reads/writes
 /// Initial size of ach frame buffer
@@ -448,7 +455,6 @@ void subscribe(int fd, char *chan_name) {
 
     // read loop
     while( ! sig_received ) {
-        int got_frame = 0;
         if( opt_sync ) {
             // wait for the pull command
             int rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
@@ -456,6 +462,7 @@ void subscribe(int fd, char *chan_name) {
             verbprintf(2, "Command %s\n", cmd );
         }
         // read the data
+        int got_frame = 0;
         do {
             int r = -1;
             if( opt_sync ) {
@@ -476,25 +483,19 @@ void subscribe(int fd, char *chan_name) {
                     ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
             }
             // check return code
-            if( ACH_OK != r )  {
+            if( ACH_OVERFLOW == r ) {
                 // enlarge buffer and retry on overflow
-                if( ACH_OVERFLOW == r ) {
-                    size_t fs = frame_size;
-                    assert(fs > max );
-                    free(buf);
-                    max = frame_size;
-                    buf = (char*)xmalloc( max );
-                } else if ( streq32("poll", cmd) && ACH_MISSED_FRAME == r) {
-                    got_frame = 1;
-                }else {
-                    // abort on other errors
-                    hard_assert( t0 || r == ACH_MISSED_FRAME,
-                                 "sub: ach_error: %s\n",
-                                 ach_result_to_string(r) );
-                    got_frame = 1;
-                }
-            } else {
+                assert(frame_size > max );
+                max = frame_size;
+                free(buf);
+                buf = (char*)xmalloc( max );
+            } else if (ACH_OK == r || ACH_MISSED_FRAME == r || t0 ) {
                 got_frame = 1;
+            }else {
+                // abort on other errors
+                hard_assert( 0, "sub: ach_error: %s\n",
+                             ach_result_to_string(r) );
+                assert(0);
             }
         }while( !got_frame );
 

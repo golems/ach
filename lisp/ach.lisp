@@ -45,12 +45,15 @@
 
 (in-package :ach)
 
+;;(declaim (optimize (speed 3) (safety 0)))
 
 ;;;;;;;;;;;;;;;;;
 ;;; CONSTANTS ;;;
 ;;;;;;;;;;;;;;;;;
 
 ;; let's make the delimiters int32s.  That'll be faster to compare, right?
+
+(declaim (type (unsigned-byte 32) *size-delim* *data-delim*))
 
 (defparameter *size-delim* (decode-uint (map-into (make-octet-vector 4)
                                                   #'char-code "size") :little))
@@ -76,7 +79,9 @@
   synchronous
   transport
   name
-  host)
+  host
+  reuse-buffer
+  buffer)
 
 (defun channel-input (channel)
   (socket-stream (channel-transport channel)))
@@ -84,17 +89,21 @@
 (defun channel-output (channel)
   (socket-stream (channel-transport channel)))
 
+(declaim (inline make-size-buf))
 (defun make-size-buf ()
   (make-octet-vector 12))
 
 (defun ach-stream-read (stream &optional buffer)
-  "read a frame from the stream or return nil if closed"
+  "read a frame from the stream or return nil if closed.  If buffer is
+specified, it may, but does not have to, be used."
   (declare (type (or null octet-vector) buffer))
   (let* ((size-buf (make-size-buf))
          (n-read (read-sequence size-buf stream)))
+    (declare (dynamic-extent size-buf))
     (unless (zerop n-read)
       (assert (= *size-delim*
-                 (decode-uint size-buf :little 0)) ()
+                 (the (unsigned-byte 32) (decode-uint size-buf :little 0)))
+              ()
                  "Invalid size delimiter: ~A, ~&buffer: ~A~&msg: ~A"
                  (subseq size-buf 0 4) size-buf
                  (concatenate 'string
@@ -105,13 +114,17 @@
                                  collect c
                                  until (char-equal c #\Newline))))
       (assert (= *data-delim*
-                 (decode-uint size-buf :little 8)) ()
+                 (the (unsigned-byte 32) (decode-uint size-buf :little 8)))
+              ()
                  "Invalid data delimiter: ~A, ~&buffer: ~A~&msg: ~A"
                  (subseq size-buf 8) size-buf
                  (map 'string #'code-char size-buf))
       (let* ((size (decode-uint size-buf :big 4))
-             (buffer (if (= size (length buffer)) buffer
+             (buffer (if (and buffer
+                              (=  size (length buffer)))
+                         buffer
                          (make-octet-vector size))))
+        (declare (fixnum size))
         (read-sequence buffer stream)
       buffer))))
 
@@ -128,6 +141,7 @@
     (write-sequence buffer stream)))
 
 (defun ach-stream-write-string (stream string)
+  (declare (simple-string string))
   (write-sequence (map-into (make-octet-vector (length string))
                             #'char-code string)
                   stream))
@@ -141,7 +155,8 @@
                     (host "localhost")
                     (port 8075)
                     (mode :subscribe)
-                    (synchronous t))
+                    (synchronous t)
+                    reuse-buffer)
   (declare (string channel-name host)
            (fixnum port)
            (symbol mode))
@@ -167,7 +182,8 @@
                   :synchronous synchronous
                   :transport sock
                   :name channel-name
-                  :host host)))
+                  :host host
+                  :reuse-buffer reuse-buffer)))
 
 (defun ach-close (channel)
   (socket-close (channel-transport channel)))
@@ -178,26 +194,28 @@
   (write-sequence command stream)
   (finish-output stream))
 
-(defun ach-next (channel &optional buffer)
-  (assert (and (eq (channel-mode channel) :subscribe)
-               (channel-synchronous channel))
-          () "Invalid channel for synchronous command: ~A" channel)
-  (ach-sock-sync-cmd (channel-input channel) +next-cmd+)
-  (ach-stream-read (channel-output channel) buffer))
+(defun which-buffer (channel buffer-arg)
+  (or buffer-arg
+      (and (channel-reuse-buffer channel)
+           (channel-buffer channel))))
 
-(defun ach-last (channel &optional buffer)
-  (assert (and (eq (channel-mode channel) :subscribe)
-               (channel-synchronous channel))
-          () "Invalid channel for synchronous command: ~A" channel)
-  (ach-sock-sync-cmd (channel-input channel) +last-cmd+)
-  (ach-stream-read (channel-output channel) buffer))
+(defmacro def-ach-getter (name cmd)
+  `(defun ,name (channel &optional buffer)
+     (assert (and (eq (channel-mode channel) :subscribe)
+                  (channel-synchronous channel))
+             () "Invalid channel for synchronous command: ~A" channel)
+     (ach-sock-sync-cmd (channel-input channel) ,cmd)
+     (let ((buffer (ach-stream-read (channel-output channel)
+                                    (or buffer
+                                        (and (channel-reuse-buffer channel)
+                                             (channel-buffer channel))))))
+       (when (channel-reuse-buffer channel)
+         (setf (channel-buffer channel) buffer))
+       buffer)))
 
-(defun ach-poll (channel &optional buffer)
-  (assert (and (eq (channel-mode channel) :subscribe)
-               (channel-synchronous channel))
-          () "Invalid channel for synchronous command: ~A" channel)
-  (ach-sock-sync-cmd (channel-input channel) +poll-cmd+)
-  (ach-stream-read (channel-output channel) buffer))
+(def-ach-getter ach-next +next-cmd+)
+(def-ach-getter ach-last +last-cmd+)
+(def-ach-getter ach-poll +poll-cmd+)
 
 (defun ach-put (channel buffer)
   (assert (eq (channel-mode channel) :publish)
