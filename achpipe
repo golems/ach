@@ -168,6 +168,8 @@ def parse():
     p.add_option("-H", "--host", dest="host")
     p.add_option("-P", "--port", dest="port", 
                  type="int", default=8075)
+    p.add_option("-f", "--frequency",
+                 dest="frequency", type="float", default=0)
     (options, args) = p.parse_args()
     return options
     
@@ -193,6 +195,9 @@ def make_args(opts):
         args.append("--subscribe")
         args.append(opts.sync_channel)
         args.append("--synchronous")
+    if opts.frequency:
+        args.append("--frequency")
+        args.append(str(opts.frequency))
     return args
 
 

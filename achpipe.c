@@ -103,7 +103,9 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
+#include <amino.h>
 #include "ach.h"
+
 
 /* FIXME: It seems that the kernel buffers very small messages.  This
  * is really bad, because we want the data fast.  Should come up with
@@ -141,6 +143,8 @@ int opt_verbosity = 0;
 int opt_last = 0;
 /// CLI option: synchronous mode
 int opt_sync = 0;
+/// CLI option: frequency
+double opt_freq = 0;
 /*
 /// CLI option: read option headers
 int opt_read_headers = 0;
@@ -211,6 +215,13 @@ static struct argp_option options[] = {
         .arg = NULL,
         .flags = 0,
         .doc = "say more stuff"
+    },
+    {
+        .name = "frequency",
+        .key = 'f',
+        .arg = "hertz",
+        .flags = 0,
+        .doc = "Frequency to send data on subscribe"
     },
     {
         .name = NULL,
@@ -397,6 +408,7 @@ void publish( int fd, char *chan_name )  {
 
         while( ! sig_received ) {
             // get size
+            verbprintf( 2, "Reading size\n", r );
             r = ach_stream_read_msg_size( fd, &cnt );
             verbprintf( 2, "Read %d bytes\n", r );
             if( r <= 0 ) break;
@@ -452,6 +464,9 @@ void subscribe(int fd, char *chan_name) {
     char cmd[5] = {0};
     size_t frame_size = 0;
 
+    struct timespec period = aa_tm_sec2timespec( aa_feq(opt_freq, 0.0, 0) ? 0 :
+                                                 (1/opt_freq) );
+    int is_freq = !aa_feq(opt_freq,0,0);
 
     // read loop
     while( ! sig_received ) {
@@ -478,7 +493,7 @@ void subscribe(int fd, char *chan_name) {
                 }
             } else {
                 // push the data
-                r = opt_last ?
+                r = (opt_last || is_freq) ?
                     ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
                     ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
             }
@@ -513,6 +528,11 @@ void subscribe(int fd, char *chan_name) {
             verbprintf( 2, "Printed output\n");
         }
         t0 = 0;
+        // maybe sleep
+        if( is_freq ) {
+            assert( !opt_sync );
+            aa_tm_relsleep(period);
+        }
     }
     free(buf);
     ach_close( &chan );
@@ -574,6 +594,9 @@ int main( int argc, char **argv ) {
                  "must specify publish or subscribe mode\n" );
     hard_assert( opt_pub || opt_sub ,
                  "must specify publish xor subscribe mode\n" ) ;
+    hard_assert( aa_feq(opt_freq,0,0) ? 1 : (!opt_sync && opt_sub),
+                 "frequency only valid on async subscribe mode\n" );
+    hard_assert( opt_freq >= 0, "frequency must be positive\n" );
 
     // maybe print
     verbprintf( 1, "Channel: %s\n", opt_chan_name );
@@ -582,7 +605,6 @@ int main( int argc, char **argv ) {
 
     // install sighandler
     sighandler_install();
-
     // run
     if (opt_pub) {
         publish( STDIN_FILENO, opt_chan_name );
@@ -612,6 +634,9 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
         break;
     case 'c':
         opt_sync = 1;
+        break;
+    case 'f':
+        opt_freq = atof(arg);
         break;
         /*
           case 'R':

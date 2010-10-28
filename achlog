@@ -52,17 +52,19 @@ def parse():
                  action="count", dest="verbose" )
     p.add_option("-d", "--directory",
                  dest="directory")
+    p.add_option("-f", "--frequency",
+                 dest="frequency", type="float", default=0)
     (options, args) = p.parse_args()
     return (options, args)
 
-def start_children( channels, verbose ):
+def start_children( channels, verbose, frequency ):
     timestring = strftime("%Y%m%dT%H%M%S")    
     def start_child(channel):
         filename = channel + "." + timestring + ".achlog"
         if (verbose):
             print "Logging `" + channel + "' to " + filename
         fd = open( filename, 'a' )
-        child = Popen(["achpipe", "-s", channel], stdout=fd)
+        child = Popen(["achpipe", "-s", channel, "-f", str(frequency)], stdout=fd)
         fd.close()
         return child
 
@@ -110,7 +112,7 @@ def main():
     install_signals( options.verbose )
         
     ## Start
-    children = start_children( args, options.verbose )
+    children = start_children( args, options.verbose, options.frequency )
 
     ## Wait
     wait_for_signal( options.verbose )
