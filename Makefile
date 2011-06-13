@@ -24,7 +24,7 @@ ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN
 endif
 
-$(call LINKLIB, ach, ach.o ach_stream.o)
+$(call LINKLIB, ach, ach.o ach_stream.o, pthread rt)
 
 $(call LINKBIN, test_pub, test_pub.c ach.o, pthread rt)
 $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)

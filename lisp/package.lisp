@@ -1,5 +1,4 @@
-;;; -*- Lisp -*-
-;; Copyright (c) 2009, Georgia Tech Research Corporation
+;; Copyright (c) 2011, Georgia Tech Research Corporation
 ;; All rights reserved.
 ;;
 ;; Redistribution and use in source and binary forms, with or without
@@ -32,18 +31,14 @@
 ;; OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-;; asdf system file for ach
-;;
 ;; Author: Neil T. Dantam
 
-(cl:eval-when (:load-toplevel :execute)
-    (asdf:operate 'asdf:load-op 'cffi-grovel))
 
 
-(asdf:defsystem ach
-  ;; The version should get updated from the Makefile via sed
-  :description "ach publish-subscribe IPC"
-  :depends-on ("cffi" "s-protobuf" "usocket") ; for binio, which could live independently
-  :components ((:file "package")
-               (cffi-grovel:grovel-file "grovel" :depends-on ("package"))
-               (:file "ach" :depends-on ("package"))))
+(defpackage :ach
+  (:use :cl :binio :usocket)
+  (:export :ach-connect :ach-close :ach-read :ach-write
+           :ach-next :ach-last :ach-poll :ach-put
+           :ach-closef
+           :ach-map :with-ach-log
+           ))

@@ -76,6 +76,12 @@
 /// macro to do things when debugging
 #define IFDEBUG( x ) (x)
 
+
+size_t ach_channel_size = sizeof(ach_channel_t);
+
+size_t ach_attr_size = sizeof(ach_attr_t);
+
+
 const char *ach_result_to_string(ach_status_t result) {
 
     switch(result) {

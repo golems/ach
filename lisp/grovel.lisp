@@ -1,5 +1,4 @@
-;;; -*- Lisp -*-
-;; Copyright (c) 2009, Georgia Tech Research Corporation
+;; Copyright (c) 2011, Georgia Tech Research Corporation
 ;; All rights reserved.
 ;;
 ;; Redistribution and use in source and binary forms, with or without
@@ -32,18 +31,32 @@
 ;; OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-;; asdf system file for ach
-;;
-;; Author: Neil T. Dantam
+(progn
+  (in-package :ach)
+  (cc-flags "--std=gnu99")
+  (include "stdint.h")
+  (include "pthread.h")
+  (include "stdlib.h")
+  (include "stdio.h")
+  (include "unistd.h")
+  (include "time.h")
+  (include "sys/stat.h")
+  (include "ach.h")
+  (cenum (ach-status :define-constants nil)
+         ((:ok "ACH_OK"))
+         ((:overflow "ACH_OVERFLOW"))
+         ((:invalid-name "ACH_INVALID_NAME"))
+         ((:bad-shm-file "ACH_BAD_SHM_FILE"))
+         ((:failed-syscall "ACH_FAILED_SYSCALL"))
+         ((:stale-frames "ACH_STALE_FRAMES"))
+         ((:missed-frame "ACH_MISSED_FRAME"))
+         ((:timeout "ACH_TIMEOUT"))
+         ((:eexist "ACH_EEXIST"))
+         ((:enoent "ACH_ENOENT"))
+         ((:closed "ACH_CLOSED")))
+  (cenum ach-chan-state
+         ((:chan-state-init "ACH_CHAN_STATE_INIT"))
+         ((:chan-state-run "ACH_CHAN_STATE_RUN"))
+         ((:chan-state-closed "ACH_CHAN_STATE_CLOSED")))
+  )
 
-(cl:eval-when (:load-toplevel :execute)
-    (asdf:operate 'asdf:load-op 'cffi-grovel))
-
-
-(asdf:defsystem ach
-  ;; The version should get updated from the Makefile via sed
-  :description "ach publish-subscribe IPC"
-  :depends-on ("cffi" "s-protobuf" "usocket") ; for binio, which could live independently
-  :components ((:file "package")
-               (cffi-grovel:grovel-file "grovel" :depends-on ("package"))
-               (:file "ach" :depends-on ("package"))))

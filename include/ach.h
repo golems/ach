@@ -66,6 +66,37 @@
  */
 
 
+/** \page Howto
+ *
+ * \section create Create a channel
+ *
+ * - \code $ ach -C CHANNEL_NAME -n NOMINAL_MESSAGE_SIZE -m MESSAGE_COUNT \endcode
+
+ * \section delete Remove a channel
+ *
+ * - \code $ rm /dev/shm/achsm-CHANNEL_NAME \endcode
+ *
+ * \section remote Remote Channels
+ *
+ * -# Ensure the the remote host has inetd running
+ * -# Ensure the the remote host's /etc/inetd.conf contains the line
+ * \code  8075                stream     tcp     nowait     nobody     /usr/bin/achpipe   /usr/bin/achpipe -R \endcode
+ * -# Ensure any channels exist on both the remote and local host
+ * -# Ensure that the remote channel is chmodded to 666
+ *    (or better yet, set up an ach user in inted.conf)
+ *   \code $ chmod /dev/shm/achshm-CHANNEL_NAME 666 \endcode
+ *
+ * \subsection pull Pull a Channel from a Remote Host
+ *
+ * - \code $ ./achpipe -Wp CHANNEL_NAME -H REMOTE_HOST \endcode
+ *
+ * \subsection push Push a Channel to a Remote Host
+ *
+ * - \code $ ./achpipe -Ws CHANNEL_NAME -H REMOTE_HOST \endcode
+ *
+ */
+
+
 /*
  * Shared Memory Layout:
  *
@@ -229,6 +260,10 @@ extern "C" {
         int mode; ///< whether channel was opened for publish or subscribe
     } ach_channel_t;
 
+    /// Size of ach_channel_t
+    extern size_t ach_channel_size;
+    /// Size of ach_attr_t
+    extern size_t ach_attr_size;
 
     /// Gets pointer to guard uint64 following the header
 #define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))
