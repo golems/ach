@@ -338,6 +338,12 @@ specified, it may, but does not have to, be used."
 (cffi:defcfun "ach_result_to_string" :string
   (r :int))
 
+(cffi:defcfun "ach_create" :int
+  (name :string)
+  (frame-cnt :uint)
+  (frame-size :uint)
+  (attr :pointer))
+
 
 (define-condition ach-status (error)
   ((message
@@ -350,12 +356,21 @@ specified, it may, but does not have to, be used."
         :message (apply #'format nil fmt args)
         :type type))
 
+(defun check-status (code fmt &rest args)
+  (let ((k (status-keyword code)))
+    (unless (eq :ok k)
+      (apply #'ach-status k fmt args))
+    k))
+
 (defmethod print-object ((object ach-status) stream)
   (print-unreadable-object (object stream :type t :identity t)
     (format stream "(~A): ~A"
             (slot-value object 'type)
             (slot-value object 'message))))
 
+(defun create-channel (name frame-count frame-size)
+  (let ((r (ach-create name frame-count frame-size (cffi:null-pointer))))
+    (check-status r "creating channel")))
 
 (defun close-channel (channel)
   (let ((pointer (ach-handle-pointer channel)))
@@ -455,7 +470,11 @@ specified, it may, but does not have to, be used."
                                   (cffi:null-pointer)))
                  count buffer))
 
-
+(defun flush (channel)
+    (assert (and (ach-handle-opened channel)
+                 (ach-handle-pointer channel)) ()
+     "Invalid channel: ~A" channel)
+  (ach-flush (ach-handle-pointer channel)))
 
 
 ;; (defun wait-next (channel &key count buffer)

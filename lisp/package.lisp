@@ -41,4 +41,9 @@
            :ach-next :ach-last :ach-poll :ach-put
            :ach-closef
            :ach-map :with-ach-log
+
+           :create-channel :open-channel :close-channel
+           :flush
+           :put :get-last :wait-next
+
            ))
