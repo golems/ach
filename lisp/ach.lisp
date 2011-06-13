@@ -34,15 +34,6 @@
 ;; Author: Neil T. Dantam
 
 
-
-(defpackage :ach
-  (:use :cl :binio :usocket)
-  (:export :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last :ach-poll :ach-put
-           :ach-closef
-           :ach-map :with-ach-log
-           ))
-
 (in-package :ach)
 
 ;;(declaim (optimize (speed 3) (safety 0)))
@@ -185,7 +176,7 @@ specified, it may, but does not have to, be used."
                   :host host
                   :reuse-buffer reuse-buffer)))
 
-(defun ach-close (channel)
+(defun ach-disconnect (channel)
   (socket-close (channel-transport channel)))
 
 (defun ach-sock-sync-cmd (stream command)
@@ -217,7 +208,7 @@ specified, it may, but does not have to, be used."
 (def-ach-getter ach-last +last-cmd+)
 (def-ach-getter ach-poll +poll-cmd+)
 
-(defun ach-put (channel buffer)
+(defun ach-send (channel buffer)
   (assert (eq (channel-mode channel) :publish)
           () "Invalid channel mode for put")
   (ach-stream-write (channel-input channel) buffer)
@@ -282,6 +273,223 @@ specified, it may, but does not have to, be used."
     `(let ((,var (ach-log-start ,directory ,@channels)))
        (unwind-protect (progn ,@body)
          (ach-log-stop ,var)))))
+
+
+
+;;;;;;;;;;;;
+;;; CFFI ;;;
+;;;;;;;;;;;;
+
+(cffi:define-foreign-library libach
+  (:unix "libach.so")
+  (t (:default "libach")))
+
+(cffi:use-foreign-library libach)
+
+(cffi:defcvar "ach_channel_size" :uint)
+
+(defstruct ach-handle
+  pointer
+  name
+  opened)
+
+(cffi:defcfun "ach_open" :int
+  (chan :pointer)
+  (name :string)
+  (attr :pointer))
+
+(cffi:defcfun "ach_get_next" :int
+  (chan :pointer)
+  (buf :pointer)
+  (size :uint)
+  (frame-size :pointer))
+
+(cffi:defcfun "ach_wait_next" :int
+  (chan :pointer)
+  (buf :pointer)
+  (size :uint)
+  (frame-size :pointer)
+  (abstime :pointer))
+
+(cffi:defcfun "ach_get_last" :int
+  (chan :pointer)
+  (buf :pointer)
+  (size :uint)
+  (frame-size :pointer))
+
+(cffi:defcfun "ach_wait_last" :int
+  (chan :pointer)
+  (buf :pointer)
+  (size :uint)
+  (frame-size :pointer)
+  (abstime :pointer))
+
+(cffi:defcfun "ach_put" :int
+  (chan :pointer)
+  (buf :pointer)
+  (len :uint))
+
+(cffi:defcfun "ach_flush" :int
+  (chan :pointer))
+
+(cffi:defcfun "ach_close" :int
+  (chan :pointer))
+
+(cffi:defcfun "ach_result_to_string" :string
+  (r :int))
+
+
+(define-condition ach-status (error)
+  ((message
+    :initarg :message)
+   (type
+    :initarg :type)))
+
+(defun ach-status (type fmt &rest args)
+  (error 'ach-status
+        :message (apply #'format nil fmt args)
+        :type type))
+
+(defmethod print-object ((object ach-status) stream)
+  (print-unreadable-object (object stream :type t :identity t)
+    (format stream "(~A): ~A"
+            (slot-value object 'type)
+            (slot-value object 'message))))
+
+
+(defun close-channel (channel)
+  (let ((pointer (ach-handle-pointer channel)))
+    (assert pointer () "No channel pointer")
+    (assert (ach-handle-opened channel) () "Channel already closed")
+    (unwind-protect
+         (progn
+           (sb-ext:cancel-finalization channel)
+           (let ((r (ach-close pointer)))
+             (assert (zerop r) () "Couldn't close channel: ~A"
+                     (ach-result-to-string r))
+             (setf (ach-handle-opened channel) nil)))
+      (cffi:foreign-free pointer)
+      (setf (ach-handle-pointer channel) nil))
+    nil))
+
+
+(defun open-channel (name)
+  (let ((handle (make-ach-handle :name name
+                                 :opened nil
+                                 :pointer nil))
+        (ptr (cffi:foreign-alloc :int8 :count *ach-channel-size*)))
+    (setf (ach-handle-pointer handle) ptr)
+    (sb-ext:finalize handle
+                     (lambda ()
+                       (format t "Finalizing")
+                       (close-channel (make-ach-handle
+                                       :name name
+                                       :opened t
+                                       :pointer ptr))))
+    (let ((r (ach-open (ach-handle-pointer handle)
+                       name
+                       (cffi-sys:null-pointer))))
+      (assert (zerop r) () "Couldn't open channel: ~A"
+              (ach-result-to-string r)))
+    (setf (ach-handle-opened handle) t)
+    handle))
+
+(defun put (channel buffer)
+  (check-type buffer binio:octet-vector)
+  (cffi-sys:with-pointer-to-vector-data (pbuf buffer)
+    (let ((r (ach-put (ach-handle-pointer channel)
+                      pbuf (length buffer))))
+      (assert (zerop r) () "Couldn't write data: ~A"
+              (ach-result-to-string r))))
+  nil)
+
+(defun status-keyword (code)
+  (cffi:foreign-enum-keyword 'ach-status code))
+
+(defun dispatch-read (pointer function count buffer)
+  (cond
+    ((and (null count) (null buffer))
+     (dispatch-read pointer function
+                    (cffi:with-foreign-object (p-frame-size :uint)
+                      (let ((r (funcall function
+                                        pointer
+                                        (cffi:null-pointer) 0
+                                        p-frame-size)))
+                        (assert (= (cffi:foreign-enum-value 'ach-status :overflow)
+                                   r) () "Invalid status getting size: ~A"
+                                   (status-keyword r)))
+                      (cffi:mem-ref p-frame-size :uint))
+                    nil))
+    ((and count (null buffer))
+     (dispatch-read pointer function count (make-octet-vector count)))
+    (buffer
+     (let ((frame-size) (r))
+       (cffi:with-foreign-object (p-frame-size :uint)
+         (cffi-sys:with-pointer-to-vector-data (pbuf buffer)
+           (setq r (funcall function
+                            pointer
+                            pbuf (length buffer) p-frame-size)))
+         (setq frame-size (cffi:mem-ref p-frame-size :uint)))
+       (unless (eq :ok (status-keyword r))
+         (ach-status (status-keyword r) "Reading frame"))
+       ;;FIXME: handle this
+       (assert (= frame-size (length buffer)) () "Mismatched frame size")
+       (values buffer frame-size (cffi:foreign-enum-keyword 'ach-status r))))))
+
+(defun get-last (channel &key count buffer)
+  (assert (and (ach-handle-opened channel)
+               (ach-handle-pointer channel)) ()
+               "Invalid channel: ~A" channel)
+  (dispatch-read (ach-handle-pointer channel)
+                 (lambda (pointer buffer size frame-size)
+                   (ach-get-last pointer buffer size frame-size))
+                 count buffer))
+
+(defun wait-next (channel &key count buffer)
+  (assert (and (ach-handle-opened channel)
+               (ach-handle-pointer channel)) ()
+               "Invalid channel: ~A" channel)
+  (dispatch-read (ach-handle-pointer channel)
+                 (lambda (pointer buffer size frame-size)
+                   (ach-wait-next pointer buffer size frame-size
+                                  (cffi:null-pointer)))
+                 count buffer))
+
+
+
+
+;; (defun wait-next (channel &key count buffer)
+;;   (assert (and (ach-handle-opened channel)
+;;                (ach-handle-pointer channel)) ()
+;;                "Invalid channel: ~A" channel)
+;;   (cond
+;;     ((and (null count) (null buffer))
+;;      (wait-next channel
+;;                 :count
+;;                 (cffi:with-foreign-object (p-frame-size :uint)
+;;                   (let ((r (ach-wait-next (ach-handle-pointer channel)
+;;                                          (cffi:null-pointer) 0 p-frame-size)))
+;;                     (assert (= (cffi:foreign-enum-value 'ach-status :overflow)
+;;                                r) () "Invalid status getting size: ~A"
+;;                                (status-keyword r)))
+;;                  (cffi:mem-ref p-frame-size :uint))))
+;;     ((and count (null buffer))
+;;      (get-last channel :buffer (make-octet-vector count)))
+;;     (buffer
+;;      (let ((frame-size) (r))
+;;        (cffi:with-foreign-object (p-frame-size :uint)
+;;          (cffi-sys:with-pointer-to-vector-data (pbuf buffer)
+;;            (setq r (ach-get-last (ach-handle-pointer channel)
+;;                                  pbuf (length buffer) p-frame-size)))
+
+;;          (setq frame-size (cffi:mem-ref p-frame-size :uint)))
+;;        (unless (eq :ok (status-keyword r))
+;;          (ach-status (status-keyword r) "Reading frame"))
+;;        ;;FIXME: handle this
+;;        (assert (= frame-size (length buffer)) () "Mismatched frame size")
+;;        (values buffer frame-size (cffi:foreign-enum-keyword 'ach-status r))))))
+
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;
 ;; ;;; CHILD PROCESS ;;;
