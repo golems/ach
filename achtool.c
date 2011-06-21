@@ -187,6 +187,8 @@ int cmd_unlink(void) {
     if( opt_verbosity > 0 ) {
         fprintf(stderr, "Unlinking Channel %s\n", opt_chan_name);
     }
+    //FIXME: implement
+    fprintf(stderr, "Unimplemented\n");
 
     return 0;
 }

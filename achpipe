@@ -222,7 +222,6 @@ def main():
     if options.write_headers :
         write_headers( options )
     args = make_args(options)
-    #print args
     os.execvp( "achpipe.bin", args )
     
 
