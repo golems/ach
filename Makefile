@@ -19,6 +19,7 @@ default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc
 
 CFLAGS += -O0 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
 
+LISPDIR = ./lisp
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN

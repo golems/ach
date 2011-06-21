@@ -1,2 +1,3 @@
 Maintainer: Neil T. Dantam
 Description: A publish-subscribe IPC library designed for low-latency
+Depends: s-protobuf
