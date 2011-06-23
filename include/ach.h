@@ -181,7 +181,9 @@ extern "C" {
         ACH_TIMEOUT = 7,        ///< timeout before frame received
         ACH_EEXIST = 8,          ///< shm already exists
         ACH_ENOENT = 9,        ///< shm doesn't
-        ACH_CLOSED = 10
+        ACH_CLOSED = 10,
+        ACH_BUG = 11,
+        ACH_EINVAL = 12
     } ach_status_t;
 
     /// Whether a channel is opened to publish or subscribe
@@ -367,7 +369,7 @@ extern "C" {
 
         \param chan (action) The channel to write to
         \param buf The buffer containing the data to copy into the channel
-        \param len number of bytes in buf to copy
+        \param len number of bytes in buf to copy, len > 0
         \return ACH_OK on success.
     */
     int ach_put(ach_channel_t *chan, void *buf, size_t len);

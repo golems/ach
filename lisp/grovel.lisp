@@ -53,10 +53,11 @@
          ((:timeout "ACH_TIMEOUT"))
          ((:eexist "ACH_EEXIST"))
          ((:enoent "ACH_ENOENT"))
-         ((:closed "ACH_CLOSED")))
+         ((:closed "ACH_CLOSED"))
+         ((:einval "ACH_EINVAL"))
+         ((:bug "ACH_BUG")))
   (cenum ach-chan-state
          ((:chan-state-init "ACH_CHAN_STATE_INIT"))
          ((:chan-state-run "ACH_CHAN_STATE_RUN"))
-         ((:chan-state-closed "ACH_CHAN_STATE_CLOSED")))
-  )
+         ((:chan-state-closed "ACH_CHAN_STATE_CLOSED"))))
 

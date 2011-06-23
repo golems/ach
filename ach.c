@@ -96,6 +96,8 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_CLOSED: return "ACH_CLOSED";
     case ACH_EEXIST: return "ACH_EEXIST";
     case ACH_ENOENT: return "ACH_ENOENT";
+    case ACH_BUG: return "ACH_BUG";
+    case ACH_EINVAL: return "ACH_EINVAL";
     }
     return "UNKNOWN";
 
@@ -446,16 +448,30 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
-    assert( idx->size );
+    //assert( idx->size );
     assert( idx->seq_num );
     assert( idx->offset < shm->data_size );
-    if( 0 == size || idx->size > size ) {
+    // check idx
+    if( chan->seq_num > idx->seq_num ) {
+        fprintf(stderr,
+                "ach bug: chan->seq_num (%llu) > idx->seq_num (%llu)\n"
+                "ach bug: index offset: %d\n",
+                chan->seq_num, idx->seq_num,
+                index_offset );
+        return ACH_BUG;
+    }
+
+    if( /*0 == size ||*/ idx->size > size ) {
         // buffer overflow
         *frame_size = idx->size;
         return ACH_OVERFLOW;
     }else if(!copy && chan->seq_num >= idx->seq_num ) {
         // no new data
-        assert( chan->seq_num == idx->seq_num );
+        if( chan->seq_num != idx->seq_num ) {
+            fprintf(stderr, "ach bug: chan->seq_num (%llu) != idx->seq_num (%llu)\n",
+                    chan->seq_num, idx->seq_num );
+            return ACH_BUG;
+        }
         *frame_size = 0;
         if( ACH_CHAN_STATE_CLOSED == shm->state )
             return ACH_CLOSED;
@@ -522,21 +538,30 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_s
             next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
         } else {
             next_index = chan->next_index;
-            if( 0 == index_ar[next_index].size ||
+            if( /*0 == index_ar[next_index].size ||*/ // I think this is wrong -ntd 20110622
                 index_ar[next_index].seq_num != chan->seq_num + 1 ) {
                 // we've missed a frame, find the oldest
                 missed_frame = 1;
                 next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
             }
         }
-        retval = ach_get_from_offset( chan, next_index, (char*)buf, size, frame_size, copy );
+        if( index_ar[next_index].seq_num < chan->seq_num ) {
+            fprintf(stderr,
+                    "ach bug: idx seqnum (%llu) < chan seq_num (%llu)\n"
+                    "ach bug: index offset: %d\n",
+                    index_ar[next_index].seq_num, chan->seq_num,
+                    next_index );
+            retval = ACH_BUG;
+        } else {
+            retval = ach_get_from_offset( chan, next_index, (char*)buf, size,
+                                          frame_size, copy );
+        }
     }
 
     // release read lock
     unrdlock( shm );
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
-
 }
 
 /* The next few functions are variations on reading from an ach channel.
@@ -571,7 +596,9 @@ int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_siz
 
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
-
+    if( 0 == len || NULL == buf ) {
+        return ACH_EINVAL;
+    }
 
     assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
     assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(chan->shm) );
@@ -693,6 +720,14 @@ void ach_dump( ach_header_t *shm ) {
     fprintf(stderr, "head guard:  %llX\n", * ACH_SHM_GUARD_HEADER(shm) );
     fprintf(stderr, "index guard: %llX\n", * ACH_SHM_GUARD_INDEX(shm) );
     fprintf(stderr, "data guard:  %llX\n", * ACH_SHM_GUARD_DATA(shm) );
+
+    fprintf(stderr, "head seq:  %llu\n",
+            (ACH_SHM_INDEX(shm) +
+             ((shm->index_head - 1 + shm->index_cnt) % shm->index_cnt)) -> seq_num );
+    fprintf(stderr, "head size:  %u\n",
+            (ACH_SHM_INDEX(shm) +
+             ((shm->index_head - 1 + shm->index_cnt) % shm->index_cnt)) -> size );
+
 }
 
 void ach_attr_init( ach_attr_t *attr ) {
