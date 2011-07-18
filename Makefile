@@ -4,7 +4,7 @@ VERSION := 0.20110622
 
 SHAREDLIBS := ach
 
-BINFILES := achcat achpipe.bin ach
+BINFILES := achcat achpipe.bin ach achchand
 
 LC_ALL := ascii
 LANG := ascii
@@ -17,7 +17,7 @@ include /usr/share/make-common/common.1.mk
 
 default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc
 
-CFLAGS += -O0 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
+CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
 
 LISPDIR = ./lisp
 
@@ -31,6 +31,7 @@ $(call LINKBIN, test_pub, test_pub.c ach.o, pthread rt)
 $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)
 $(call LINKBIN, achcat, achcat.o ach.o, pthread rt)
 $(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
+$(call LINKBIN, achchand, achchand.o, pthread rt amino)
 
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
