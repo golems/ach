@@ -58,7 +58,7 @@
 // from linux man page
 #define UNIX_PATH_MAX    108
 
-#define TIMEOUT_MS_POLL 50
+#define TIMEOUT_MS_POLL 1000
 
 
 /* Threads: RT thread waits in channel.  When a message is posted, it
@@ -228,15 +228,26 @@ void run_io() {
         int r;
         do { r = close(d_cx.pfds[i].fd ); } while( r < 0 && EINTR == errno );
         if( r < 0 ) { syslog(LOG_ERR, "close failed: %s", strerror(errno)); }
+        // free buffers
+        aa_free_if_valid( d_cx.fds[i].in );
+        aa_free_if_valid( d_cx.fds[i].out );
         // shift down
-        memmove( &d_cx.pfds[i], &d_cx.pfds[i+1], sizeof(d_cx.pfds[0])*(d_cx.n - i - 1) );
-        memmove( &d_cx.fds[i], &d_cx.fds[i+1], sizeof(d_cx.fds[0])*(d_cx.n - i - 1) );
+        memmove( &d_cx.pfds[i], &d_cx.pfds[i+1],
+                 sizeof(d_cx.pfds[0])*(d_cx.n - i - 1) );
+        memmove( &d_cx.fds[i], &d_cx.fds[i+1],
+                 sizeof(d_cx.fds[0])*(d_cx.n - i - 1) );
         d_cx.n--;
     }
 
     void process_ctrl( size_t i ) {
-        int r;
-        //sscanf
+        char *buf = (char*)d_cx.fds[i].in;
+        assert(NULL == strchr(buf, '\n'));
+        // delimit string
+        // tokenize
+        printf("line: \n");
+        for( char *tok = strtok(buf, " \t"); tok; tok = strtok(NULL, " \t") ) {
+            printf("  token: %s\n", tok );
+        }
     }
 
     d_cx.pfds[0].events = POLLIN;
@@ -247,16 +258,15 @@ void run_io() {
         r = poll(d_cx.pfds, d_cx.n, TIMEOUT_MS_POLL);
         if( r > 0 ) {
             printf("poll %d\n", r);
-            //size_t oldn = d_cx.n;
             for( size_t i = 0; i < d_cx.n; i ++ ) {
-                //struct pollfd *pfd = &d_cx.pfds[i];
-                //struct achd_fd *afd = &d_cx.fds[i];
+                assert( d_cx.fds[i].n_in <= d_cx.fds[i].max_in );
+                assert( d_cx.fds[i].n_out <= d_cx.fds[i].max_out );
                 switch( d_cx.fds[i].type ) {
                 case ACHD_FD_CTRL_SRV:
                     // check new connections
-                    printf("SRV:  ");
-                    dump_pollevents( d_cx.pfds[i].revents );
-                    fputc('\n',stdout);
+                    //printf("SRV:  ");
+                    //dump_pollevents( d_cx.pfds[i].revents );
+                    //fputc('\n',stdout);
                     if( d_cx.pfds[i].revents & POLLIN ) {
                         int newconn;
                         do { newconn = accept( d_cx.pfds[i].fd, NULL, NULL ); }
@@ -276,28 +286,39 @@ void run_io() {
                     }
                     break;
                 case ACHD_FD_CTRL_CONN:
-                    printf("CTRL:  ");
-                    dump_pollevents( d_cx.pfds[i].revents );
-                    fputc('\n',stdout);
+                    //printf("CTRL:  ");
+                    //dump_pollevents( d_cx.pfds[i].revents );
+                    //fputc('\n',stdout);
                     // check ctrl connections for input
                     if( d_cx.pfds[i].revents & POLLIN ) {
-                        printf("conn pollin\n");
-                        dump_pollevents( d_cx.pfds[i].revents );
                         int s = aa_read_realloc( d_cx.pfds[i].fd,(void**)&d_cx.fds[i].in,
                                                  d_cx.fds[i].n_in, &d_cx.fds[i].max_in);
                         if( s < 0 && errno != EINTR ) {
                             syslog( LOG_ERR, "read failed: %s", strerror(errno) );
                         } else if (s > 0) {
-                            fprintf(stdout, "read: %u\n", s);
+                            // got some data
+                            size_t j = d_cx.fds[i].n_in;
                             d_cx.fds[i].n_in += (size_t)s;
-                            size_t ss = fwrite(d_cx.fds[i].in,
-                                               (size_t)1,
-                                               d_cx.fds[i].n_in,
-                                               stdout );
-                            assert( ss > 0 );
-                            d_cx.fds[i].n_in = 0;
+                            // look for newline
+                            while( j < d_cx.fds[i].n_in ) {
+                                char c = (char)d_cx.fds[i].in[j];
+                                if( '\n' == c || '\r' == c ) {
+                                    d_cx.fds[i].in[j] = '\0'; // mark null
+                                    process_ctrl(i); // process
+                                    // move
+                                    d_cx.fds[i].n_in = d_cx.fds[i].n_in - j - 1;
+                                    memmove( d_cx.fds[i].in, &d_cx.fds[i].in[j+1],
+                                             d_cx.fds[i].n_in );
+                                    j = 0;
+                                } else if (!isascii(c) || !isprint(c) || '\0' == c) {
+                                    // bad character, close the connection
+                                    syslog( LOG_NOTICE, "bad char from client: %d", c );
+                                    rm_fd(i);
+                                    i--;
+                                    break;
+                                } else { j++; }
+                            }
                         }
-
                     }
                     if( d_cx.pfds[i].revents & (POLLHUP|POLLERR|POLLNVAL) ) {
                         // remove
@@ -311,12 +332,14 @@ void run_io() {
                     // check ctrl connections for output
                     syslog(LOG_ERR, "bad fd type at index %"PRIuPTR, i );
                 }
+                assert( d_cx.fds[i].n_in <= d_cx.fds[i].max_in );
+                assert( d_cx.fds[i].n_out <= d_cx.fds[i].max_out );
             }
         } else if (r < 0 && EINTR != errno && EAGAIN != errno ) {
             syslog(LOG_EMERG, "poll failed: %s", strerror(errno) );
             exit(-1);
         } else {
-            //printf("poll nop\n");
+            printf("poll nop\n");
         }
     }
 }
