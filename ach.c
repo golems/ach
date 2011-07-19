@@ -34,6 +34,7 @@
  *
  */
 
+
 /** \file ach.c
  *  \author Neil T. Dantam
  */
@@ -55,6 +56,7 @@
 #include <ctype.h>
 
 #include <string.h>
+#include <inttypes.h>
 
 #include "ach.h"
 
@@ -454,8 +456,8 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     // check idx
     if( chan->seq_num > idx->seq_num ) {
         fprintf(stderr,
-                "ach bug: chan->seq_num (%llu) > idx->seq_num (%llu)\n"
-                "ach bug: index offset: %d\n",
+                "ach bug: chan->seq_num (%"PRIu64") > idx->seq_num (%"PRIu64")\n"
+                "ach bug: index offset: %"PRIuPTR"\n",
                 chan->seq_num, idx->seq_num,
                 index_offset );
         return ACH_BUG;
@@ -468,7 +470,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     }else if(!copy && chan->seq_num >= idx->seq_num ) {
         // no new data
         if( chan->seq_num != idx->seq_num ) {
-            fprintf(stderr, "ach bug: chan->seq_num (%llu) != idx->seq_num (%llu)\n",
+            fprintf(stderr, "ach bug: chan->seq_num (%"PRIu64") != idx->seq_num (%"PRIu64")\n",
                     chan->seq_num, idx->seq_num );
             return ACH_BUG;
         }
@@ -547,8 +549,8 @@ static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_s
         }
         if( index_ar[next_index].seq_num < chan->seq_num ) {
             fprintf(stderr,
-                    "ach bug: idx seqnum (%llu) < chan seq_num (%llu)\n"
-                    "ach bug: index offset: %d\n",
+                    "ach bug: idx seqnum (%"PRIu64") < chan seq_num (%"PRIu64")\n"
+                    "ach bug: index offset: %"PRIuPTR"\n",
                     index_ar[next_index].seq_num, chan->seq_num,
                     next_index );
             retval = ACH_BUG;
@@ -710,21 +712,21 @@ int ach_close(ach_channel_t *chan) {
 
 void ach_dump( ach_header_t *shm ) {
     fprintf(stderr, "Magic: %x\n", shm->magic );
-    fprintf(stderr, "len: %d\n", shm->len );
-    fprintf(stderr, "data_size: %d\n", shm->data_size );
-    fprintf(stderr, "data_head: %d\n", shm->data_head );
-    fprintf(stderr, "data_free: %d\n", shm->data_free );
-    fprintf(stderr, "index_head: %d\n", shm->index_head );
-    fprintf(stderr, "index_free: %d\n", shm->index_free );
-    fprintf(stderr, "last_seq: %lld\n", shm->last_seq );
-    fprintf(stderr, "head guard:  %llX\n", * ACH_SHM_GUARD_HEADER(shm) );
-    fprintf(stderr, "index guard: %llX\n", * ACH_SHM_GUARD_INDEX(shm) );
-    fprintf(stderr, "data guard:  %llX\n", * ACH_SHM_GUARD_DATA(shm) );
+    fprintf(stderr, "len: %"PRIuPTR"\n", shm->len );
+    fprintf(stderr, "data_size: %"PRIuPTR"\n", shm->data_size );
+    fprintf(stderr, "data_head: %"PRIuPTR"\n", shm->data_head );
+    fprintf(stderr, "data_free: %"PRIuPTR"\n", shm->data_free );
+    fprintf(stderr, "index_head: %"PRIuPTR"\n", shm->index_head );
+    fprintf(stderr, "index_free: %"PRIuPTR"\n", shm->index_free );
+    fprintf(stderr, "last_seq: %"PRIu64"\n", shm->last_seq );
+    fprintf(stderr, "head guard:  %"PRIx64"\n", * ACH_SHM_GUARD_HEADER(shm) );
+    fprintf(stderr, "index guard: %"PRIx64"\n", * ACH_SHM_GUARD_INDEX(shm) );
+    fprintf(stderr, "data guard:  %"PRIx64"\n", * ACH_SHM_GUARD_DATA(shm) );
 
-    fprintf(stderr, "head seq:  %llu\n",
+    fprintf(stderr, "head seq:  %"PRIu64"\n",
             (ACH_SHM_INDEX(shm) +
              ((shm->index_head - 1 + shm->index_cnt) % shm->index_cnt)) -> seq_num );
-    fprintf(stderr, "head size:  %u\n",
+    fprintf(stderr, "head size:  %"PRIuPTR"\n",
             (ACH_SHM_INDEX(shm) +
              ((shm->index_head - 1 + shm->index_cnt) % shm->index_cnt)) -> size );
 
