@@ -238,16 +238,32 @@ void run_io() {
                  sizeof(d_cx.fds[0])*(d_cx.n - i - 1) );
         d_cx.n--;
     }
+    void queue_output( size_t i, const char *str ) {
+        struct achd_fd *afd = d_cx.fds+i;
+        size_t len = strlen(str);
+        strncpy( (char*) afd->out + afd->n_out, str,
+                 AA_MIN( afd->max_out - afd->n_out,
+                         len ) );
+        afd->n_out += len;
+        d_cx.pfds[i].events |= POLLOUT;
+    }
 
     void process_ctrl( size_t i ) {
-        char *buf = (char*)d_cx.fds[i].in;
+        struct achd_fd *afd = d_cx.fds+i;
+        char *buf = (char*)afd->in;
         assert(NULL == strchr(buf, '\n'));
         // delimit string
         // tokenize
         printf("line: \n");
-        for( char *tok = strtok(buf, " \t"); tok; tok = strtok(NULL, " \t") ) {
-            printf("  token: %s\n", tok );
+        char *tok = strtok(buf, " \t");
+        if( 0 == strcasecmp( tok, "helo") ) {
+            queue_output( i, "elho\n");
+        } else {
+            queue_output( i, "bad command\n");
         }
+        //for( char *tok = strtok(buf, " \t"); tok; tok = strtok(NULL, " \t") ) {
+        //printf("  token: %s\n", tok );
+        //}
     }
 
     d_cx.pfds[0].events = POLLIN;
@@ -286,9 +302,9 @@ void run_io() {
                     }
                     break;
                 case ACHD_FD_CTRL_CONN:
-                    //printf("CTRL:  ");
-                    //dump_pollevents( d_cx.pfds[i].revents );
-                    //fputc('\n',stdout);
+                    printf("CTRL:  ");
+                    dump_pollevents( d_cx.pfds[i].revents );
+                    fputc('\n',stdout);
                     // check ctrl connections for input
                     if( d_cx.pfds[i].revents & POLLIN ) {
                         int s = aa_read_realloc( d_cx.pfds[i].fd,(void**)&d_cx.fds[i].in,
@@ -318,6 +334,24 @@ void run_io() {
                                     break;
                                 } else { j++; }
                             }
+                        }
+                    }
+
+                    if( d_cx.pfds[i].revents & POLLOUT ) {
+                        if( d_cx.fds[i].n_out ) {
+                            ssize_t s = write( d_cx.pfds[i].fd,
+                                               d_cx.fds[i].out, d_cx.fds[i].n_out );
+                            if( s < 0 && errno != EINTR ) {
+                                syslog( LOG_ERR, "write failed: %s", strerror(errno) );
+                            } else if( s > 0 ) {
+                                assert( (size_t)s <= d_cx.fds[i].n_out );
+                                memmove( d_cx.fds[i].out, d_cx.fds[i].out + s,
+                                         d_cx.fds[i].n_out - (size_t)s );
+                                d_cx.fds[i].n_out -= (size_t)s;
+                            }
+                        }
+                        if( 0 == d_cx.fds[i].n_out ) {
+                            d_cx.pfds[i].events &= ~POLLOUT;
                         }
                     }
                     if( d_cx.pfds[i].revents & (POLLHUP|POLLERR|POLLNVAL) ) {
