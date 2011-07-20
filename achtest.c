@@ -165,7 +165,7 @@ static int subscriber( int i ) {
             return -1;
         }
         if( ctr[ data[0] ] != data[1] ) {
-            fprintf(stderr, "subscriber %d missed %d frames from %d, (it's probaly ok)\n", i, data[1] - ctr[data[0]], data[0]);
+            fprintf(stderr, "subscriber %d missed %d frames from %d, (it's probably ok)\n", i, data[1] - ctr[data[0]], data[0]);
         }
         if( ctr[ data[0] ] > data[1] ) {
             fprintf(stderr, "subscriber %d, count %d, got [%d, %d]\n",
