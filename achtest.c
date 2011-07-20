@@ -38,19 +38,69 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <argp.h>
 #include <sys/wait.h>
 #include "ach.h"
 
 #define CHAN  "ach-test-clobber"
 
 //#define MAX 102400
-#define MAX 1024
 
 /* A C2D can roughly handle 16 publishers and 16 subscribers with
  * publishers firing every 1/4 millisecond */
-#define N_SUB 16 // number of subscribers
-#define N_PUB 16 // number of publishers
-#define PUB_SLEEP_US 250
+
+int opt_n_sub = 8;
+int opt_n_pub = 8;
+int opt_pub_sleep_us = 250;
+int opt_n_msgs = 1024;
+static struct argp_option options[] = {
+    {
+        .name = "publishers",
+        .key = 'p',
+        .arg = "num-publishers",
+        .flags = 0,
+        .doc = "number of publishers"
+    },
+    {
+        .name = "subscribers",
+        .key = 's',
+        .arg = "num-subscribers",
+        .flags = 0,
+        .doc = "number of subscribers"
+    },
+    {
+        .name = "usleep",
+        .key = 'u',
+        .arg = "microseconds",
+        .flags = 0,
+        .doc = "microseconds between publish"
+    },
+    {
+        .name = "messages",
+        .key = 'n',
+        .arg = "message-count",
+        .flags = 0,
+        .doc = "messages to publish"
+    },
+    {
+        .name = NULL,
+        .key = 0,
+        .arg = NULL,
+        .flags = 0,
+        .doc = NULL
+    }
+};
+
+/// argp parsing function
+static int parse_opt( int key, char *arg, struct argp_state *state);
+/// argp program version
+const char *argp_program_version = "achtest-" ACH_VERSION_STRING;
+/// argp program arguments documention
+static char args_doc[] = "";
+/// argp program doc line
+static char doc[] = "test ach";
+/// argp object
+static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 static int publisher( int32_t i ) {
     ach_channel_t chan;
@@ -62,14 +112,14 @@ static int publisher( int32_t i ) {
     }
 
     int32_t data[2] = {i, 0};
-    for( size_t j = 0; j < MAX; j++,data[1]++ ) {
+    for( size_t j = 0; j < (unsigned int)opt_n_msgs; j++,data[1]++ ) {
         r = ach_put( &chan, data, sizeof(data) );
         if( r != ACH_OK ) {
             fprintf(stderr, "publisher %d couldn't ach_put: %s\n",
                     i, ach_result_to_string(r) );
             return -1;
         }
-        usleep(PUB_SLEEP_US);
+        usleep(opt_pub_sleep_us < 0 ? 0 : (unsigned int) opt_pub_sleep_us);
     }
     r = ach_close(&chan);
     if( ACH_OK != r ) {
@@ -84,7 +134,7 @@ static int publisher( int32_t i ) {
 
 static int subscriber( int i ) {
     ach_channel_t chan;
-    int32_t ctr[N_PUB] = {0};
+    int32_t ctr[opt_n_pub];
     memset(ctr,0,sizeof(ctr));
     int r = ach_open( &chan, CHAN, NULL );
     if( r != ACH_OK ) {
@@ -94,7 +144,7 @@ static int subscriber( int i ) {
     }
 
     int32_t data[2];
-    for( int j = 0; j < N_PUB*MAX; j++ ) {
+    for( int j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
         struct timespec abstime = aa_tm_future( aa_tm_sec2timespec(1) );
         size_t frame_size;
         r = ach_wait_next( &chan, data, sizeof(data), &frame_size,
@@ -109,7 +159,7 @@ static int subscriber( int i ) {
                     i, frame_size);
             return -1;
         }
-        if( 0 > data[0] || N_PUB <= data[0] ) {
+        if( 0 > data[0] || opt_n_pub <= data[0] ) {
             fprintf(stderr, "subscriber %d bad pub id: %d\n",
                     i, data[0]);
             return -1;
@@ -139,16 +189,18 @@ static int subscriber( int i ) {
 }
 
 int main( int argc, char **argv ){
-    (void)argc; (void)argv;
+    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+    printf("p: %d\ts: %d\tn: %d\tu: %d\n",
+           opt_n_pub, opt_n_sub, opt_n_msgs, opt_pub_sleep_us );
 
     int r = system("rm -f /dev/shm/achshm-" CHAN);
     r = system("./ach -n 32 -m 512 -C " CHAN);
 
-    pid_t sub_pid[N_SUB];
-    pid_t pub_pid[N_PUB];
+    pid_t sub_pid[opt_n_sub];
+    pid_t pub_pid[opt_n_pub];
 
     // create subscribers
-    for( int i = 0; i < N_SUB; i++ ) {
+    for( int i = 0; i < opt_n_sub; i++ ) {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return subscriber(i);
@@ -157,7 +209,7 @@ int main( int argc, char **argv ){
     }
 
     // create publishers
-    for( int i = 0; i < N_PUB; i++ ) {
+    for( int i = 0; i < opt_n_pub; i++ ) {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return publisher(i);
@@ -165,11 +217,31 @@ int main( int argc, char **argv ){
     }
 
     // wait
-    for( int i = 0; i < N_SUB+N_PUB; i++ ) {
+    for( int i = 0; i < opt_n_sub+opt_n_pub; i++ ) {
         int s;
         pid_t pid = wait(&s);
         (void)pid;
         if( 0 != s ) return -1;
+    }
+    return 0;
+}
+
+
+static int parse_opt( int key, char *arg, struct argp_state *state) {
+    (void) state; // ignore unused parameter
+    switch(key) {
+    case 'p':
+        opt_n_pub = atoi(arg);
+        break;
+    case 's':
+        opt_n_sub = atoi(arg);
+        break;
+    case 'u':
+        opt_pub_sleep_us = atoi(arg);
+        break;
+    case 'n':
+        opt_n_msgs = atoi(arg);
+        break;
     }
     return 0;
 }
