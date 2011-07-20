@@ -15,7 +15,8 @@ all: default
 
 include /usr/share/make-common/common.1.mk
 
-default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc
+default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc achtest
+	./achtest
 
 CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
 
@@ -31,6 +32,7 @@ $(call LINKBIN, test_pub, test_pub.c ach.o, pthread rt)
 $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)
 $(call LINKBIN, achcat, achcat.o ach.o, pthread rt)
 $(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
+$(call LINKBIN, achtest, achtest.o ach_stream.o ach.o, pthread rt)
 $(call LINKBIN, achchand, achchand.o, pthread rt amino)
 
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
