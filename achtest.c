@@ -43,10 +43,14 @@
 
 #define CHAN  "ach-test-clobber"
 
+//#define MAX 102400
+#define MAX 1024
+
+/* A C2D can roughly handle 16 publishers and 16 subscribers with
+ * publishers firing every 1/4 millisecond */
 #define N_SUB 16 // number of subscribers
 #define N_PUB 16 // number of publishers
-
-#define MAX 1024
+#define PUB_SLEEP_US 250
 
 static int publisher( int32_t i ) {
     ach_channel_t chan;
@@ -65,7 +69,7 @@ static int publisher( int32_t i ) {
                     i, ach_result_to_string(r) );
             return -1;
         }
-        usleep(500);
+        usleep(PUB_SLEEP_US);
     }
     r = ach_close(&chan);
     if( ACH_OK != r ) {
@@ -138,7 +142,7 @@ int main( int argc, char **argv ){
     (void)argc; (void)argv;
 
     int r = system("rm -f /dev/shm/achshm-" CHAN);
-    r = system("./ach -n 32 -m 256 -C " CHAN);
+    r = system("./ach -n 32 -m 512 -C " CHAN);
 
     pid_t sub_pid[N_SUB];
     pid_t pub_pid[N_PUB];
