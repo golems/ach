@@ -39,6 +39,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <argp.h>
+#include <inttypes.h>
 #include <sys/wait.h>
 #include "ach.h"
 
@@ -155,7 +156,7 @@ static int subscriber( int i ) {
             return -1;
         }
         if( sizeof(data) != frame_size ) {
-            fprintf(stderr, "subscriber %d bad frame size: %d\n",
+            fprintf(stderr, "subscriber %d bad frame size: %"PRIuPTR"\n",
                     i, frame_size);
             return -1;
         }
