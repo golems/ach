@@ -46,6 +46,7 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
+#include <inttypes.h>
 #include "ach.h"
 
 size_t opt_msg_cnt = 0;
@@ -144,8 +145,8 @@ int main( int argc, char **argv ) {
     if( opt_verbosity >= 2 ) {
         fprintf(stderr, "Verbosity:    %d\n", opt_verbosity);
         fprintf(stderr, "Channel Name: %s\n", opt_chan_name);
-        fprintf(stderr, "Message Size: %d\n", opt_msg_size);
-        fprintf(stderr, "Message Cnt:  %d\n", opt_msg_cnt);
+        fprintf(stderr, "Message Size: %"PRIuPTR"\n", opt_msg_size);
+        fprintf(stderr, "Message Cnt:  %"PRIuPTR"\n", opt_msg_cnt);
     }
     int r;
     if( opt_command ) {
@@ -163,11 +164,11 @@ int cmd_create(void) {
         fprintf(stderr, "Creating Channel %s\n", opt_chan_name);
     }
     if( opt_msg_cnt < 1 ) {
-        fprintf(stderr, "Message count must be greater than zero, not %d.\n", opt_msg_cnt);
+        fprintf(stderr, "Message count must be greater than zero, not %"PRIuPTR".\n", opt_msg_cnt);
         return -1;
     }
     if( opt_msg_size < 1 ) {
-        fprintf(stderr, "Message size must be greater than zero, not %d.\n", opt_msg_size);
+        fprintf(stderr, "Message size must be greater than zero, not %"PRIuPTR".\n", opt_msg_size);
         return -1;
     }
     int i;
@@ -187,8 +188,12 @@ int cmd_unlink(void) {
     if( opt_verbosity > 0 ) {
         fprintf(stderr, "Unlinking Channel %s\n", opt_chan_name);
     }
-    //FIXME: implement
-    fprintf(stderr, "Unimplemented\n");
+
+    int r = ach_unlink(opt_chan_name);
+    if( ACH_OK != r ) {
+        fprintf(stderr, "Failed to remove channel `%s': %s\n", opt_chan_name, strerror(errno));
+        exit(-1);
+    }
 
     return 0;
 }

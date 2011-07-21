@@ -104,6 +104,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <amino.h>
+#include <inttypes.h>
 #include "ach.h"
 
 
@@ -273,7 +274,7 @@ void hard_assert(int test, const char fmt[], ... ) {
 static void *xmalloc( size_t size ) {
     void *p = malloc( size );
     if( NULL == p ) {
-        fprintf(stderr, "Couldn't allocate %d bytes\n", size );
+        fprintf(stderr, "Couldn't allocate %"PRIuPTR" bytes\n", size );
         perror("malloc");
         abort();
     }

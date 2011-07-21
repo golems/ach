@@ -137,13 +137,21 @@ static int channel_name_ok( const char *name ) {
     return 1;
 }
 
+static int shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
+    if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
+    if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
+    strncpy( buf, "achshm-", 9 );
+    strncat( buf, name, ACH_CHAN_NAME_MAX );
+    return 0;
+}
+
 /** Opens shm file descriptor for a channel.
     \pre name is a valid channel name
 */
 static int fd_for_channel_name( const char *name, int oflag ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
-    strncpy( shm_name, "/achshm-", 9 );
-    strncat( shm_name, name, ACH_CHAN_NAME_MAX );
+    int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
+    if( 0 != r ) return ACH_BUG;
     int fd;
     int i = 0;
     do {
@@ -739,4 +747,20 @@ void ach_attr_init( ach_attr_t *attr ) {
 
 int ach_chmod( ach_channel_t *chan, mode_t mode ) {
     return (fchmod( chan->fd, mode ));
+}
+
+
+int ach_unlink( const char *name ) {
+    char shm_name[ACH_CHAN_NAME_MAX + 16];
+    int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
+    if( ACH_OK == r ) {
+        //r = shm_unlink(name);
+        r = shm_unlink(shm_name);
+        if( 0 == r ) return  ACH_OK;
+        else {
+            return ACH_FAILED_SYSCALL;
+        }
+    } else {
+        return r;
+    }
 }

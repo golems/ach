@@ -404,26 +404,29 @@ extern "C" {
 #define ACH_STREAM_PREFIX_SIZE  12
 
     /** Writes message pointed to by but to stream fd */
-    int ach_stream_write_msg( int fd, const char *buf, size_t cnt);
+    ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt);
 
     /** Reads the size of a message from fd and stores in cnt. */
-    int ach_stream_read_msg_size( int fd, int *cnt);
+    ssize_t ach_stream_read_msg_size( int fd, int *cnt);
 
     /** Reads msg_size bytes of data from fd and stores in buf. */
-    int ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size);
+    ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size);
 
 
     /** Reads from fd into buffer completely */
-    int ach_stream_read_fill( int fd, char *buf, size_t cnt );
+    ssize_t ach_stream_read_fill( int fd, char *buf, size_t cnt );
 
     /** Writes from buffer into fd completely */
-    int ach_stream_write_fill( int fd, const char *buf, size_t cnt );
+    ssize_t ach_stream_write_fill( int fd, const char *buf, size_t cnt );
 
     /** Reads a line from fd */
-    int ach_read_line( int fd, char *buf, size_t cnt );
+    ssize_t ach_read_line( int fd, char *buf, size_t cnt );
 
     /** Sets permissions of chan to specified mode */
     int ach_chmod( ach_channel_t *chan, mode_t mode );
+
+    /** Delete an ach channel */
+    int ach_unlink( const char *name );
 
 #ifdef __cplusplus
 }
