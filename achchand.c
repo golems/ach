@@ -52,6 +52,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <syslog.h>
+#include <signal.h>
 #include <poll.h>
 #include <inttypes.h>
 
@@ -63,7 +64,7 @@
 
 /* Threads: RT thread waits in channel.  When a message is posted, it
  * signals all subscribing processes and also the Net thread.  This
- * interrupts the net threads poll() call, so it can get the message
+ * interrupts the net thread's poll() call, so it can get the message
  * from the channel and write it to all network receivers.
  *
  * An alternative would be to have publishers signal the channel
@@ -75,6 +76,12 @@
  * over, CAS back.  Net thread creates new array, CAS in, and frees old.
  */
 
+/* Memory Allocation:
+ * - Should track max size of fd arrays and not realloc if there's still space
+ * - Should pool ach_fd structs, use array of pointers
+ * - Should pool control input/output buffers, fixed size ok since commands are short
+ * - Should pool ach frame buffers, fixed size ok since messages limited by allocated channel size
+ */
 
 enum achd_fdtype {
     ACHD_FD_CTRL_BAD = 0,
@@ -99,9 +106,7 @@ struct achd_cx {
     struct pollfd *pfds;
     struct sockaddr_un addr;
 
-    aa_flexbuf_t **bufs;
-    size_t n_bufs;
-    size_t max;
+    int quit_flag;
 };
 
 static struct achd_cx d_cx;
@@ -114,18 +119,34 @@ static void destroy(void);
 
 
 
+
+
 int main(int argc, char **argv) {
     (void) argc;
     (void) argv;
     // initialize
     init();
-    // start other thread
-    // run
+    // start RT thread
+    // run IO
     run_io();
     // destroy
     destroy();
 }
 
+static void sighandler(int sig, siginfo_t *siginfo, void *context) {
+    (void) context;
+    fprintf (stderr, "Received Signal: %s(%d), Sending PID: %ld, UID: %ld\n",
+             strsignal(sig), sig, (long)siginfo->si_pid, (long)siginfo->si_uid);
+    switch( sig ) {
+    case SIGTERM:
+    case SIGINT:
+        d_cx.quit_flag = 1;
+        break;
+    default:
+        syslog(LOG_ERR, "unknown singal: %d", sig );
+    }
+
+}
 
 
 void init() {
@@ -166,7 +187,25 @@ void init() {
         exit(-1);
     }
 
+    // install signal handler
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+
+    act.sa_sigaction = &sighandler;
+
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
+       not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGTERM, &act, NULL) ||
+        sigaction(SIGINT, &act, NULL) < 0) {
+        syslog(LOG_EMERG,"sigaction failed: %s", strerror(errno));
+        exit(-1);
+    }
 }
+
+
+
 
 void destroy() {
     closelog();
@@ -248,7 +287,16 @@ void run_io() {
         d_cx.pfds[i].events |= POLLOUT;
     }
 
-    void process_ctrl( size_t i ) {
+    static char help_string[] =
+        "COMMANDS: \n"
+        "  help:  print this message\n"
+        "  helo:  server responds with `elho'\n"
+        "  quit:  server closes connection\n"
+        "";
+
+
+
+    int process_ctrl( size_t i ) {
         struct achd_fd *afd = d_cx.fds+i;
         char *buf = (char*)afd->in;
         assert(NULL == strchr(buf, '\n'));
@@ -258,19 +306,21 @@ void run_io() {
         char *tok = strtok(buf, " \t");
         if( 0 == strcasecmp( tok, "helo") ) {
             queue_output( i, "elho\n");
+        } else if( 0 == strcasecmp( tok, "help") ) {
+            queue_output( i, help_string );
+        } else if( 0 == strcasecmp( tok, "quit") ) {
+            return -1;
         } else {
             queue_output( i, "bad command\n");
         }
-        //for( char *tok = strtok(buf, " \t"); tok; tok = strtok(NULL, " \t") ) {
-        //printf("  token: %s\n", tok );
-        //}
+        return 0;
     }
 
     d_cx.pfds[0].events = POLLIN;
 
     int r;
 
-    while(1) {
+    while(! d_cx.quit_flag ) {
         r = poll(d_cx.pfds, d_cx.n, TIMEOUT_MS_POLL);
         if( r > 0 ) {
             printf("poll %d\n", r);
@@ -320,12 +370,17 @@ void run_io() {
                                 char c = (char)d_cx.fds[i].in[j];
                                 if( '\n' == c || '\r' == c ) {
                                     d_cx.fds[i].in[j] = '\0'; // mark null
-                                    process_ctrl(i); // process
-                                    // move
-                                    d_cx.fds[i].n_in = d_cx.fds[i].n_in - j - 1;
-                                    memmove( d_cx.fds[i].in, &d_cx.fds[i].in[j+1],
-                                             d_cx.fds[i].n_in );
-                                    j = 0;
+                                    if( 0 == process_ctrl(i)  ) {
+                                        // move
+                                        d_cx.fds[i].n_in = d_cx.fds[i].n_in - j - 1;
+                                        memmove( d_cx.fds[i].in, &d_cx.fds[i].in[j+1],
+                                                 d_cx.fds[i].n_in );
+                                        j = 0;
+                                    } else {
+                                        rm_fd(i);
+                                        i--;
+                                        break;
+                                    }
                                 } else if (!isascii(c) || !isprint(c) || '\0' == c) {
                                     // bad character, close the connection
                                     syslog( LOG_NOTICE, "bad char from client: %d", c );
