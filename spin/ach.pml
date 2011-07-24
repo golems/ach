@@ -70,10 +70,29 @@ active proctype monitor ()  {
   /* check used flags */
   atomic {
     if :: (j < shm_idx_free) ->
+          /* from head entry up to shm_idx_free, unused */
           assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
           assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
        :: else ->
+          /* rest are used */
           assert(1 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
+          assert(0 < shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
+    fi;
+  }
+  /* Check sequence numbers */
+  atomic {
+    if :: (shm_idx[j].used && shm_idx[(j+1)%INDEX_CNT].used) ->
+          assert( shm_idx[j].seq_num > 0 );
+          assert( shm_idx[(j+1)%INDEX_CNT].seq_num > 0 );
+          if :: ( shm_idx_head == (j+1)%INDEX_CNT ) ->
+                assert( shm_idx[(j+1)%INDEX_CNT].seq_num + INDEX_CNT ==
+                        shm_idx[j].seq_num + 1 );
+                assert( shm_idx_free == 0);
+             :: else ->
+                assert( shm_idx[j].seq_num + 1 ==
+                        shm_idx[(j+1)%INDEX_CNT].seq_num );
+          fi
+       :: else -> assert( shm_idx_free > 0 );
     fi;
   }
 }
