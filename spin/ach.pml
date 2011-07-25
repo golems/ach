@@ -1,6 +1,6 @@
 
 #define INDEX_CNT 3
-#define DATA_SIZE 4
+#define DATA_SIZE 5
 #define MAX_MSG_SIZE 2
 
 #define ALIGN 1 /* not really implemented */
@@ -18,15 +18,16 @@
   od
 
 
-#define FREE_IDX(I) \
-  assert(1 == shm_idx[I].used );\
-  assert(shm_idx_free < INDEX_CNT);\
-  shm_data_free = shm_data_free + shm_idx[I].size; \
-  shm_idx_free++; \
-  shm_idx[I].size = 0; \
-  shm_idx[I].offset = 0; \
-  shm_idx[I].seq_num = 0; \
+inline FREE_IDX(I){
+  assert(1 == shm_idx[I].used );
+  assert(shm_idx_free < INDEX_CNT);
+  shm_data_free = shm_data_free + shm_idx[I].size;
+  shm_idx_free++;
+  shm_idx[I].size = 0;
+  shm_idx[I].offset = 0;
+  shm_idx[I].seq_num = 0;
   shm_idx[I].used = 0;
+}
 
 #define OLDEST_INDEX_I ((shm_idx_head + shm_idx_free)%INDEX_CNT)
 
@@ -68,9 +69,7 @@ never {
 };
 
 inline lock() {
-  atomic{ 
-    shm_mutex == 0 -> shm_mutex = 1;
-  }
+  atomic{ shm_mutex == 0 -> shm_mutex = 1; }
 }
 
 inline unlock() {
@@ -80,17 +79,19 @@ inline unlock() {
   }
 }
 
-inline wrlock() {
-  lock()
-}
+inline wrlock() { lock() }
+inline wrunlock(){ unlock() }
+inline rdlock() { lock() }
+inline rdunlock(){ unlock() }
 
-inline wrunlock(){
-  unlock()
+inline rdlock_wait(seq_num){
+  /* model the condition variable */
+  atomic{ (shm_mutex == 0 && shm_last_seq > seq_num) -> shm_mutex = 1; }
 }
 
 init {
   run putter();
-  /*run putter();*/
+  run putter();
   run getter();
 }
 
@@ -173,7 +174,7 @@ proctype putter()
        
        /* generate some data */
        select( buflen : 1 .. MAX_MSG_SIZE);
-       assert( buflen < DATA_SIZE);
+       assert( buflen <= DATA_SIZE);
 
        wrlock();
          buf[0] = shm_last_seq + 1; /* that's the current sequence number */
@@ -259,28 +260,95 @@ proctype getter()
   unsigned next_index : SIZE_BITS;
   unsigned read_idx : SIZE_BITS;
   bit missed_frame;
+  bit stale_frames;
   select(o_last : 0 .. 1);
   select(o_wait : 0 .. 1);
   select(o_copy : 0 .. 1);
 
-  lock();
+  /* Set the last read frame. 
+   * This may be a more conservative model, since we could be looking
+   * into anywhere in the index array, not necessarily at something
+   * that was ever written to. */
+  rdlock();
+  select( next_index : 0 .. (INDEX_CNT-1) );
+  seq_num = shm_idx[(next_index + INDEX_CNT - 1)%INDEX_CNT].seq_num;
+  rdunlock();
+  
   /* rdlock() */
-  if :: ( (seq_num < shm_last_seq) &&
-          (shm_last_seq > 0 ) ) -> 
+  if :: (o_wait) -> rdlock_wait(seq_num);
+     :: else -> rdlock();
+  fi;
+  assert( seq_num <= shm_last_seq );
+  /* get the data */
+  if :: ( (seq_num == shm_last_seq && !o_copy) || 0 == shm_last_seq ) -> 
+        assert( !o_wait );
+        stale_frames = 1;
+     :: else ->
         if :: (o_last ) ->
+              /* Normal case, getting last frame.*/
               read_idx = LAST_INDEX_I;
-           :: (shm_idx[next_index].seq_num != seq_num+1) ->
-              missed_frame = 1;
-              read_idx = OLDEST_INDEX_I;
-           :: else -> read_idx = next_index;
+           :: (!o_last && shm_idx[next_index].seq_num == seq_num+1) ->
+              /* Normal case, getting the next frame. */
+              read_idx = next_index;
+           :: else ->
+              /* Exceptional cases, have to figure out which frame is right. */
+              if :: (seq_num == shm_last_seq) ->
+                    /* copy last */
+                    assert(o_copy);
+                    read_idx = LAST_INDEX_I;
+                 :: (seq_num != shm_last_seq) ->
+                    /* copy oldest */
+                    read_idx = OLDEST_INDEX_I;
+                 :: else -> assert(false)
+              fi;
         fi;
-        assert( shm_idx[read_idx].seq_num >= seq_num );
         assert( shm_idx[read_idx].seq_num > 0 );
-     :: (seq_num == shm_last_seq ) ->
-        /* ach_state_frames */
-        skip;
+
+        /* check for missed frames */
+        if :: (shm_idx[read_idx].seq_num > seq_num + 1) -> missed_frame = 1;
+           :: else -> skip;
+        fi;
+  fi ;
+
+  
+  /* validate */
+  if :: (o_last) ->
+        /* Last always gets last frame */
+        if :: (!stale_frames) ->
+              assert( shm_idx[read_idx].seq_num == shm_last_seq );
+              assert( read_idx == LAST_INDEX_I );
+           :: (stale_frames) ->
+              assert( seq_num == shm_last_seq );
+              assert( !o_wait );
+           :: else -> assert(0);
+        fi;
+        /* Wait never gets stale frames. */
+     :: (o_wait) ->
+        assert(!stale_frames);
+        assert( shm_idx[read_idx].seq_num > seq_num );
+     :: (o_copy) -> 
+        /* Copy get's something, unless the channel is empty and we didn't wait*/
+        assert( shm_idx[read_idx].seq_num >= seq_num );
+        assert(!stale_frames || (shm_last_seq == 0 && !o_wait));
+     :: (stale_frames) ->
+        assert(!missed_frame);
+        assert(!o_wait);
+        assert(shm_last_seq == seq_num);
+     ::(shm_last_seq == seq_num) ->
+        assert(stale_frames || o_copy);
+     :: (missed_frame) ->
+        assert(!stale_frames);
+        assert(shm_last_seq > seq_num+1);
+        assert(shm_idx[read_idx].seq_num > seq_num + 1);
+        assert( (!o_last && read_idx == OLDEST_INDEX_I) ||
+                (o_last && read_idx == LAST_INDEX_I) );
+     :: (seq_num < shm_last_seq) ->
+        /* if new data, we got it */
+        assert(!stale_frames);
+        assert(shm_idx[read_idx].seq_num > seq_num);
+     :: else -> skip;
   fi;
 
-  unlock();
+  rdunlock();
   printf("hello get\n")
 }
