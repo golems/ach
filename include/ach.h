@@ -47,8 +47,15 @@
 
 /** \mainpage
  *
- * \brief Ach is a library that provides a publish-subscribe form of
- * IPC based on POSIX shared memory.
+ * \brief Ach is a library that provides a publish-subscribe or
+ * message-bus form of IPC based on POSIX shared memory.
+ *
+ * Ach differs from other message passing transports with regard to
+ * head of line blocking.  In ach, newer messages always supersede old
+ * messsages, regardless of whether or not a subscriber has seen the
+ * old message.  Old messages will never block new messages.  This
+ * behavior is suited to real-time systems where a subscriber is
+ * generally interested only in the latest version of a message.
  *
  * Clients may be publishers and or subscribers. Publishers they push
  * data to channels, and subscribers can then poll or wait on the
@@ -74,7 +81,7 @@
 
  * \section delete Remove a channel
  *
- * - \code $ rm /dev/shm/achsm-CHANNEL_NAME \endcode
+ * - \code $ ach -U CHANNEL_NAME \endcode
  *
  * \section remote Remote Channels
  *
@@ -183,7 +190,8 @@ extern "C" {
         ACH_ENOENT = 9,        ///< shm doesn't
         ACH_CLOSED = 10,
         ACH_BUG = 11,
-        ACH_EINVAL = 12
+        ACH_EINVAL = 12,
+        ACH_CORRUPT = 13
     } ach_status_t;
 
     /// Whether a channel is opened to publish or subscribe
@@ -201,7 +209,21 @@ extern "C" {
         ACH_CHAN_STATE_CLOSED ///< channel has been closed
     } ach_chan_state_t;
 
+#define ACH_O_WAIT (1<<0)
+#define ACH_O_LAST (1<<1)
+#define ACH_O_COPY (1<<2)
+#define ACH_O_SKIP (1<<3)
+
+    typedef struct {
+        size_t len;
+        uint64_t seq_num;
+        uint64_t ticks;
+    } ach_frame_data_t;
+
     /** Header for shared memory area.
+     *
+     * There is no tail pointer here.  Every subscriber that opens the
+     * channel must maintain its own tail pointer.
      */
     typedef struct {
         uint32_t magic;          ///< magic number of ach shm files,
@@ -253,13 +275,14 @@ extern "C" {
     /** Descriptor for shared memory area
      */
     typedef struct {
-        ach_header_t *shm; ///< pointer to mmap'ed block
-        size_t len;        ///< length of memory mapping
-        int fd;            ///< file descriptor of mmap'ed file
-        uint64_t seq_num;  ///<last sequence number read or written
-        size_t next_index; ///< next index entry to try to use
-        ach_attr_t attr; ///< attributes used to create this channel
-        int mode; ///< whether channel was opened for publish or subscribe
+        ach_header_t *shm;   ///< pointer to mmap'ed block
+        size_t len;          ///< length of memory mapping
+        int fd;              ///< file descriptor of mmap'ed file
+        uint64_t seq_num;    ///< last sequence number read
+        uint64_t get_ticks;  ///< processor ticks at last get
+        uint64_t put_ticks;  ///< processor ticks at last put
+        size_t next_index;   ///< next index entry to try get from
+        ach_attr_t attr;     ///< attributes used to create this channel
     } ach_channel_t;
 
     /// Size of ach_channel_t
@@ -297,7 +320,7 @@ extern "C" {
         \param frame_size nominal size of each frame
         \param attr options
     */
-    int ach_create( char *channel_name,
+    int ach_create( const char *channel_name,
                     size_t frame_cnt, size_t frame_size,
                     ach_create_attr_t *attr);
 
@@ -359,6 +382,21 @@ extern "C" {
     */
     int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                        const struct timespec *ACH_RESTRICT abstime);
+
+
+    /** Pulls the most recent message from the channel.
+        \pre chan has been opened with ach_open()
+
+        \post If buf is big enough to hold the next frame, buf contains
+        the data for the last frame and chan.seq_num is set to the last
+        frame.  If buf is too small to hold the next frame, no side
+        effects occur.  The seq_num field of chan will be set to the
+        latest sequence number (that of the gotten frame).
+    */
+    int ach_get( ach_channel_t *chan, void *buf, size_t size,
+                 size_t *frame_size,
+                 const struct timespec *ACH_RESTRICT abstime,
+                 int options );
 
     /** Writes a new message in the channel.
 

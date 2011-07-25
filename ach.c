@@ -54,6 +54,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <stdbool.h>
 
 #include <string.h>
 #include <inttypes.h>
@@ -84,6 +85,15 @@ size_t ach_channel_size = sizeof(ach_channel_t);
 size_t ach_attr_size = sizeof(ach_attr_t);
 
 
+
+static size_t oldest_index_i( ach_header_t *shm ) {
+    return (shm->index_head + shm->index_free)%shm->index_cnt;
+}
+
+static size_t last_index_i( ach_header_t *shm ) {
+    return (shm->index_head + shm->index_cnt -1)%shm->index_cnt;
+}
+
 const char *ach_result_to_string(ach_status_t result) {
 
     switch(result) {
@@ -100,6 +110,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_ENOENT: return "ACH_ENOENT";
     case ACH_BUG: return "ACH_BUG";
     case ACH_EINVAL: return "ACH_EINVAL";
+    case ACH_CORRUPT: return "ACH_CORRUPT";
     }
     return "UNKNOWN";
 
@@ -249,12 +260,12 @@ static void unwrlock( ach_header_t *shm ) {
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
 
-    // broadcast to wake up waiting readers
-    r = pthread_cond_broadcast( & shm->sync.cond );
-    assert( 0 == r );
-
     // unlock
     r = pthread_mutex_unlock( & shm->sync.mutex );
+    assert( 0 == r );
+
+    // broadcast to wake up waiting readers
+    r = pthread_cond_broadcast( & shm->sync.cond );
     assert( 0 == r );
 
 }
@@ -264,7 +275,7 @@ void ach_create_attr_init( ach_create_attr_t *attr ) {
     memset( attr, 0, sizeof( ach_create_attr_t ) );
 }
 
-int ach_create( char *channel_name,
+int ach_create( const char *channel_name,
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr) {
     ach_header_t *shm;
@@ -454,7 +465,7 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
     number of bytes written to buf (0 on failure).
 */
 static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
-                                char *buf, size_t size, size_t *frame_size, int copy ) {
+                                char *buf, size_t size, size_t *frame_size ) {
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
@@ -471,22 +482,11 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
         return ACH_BUG;
     }
 
-    if( /*0 == size ||*/ idx->size > size ) {
+    if(  idx->size > size ) {
         // buffer overflow
         *frame_size = idx->size;
         return ACH_OVERFLOW;
-    }else if(!copy && chan->seq_num >= idx->seq_num ) {
-        // no new data
-        if( chan->seq_num != idx->seq_num ) {
-            fprintf(stderr, "ach bug: chan->seq_num (%"PRIu64") != idx->seq_num (%"PRIu64")\n",
-                    chan->seq_num, idx->seq_num );
-            return ACH_BUG;
-        }
-        *frame_size = 0;
-        if( ACH_CHAN_STATE_CLOSED == shm->state )
-            return ACH_CLOSED;
-        else return ACH_STALE_FRAMES;
-    }else {
+    } else {
         //good to copy
         uint8_t *data_buf = ACH_SHM_DATA(shm);
         if( idx->offset + idx->size < shm->data_size ) {
@@ -505,6 +505,108 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     }
 }
 
+int ach_get( ach_channel_t *chan, void *buf, size_t size,
+             size_t *frame_size,
+             const struct timespec *ACH_RESTRICT abstime,
+             int options ) {
+    //FIXME: somehow gives missed frame on first get...
+    ach_header_t *shm = chan->shm;
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+    if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
+          (ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm)) &&
+          (ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm)) &&
+          (ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm)) ) ) {
+        return ACH_CORRUPT;
+    }
+    const bool o_wait = options & ACH_O_WAIT;
+    const bool o_last = options & ACH_O_LAST;
+    const bool o_copy = options & ACH_O_COPY;
+
+    // take read lock
+    int r;
+    if( o_wait ) {
+        if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) ) {
+            return r;
+        }
+    } else { rdlock( shm ); }
+
+    assert( chan->seq_num <= shm->last_seq );
+
+    int retval = ACH_BUG;
+    bool missed_frame = 0;
+
+    /* get the data*/
+    if( (chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq ) {
+        // no entries
+        assert(!o_wait);
+        retval = ACH_STALE_FRAMES;
+    } else {
+        // Compute the index to read
+        size_t read_index;
+        if( o_last ) {
+            // normal case, get last
+            read_index = last_index_i(shm);
+        } else if (!o_last &&
+                   index_ar[chan->next_index].seq_num == chan->seq_num + 1) {
+            // normal case, get next
+            read_index = chan->next_index;
+        } else {
+            // exception case, figure out which frame
+            if (chan->seq_num == shm->last_seq) {
+                /* copy last */
+                assert(o_copy);
+                read_index = last_index_i(shm);
+            } else {
+                /* copy oldest */
+                read_index = oldest_index_i(shm);
+            }
+        }
+        // read from the index
+        retval = ach_get_from_offset( chan, read_index, (char*)buf, size,
+                                      frame_size );
+
+        assert( index_ar[read_index].seq_num > 0 );
+    }
+
+    // release read lock
+    unrdlock( shm );
+
+    return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+}
+
+
+/* The next few functions are variations on reading from an ach channel.
+ */
+
+int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
+                 size_t *frame_size) {
+    return ach_get( chan, buf, size, frame_size, NULL, 0 );
+}
+
+int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
+    return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST );
+}
+
+int ach_copy_last(ach_channel_t *chan, void *buf,
+                  size_t size, size_t *frame_size) {
+    return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST | ACH_O_COPY );
+
+}
+
+int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                  const struct timespec *ACH_RESTRICT abstime) {
+    return ach_get( chan, buf, size, frame_size, abstime,
+                    ACH_O_WAIT | ACH_O_LAST );
+}
+
+
+
+int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                  const struct timespec *ACH_RESTRICT abstime) {
+    return ach_get( chan, buf, size, frame_size, abstime, ACH_O_WAIT );
+}
+
+
 
 int ach_flush( ach_channel_t *chan ) {
     //int r;
@@ -516,109 +618,34 @@ int ach_flush( ach_channel_t *chan ) {
     return ACH_OK;
 }
 
-static int ach_get( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                    const struct timespec *ACH_RESTRICT abstime,
-                    int last, int wait, int copy ) {
-    //FIXME: somehow gives missed frame on first get...
-    ach_header_t *shm = chan->shm;
+
+static void free_index(ach_header_t *shm, size_t i ) {
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    assert( ACH_SHM_MAGIC_NUM == shm->magic );
-    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
-    // not doing this mode stuff anymore
-    //assert( ACH_MODE_SUBSCRIBE == chan->mode );
-
-    // take read lock
-    int r;
-    if( wait ) {
-        if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) )
-            return r;
-    } else
-        rdlock( shm );
-
-    // get frame
-    int retval;
-    size_t next_index;
-    int missed_frame = 0;
-    if(!copy && 0 == shm->last_seq ) { // no entries
-        retval = ACH_STALE_FRAMES;
-    } else {
-        if ( last ) {
-            next_index = (shm->index_head - 1 + shm->index_cnt) % shm->index_cnt;
-        } else {
-            next_index = chan->next_index;
-            if( /*0 == index_ar[next_index].size ||*/ // I think this is wrong -ntd 20110622
-                index_ar[next_index].seq_num != chan->seq_num + 1 ) {
-                // we've missed a frame, find the oldest
-                missed_frame = 1;
-                next_index = (shm->index_head + shm->index_free) % shm->index_cnt;
-            }
-        }
-        if( index_ar[next_index].seq_num < chan->seq_num ) {
-            fprintf(stderr,
-                    "ach bug: idx seqnum (%"PRIu64") < chan seq_num (%"PRIu64")\n"
-                    "ach bug: index offset: %"PRIuPTR"\n",
-                    index_ar[next_index].seq_num, chan->seq_num,
-                    next_index );
-            retval = ACH_BUG;
-        } else {
-            retval = ach_get_from_offset( chan, next_index, (char*)buf, size,
-                                          frame_size, copy );
-        }
-    }
-
-    // release read lock
-    unrdlock( shm );
-
-    return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+    assert( index_ar[i].seq_num ); // only free used indices
+    assert( index_ar[i].size );    // must have some data
+    assert( shm->index_free < shm->index_cnt - 1 ); // must be some used index
+    shm->data_free += index_ar[i].size;
+    shm->index_free ++;
+    memset( &index_ar[i], 0, sizeof( ach_index_t ) );
 }
-
-/* The next few functions are variations on reading from an ach channel.
- */
-
-int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
-                 size_t *frame_size) {
-    return ach_get( chan, buf, size, frame_size, NULL, 0, 0, 0 );
-}
-
-int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
-    return ach_get( chan, buf, size, frame_size, NULL, 1, 0, 0 );
-}
-
-int ach_copy_last(ach_channel_t *chan, void *buf,
-                  size_t size, size_t *frame_size) {
-    return ach_get( chan, buf, size, frame_size, NULL, 1, 0, 1 );
-
-}
-
-int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *ACH_RESTRICT abstime) {
-    return ach_get( chan, buf, size, frame_size, abstime, 1, 1, 0 );
-}
-
-
-
-int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *ACH_RESTRICT abstime) {
-    return ach_get( chan, buf, size, frame_size, abstime, 0, 1, 0 );
-}
-
 
 int ach_put(ach_channel_t *chan, void *buf, size_t len) {
-    if( 0 == len || NULL == buf ) {
+    if( 0 == len || NULL == buf || NULL == chan->shm ) {
         return ACH_EINVAL;
     }
 
-    assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
-    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(chan->shm) );
-    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(chan->shm) );
-    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
-
-    // not doing this mode stuff
-    //assert( ACH_MODE_PUBLISH == chan->mode );
-
     ach_header_t *shm = chan->shm;
+
+    if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
+          (ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm)) &&
+          (ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm)) &&
+          (ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm)) ) ) {
+        return ACH_CORRUPT;
+    }
+
+    if( shm->data_size < len ) {
+        return ACH_OVERFLOW;
+    }
 
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     uint8_t *data_ar = ACH_SHM_DATA(shm);
@@ -632,11 +659,10 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     ach_index_t *idx = index_ar + shm->index_head;
 
     // clear entry used by index
-    if( 0 == shm->index_free ) {
-        shm->data_free += idx->size;
-        shm->index_free ++;
-        memset( idx, 0, sizeof( ach_index_t ) );
-    }
+    if( 0 == shm->index_free ) { free_index(shm,shm->index_head); }
+    else { assert(0== index_ar[shm->index_head].seq_num);}
+
+    assert( shm->index_free > 0 );
 
     // clear overlapping entries
     size_t i;
@@ -644,12 +670,10 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
         shm->data_free < len;
         i = (i + 1) % shm->index_cnt) {
         assert( i != shm->index_head );
-        assert( 0 != index_ar[i].size );
-
-        shm->data_free += index_ar[i].size;
-        shm->index_free ++;
-        memset( index_ar + i, 0, sizeof( ach_index_t ) );
+        free_index(shm,i);
     }
+
+    assert( shm->data_free >= len );
 
     // copy buffer
     if( shm->data_size - shm->data_head >= len ) {
@@ -663,7 +687,8 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     }
 
     // modify counts
-    idx->seq_num = ++shm->last_seq;
+    shm->last_seq++;
+    idx->seq_num = shm->last_seq;
     idx->size = len;
     idx->offset = shm->data_head;
 
@@ -674,6 +699,7 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
     assert( shm->index_free <= shm->index_cnt );
     assert( shm->data_free <= shm->data_size );
+    assert( shm->last_seq > 0 );
 
     // release write lock
     unwrlock( shm );
@@ -757,7 +783,9 @@ int ach_unlink( const char *name ) {
         //r = shm_unlink(name);
         r = shm_unlink(shm_name);
         if( 0 == r ) return  ACH_OK;
-        else {
+        else if( ENOENT == errno ) {
+            return ACH_ENOENT;
+        } else {
             return ACH_FAILED_SYSCALL;
         }
     } else {

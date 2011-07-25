@@ -101,19 +101,24 @@ struct achd_fd{
 };
 
 struct achd_cx {
-    size_t n;
-    struct achd_fd *fds;
-    struct pollfd *pfds;
-    struct sockaddr_un addr;
+    size_t n;                   ///< number of fds
+    struct achd_fd *fds;        ///< info on open fds
+    struct pollfd *pfds;        ///< array for poll()
+    struct sockaddr_un addr;    ///< address for local-domain server sock
 
-    int quit_flag;
+
+    ach_channel_t chan;         ///< channel we're monitoring
+    pthread_t chan_thread;      ///< thread that's monitoring the channel
+    double period;              ///< nominal seconds between messages
+
+    int quit_flag;              ///< daemon has been told to to quit
 };
 
 static struct achd_cx d_cx;
 
 
 static void init(void);
-//static void run_channel(void);
+static void *run_channel(void *);
 static void run_io(void);
 static void destroy(void);
 
@@ -127,8 +132,11 @@ int main(int argc, char **argv) {
     // initialize
     init();
     // start RT thread
+    int r = pthread_create( &d_cx.chan_thread, NULL, run_channel, NULL );
+    if( 0 != r ) exit(-1);
     // run IO
     run_io();
+    // stop RT-thread
     // destroy
     destroy();
 }
@@ -211,12 +219,20 @@ void destroy() {
     closelog();
 }
 
-void run_channel() {
+void *run_channel(void *cx) {
+    (void)(cx);
+    // do we need a cleanup handler to make sure the mutex is unlocked?
+
     while( 1 /*something*/ ) {
+        struct timespec abstime = aa_tm_future( aa_tm_sec2timespec(5*d_cx.period) );
         // wait on channel (wakeup every so often to check stuff)
+        size_t frame_size;
+
+        //ach_wait_next( &d_cx.chan,
 
         // signal subscribers
     }
+    return NULL;
 }
 
 void dump_pollevents( int x ) {
