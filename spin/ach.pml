@@ -1,12 +1,12 @@
 
-#define INDEX_CNT 4
-#define DATA_SIZE 9
-#define MAX_MSG_SIZE 3
+#define INDEX_CNT 3
+#define DATA_SIZE 4
+#define MAX_MSG_SIZE 2
 
 #define ALIGN 1 /* not really implemented */
 
-#define SIZE_BITS 6
-#define SEQ_NUM_BITS 8
+#define SIZE_BITS 3
+#define SEQ_NUM_BITS 5
 #define N_MSGS (2*INDEX_CNT)
 
 #define MEMCPY( dst, dstoff, src, srcoff, length, counter_var) \
@@ -46,6 +46,7 @@ unsigned shm_idx_free  : SIZE_BITS    = INDEX_CNT
 unsigned shm_data_head : SIZE_BITS    = 0
 unsigned shm_data_free : SIZE_BITS    = DATA_SIZE
 byte shm_data[DATA_SIZE] = 0
+bit shm_mutex;
 
 
 active proctype consts() {
@@ -66,25 +67,52 @@ never {
   od
 };
 
+inline lock() {
+  atomic{ 
+    shm_mutex == 0 -> shm_mutex = 1;
+  }
+}
+
+inline unlock() {
+  atomic{
+    assert(shm_mutex == 1);
+    shm_mutex = 0;
+  }
+}
+
+inline wrlock() {
+  lock()
+}
+
+inline wrunlock(){
+  unlock()
+}
+
+init {
+  run putter();
+  /*run putter();*/
+  run getter();
+}
 
 /* Validate the channel structure */
 active proctype monitor ()  {
   byte j;
   select( j : 0 .. (INDEX_CNT-1));
   assert( j < INDEX_CNT );
+
+  lock()
+
   /* check used flags */
-  atomic {
-    if :: (j < shm_idx_free) ->
-          /* from head entry up to shm_idx_free, unused */
-          assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
-          assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
-       :: else ->
-          /* rest are used */
-          assert(1 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
-          assert(0 < shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
-          assert(0 < shm_idx[(shm_idx_head+j)%INDEX_CNT].seq_num );
-    fi;
-  }
+  if :: (j < shm_idx_free) ->
+        /* from head entry up to shm_idx_free, unused */
+        assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
+        assert(0 == shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
+     :: else ->
+        /* rest are used */
+        assert(1 == shm_idx[(shm_idx_head+j)%INDEX_CNT].used );
+        assert(0 < shm_idx[(shm_idx_head+j)%INDEX_CNT].size );
+        assert(0 < shm_idx[(shm_idx_head+j)%INDEX_CNT].seq_num );
+  fi;
   /* Check alignment */
   assert( shm_idx[j].offset % ALIGN == 0 );
   /* Check free space in data */
@@ -101,44 +129,41 @@ active proctype monitor ()  {
 
   /* Check sequence numbers and offsets */
   assert( shm_idx[LAST_INDEX_I].seq_num == shm_last_seq );
-  atomic {
-    if :: (shm_idx[j].used && shm_idx[(j+1)%INDEX_CNT].used) ->
-          /* j and j+1 are both used */
-          if :: ( shm_idx_head == (j+1)%INDEX_CNT ) ->
-                /* j+1 is the next index to be free'ed and used */
-                assert( (j+1)%INDEX_CNT == OLDEST_INDEX_I );
-                assert( j == LAST_INDEX_I );
-                assert( shm_idx[(j+1)%INDEX_CNT].seq_num + INDEX_CNT ==
-                        shm_idx[j].seq_num + 1 );
-                assert( shm_idx_free == 0);
-                assert( shm_last_seq == shm_idx[j].seq_num);
-                assert( (shm_idx[(j)].offset +  
-                         shm_idx[(j)].size +
-                         shm_data_free ) % DATA_SIZE
-                        == shm_idx[(j+1)%INDEX_CNT].offset );
-             :: else ->
-                assert( shm_idx[j].seq_num + 1 ==
-                        shm_idx[(j+1)%INDEX_CNT].seq_num );
-                assert( (shm_idx[j].offset + shm_idx[j].size) % DATA_SIZE ==
-                        shm_idx[(j+1)%INDEX_CNT].offset );
-          fi
-       :: else -> assert( shm_idx_free > 0 ); /* must be some free indices */
-    fi;
-  }
+  if :: (shm_idx[j].used && shm_idx[(j+1)%INDEX_CNT].used) ->
+        /* j and j+1 are both used */
+        if :: ( shm_idx_head == (j+1)%INDEX_CNT ) ->
+              /* j+1 is the next index to be free'ed and used */
+              assert( (j+1)%INDEX_CNT == OLDEST_INDEX_I );
+              assert( j == LAST_INDEX_I );
+              assert( shm_idx[(j+1)%INDEX_CNT].seq_num + INDEX_CNT ==
+                      shm_idx[j].seq_num + 1 );
+              assert( shm_idx_free == 0);
+              assert( shm_last_seq == shm_idx[j].seq_num);
+              assert( (shm_idx[(j)].offset +  
+                       shm_idx[(j)].size +
+                       shm_data_free ) % DATA_SIZE
+                      == shm_idx[(j+1)%INDEX_CNT].offset );
+           :: else ->
+              assert( shm_idx[j].seq_num + 1 ==
+                      shm_idx[(j+1)%INDEX_CNT].seq_num );
+              assert( (shm_idx[j].offset + shm_idx[j].size) % DATA_SIZE ==
+                      shm_idx[(j+1)%INDEX_CNT].offset );
+        fi
+     :: else -> assert( shm_idx_free > 0 ); /* must be some free indices */
+  fi;
   /* Check data validity */
   /* This PML model writes the sequence number as the first byte of every frame,
    * so we can just check that here. */
-  atomic {
-    if :: (shm_idx[j].used) ->
-          assert( shm_data[ shm_idx[j].offset ] == shm_idx[j].seq_num);
-       :: else -> skip;
-    fi
-  }
+  if :: (shm_idx[j].used) ->
+        assert( shm_data[ shm_idx[j].offset ] == shm_idx[j].seq_num);
+     :: else -> skip;
+  fi;
+  unlock();
 }
 
 
 
-active proctype putter()
+proctype putter()
 {
   byte buf[MAX_MSG_SIZE];
   byte buflen = 0; 
@@ -148,20 +173,20 @@ active proctype putter()
        
        /* generate some data */
        select( buflen : 1 .. MAX_MSG_SIZE);
-       buf[0] = shm_last_seq + 1; /* that's the current sequence number */
-       i = 1;
-       do
-         :: (i < buflen ) ->
-            buf[i] = shm_last_seq - i;
-            i++;
-         :: else -> break
-       od;
-
        assert( buflen < DATA_SIZE);
 
-       /* ach_put() function */
-       atomic {
+       wrlock();
+         buf[0] = shm_last_seq + 1; /* that's the current sequence number */
+         i = 1;
+         do
+           :: (i < buflen ) ->
+              buf[i] = shm_last_seq - i;
+              i++;
+           :: else -> break
+         od;
+
          
+         /* ach_put() function */
          /* clear entry used by index  */
          if :: (0 == shm_idx_free) ->
                /* free the head frame */
@@ -216,7 +241,7 @@ active proctype putter()
          shm_idx_head = (shm_idx_head + 1) % INDEX_CNT;
          shm_idx_free--;
          
-       }
+       wrunlock();
        assert(shm_last_seq > 0)
     :: else -> break
   od;
@@ -224,30 +249,38 @@ active proctype putter()
 }
 
 
-/*
-active proctype getter()
+proctype getter()
 {
 
-  byte chan_seq_num = 0;
-  byte chan_idx = 0;
-  byte data = 0;
-  do
-    :: (data < 99) ->
-       assert(chan_seq_num <= shm_seq_num);
-       atomic {
-         if
-           :: (chan_seq_num == shm_seq_num) ->
-              assert(data == cbuf[chan_idx]);
-           :: (chan_seq_num < shm_seq_num) ->
-              assert(cbuf[chan_idx] >= data);
-              data = cbuf[chan_idx];
-              chan_idx = (chan_idx + 1)%10;
-              chan_seq_num = shm_seq_num;
-              printf("read %d\n", data);
-         fi;
-       }
-    :: (data>=99) -> break;
-  od;
+  bit o_last = 0;
+  bit o_wait = 0;
+  bit o_copy = 0;
+  unsigned seq_num : SEQ_NUM_BITS;
+  unsigned next_index : SIZE_BITS;
+  unsigned read_idx : SIZE_BITS;
+  bit missed_frame;
+  select(o_last : 0 .. 1);
+  select(o_wait : 0 .. 1);
+  select(o_copy : 0 .. 1);
+
+  lock();
+  /* rdlock() */
+  if :: ( (seq_num < shm_last_seq) &&
+          (shm_last_seq > 0 ) ) -> 
+        if :: (o_last ) ->
+              read_idx = LAST_INDEX_I;
+           :: (shm_idx[next_index].seq_num != seq_num+1) ->
+              missed_frame = 1;
+              read_idx = OLDEST_INDEX_I;
+           :: else -> read_idx = next_index;
+        fi;
+        assert( shm_idx[read_idx].seq_num >= seq_num );
+        assert( shm_idx[read_idx].seq_num > 0 );
+     :: (seq_num == shm_last_seq ) ->
+        /* ach_state_frames */
+        skip;
+  fi;
+
+  unlock();
   printf("hello get\n")
 }
-*/
