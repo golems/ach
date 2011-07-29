@@ -209,16 +209,22 @@ extern "C" {
         ACH_CHAN_STATE_CLOSED ///< channel has been closed
     } ach_chan_state_t;
 
+
+/** Options flag for ach_get(), blocks until an unseen message arrives
+ *  or timeout.  If the channel already has data that this subscriber
+ *  has not seen, ach_get() immediately copies the new data.
+ *  Otherwise, it waits for some other process or thread to put data
+ *  into the channel.
+ */
 #define ACH_O_WAIT (1<<0)
+/** Option flag for ach_get(), reads the newest message out of the
+ * channel.  If the channel contains multiple messages that this
+ * subscriber has not seen, ach_get() will return the newest of these
+ * messages.  The subscriber will skip past all older messages.
+ */
 #define ACH_O_LAST (1<<1)
 #define ACH_O_COPY (1<<2)
 #define ACH_O_SKIP (1<<3)
-
-    typedef struct {
-        size_t len;
-        uint64_t seq_num;
-        uint64_t ticks;
-    } ach_frame_data_t;
 
     /** Header for shared memory area.
      *

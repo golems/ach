@@ -202,6 +202,10 @@ static int fd_for_channel_name( const char *name, int oflag ) {
  * - High order bits are counts of writers, lower bits are counts of readers
  * - Fast path twiddles the counts.  Slow path deals with a mutex and cond-var.
  * - downside: maybe no way for priority inheritance to happen...
+ *
+ * Other Fancy things:
+ * - Use futexes for waiting readers/writers
+ * - Use eventfd to signal new data
  */
 
 
