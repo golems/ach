@@ -335,6 +335,10 @@ specified, it may, but does not have to, be used."
 (cffi:defcfun "ach_close" :int
   (chan :pointer))
 
+(cffi:defcfun "ach_chmod" :int
+  (chan :pointer)
+  (mode libc::mode-t))
+
 (cffi:defcfun "ach_result_to_string" :string
   (r :int))
 
@@ -417,6 +421,12 @@ specified, it may, but does not have to, be used."
       (assert (zerop r) () "Couldn't write data: ~A"
               (ach-result-to-string r))))
   nil)
+
+(defun chmod (channel mode)
+  (declare (fixnum mode))
+  (let ((r (ach-chmod (ach-handle-pointer channel) mode)))
+    (assert (zerop r) () "Couldn't chmod to ~A: ~A"
+            mode (ach-result-to-string r))))
 
 (defun status-keyword (code)
   (cffi:foreign-enum-keyword 'ach-status code))

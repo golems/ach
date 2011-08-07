@@ -41,9 +41,7 @@
            :ach-next :ach-last :ach-poll :ach-put
            :ach-closef
            :ach-map :with-ach-log
-
            :create-channel :open-channel :close-channel
-           :flush
+           :flush :chmod
            :put :get-last :wait-next
-
            ))

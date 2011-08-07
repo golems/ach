@@ -43,7 +43,7 @@
 (asdf:defsystem ach
   ;; The version should get updated from the Makefile via sed
   :description "ach publish-subscribe IPC"
-  :depends-on ("cffi" "s-protobuf" "usocket") ; for binio, which could live independently
+  :depends-on ("cffi" "s-protobuf" "usocket" "clix") ; for binio, which could live independently
   :components ((:file "package")
                (cffi-grovel:grovel-file "grovel" :depends-on ("package"))
                (:file "ach" :depends-on ("package"))))
