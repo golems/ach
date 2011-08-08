@@ -393,9 +393,9 @@ void publish( int fd, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
     assert(STDIN_FILENO == fd );
     ach_channel_t chan;
-    int r;
 
     { // open channel
+        int r;
         r = ach_open( &chan, chan_name, NULL );
         hard_assert(ACH_OK == r,
                     "Failed to open channel %s for publish: %s\n",
@@ -406,13 +406,12 @@ void publish( int fd, char *chan_name )  {
         size_t max = INIT_BUF_SIZE;
         int cnt;
         char *buf = (char*)xmalloc( max );
-
         while( ! sig_received ) {
+            ssize_t s;
             // get size
-            verbprintf( 2, "Reading size\n", r );
-            r = ach_stream_read_msg_size( fd, &cnt );
-            verbprintf( 2, "Read %d bytes\n", r );
-            if( r <= 0 ) break;
+            s = ach_stream_read_msg_size( fd, &cnt );
+            verbprintf( 2, "Read %d bytes\n", s );
+            if( s <= 0 ) break;
             hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
             // make sure buf can hold it
             if( (size_t)cnt > max ) {
@@ -421,11 +420,11 @@ void publish( int fd, char *chan_name )  {
                 buf = (char*)xmalloc( max );
             }
             // get data
-            r = ach_stream_read_msg_data( fd, buf, (size_t)cnt, max );
-            if( r <= 0 ) break;
-            assert( cnt == r );
+            s = ach_stream_read_msg_data( fd, buf, (size_t)cnt, max );
+            if( s <= 0 ) break;
+            assert( cnt == s );
             // put data
-            r = ach_put( &chan, buf, (size_t)cnt );
+            int r = ach_put( &chan, buf, (size_t)cnt );
             hard_assert( r == ACH_OK, "Invalid ach put %s\n",
                          ach_result_to_string( r ) );
         }
@@ -473,7 +472,7 @@ void subscribe(int fd, char *chan_name) {
     while( ! sig_received ) {
         if( opt_sync ) {
             // wait for the pull command
-            int rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
+            ssize_t rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
             hard_assert(4 == rc, "Invalid command read: %d\n", rc );
             verbprintf(2, "Command %s\n", cmd );
         }
@@ -519,7 +518,7 @@ void subscribe(int fd, char *chan_name) {
 
         // stream send
         {
-            int r = ach_stream_write_msg( fd, buf, frame_size );
+            ssize_t r = ach_stream_write_msg( fd, buf, frame_size );
             if( frame_size + ACH_STREAM_PREFIX_SIZE !=  (size_t)r ) {
                 break;
             }
