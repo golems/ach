@@ -142,8 +142,9 @@ extern "C" {
 #define ACH_RESTRICT restrict
 #endif
 
-    /// maximun size of a channel name
+    /// maximum size of a channel name
 #define ACH_CHAN_NAME_MAX 64
+#define ACH_CHAN_NAME_PREFIX "achshm-"
 
     /// Number of times to retry a syscall on EINTR before giving up
 #define ACH_INTR_RETRY 8

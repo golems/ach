@@ -151,7 +151,7 @@ static int channel_name_ok( const char *name ) {
 static int shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
     if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
-    strncpy( buf, "achshm-", 9 );
+    strcpy( buf, ACH_CHAN_NAME_PREFIX );
     strncat( buf, name, ACH_CHAN_NAME_MAX );
     return 0;
 }
