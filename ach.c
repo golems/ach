@@ -776,7 +776,7 @@ void ach_attr_init( ach_attr_t *attr ) {
 }
 
 int ach_chmod( ach_channel_t *chan, mode_t mode ) {
-    return (fchmod( chan->fd, mode ));
+    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : ACH_FAILED_SYSCALL;
 }
 
 

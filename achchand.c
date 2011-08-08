@@ -122,6 +122,7 @@ static void *run_channel(void *);
 static void run_io(void);
 static void destroy(void);
 
+static void* run_channel_thread(void*);
 
 
 
@@ -139,6 +140,8 @@ int main(int argc, char **argv) {
     // stop RT-thread
     // destroy
     destroy();
+
+    return 0;
 }
 
 static void sighandler(int sig, siginfo_t *siginfo, void *context) {
@@ -308,6 +311,7 @@ void run_io() {
         "  help:  print this message\n"
         "  helo:  server responds with `elho'\n"
         "  quit:  server closes connection\n"
+        "  achnotify CHANNEL:  send notification messages to CHANNEL\n"
         "";
 
 
@@ -324,6 +328,8 @@ void run_io() {
             queue_output( i, "elho\n");
         } else if( 0 == strcasecmp( tok, "help") ) {
             queue_output( i, help_string );
+        } else if( 0 == strcasecmp( tok, "achnotify") ) {
+            // open channel, add to notification set
         } else if( 0 == strcasecmp( tok, "quit") ) {
             return -1;
         } else {

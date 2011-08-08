@@ -54,6 +54,8 @@ int opt_truncate = 0;
 size_t opt_msg_size = 0;
 char *opt_chan_name = NULL;
 int opt_verbosity = 0;
+int opt_1 = 0;
+int opt_mode = -1;
 
 int (*opt_command)(void) = NULL;
 
@@ -86,7 +88,13 @@ static struct argp_option options[] = {
         .flags = 0,
         .doc = "Dump info about channel"
     },
-
+    {
+        .name = "file",
+        .key = 'F',
+        .arg = "channel_name",
+        .flags = 0,
+        .doc = "Print filename for channel"
+    },
     {
         .name = "verbose",
         .key = 'v',
@@ -96,18 +104,32 @@ static struct argp_option options[] = {
     },
 
     {
-        .name = "msg_size",
+        .name = "msg-size",
         .key = 'n',
         .arg = "bytes",
         .flags = 0,
         .doc = "Nominal size of a message"
     },
     {
-        .name = "msg_cnt",
+        .name = "msg-cnt",
         .key = 'm',
         .arg = "count",
         .flags = 0,
         .doc = "Number of messages to buffer"
+    },
+    {
+        .name = "mode",
+        .key = 'o',
+        .arg = "octal",
+        .flags = 0,
+        .doc = "mode for created channel"
+    },
+    {
+        .name = "once",
+        .key = '1',
+        .arg = NULL,
+        .flags = 0,
+        .doc = "with -C, accept an already create channel"
     },
     {
         .name = "truncate",
@@ -178,9 +200,28 @@ int cmd_create(void) {
         if( opt_truncate ) attr.truncate = 1;
         i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
     }
-    if( i != ACH_OK ) {
+    if( i != ACH_OK && !opt_1 ) {
         fprintf(stderr, "Error creating channel %s: %s\n",
                 opt_chan_name, ach_result_to_string(i) );
+    }
+    if( opt_mode > 0 ) {
+        ach_channel_t chan;
+        if( ACH_OK != (i=ach_open(&chan, opt_chan_name, NULL)) ) {
+            fprintf(stderr, "Couldn't open channel for chmod: %s\n", ach_result_to_string(i));
+            return -1;
+        }
+        if( ACH_OK != (i=ach_chmod(&chan, (mode_t)opt_mode)) ) {
+            fprintf(stderr, "Couldn't chmod: %s", ach_result_to_string(i));
+            if( ACH_FAILED_SYSCALL == i ) {
+                fprintf(stderr, ", %s\n",strerror(errno));
+            } else {
+                fprintf(stderr, "\n");
+            }
+        }
+        if( ACH_OK != (i= ach_close(&chan)) ) {
+            fprintf(stderr, "Couldn't close channel after chmod: %s\n", ach_result_to_string(i));
+            return -1;
+        }
     }
     return i;
 }
@@ -217,6 +258,17 @@ int cmd_dump(void) {
     return r;
 }
 
+
+int cmd_file(void) {
+    if( opt_verbosity > 0 ) {
+        fprintf(stderr, "Printing file for %s\n", opt_chan_name);
+    }
+    printf("/dev/shm/" ACH_CHAN_NAME_PREFIX "%s\n", opt_chan_name );
+    return 0;
+}
+
+
+
 static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
     if( NULL == opt_command ) {
         opt_command = cmd_fun;
@@ -240,17 +292,26 @@ static int parse_opt( int key, char *arg, struct argp_state *state) {
     case 'D':
         parse_cmd( cmd_dump, arg );
         break;
+    case 'F':
+        parse_cmd( cmd_file, arg );
+        break;
     case 'n':
         opt_msg_size = (size_t)atoi( arg );
         break;
     case 'm':
         opt_msg_cnt = (size_t)atoi( arg );
         break;
+    case 'o':
+        opt_mode = (int)strtol( arg, NULL, 8 );
+        break;
     case 't':
         opt_truncate++;
         break;
     case 'v':
         opt_verbosity++;
+        break;
+    case '1':
+        opt_1++;
         break;
     case 0:
         break;
