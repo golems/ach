@@ -513,7 +513,6 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
              size_t *frame_size,
              const struct timespec *ACH_RESTRICT abstime,
              int options ) {
-    //FIXME: somehow gives missed frame on first get...
     ach_header_t *shm = chan->shm;
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
@@ -565,6 +564,9 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
                 read_index = oldest_index_i(shm);
             }
         }
+
+        if( index_ar[read_index].seq_num > chan->seq_num + 1 ) { missed_frame = 1; }
+
         // read from the index
         retval = ach_get_from_offset( chan, read_index, (char*)buf, size,
                                       frame_size );
