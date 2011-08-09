@@ -165,7 +165,7 @@ int test_basic() {
     // get
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  0);
-    test(r == ACH_MISSED_FRAME ? ACH_OK : r, "ach_get");
+    test(r, "first ach_get");
     if(frame_size!= sizeof(s) || s != 42 ) exit(-1);
 
     // put 2
@@ -179,7 +179,10 @@ int test_basic() {
     // get last
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST);
-    test(r, "ach_get");
+    if( ACH_MISSED_FRAME != r ) {
+        printf("get last failed: %s\n", ach_result_to_string(r));
+        exit(-1);
+    }
     if(frame_size != sizeof(s) || s != 44 ) exit(-1);
 
     // get last stale
@@ -189,7 +192,6 @@ int test_basic() {
         printf("get stale failed: %s\n", ach_result_to_string(r));
         exit(-1);
     }
-
 
     // copy last
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
@@ -213,10 +215,19 @@ int test_basic() {
         exit(-1);
     }
 
-
+    // missed frames
+    for( size_t i = 0; i < 100; i ++ ) {
+        r = ach_put( &chan, &p, sizeof(p) );
+        test(r, "ach_put");
+    }
+    r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
+                 ACH_O_LAST);
+    if( ACH_MISSED_FRAME != r ) {
+        printf("get missed failed: %s\n", ach_result_to_string(r));
+        exit(-1);
+    }
 
     // close
-
 
     r = ach_close(&chan);
     test(r, "ach_close");
