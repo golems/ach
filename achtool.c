@@ -203,6 +203,7 @@ int cmd_create(void) {
     if( i != ACH_OK && !opt_1 ) {
         fprintf(stderr, "Error creating channel %s: %s\n",
                 opt_chan_name, ach_result_to_string(i) );
+        return -1;
     } else i = ACH_OK;
     if( opt_mode > 0 ) {
         ach_channel_t chan;
