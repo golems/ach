@@ -15,7 +15,7 @@ all: default
 
 include /usr/share/make-common/common.1.mk
 
-default: $(LIBFILES) $(BINFILES) ach_stream.o ach.pyc achtest
+default: $(LIBFILES) $(BINFILES) ach_stream.o achtest
 	./achtest
 
 CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
