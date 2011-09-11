@@ -518,7 +518,7 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
 int ach_get( ach_channel_t *chan, void *buf, size_t size,
              size_t *frame_size,
              const struct timespec *ACH_RESTRICT abstime,
-             int options ) {
+             ach_get_opts_t options ) {
     ach_header_t *shm = chan->shm;
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&

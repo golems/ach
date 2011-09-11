@@ -77,7 +77,6 @@
  * \author Developed at the Georgia Tech Humanoid Robotics Lab
  * \author Under Direction of Professor Mike Stilman
  *
- * \copyright
  * Copyright (c) 2008-2011, Georgia Tech Research Corporation.
  * All rights reserved.
  *
@@ -181,6 +180,8 @@ extern "C" {
 
     /// maximum size of a channel name
 #define ACH_CHAN_NAME_MAX 64
+
+/// prefix to apply to channel names to get the shared memory file name
 #define ACH_CHAN_NAME_PREFIX "achshm-"
 
     /// Number of times to retry a syscall on EINTR before giving up
@@ -232,12 +233,6 @@ extern "C" {
         ACH_CORRUPT = 13
     } ach_status_t;
 
-    /// Whether a channel is opened to publish or subscribe
-    typedef enum {
-        ACH_MODE_PUBLISH,  ///< Channel opened to publish
-        ACH_MODE_SUBSCRIBE  ///< Channel opened to subscribe
-    } ach_mode_t;
-
     /// synchronization state of a channel
     typedef enum {
         ACH_CHAN_STATE_INIT,    ///< channel is initializing
@@ -248,21 +243,26 @@ extern "C" {
     } ach_chan_state_t;
 
 
-/** Options flag for ach_get(), blocks until an unseen message arrives
- *  or timeout.  If the channel already has data that this subscriber
- *  has not seen, ach_get() immediately copies the new data.
- *  Otherwise, it waits for some other process or thread to put data
- *  into the channel.
- */
-#define ACH_O_WAIT (1<<0)
-/** Option flag for ach_get(), reads the newest message out of the
- * channel.  If the channel contains multiple messages that this
- * subscriber has not seen, ach_get() will return the newest of these
- * messages.  The subscriber will skip past all older messages.
- */
-#define ACH_O_LAST (1<<1)
-#define ACH_O_COPY (1<<2)
-#define ACH_O_SKIP (1<<3)
+
+
+    /** Option flags for ach_get()*/
+    typedef enum {
+        /** Blocks until an unseen message arrives
+         *  or timeout.  If the channel already has data that this subscriber
+         *  has not seen, ach_get() immediately copies the new data.
+         *  Otherwise, it waits for some other process or thread to put data
+         *  into the channel.
+         */
+        ACH_O_WAIT = 0x01,
+        /** Reads the newest message out of the channel.  If the channel
+         * contains multiple messages that this subscriber has not seen,
+         * ach_get() will return the newest of these messages.  The subscriber
+         * will skip past all older messages.
+         */
+        ACH_O_LAST = 0x02,
+        ACH_O_COPY = 0x04,
+        ACH_O_SKIP = 0x08
+    } ach_get_opts_t;
 
     /** Header for shared memory area.
      *
@@ -428,7 +428,7 @@ extern "C" {
                        const struct timespec *ACH_RESTRICT abstime);
 
 
-    /** Pulls the most recent message from the channel.
+    /** Pulls a message from the channel.
         \pre chan has been opened with ach_open()
 
         \post If buf is big enough to hold the next frame, buf contains
@@ -440,7 +440,7 @@ extern "C" {
     int ach_get( ach_channel_t *chan, void *buf, size_t size,
                  size_t *frame_size,
                  const struct timespec *ACH_RESTRICT abstime,
-                 int options );
+                 ach_get_opts_t options );
 
     /** Writes a new message in the channel.
 

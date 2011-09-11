@@ -159,7 +159,7 @@ int opt_read_headers = 0;
 int opt_write_headers = 0;
 */
 
-
+/// got a signel yet?
 int sig_received = 0;
 
 /// argp junk
@@ -553,6 +553,7 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context) {
     sig_received = 1;
 }
 
+/// setup the signal handler
 void sighandler_install() {
     struct sigaction act;
     memset(&act, 0, sizeof(act));
