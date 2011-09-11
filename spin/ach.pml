@@ -1,3 +1,41 @@
+/* Copyright (c) 2011, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Georgia Tech Humanoid Robotics Lab
+ * Under Direction of Prof. Mike Stilman
+ *
+ *
+ * This file is provided under the following "BSD-style" License:
+ *
+ *
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 
 #define INDEX_CNT 3
 #define DATA_SIZE 5
@@ -117,8 +155,8 @@ active proctype monitor ()  {
   /* Check alignment */
   assert( shm_idx[j].offset % ALIGN == 0 );
   /* Check free space in data */
-  assert( (shm_idx[LAST_INDEX_I].offset +  
-           shm_idx[LAST_INDEX_I].size +  
+  assert( (shm_idx[LAST_INDEX_I].offset +
+           shm_idx[LAST_INDEX_I].size +
            shm_data_free ) % DATA_SIZE
           == shm_idx[OLDEST_INDEX_I].offset );
   /* Check free data head vs. last offset+size */
@@ -140,7 +178,7 @@ active proctype monitor ()  {
                       shm_idx[j].seq_num + 1 );
               assert( shm_idx_free == 0);
               assert( shm_last_seq == shm_idx[j].seq_num);
-              assert( (shm_idx[(j)].offset +  
+              assert( (shm_idx[(j)].offset +
                        shm_idx[(j)].size +
                        shm_data_free ) % DATA_SIZE
                       == shm_idx[(j+1)%INDEX_CNT].offset );
@@ -167,11 +205,11 @@ active proctype monitor ()  {
 proctype putter()
 {
   byte buf[MAX_MSG_SIZE];
-  byte buflen = 0; 
+  byte buflen = 0;
   byte i;
   do
     :: (shm_last_seq < N_MSGS) ->
-       
+
        /* generate some data */
        select( buflen : 1 .. MAX_MSG_SIZE);
        assert( buflen <= DATA_SIZE);
@@ -186,7 +224,7 @@ proctype putter()
            :: else -> break
          od;
 
-         
+
          /* ach_put() function */
          /* clear entry used by index  */
          if :: (0 == shm_idx_free) ->
@@ -241,7 +279,7 @@ proctype putter()
          shm_data_free = shm_data_free - buflen;
          shm_idx_head = (shm_idx_head + 1) % INDEX_CNT;
          shm_idx_free--;
-         
+
        wrunlock();
        assert(shm_last_seq > 0)
     :: else -> break
@@ -265,7 +303,7 @@ proctype getter()
   select(o_wait : 0 .. 1);
   select(o_copy : 0 .. 1);
 
-  /* Set the last read frame. 
+  /* Set the last read frame.
    * This may be a more conservative model, since we could be looking
    * into anywhere in the index array, not necessarily at something
    * that was ever written to. */
@@ -273,14 +311,14 @@ proctype getter()
   select( next_index : 0 .. (INDEX_CNT-1) );
   seq_num = shm_idx[(next_index + INDEX_CNT - 1)%INDEX_CNT].seq_num;
   rdunlock();
-  
+
   /* rdlock() */
   if :: (o_wait) -> rdlock_wait(seq_num);
      :: else -> rdlock();
   fi;
   assert( seq_num <= shm_last_seq );
   /* get the data */
-  if :: ( (seq_num == shm_last_seq && !o_copy) || 0 == shm_last_seq ) -> 
+  if :: ( (seq_num == shm_last_seq && !o_copy) || 0 == shm_last_seq ) ->
         assert( !o_wait );
         stale_frames = 1;
      :: else ->
@@ -310,7 +348,7 @@ proctype getter()
         fi;
   fi ;
 
-  
+
   /* validate */
   if :: (o_last) ->
         /* Last always gets last frame */
@@ -326,7 +364,7 @@ proctype getter()
      :: (o_wait) ->
         assert(!stale_frames);
         assert( shm_idx[read_idx].seq_num > seq_num );
-     :: (o_copy) -> 
+     :: (o_copy) ->
         /* Copy get's something, unless the channel is empty and we didn't wait*/
         assert( shm_idx[read_idx].seq_num >= seq_num );
         assert(!stale_frames || (shm_last_seq == 0 && !o_wait));
