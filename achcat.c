@@ -6,7 +6,7 @@
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
  * Georgia Tech Humanoid Robotics Lab
- * Under Direction of Prof. Mike Stilman
+ * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
  *
  * This file is provided under the following "BSD-style" License:
