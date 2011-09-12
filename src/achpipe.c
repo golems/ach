@@ -627,7 +627,7 @@ int main( int argc, char **argv ) {
                  "must specify publish or subscribe mode\n" );
     hard_assert( opt_pub || opt_sub ,
                  "must specify publish xor subscribe mode\n" ) ;
-    hard_assert( (0 == opt_freq)  ? 1 : (!opt_sync && opt_sub),
+    hard_assert( !(0.0 > opt_freq || 0.0 < opt_freq)  || (!opt_sync && opt_sub),
                  "frequency only valid on async subscribe mode\n" );
     hard_assert( opt_freq >= 0, "frequency must be positive\n" );
 

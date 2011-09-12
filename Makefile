@@ -11,16 +11,20 @@ LANG := ascii
 
 all: default
 
-#cc := llvm-gcc
 
-include /usr/share/make-common/common.1.mk
+# Find the make helper routines
+include	$(shell if [ -f /usr/share/make-common/common.1.mk ]; then      \
+			echo /usr/share/make-common/common.1.mk;        \
+		elif [ -f /usr/local/share/make-common/common.1.mk ]; then \
+			echo /usr/local/share/make-common/common.1.mk;  \
+		else echo ./common.1.mk;                                \
+		fi)
+
+CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
+LISPDIR = ./lisp
 
 default: $(LIBFILES) $(BINFILES)  achtest
 	./achtest -p 2 -s 2 -n 16
-
-CFLAGS += -O2 --std=gnu99 -fPIC -DACH_VERSION_STRING=\"$(VERSION)\"
-
-LISPDIR = ./lisp
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN
@@ -41,7 +45,7 @@ ach.pyc: ach.py
 
 clean:
 	rm -fv  *.o  test_pub ach.lisp test_sub $(BINFILES) $(LIBFILES) *.deb *.lzma *.pyc
-	rm -rf debian doc $(PROJECT)-$(VERSION) .deps
+	rm -rf debian doc $(PROJECT)-$(VERSION) .deps build/*
 
 .PHONY: doc
 
