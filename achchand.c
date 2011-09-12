@@ -53,7 +53,6 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
-#include <amino.h>
 #include "ach.h"
 #include <sys/socket.h>
 #include <sys/un.h>

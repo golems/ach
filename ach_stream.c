@@ -48,11 +48,11 @@
 
 
 #include <stdint.h>
-#include <amino.h>
 #include <unistd.h>
 #include <string.h>
 #include <assert.h>
 #include <errno.h>
+#include <arpa/inet.h>
 #include <sys/types.h>
 
 #include <pthread.h>
@@ -97,7 +97,7 @@ ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt) {
 
     // make size field
     memcpy( & sizebuf[0], ach_stream_presize, 4);
-    aa_endconv_st_be_u32( & sizebuf[4], (uint32_t)cnt );
+    *(uint32_t*)(sizebuf + 4) = htonl( (uint32_t)cnt );
     memcpy( & sizebuf[8], ach_stream_postsize, 4);
 
     // send size
@@ -127,7 +127,7 @@ ssize_t ach_stream_read_msg_size( int fd, int *cnt) {
 
     if( 0 == memcmp( ach_stream_presize,  & buf[0], 4 ) &&
         0 == memcmp( ach_stream_postsize, & buf[8], 4 ) ) {
-        *cnt = aa_endconv_ld_be_i32( & buf[4] );
+        *cnt = ntohl( *(uint32_t*)(buf + 4) );
     } else {
         *cnt = -1;
     }

@@ -40,8 +40,9 @@
  *
  */
 
-#include <amino.h>
 #include <stdint.h>
+#include <string.h>
+#include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <argp.h>
@@ -295,7 +296,9 @@ static int subscriber( int i ) {
     int32_t data[2];
     int seen_last = 0;
     for( int j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
-        struct timespec abstime = aa_tm_future( aa_tm_sec2timespec(1) );
+        struct timespec abstime;
+        clock_gettime( CLOCK_REALTIME, &abstime );
+        abstime.tv_sec += 1;
         size_t frame_size;
         r = ach_wait_next( &chan, data, sizeof(data), &frame_size,
                            &abstime );

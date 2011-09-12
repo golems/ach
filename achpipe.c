@@ -109,9 +109,30 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-#include <amino.h>
+#include <time.h>
 #include <inttypes.h>
 #include "ach.h"
+
+
+
+
+/// sleep for specified time
+static inline int
+_relsleep( struct timespec t ) {
+    struct timespec rem;
+    int r;
+    do {
+        r = nanosleep( &t, &rem );
+        assert( 0 == r || EINTR == errno );
+        t.tv_sec = rem.tv_sec;
+        t.tv_nsec = rem.tv_nsec;
+    } while( 0 != r ) ;
+    return 0;
+}
+
+
+
+
 
 
 /* FIXME: It seems that the kernel buffers very small messages.  This
@@ -470,9 +491,14 @@ void subscribe(int fd, char *chan_name) {
     char cmd[5] = {0};
     size_t frame_size = 0;
 
-    struct timespec period = aa_tm_sec2timespec( aa_feq(opt_freq, 0.0, 0) ? 0 :
-                                                 (1/opt_freq) );
-    int is_freq = !aa_feq(opt_freq,0,0);
+    struct timespec period = {0,0};
+    int is_freq = 0;
+    if(opt_freq > 0) {
+        double p = 1.0 / opt_freq;
+        period.tv_sec = (time_t)p;
+        period.tv_nsec = (long) ((p - (double)period.tv_sec)*1e9);
+        is_freq = 1;
+    }
 
     // read loop
     while( ! sig_received ) {
@@ -537,7 +563,7 @@ void subscribe(int fd, char *chan_name) {
         // maybe sleep
         if( is_freq ) {
             assert( !opt_sync );
-            aa_tm_relsleep(period);
+            _relsleep(period);
         }
     }
     free(buf);
@@ -601,7 +627,7 @@ int main( int argc, char **argv ) {
                  "must specify publish or subscribe mode\n" );
     hard_assert( opt_pub || opt_sub ,
                  "must specify publish xor subscribe mode\n" ) ;
-    hard_assert( aa_feq(opt_freq,0,0) ? 1 : (!opt_sync && opt_sub),
+    hard_assert( (0 == opt_freq)  ? 1 : (!opt_sync && opt_sub),
                  "frequency only valid on async subscribe mode\n" );
     hard_assert( opt_freq >= 0, "frequency must be positive\n" );
 
