@@ -68,11 +68,15 @@ double now() {
 
 // simple integrator, x = dt * dx
 void robot(void) {
+    int r = ach_open(&chan_feedback, "feedback", NULL);
+    assert(ACH_OK == r);
+    r = ach_open(&chan_control, "control", NULL);
+    assert(ACH_OK == r);
     x_t X = {now(),0,0};
     while(1) {
         u_t U;
         size_t fs;
-        int r = ach_get( &chan_control, U, sizeof(U), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
+        r = ach_get( &chan_control, U, sizeof(U), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(U) == fs );
         double tm = now();
         X[2] = U[0];               // dx = u
@@ -85,10 +89,12 @@ void robot(void) {
 
 // print samples periodically
 void periodic_logger(void) {
+    int r = ach_open(&chan_feedback, "feedback", NULL);
+    assert(ACH_OK == r);
     while(1) {
         x_t X;
         size_t fs;
-        int r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
+        r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
         printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
         usleep(1e6 * 0.1); // 10 Hertz
@@ -98,12 +104,14 @@ void periodic_logger(void) {
 
 // log all samples to a file
 void full_logger(void) {
+    int r = ach_open(&chan_feedback, "feedback", NULL);
+    assert(ACH_OK == r);
     FILE *fp = fopen("ach-example.dat", "w");
     assert(fp);
     while(1) {
         x_t X;
         size_t fs;
-        int r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT );
+        r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
         fprintf(fp,"%f\t%f\t%f\n", X[0], X[1], X[2]);
     }
@@ -113,6 +121,8 @@ void full_logger(void) {
 
 // sinusoidal input
 void controller(void) {
+    int r = ach_open(&chan_control, "control", NULL);
+    assert(ACH_OK == r);
     while(1){
         double tm = now();
         u_t U = {sin(tm)};
@@ -133,12 +143,6 @@ int main(int argc, char **argv) {
     r = ach_create("control", 10, 256, NULL );
     assert(ACH_OK == r);
     r = ach_create("feedback", 10, 256, NULL );
-    assert(ACH_OK == r);
-
-    // open channels
-    r = ach_open(&chan_control, "control", NULL);
-    assert(ACH_OK == r);
-    r = ach_open(&chan_feedback, "feedback", NULL);
     assert(ACH_OK == r);
 
     // fork processes
