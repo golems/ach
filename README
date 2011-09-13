@@ -1,0 +1,42 @@
+************
+* OVERVIEW *
+************
+
+Ach is a new Inter-Process Communication (IPC) mechanism and
+library. It is uniquely suited for coordinating perception, control
+drivers, and algorithms in real-time systems that sample data from
+physical processes. Ach eliminates the Head-of-Line Blocking problem
+for applications that always require access to the newest message. Ach
+is efficient, robust, and formally verified. It has been tested and
+demonstrated on a variety of physical robotic systems. Finally, the
+source code for Ach is available under an Open Source BSD-style
+license.
+
+***********
+* INSTALL *
+***********
+
+- Build Dependecies: gcc, GNU make
+- Building: `make'
+- Install: `PREFIX=/usr/local make install'
+- Easier Install on Debian/Ubuntu: `make debinstall'
+- Building API docs: `make doc' (requires doxygen)
+
+*********************
+* Example and Usage *
+*********************
+
+- Example Code: ./src/ach-example.c
+- Shell Tool `ach': can be used to create channels:
+  - Create a channel `ach --create CHANNEL_NAME --msg-cnt 10 --msg-size 4096'
+  - Delete a channel `ach --unlink CHANNEL_NAME'
+  - Display channel stats `ach --dump CHANNEL_NAME'
+  - View options `ach --help'
+
+****************
+* Formal Model *
+****************
+
+Ach has been formally verified using the SPIN model checker.  This
+formal model is included in the sourc distribution under the ./spin/
+directory.
