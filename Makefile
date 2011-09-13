@@ -4,7 +4,7 @@ VERSION := 0.20110622
 
 SHAREDLIBS := ach
 
-BINFILES := achcat achpipe.bin ach
+BINFILES := achcat achpipe.bin ach ach-example
 
 LC_ALL := ascii
 LANG := ascii
@@ -37,6 +37,7 @@ $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)
 $(call LINKBIN, achcat, achcat.o ach.o, pthread rt)
 $(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
 $(call LINKBIN, achtest, achtest.o ach_stream.o ach.o, pthread rt)
+$(call LINKBIN, ach-example, ach-example.o ach_stream.o ach.o, pthread rt m)
 
 $(call LINKBIN, ach, ach.o achtool.o, pthread rt)
 
