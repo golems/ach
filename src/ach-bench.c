@@ -63,8 +63,10 @@ double FREQUENCY = (1000.0);
 double SECS = 1;
 
 
-ach_channel_t chan;
 double overhead = 0;
+
+//#define BENCH_ACH
+#define BENCH_PIPE
 
 static struct argp_option options[] = {
     {
@@ -119,7 +121,7 @@ void make_realtime(void) {
                 strerror(errno) );
     }
     struct sched_param sp;
-    sp.sched_priority = 10;
+    sp.sched_priority = 99; // max priority on linux
     if( sched_setscheduler( 0, SCHED_RR, &sp) < 0 ) {
         fprintf(stderr, "Couldn't set scheduling priority: %s\n",
                 strerror(errno) );
@@ -127,6 +129,8 @@ void make_realtime(void) {
     }
 }
 
+#ifdef BENCH_ACH
+ach_channel_t chan;
 void sender(void) {
     fprintf(stderr,"sender\n");
     make_realtime();
@@ -143,14 +147,14 @@ void receiver(void) {
     make_realtime();
     // flush some initial delayed messages
     for( size_t i = 0; i < 5; i ++ ) {
-        ticks_t ticks = get_ticks();
+        ticks_t ticks;
         size_t fs;
         ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
                 ACH_O_LAST | ACH_O_WAIT);
     }
     // now the good stuff
     while(1) {
-        ticks_t ticks = get_ticks();
+        ticks_t ticks;
         size_t fs;
         int r = ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
                         ACH_O_LAST | ACH_O_WAIT);
@@ -162,7 +166,7 @@ void receiver(void) {
 
 }
 
-void setup_ach(void) {
+void setup(void) {
     // create channel
     int r = ach_unlink("bench");               // delete first
     assert( ACH_OK == r || ACH_ENOENT == r);
@@ -173,10 +177,56 @@ void setup_ach(void) {
     r = ach_open(&chan, "bench", NULL);
     assert(ACH_OK == r);
 }
-void delete_ach(void) {
+void destroy(void) {
     int r = ach_unlink("bench");
     assert(ACH_OK == r);
 }
+#endif //BENCH_ACH
+
+#ifdef BENCH_PIPE
+int fd[2];
+void sender(void) {
+    fprintf(stderr,"sender\n");
+    make_realtime();
+    for(size_t i = 0; i < SECS*FREQUENCY; i ++) {
+        ticks_t ticks = get_ticks();
+        int r = write(fd[1], &ticks, sizeof(ticks));
+        assert(sizeof(ticks) == r);
+        usleep((useconds_t)(1e6/FREQUENCY));
+    }
+}
+
+void receiver(void) {
+    fprintf(stderr,"receiver\n");
+    make_realtime();
+    // flush some initial delayed messages
+    for( size_t i = 0; i < 5; i ++ ) {
+        ticks_t ticks;
+        int r = read(fd[0], &ticks, sizeof(ticks));
+        assert(sizeof(ticks) == r);
+    }
+    // now the good stuff
+    while(1) {
+        ticks_t ticks;
+        int r = read(fd[0], &ticks, sizeof(ticks));
+        ticks_t now = get_ticks();
+        assert(sizeof(ticks) == r);
+        double result = ticks_delta(ticks,now);
+        printf("%f\n", result*1e6);
+    }
+
+}
+
+void setup(void) {
+    // create channel
+    int r = pipe(fd);
+    assert( !r );
+}
+void destroy(void) {
+}
+#endif //BENCH_PIPE
+
+
 
 void calibrate(void) {
     make_realtime();
@@ -203,19 +253,26 @@ int main(int argc, char **argv) {
     fprintf(stderr,"overhead: %fus\n", overhead*1e6);
 
     // setup comms
-    setup_ach();
+    setup();
 
     // fork
-    pid_t pid = fork();
-    assert( pid >= 0 );
-
-    if(0 == pid)
-        receiver();
-    else {
-        sender();
-        kill(pid,9);
+    pid_t pid[1];
+    for(size_t i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
+        pid[i] = fork();
+        assert( pid[i] >= 0 );
+        if(0 == pid[i]) {
+            receiver();
+            exit(0);
+        }
     }
-    delete_ach();
+    // send
+    sender();
+    sleep(1);
+    // stop
+    for(size_t i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
+        kill(pid[i],SIGTERM);
+    }
+    destroy();
     exit(0);
 }
 
