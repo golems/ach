@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20110622
+VERSION := 0.20110913
 
 SHAREDLIBS := ach
 
@@ -23,8 +23,8 @@ include	$(shell if [ -f /usr/share/make-common/common.1.mk ]; then      \
 CFLAGS += -O2 --std=gnu99 -DACH_VERSION_STRING=\"$(VERSION)\"
 LISPDIR = ./lisp
 
-default: $(LIBFILES) $(BINFILES)  achtest
-	./achtest -p 2 -s 2 -n 16
+default: $(LIBFILES) $(BINFILES)  $(BUILDDIR)/achtest
+	$(BUILDDIR)/achtest -p 2 -s 2 -n 16
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN
