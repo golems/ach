@@ -6,11 +6,7 @@ SHAREDLIBS := ach
 
 BINFILES := achcat achpipe.bin ach ach-example ach-bench
 
-LC_ALL := ascii
-LANG := ascii
-
 all: default
-
 
 # Find the make helper routines
 include	$(shell if [ -f /usr/share/make-common/common.1.mk ]; then      \
