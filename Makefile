@@ -9,12 +9,10 @@ BINFILES := achcat achpipe.bin ach ach-example ach-bench
 all: default
 
 # Find the make helper routines
-include	$(shell if [ -f /usr/share/make-common/common.1.mk ]; then      \
-			echo /usr/share/make-common/common.1.mk;        \
-		elif [ -f /usr/local/share/make-common/common.1.mk ]; then \
-			echo /usr/local/share/make-common/common.1.mk;  \
-		else echo ./common.1.mk;                                \
-		fi)
+make-common/common.1.mk:
+	git submodule init
+	git submodule update
+include	./make-common/common.1.mk
 
 CFLAGS += -O2 --std=gnu99 -DACH_VERSION_STRING=\"$(VERSION)\"
 LISPDIR = ./lisp

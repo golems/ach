@@ -16,7 +16,7 @@ license.
 * INSTALL *
 ***********
 
-- Build Dependecies: gcc, GNU make
+- Build Dependecies: gcc, GNU make, git
 - Building: `make'
 - Install: `PREFIX=/usr/local make install'
 - Easier Install on Debian/Ubuntu: `make debinstall'
