@@ -40,3 +40,10 @@ license.
 Ach has been formally verified using the SPIN model checker.  This
 formal model is included in the sourc distribution under the ./spin/
 directory.
+
+*******************
+* Further Details *
+*******************
+
+A technical report describing design and rationale behind Ach is available at:
+http://www.golems.org/node/1526
