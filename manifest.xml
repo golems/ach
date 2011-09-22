@@ -19,7 +19,7 @@
   <depend package="common"/>
   <versioncontrol type="git" url="http://github.com/golems/ach"/>
   <export>
-    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lach -lrt -lpthread"/>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/build -lach"/>
   </export>
   <review status="experimental"/>
 </package>
