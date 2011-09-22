@@ -1,0 +1,25 @@
+<!-- ROS Manifest for Ach IPC Library -->
+
+<package>
+  <description brief="IPC for Real-Time Robot Control">
+    Ach is an Inter-Process Communication (IPC) mechanism and
+    library. It is uniquely suited for coordinating perception,
+    control drivers, and algorithms in real-time systems that sample
+    data from physical processes. Ach eliminates the Head-of-Line
+    Blocking problem for applications that always require access to
+    the newest message. Ach is efficient, robust, and formally
+    verified. It has been tested and demonstrated on a variety of
+    physical robotic systems. Finally, the source code for Ach is
+    available under an Open Source BSD-style license.
+  </description>
+  <author>Neil T. Dantam/ntd@gatech.edu</author>
+  <license>BSD</license>
+  <url>http://www.golems.org/node/1526</url>
+  <depend package="pkgname"/>
+  <depend package="common"/>
+  <versioncontrol type="git" url="http://github.com/golems/ach"/>
+  <export>
+    <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/lib -lach -lrt -lpthread"/>
+  </export>
+  <review status="experimental"/>
+</package>
