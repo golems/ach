@@ -15,8 +15,6 @@
   <author>Neil T. Dantam/ntd@gatech.edu</author>
   <license>BSD</license>
   <url>http://www.golems.org/node/1526</url>
-  <depend package="pkgname"/>
-  <depend package="common"/>
   <versioncontrol type="git" url="http://github.com/golems/ach"/>
   <export>
     <cpp cflags="-I${prefix}/include" lflags="-L${prefix}/build -lach"/>
