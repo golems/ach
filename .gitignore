@@ -6,3 +6,6 @@
 /debian
 /.deps
 /build/achtest
+/lisp/grovel
+/lisp/grovel.c
+/lisp/grovel.grovel-tmp.lisp
