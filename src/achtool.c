@@ -55,9 +55,9 @@
 #include <inttypes.h>
 #include "ach.h"
 
-size_t opt_msg_cnt = 0;
+size_t opt_msg_cnt = 16;
 int opt_truncate = 0;
-size_t opt_msg_size = 0;
+size_t opt_msg_size = 8192;
 char *opt_chan_name = NULL;
 int opt_verbosity = 0;
 int opt_1 = 0;
@@ -114,14 +114,14 @@ static struct argp_option options[] = {
         .key = 'n',
         .arg = "bytes",
         .flags = 0,
-        .doc = "Nominal size of a message"
+        .doc = "Nominal size of a message (default 8192)"
     },
     {
         .name = "msg-cnt",
         .key = 'm',
         .arg = "count",
         .flags = 0,
-        .doc = "Number of messages to buffer"
+        .doc = "Max number of messages to buffer (default 16)"
     },
     {
         .name = "mode",
