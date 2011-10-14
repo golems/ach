@@ -9,3 +9,10 @@
 /lisp/grovel
 /lisp/grovel.c
 /lisp/grovel.grovel-tmp.lisp
+/CMakeCache.txt
+/cmake_install.cmake
+/CMakeFiles
+/ach-bench
+/ach-example
+/achcat
+/achpipe.bin
