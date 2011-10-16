@@ -45,8 +45,8 @@
  *  \author Neil T. Dantam
  */
 
-/// Use handy GNU extensions
-#define _GNU_SOURCE
+/* GNU needs this for fchmod/ftruncate */
+#define _XOPEN_SOURCE 500
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -67,7 +67,7 @@
 
 #include "ach.h"
 
-// verbosity output levels
+/* verbosity output levels */
 /*
 //#define WARN 0  ///< verbosity level for warnings
 //#define INFO 1  ///< verbosity level for info messages
@@ -78,11 +78,11 @@
 //(((args.verbosity) >= level )?fprintf( stderr, (fmt), ## a ) : 0);
 */
 
-/// macro to print debug messages
+/** macro to print debug messages */
 #define DEBUGF(fmt, a... )                      \
     fprintf(stderr, (fmt), ## a )
 
-/// macro to do things when debugging
+/** macro to do things when debugging */
 #define IFDEBUG( x ) (x)
 
 
@@ -131,20 +131,17 @@ static int check_errno() {
 }
 
 
-// returns 0 if channel name is bad
+/* returns 0 if channel name is bad */
 static int channel_name_ok( const char *name ) {
     size_t len;
-    // check size
-#ifdef HAVE_STRNLEN
-    if( (len = strnlen( name, ACH_CHAN_NAME_MAX + 1 )) >= ACH_CHAN_NAME_MAX )
-#else
-        if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
-#endif
-            return 0;
-    // check hidden file
+    /* check size */
+    if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
+        return 0;
+    /* check hidden file */
     if( name[0] == '.' ) return 0;
-    // check bad characters
-    for( size_t i = 0; i < len; i ++ ) {
+    /* check bad characters */
+    size_t i;
+    for( i = 0; i < len; i ++ ) {
         if( ! ( isalnum( name[i] )
                 || (name[i] == '-' )
                 || (name[i] == '_' )
@@ -222,8 +219,8 @@ static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
     r = pthread_mutex_lock( & shm->sync.mutex );
     assert( 0 == r );
     assert( 0 == shm->sync.dirty );
-    // if chan is passed, we wait for new data
-    // otherwise just return holding the lock
+    /* if chan is passed, we wait for new data *
+     * otherwise just return holding the lock  */
     while( chan &&
            chan->seq_num == shm->last_seq ) {
 
@@ -231,14 +228,14 @@ static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
             pthread_mutex_unlock( &shm->sync.mutex );
             return ACH_CLOSED;
         }
-        if( abstime ) { // timed wait
+        if( abstime ) { /* timed wait */
             r = pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime );
-            // check for timeout
+            /* check for timeout */
             if( ETIMEDOUT == r ){
                 pthread_mutex_unlock( &shm->sync.mutex );
                 return ACH_TIMEOUT;
             }
-        } else { // wait forever
+        } else { /* wait forever */
             r = pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex );
         }
     }
@@ -266,15 +263,15 @@ static void wrlock( ach_header_t *shm ) {
 static void unwrlock( ach_header_t *shm ) {
     int r;
 
-    // mark clean
+    /* mark clean */
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
 
-    // unlock
+    /* unlock */
     r = pthread_mutex_unlock( & shm->sync.mutex );
     assert( 0 == r );
 
-    // broadcast to wake up waiting readers
+    /* broadcast to wake up waiting readers */
     r = pthread_cond_broadcast( & shm->sync.cond );
     assert( 0 == r );
 
@@ -291,8 +288,8 @@ int ach_create( const char *channel_name,
     ach_header_t *shm;
     int fd;
     size_t len;
-    //fixme: truncate
-    // open shm
+    /* fixme: truncate */
+    /* open shm */
     {
         len = sizeof( ach_header_t) +
             frame_cnt*sizeof( ach_index_t ) +
@@ -300,12 +297,12 @@ int ach_create( const char *channel_name,
             3*sizeof(uint64_t);
 
         if( attr && attr->map_anon ) {
-            // anonymous (heap)
+            /* anonymous (heap) */
             shm = (ach_header_t *) malloc( len );
             fd = -1;
         }else {
             int oflag = O_EXCL | O_CREAT;
-            // shm
+            /* shm */
             if( ! channel_name_ok( channel_name ) )
                 return ACH_INVALID_NAME;
             if( attr ) {
@@ -318,8 +315,8 @@ int ach_create( const char *channel_name,
                 == MAP_FAILED )
                 return ACH_FAILED_SYSCALL;
 
-            // initialize shm
-            { //make file proper size
+            /* initialize shm */
+            { /* make file proper size */
                 int r;
                 int i = 0;
                 do {
@@ -335,8 +332,8 @@ int ach_create( const char *channel_name,
         shm->state = ACH_CHAN_STATE_INIT;
     }
 
-    { //initialize synchronization
-        { //initialize condition variables
+    { /* initialize synchronization */
+        { /* initialize condition variables */
             int r;
             pthread_condattr_t cond_attr;
             r = pthread_condattr_init( &cond_attr );
@@ -350,7 +347,7 @@ int ach_create( const char *channel_name,
             r = pthread_condattr_destroy( &cond_attr );
             assert( 0 == r );
         }
-        { //initialize mutex
+        { /* initialize mutex */
             int r;
             pthread_mutexattr_t mutex_attr;
             r = pthread_mutexattr_init( &mutex_attr );
@@ -369,9 +366,9 @@ int ach_create( const char *channel_name,
             assert( 0 == r );
         }
     }
-    // initialize name
+    /* initialize name */
     strncpy( shm->name, channel_name, ACH_CHAN_NAME_MAX );
-    //initialize counts
+    /* initialize counts */
     shm->index_cnt = frame_cnt;
     shm->index_head = 0;
     shm->index_free = frame_cnt;
@@ -392,13 +389,13 @@ int ach_create( const char *channel_name,
         attr->shm = shm;
     } else {
         int r;
-        // remove mapping
+        /* remove mapping */
         r = munmap(shm, len);
         if( 0 != r ){
             DEBUGF("Failed to munmap channel\n");
             return ACH_FAILED_SYSCALL;
         }
-        // close file
+        /* close file */
         int i = 0;
         do {
             IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
@@ -427,7 +424,7 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
     }else {
         if( ! channel_name_ok( channel_name ) )
             return ACH_INVALID_NAME;
-        // open shm
+        /* open shm */
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
             return ACH_FAILED_SYSCALL;
@@ -438,10 +435,10 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
         if( ACH_SHM_MAGIC_NUM != shm->magic )
             return ACH_BAD_SHM_FILE;
 
-        // calculate mmaping size
+        /* calculate mmaping size */
         len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
 
-        // remap
+        /* remap */
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
             return ACH_FAILED_SYSCALL;
 
@@ -455,7 +452,7 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
 
-    // initialize struct
+    /* initialize struct */
     chan->fd = fd;
     chan->len = len;
     chan->shm = shm;
@@ -479,10 +476,10 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
-    //assert( idx->size );
+    /* assert( idx->size ); */
     assert( idx->seq_num );
     assert( idx->offset < shm->data_size );
-    // check idx
+    /* check idx */
     if( chan->seq_num > idx->seq_num ) {
         fprintf(stderr,
                 "ach bug: chan->seq_num (%"PRIu64") > idx->seq_num (%"PRIu64")\n"
@@ -493,17 +490,17 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     }
 
     if(  idx->size > size ) {
-        // buffer overflow
+        /* buffer overflow */
         *frame_size = idx->size;
         return ACH_OVERFLOW;
     } else {
-        //good to copy
+        /* good to copy */
         uint8_t *data_buf = ACH_SHM_DATA(shm);
         if( idx->offset + idx->size < shm->data_size ) {
-            //simple memcpy
+            /* simple memcpy */
             memcpy( (uint8_t*)buf, data_buf + idx->offset, idx->size );
         }else {
-            // wraparound memcpy
+            /* wraparound memcpy */
             size_t end_cnt = shm->data_size - idx->offset;
             memcpy( (uint8_t*)buf, data_buf + idx->offset, end_cnt );
             memcpy( (uint8_t*)buf + end_cnt, data_buf, idx->size - end_cnt );
@@ -531,7 +528,7 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
     const bool o_last = options & ACH_O_LAST;
     const bool o_copy = options & ACH_O_COPY;
 
-    // take read lock
+    /* take read lock */
     int r;
     if( o_wait ) {
         if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) ) {
@@ -544,23 +541,23 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
     int retval = ACH_BUG;
     bool missed_frame = 0;
 
-    /* get the data*/
+    /* get the data */
     if( (chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq ) {
-        // no entries
+        /* no entries */
         assert(!o_wait);
         retval = ACH_STALE_FRAMES;
     } else {
-        // Compute the index to read
+        /* Compute the index to read */
         size_t read_index;
         if( o_last ) {
-            // normal case, get last
+            /* normal case, get last */
             read_index = last_index_i(shm);
         } else if (!o_last &&
                    index_ar[chan->next_index].seq_num == chan->seq_num + 1) {
-            // normal case, get next
+            /* normal case, get next */
             read_index = chan->next_index;
         } else {
-            // exception case, figure out which frame
+            /* exception case, figure out which frame */
             if (chan->seq_num == shm->last_seq) {
                 /* copy last */
                 assert(o_copy);
@@ -573,14 +570,14 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
 
         if( index_ar[read_index].seq_num > chan->seq_num + 1 ) { missed_frame = 1; }
 
-        // read from the index
+        /* read from the index */
         retval = ach_get_from_offset( chan, read_index, (char*)buf, size,
                                       frame_size );
 
         assert( index_ar[read_index].seq_num > 0 );
     }
 
-    // release read lock
+    /* release read lock */
     unrdlock( shm );
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
@@ -621,7 +618,7 @@ int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_siz
 
 
 int ach_flush( ach_channel_t *chan ) {
-    //int r;
+    /*int r; */
     ach_header_t *shm = chan->shm;
     rdlock(shm);
     chan->seq_num = shm->last_seq;
@@ -633,9 +630,9 @@ int ach_flush( ach_channel_t *chan ) {
 
 static void free_index(ach_header_t *shm, size_t i ) {
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    assert( index_ar[i].seq_num ); // only free used indices
-    assert( index_ar[i].size );    // must have some data
-    assert( shm->index_free < shm->index_cnt - 1 ); // must be some used index
+    assert( index_ar[i].seq_num ); /* only free used indices */
+    assert( index_ar[i].size );    /* must have some data */
+    assert( shm->index_free < shm->index_cnt - 1 ); /* must be some used index */
     shm->data_free += index_ar[i].size;
     shm->index_free ++;
     memset( &index_ar[i], 0, sizeof( ach_index_t ) );
@@ -664,19 +661,19 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
     if( len > shm->data_size ) return ACH_OVERFLOW;
 
-    // take write lock
+    /* take write lock */
     wrlock( shm );
 
-    // find next index entry
+    /* find next index entry */
     ach_index_t *idx = index_ar + shm->index_head;
 
-    // clear entry used by index
+    /* clear entry used by index */
     if( 0 == shm->index_free ) { free_index(shm,shm->index_head); }
     else { assert(0== index_ar[shm->index_head].seq_num);}
 
     assert( shm->index_free > 0 );
 
-    // clear overlapping entries
+    /* clear overlapping entries */
     size_t i;
     for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
         shm->data_free < len;
@@ -687,18 +684,18 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
 
     assert( shm->data_free >= len );
 
-    // copy buffer
+    /* copy buffer */
     if( shm->data_size - shm->data_head >= len ) {
-        //simply copy
+        /* simply copy */
         memcpy( data_ar + shm->data_head, buf, len );
     } else {
-        //wraparound copy
+        /* wraparound copy */
         size_t end_cnt = shm->data_size - shm->data_head;
         memcpy( data_ar + shm->data_head, buf, end_cnt);
         memcpy( data_ar, (uint8_t*)buf + end_cnt, len - end_cnt );
     }
 
-    // modify counts
+    /* modify counts */
     shm->last_seq++;
     idx->seq_num = shm->last_seq;
     idx->size = len;
@@ -713,7 +710,7 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     assert( shm->data_free <= shm->data_size );
     assert( shm->last_seq > 0 );
 
-    // release write lock
+    /* release write lock */
     unwrlock( shm );
     return ACH_OK;
 }
@@ -727,13 +724,13 @@ int ach_close(ach_channel_t *chan) {
     assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
 
     int r;
-    //fprintf(stderr, "Closing\n");
-    // note the close in the channel
+    /* fprintf(stderr, "Closing\n"); */
+    /* note the close in the channel */
     if( chan->attr.map_anon ) {
-        //FIXME: what to do here??
+        /* FIXME: what to do here?? */
         ;
     } else {
-        // remove mapping
+        /* remove mapping */
         r = munmap(chan->shm, chan->len);
         if( 0 != r ){
             DEBUGF("Failed to munmap channel\n");
@@ -741,7 +738,7 @@ int ach_close(ach_channel_t *chan) {
         }
         chan->shm = NULL;
 
-        // close file
+        /* close file */
         int i = 0;
         do {
             IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
@@ -792,7 +789,7 @@ int ach_unlink( const char *name ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
     int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
     if( ACH_OK == r ) {
-        //r = shm_unlink(name);
+        /*r = shm_unlink(name); */
         r = shm_unlink(shm_name);
         if( 0 == r ) return  ACH_OK;
         else if( ENOENT == errno ) {

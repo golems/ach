@@ -14,11 +14,11 @@ make-common/common.1.mk:
 	git submodule update
 include	./make-common/common.1.mk
 
-CFLAGS += -O2 --std=gnu99 -DACH_VERSION_STRING=\"$(VERSION)\"
+CFLAGS += -O2 -ansi -DACH_VERSION_STRING=\"$(VERSION)\"
 LISPDIR = ./lisp
 
 default: $(LIBFILES) $(BINFILES)  $(BUILDDIR)/achtest
-	$(BUILDDIR)/achtest -p 2 -s 2 -n 16
+	$(BUILDDIR)/achtest -p 2 -s 4 -n 512
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN

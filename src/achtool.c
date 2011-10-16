@@ -44,6 +44,9 @@
  *  \author Neil T. Dantam
  */
 
+/* GNU needs this for mode_t */
+#define _XOPEN_SOURCE 500
+
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -70,7 +73,7 @@ void cleanup() {
     opt_chan_name = NULL;
 }
 
-/// argp junk
+/** argp junk */
 
 static struct argp_option options[] = {
     {
@@ -154,15 +157,15 @@ static struct argp_option options[] = {
 
 };
 
-/// argp parsing function
+/** argp parsing function */
 static int parse_opt( int key, char *arg, struct argp_state *state);
-/// argp program version
+/** argp program version */
 const char *argp_program_version = "ach-" ACH_VERSION_STRING;
-/// argp program arguments documention
+/** argp program arguments documention */
 static char args_doc[] = "";
-/// argp program doc line
+/** argp program doc line */
 static char doc[] = "general tool to interact with ach channels";
-/// argp object
+/** argp object */
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
@@ -288,7 +291,7 @@ static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
 }
 
 static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; // ignore unused parameter
+    (void) state; /* ignore unused parameter */
     switch(key) {
     case 'C':
         parse_cmd( cmd_create, arg );

@@ -47,6 +47,9 @@
  *  ach channel.
  */
 
+/* GNU needs this for usleep */
+#define _XOPEN_SOURCE 500
+
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
@@ -56,10 +59,11 @@
 #include <sched.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "ach.h"
 
 
-/// argp junk
+/* argp junk */
 
 static struct argp_option options[] = {
     {
@@ -86,15 +90,15 @@ static struct argp_option options[] = {
 
 };
 
-/// argp parsing function
+/* argp parsing function */
 static int parse_opt( int key, char *arg, struct argp_state *state);
-/// argp program version
+/* argp program version */
 const char *argp_program_version = "achcat-0";
-/// argp program arguments documention
+/* argp program arguments documention */
 static char args_doc[] = "[-p|-s] channel";
-/// argp program doc line
+/* argp program doc line */
 static char doc[] = "Copies ach frames as string lines to/from stdio.  Mostly intended as an ach testing tool.";
-/// argp object
+/* argp object */
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
@@ -108,7 +112,7 @@ char pbuffer[4096];
 char sbuffer[4096];
 
 
-// options
+/* options */
 int opt_msg_size = 256;
 int opt_msg_cnt = 10;
 char *opt_chan_name = NULL;
@@ -130,20 +134,20 @@ int publish( ach_channel_t *chan) {
     int r;
     while(1) {
         char *fr;
-        // get size
+        /* get size */
         fr = fgets( pbuffer, sizeof(pbuffer), fin );
         if( !fr ) break;
         assert( pbuffer == fr );
-        // put data
-        //printf("read: %s", pbuffer );
+        /* put data */
+        /*printf("read: %s", pbuffer );*/
         r = ach_put( chan, pbuffer, strlen(pbuffer) );
         if( r != ACH_OK ) break;
-        //printf("put: %s", pbuffer );
+        /*printf("put: %s", pbuffer );*/
 
-        //ach_dump( chan.shm );
+        /*ach_dump( chan.shm );*/
     }
     ach_close( chan );
-    //fprintf(stderr,"end of publish\n");
+    /*fprintf(stderr,"end of publish\n");*/
     return r;
 }
 
@@ -169,8 +173,8 @@ int subscribe( ach_channel_t *chan) {
             }
 
         }
-        //fprintf(stderr, "sub: got %d bytes\n", frame_size);
-        //fprintf(stderr, "sub: %s\n", sbuffer);
+        /*fprintf(stderr, "sub: got %d bytes\n", frame_size);*/
+        /*fprintf(stderr, "sub: %s\n", sbuffer);*/
 
         fr = fwrite( sbuffer, sizeof(char), frame_size, fout );
         if ( fr != frame_size )  {
@@ -179,7 +183,7 @@ int subscribe( ach_channel_t *chan) {
         }
         fflush(fout);
     }
-    //fprintf(stderr,"end of subscribe\n");
+    /*fprintf(stderr,"end of subscribe\n");*/
     ach_close( chan );
     return r;
 }
@@ -189,11 +193,11 @@ int main( int argc, char **argv ) {
     fin = stdin;
     fout = stdout;
     argp_parse (&argp, argc, argv, 0, NULL, NULL);
-    //printf("chan: %s\n", opt_chan_name );
-    //printf("pub:  %d\n", opt_pub );
-    //printf("sub:  %d\n", opt_sub );
+    /*printf("chan: %s\n", opt_chan_name );*/
+    /*printf("pub:  %d\n", opt_pub );*/
+    /*printf("sub:  %d\n", opt_sub );*/
 
-    // validate arguments
+    /* validate arguments */
     if( ! opt_chan_name ) {
         fprintf(stderr, "Error: must specify channel\n");
         return 1;
@@ -210,7 +214,7 @@ int main( int argc, char **argv ) {
         int r;
         ach_attr_t attr;
         ach_attr_init( &attr );
-        //attr.map_anon = opt_pub && opt_sub;
+        /*attr.map_anon = opt_pub && opt_sub;*/
         if( opt_pub && ! opt_sub ) {
             r = ach_open( &pub, opt_chan_name, &attr );
             assert( 0 == r );
@@ -234,7 +238,7 @@ int main( int argc, char **argv ) {
         }
     }
 
-    // check for io case
+    /* check for io case */
     if(  opt_pub &&  opt_sub ) {
         pthread_t pub_thread;
         pthread_create( &pub_thread, NULL, publish_loop, &pub );
@@ -244,7 +248,7 @@ int main( int argc, char **argv ) {
         pthread_join(pub_thread, &v);
         return 0;
     }
-    // normal cases
+    /* normal cases */
     if( opt_sub ) return subscribe(&sub);
     if( opt_pub ) return publish(&pub);
     assert( 0 );
@@ -252,7 +256,7 @@ int main( int argc, char **argv ) {
 }
 
 static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; // ignore unused parameter
+    (void) state; /* ignore unused parameter */
     switch(key) {
     case 'p':
         opt_pub = 1;

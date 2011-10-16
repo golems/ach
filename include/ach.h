@@ -169,22 +169,27 @@
 #ifndef ACH_H
 #define ACH_H
 
+/* restict only in C99 */
 #ifdef __cplusplus
-/// abstract restrict keyword to play nice with C++
-#define ACH_RESTRICT
-extern "C" {
+# define ACH_RESTRICT
+#elif  __STDC_VERSION__ < 199901L
+#  define ACH_RESTRICT
 #else
-/// abstract restrict keyword to play nice with C++
-#define ACH_RESTRICT restrict
+# define ACH_RESTRICT restrict
 #endif
 
-    /// maximum size of a channel name
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**  maximum size of a channel name */
 #define ACH_CHAN_NAME_MAX 64
 
-/// prefix to apply to channel names to get the shared memory file name
+/** prefix to apply to channel names to get the shared memory file name */
 #define ACH_CHAN_NAME_PREFIX "achshm-"
 
-    /// Number of times to retry a syscall on EINTR before giving up
+/** Number of times to retry a syscall on EINTR before giving up */
 #define ACH_INTR_RETRY 8
 
     /** magic number that appears the the beginning of our mmaped files.
@@ -215,31 +220,31 @@ extern "C" {
     */
 #define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8C)
 
-    /// return status codes for ach functions
+    /** return status codes for ach functions */
     typedef enum {
-        ACH_OK = 0,         ///< Call successful
-        ACH_OVERFLOW = 1,       ///< buffer to small to hold frame
-        ACH_INVALID_NAME = 2,   ///< invalid channel name
-        ACH_BAD_SHM_FILE = 3,   ///< shared memory file didn't look right
-        ACH_FAILED_SYSCALL = 4, ///< a system call failed
-        ACH_STALE_FRAMES = 5,   ///< no new data in the channel
-        ACH_MISSED_FRAME = 6,   ///< we missed the next frame
-        ACH_TIMEOUT = 7,        ///< timeout before frame received
-        ACH_EEXIST = 8,          ///< shm already exists
-        ACH_ENOENT = 9,        ///< shm doesn't
+        ACH_OK = 0,             /**< Call successful */
+        ACH_OVERFLOW = 1,       /**< buffer to small to hold frame */
+        ACH_INVALID_NAME = 2,   /**< invalid channel name */
+        ACH_BAD_SHM_FILE = 3,   /**< shared memory file didn't look right */
+        ACH_FAILED_SYSCALL = 4, /**< a system call failed */
+        ACH_STALE_FRAMES = 5,   /**< no new data in the channel */
+        ACH_MISSED_FRAME = 6,   /**< we missed the next frame */
+        ACH_TIMEOUT = 7,        /**< timeout before frame received */
+        ACH_EEXIST = 8,         /**< shm already exists */
+        ACH_ENOENT = 9,         /**< shm doesn't */
         ACH_CLOSED = 10,
         ACH_BUG = 11,
         ACH_EINVAL = 12,
         ACH_CORRUPT = 13
     } ach_status_t;
 
-    /// synchronization state of a channel
+    /** synchronization state of a channel */
     typedef enum {
-        ACH_CHAN_STATE_INIT,    ///< channel is initializing
-        ACH_CHAN_STATE_RUN,     ///< channel is uncontended
-        //ACH_CHAN_STATE_READING, ///< readers using channel
-        //ACH_CHAN_STATE_WRITING, ///< writer modifying channel
-        ACH_CHAN_STATE_CLOSED ///< channel has been closed
+        ACH_CHAN_STATE_INIT,    /**< channel is initializing */
+        ACH_CHAN_STATE_RUN,     /**< channel is uncontended */
+        /* //ACH_CHAN_STATE_READING, ///< readers using channel */
+        /* //ACH_CHAN_STATE_WRITING, ///< writer modifying channel */
+        ACH_CHAN_STATE_CLOSED   /**< channel has been closed */
     } ach_chan_state_t;
 
 
@@ -270,84 +275,84 @@ extern "C" {
      * channel must maintain its own tail pointer.
      */
     typedef struct {
-        uint32_t magic;          ///< magic number of ach shm files,
-        size_t len;              ///< length of mmap'ed file
-        size_t index_cnt;        ///< number of entries in index
-        size_t data_size;        ///< size of data bytes
-        size_t data_head;        ///< offset to first open byte of data
-        size_t data_free;        ///< number of free data bytes
-        size_t index_head;       ///< index into index array of first unused index entry
-        size_t index_free;       ///< number of unused index entries
-        int state;  ///< state of the channel (ie open/closed)
-        int refcount; ///< number of open handles to channel
-        int anon; ///< is channel in the heap?
-        char name[1+ACH_CHAN_NAME_MAX]; ///< Name of this channel
+        uint32_t magic;          /**< magic number of ach shm files */
+        size_t len;              /**< length of mmap'ed file */
+        size_t index_cnt;        /**< number of entries in index */
+        size_t data_size;        /**< size of data bytes */
+        size_t data_head;        /**< offset to first open byte of data */
+        size_t data_free;        /**< number of free data bytes */
+        size_t index_head;       /**< index into index array of first unused index entry */
+        size_t index_free;       /**< number of unused index entries */
+        int state;               /**< state of the channel (ie open/closed) */
+        int refcount;            /**< number of open handles to channel */
+        int anon;                /**< is channel in the heap? */
+        char name[1+ACH_CHAN_NAME_MAX]; /**< Name of this channel */
         struct /* anonymous structure */ {
-            pthread_mutex_t mutex;     ///< mutex for condition variables
-            pthread_cond_t cond; ///< condition variable
+            pthread_mutex_t mutex;         /**< mutex for condition variables */
+            pthread_cond_t cond;           /**< condition variable */
             int dirty;
-        } sync; ///< variables for synchronization
-        // should force our alignment to 8-bytes...
-        uint64_t last_seq;       ///< last sequence number written
+        } sync;                   /**< variables for synchronization */
+        /* should force our alignment to 8-bytes... */
+        uint64_t last_seq;        /**< last sequence number written */
     } ach_header_t;
 
     /** Entry in shared memory index array
      */
     typedef struct {
-        size_t size;      ///< size of frame
-        size_t offset;    ///< byte offset of entry from beginning of data array
-        uint64_t seq_num; ///< number of frame
+        size_t size;      /**< size of frame */
+        size_t offset;    /**< byte offset of entry from beginning of data array */
+        uint64_t seq_num; /**< number of frame */
     } ach_index_t ;
 
 
     /** Attributes to pass to ach_open */
     typedef struct {
-        int map_anon; ///< anonymous channel (put it in process heap, not shm)
-        ach_header_t *shm;   ///< the memory buffer used by anonymous channels
+        int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
+        ach_header_t *shm;   /**< the memory buffer used by anonymous channels */
     } ach_attr_t;
 
 
 
     /** Attributes to pass to ach_create  */
     typedef struct {
-        int truncate; ///< remove and recreate an existing shm file
-        int map_anon; ///< allocate channel in heap, rather than shm
-        ach_header_t *shm; ///< pointer to channel, set out output of create iff map_anon
+        int truncate;      /**< remove and recreate an existing shm file */
+        int map_anon;      /**< allocate channel in heap, rather than shm */
+        ach_header_t *shm; /**< pointer to channel, set out output of create iff map_anon */
     } ach_create_attr_t;
 
 
     /** Descriptor for shared memory area
      */
     typedef struct {
-        ach_header_t *shm;   ///< pointer to mmap'ed block
-        size_t len;          ///< length of memory mapping
-        int fd;              ///< file descriptor of mmap'ed file
-        uint64_t seq_num;    ///< last sequence number read
-        uint64_t get_ticks;  ///< processor ticks at last get
-        uint64_t put_ticks;  ///< processor ticks at last put
-        size_t next_index;   ///< next index entry to try get from
-        ach_attr_t attr;     ///< attributes used to create this channel
+        ach_header_t *shm;   /**< pointer to mmap'ed block */
+        size_t len;          /**< length of memory mapping */
+        int fd;              /**< file descriptor of mmap'ed file */
+        uint64_t seq_num;    /**< last sequence number read */
+        uint64_t get_ticks;  /**< processor ticks at last get */
+        uint64_t put_ticks;  /**< processor ticks at last put */
+        size_t next_index;   /**< next index entry to try get from */
+        ach_attr_t attr;     /**< attributes used to create this channel */
     } ach_channel_t;
 
-    /// Size of ach_channel_t
+    /** Size of ach_channel_t */
     extern size_t ach_channel_size;
-    /// Size of ach_attr_t
+    /** Size of ach_attr_t */
     extern size_t ach_attr_size;
 
-    /// Gets pointer to guard uint64 following the header
+/** Gets pointer to guard uint64 following the header */
 #define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))
 
-    /// Gets the pointer to the index array in the shm block
+/** Gets the pointer to the index array in the shm block */
 #define ACH_SHM_INDEX( shm ) ((ach_index_t*)(ACH_SHM_GUARD_HEADER(shm) + 1))
 
-    /// gets pointer to the guard following the index section
+/**  gets pointer to the guard following the index section */
 #define ACH_SHM_GUARD_INDEX( shm )                                      \
     ((uint64_t*)(ACH_SHM_INDEX(shm) + ((ach_header_t*)(shm))->index_cnt))
 
-    /// Gets the pointer to the data buffer in the shm block
+/** Gets the pointer to the data buffer in the shm block */
 #define ACH_SHM_DATA( shm ) ( (uint8_t*)(ACH_SHM_GUARD_INDEX(shm) + 1) )
 
-    /// Gets the pointer to the guard following data buffer in the shm block
+/** Gets the pointer to the guard following data buffer in the shm block */
 #define ACH_SHM_GUARD_DATA( shm )                                       \
     ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
 
@@ -411,7 +416,7 @@ extern "C" {
     int ach_get_last(ach_channel_t *chan, void *buf,
                      size_t size, size_t *frame_size);
 
-    /// always copies the last message, even if it is stale
+    /** always copies the last message, even if it is stale */
     int ach_copy_last(ach_channel_t *chan, void *buf,
                       size_t size, size_t *frame_size);
 
@@ -482,7 +487,7 @@ extern "C" {
     */
     void ach_dump( ach_header_t *shm);
 
-    /// size of stream prefix (guard words and size word)
+/** size of stream prefix (guard words and size word) */
 #define ACH_STREAM_PREFIX_SIZE  12
 
     /** Writes message pointed to by but to stream fd */
@@ -514,4 +519,4 @@ extern "C" {
 }
 #endif
 
-#endif // ACH_H
+#endif /* ACH_H */

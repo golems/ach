@@ -40,6 +40,9 @@
  *
  */
 
+
+#define _XOPEN_SOURCE 500
+
 #include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -65,7 +68,7 @@ double SECS = 1;
 
 double overhead = 0;
 
-//#define BENCH_ACH
+/*#define BENCH_ACH */
 #define BENCH_PIPE
 
 static struct argp_option options[] = {
@@ -91,25 +94,25 @@ static struct argp_option options[] = {
         .doc = NULL
     }
 };
-/// argp parsing function
+/** argp parsing function */
 static int parse_opt( int key, char *arg, struct argp_state *state);
-/// argp program version
+/** argp program version */
 const char *argp_program_version = "achbench-" ACH_VERSION_STRING;
-/// argp program arguments documention
+/** argp program arguments documention */
 static char args_doc[] = "";
-/// argp program doc line
+/** argp program doc line */
 static char doc[] = "ach benchark program";
-/// argp object
+/** argp object */
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
 typedef struct timespec ticks_t ;
-static inline ticks_t get_ticks(void) {
+static ticks_t get_ticks(void) {
     struct timespec t;
     clock_gettime( CLOCK_MONOTONIC, &t );
     return t;
 }
-static inline double ticks_delta(ticks_t t0, ticks_t t1) {
+static double ticks_delta(ticks_t t0, ticks_t t1) {
     double d0 = t0.tv_sec + t0.tv_nsec / 1e9;
     double d1 = t1.tv_sec + t1.tv_nsec / 1e9;
     return (d1 - d0 - overhead);
@@ -121,7 +124,7 @@ void make_realtime(void) {
                 strerror(errno) );
     }
     struct sched_param sp;
-    sp.sched_priority = 99; // max priority on linux
+    sp.sched_priority = 99; /* max priority on linux */
     if( sched_setscheduler( 0, SCHED_RR, &sp) < 0 ) {
         fprintf(stderr, "Couldn't set scheduling priority: %s\n",
                 strerror(errno) );
@@ -188,7 +191,8 @@ int fd[2];
 void sender(void) {
     fprintf(stderr,"sender\n");
     make_realtime();
-    for(size_t i = 0; i < SECS*FREQUENCY; i ++) {
+    size_t i;
+    for(i = 0; i < SECS*FREQUENCY; i ++) {
         ticks_t ticks = get_ticks();
         int r = write(fd[1], &ticks, sizeof(ticks));
         assert(sizeof(ticks) == r);
@@ -199,13 +203,14 @@ void sender(void) {
 void receiver(void) {
     fprintf(stderr,"receiver\n");
     make_realtime();
-    // flush some initial delayed messages
-    for( size_t i = 0; i < 5; i ++ ) {
+    /* flush some initial delayed messages */
+    size_t i;
+    for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
         int r = read(fd[0], &ticks, sizeof(ticks));
         assert(sizeof(ticks) == r);
     }
-    // now the good stuff
+    /* now the good stuff */
     while(1) {
         ticks_t ticks;
         int r = read(fd[0], &ticks, sizeof(ticks));
@@ -218,13 +223,13 @@ void receiver(void) {
 }
 
 void setup(void) {
-    // create channel
+    /* create channel */
     int r = pipe(fd);
     assert( !r );
 }
 void destroy(void) {
 }
-#endif //BENCH_PIPE
+#endif /* BENCH_PIPE */
 
 
 
@@ -232,7 +237,8 @@ void calibrate(void) {
     make_realtime();
     double a = 0;
     ticks_t r0,r1;
-    for(size_t i = 0; i<1000; i++ ) {
+    size_t i;
+    for( i = 0; i<1000; i++ ) {
         r0 = get_ticks();
         r1 = get_ticks();
         a += ticks_delta(r0,r1);
@@ -245,19 +251,20 @@ int main(int argc, char **argv) {
     argp_parse (&argp, argc, argv, 0, NULL, NULL);
     fprintf(stderr, "freq: %f\n", FREQUENCY);
     fprintf(stderr, "secs: %f\n", SECS);
-    // warm up
-    for(size_t i = 0; i < 10; i++) get_ticks();
+    size_t i;
+    /* warm up */
+    for( i = 0; i < 10; i++) get_ticks();
 
-    // compute overhead
+    /* compute overhead */
     calibrate();
     fprintf(stderr,"overhead: %fus\n", overhead*1e6);
 
-    // setup comms
+    /* setup comms */
     setup();
 
-    // fork
+    /* fork */
     pid_t pid[1];
-    for(size_t i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
+    for( i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
         pid[i] = fork();
         assert( pid[i] >= 0 );
         if(0 == pid[i]) {
@@ -265,11 +272,11 @@ int main(int argc, char **argv) {
             exit(0);
         }
     }
-    // send
+    /* send */
     sender();
     sleep(1);
-    // stop
-    for(size_t i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
+    /* stop */
+    for( i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
         kill(pid[i],SIGTERM);
     }
     destroy();
@@ -277,7 +284,7 @@ int main(int argc, char **argv) {
 }
 
 static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; // ignore unused parameter
+    (void) state; /* ignore unused parameter */
     switch(key) {
         char *endptr = 0;
     case 'f':

@@ -40,6 +40,8 @@
  *
  */
 
+#define _XOPEN_SOURCE 500
+
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
@@ -49,11 +51,12 @@
 #include <inttypes.h>
 #include <sys/wait.h>
 #include <sched.h>
+#include <pthread.h>
 #include "ach.h"
 
 #define CHAN  "ach-test"
 
-//#define MAX 102400
+/*#define MAX 102400 */
 
 /* A C2D can roughly handle 16 publishers and 16 subscribers with
  * publishers firing every 1/4 millisecond */
@@ -109,15 +112,15 @@ static struct argp_option options[] = {
     }
 };
 
-/// argp parsing function
+/** argp parsing function */
 static int parse_opt( int key, char *arg, struct argp_state *state);
-/// argp program version
+/** argp program version */
 const char *argp_program_version = "achtest-" ACH_VERSION_STRING;
-/// argp program arguments documention
+/** argp program arguments documention */
 static char args_doc[] = "";
-/// argp program doc line
+/** argp program doc line */
 static char doc[] = "ach stress test";
-/// argp object
+/** argp object */
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 static void test(int r, const char *thing) {
@@ -130,7 +133,7 @@ static void test(int r, const char *thing) {
 
 
 int test_basic() {
-    // unlink
+    /* unlink */
     int r = ach_unlink(opt_channel_name);
     if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
@@ -138,7 +141,7 @@ int test_basic() {
         return -1;
     }
 
-    // create
+    /* create */
     r = ach_create(opt_channel_name, 32, 64, NULL );
     test(r, "ach_create");
 
@@ -146,10 +149,10 @@ int test_basic() {
     int s, p;
     size_t frame_size;
 
-    // open
+    /* open */
     r = ach_open(&chan, opt_channel_name, NULL);
 
-    // empty channel means stale
+    /* empty channel means stale */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST);
     if( ACH_STALE_FRAMES != r ) {
@@ -164,18 +167,18 @@ int test_basic() {
     }
 
 
-    // put
+    /* put */
     p = 42;
     r = ach_put( &chan, &p, sizeof(p) );
     test(r, "ach_put");
 
-    // get
+    /* get */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  0);
     test(r, "first ach_get");
     if(frame_size!= sizeof(s) || s != 42 ) exit(-1);
 
-    // put 2
+    /* put 2 */
     p = 43;
     r = ach_put( &chan, &p, sizeof(p) );
     test(r, "ach_put");
@@ -183,7 +186,7 @@ int test_basic() {
     r = ach_put( &chan, &p, sizeof(p) );
     test(r, "ach_put");
 
-    // get last
+    /* get last */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST);
     if( ACH_MISSED_FRAME != r ) {
@@ -192,7 +195,7 @@ int test_basic() {
     }
     if(frame_size != sizeof(s) || s != 44 ) exit(-1);
 
-    // get last stale
+    /* get last stale */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST);
     if( ACH_STALE_FRAMES != r ) {
@@ -200,7 +203,7 @@ int test_basic() {
         exit(-1);
     }
 
-    // copy last
+    /* copy last */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST | ACH_O_COPY);
     if( ACH_OK != r ) {
@@ -212,9 +215,9 @@ int test_basic() {
         exit(-1);
     }
 
-    // get copy
-    //ach_dump(chan.shm);
-    //printf("chan seq_num: %"PRIu64"\n", chan.seq_num);
+    /* get copy */
+    /*ach_dump(chan.shm);*/
+    /*printf("chan seq_num: %"PRIu64"\n", chan.seq_num);*/
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_COPY);
     if( ACH_OK != r ) {
@@ -222,8 +225,9 @@ int test_basic() {
         exit(-1);
     }
 
-    // missed frames
-    for( size_t i = 0; i < 100; i ++ ) {
+    /* missed frames */
+    size_t i;
+    for( i = 0; i < 100; i ++ ) {
         r = ach_put( &chan, &p, sizeof(p) );
         test(r, "ach_put");
     }
@@ -234,12 +238,12 @@ int test_basic() {
         exit(-1);
     }
 
-    // close
+    /* close */
 
     r = ach_close(&chan);
     test(r, "ach_close");
 
-    // unlink
+    /* unlink */
     r = ach_unlink(opt_channel_name);
     test(r, "ach_unlink");
 
@@ -258,7 +262,8 @@ static int publisher( int32_t i ) {
     }
 
     int32_t data[2] = {i, 0};
-    for( size_t j = 0; j < (unsigned int)opt_n_msgs; j++,data[1]++ ) {
+    size_t j;
+    for( j = 0; j < (unsigned int)opt_n_msgs; j++,data[1]++ ) {
         r = ach_put( &chan, data, sizeof(data) );
         if( r != ACH_OK ) {
             fprintf(stderr, "publisher %d couldn't ach_put: %s\n",
@@ -295,7 +300,8 @@ static int subscriber( int i ) {
 
     int32_t data[2];
     int seen_last = 0;
-    for( int j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
+    int j;
+    for( j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
         struct timespec abstime;
         clock_gettime( CLOCK_REALTIME, &abstime );
         abstime.tv_sec += 1;
@@ -356,9 +362,10 @@ int test_multi() {
 
     pid_t sub_pid[opt_n_sub];
     pid_t pub_pid[opt_n_pub];
+    int i;
 
-    // create subscribers
-    for( int i = 0; i < opt_n_sub; i++ ) {
+    /* create subscribers */
+    for( i = 0; i < opt_n_sub; i++ ) {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return subscriber(i);
@@ -366,16 +373,16 @@ int test_multi() {
 
     }
 
-    // create publishers
-    for( int i = 0; i < opt_n_pub; i++ ) {
+    /* create publishers */
+    for( i = 0; i < opt_n_pub; i++ ) {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return publisher(i);
         else pub_pid[i] = p;
     }
 
-    // wait
-    for( int i = 0; i < opt_n_sub+opt_n_pub; i++ ) {
+    /* wait */
+    for( i = 0; i < opt_n_sub+opt_n_pub; i++ ) {
         int s;
         pid_t pid = wait(&s);
         (void)pid;
@@ -412,7 +419,7 @@ int main( int argc, char **argv ){
 
 
 static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; // ignore unused parameter
+    (void) state; /* ignore unused parameter */
     switch(key) {
     case 'p':
         opt_n_pub = atoi(arg);

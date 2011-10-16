@@ -95,17 +95,17 @@ ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt) {
     char sizebuf[4+4+4];
     ssize_t r;
 
-    // make size field
+    /* make size field */
     memcpy( & sizebuf[0], ach_stream_presize, 4);
     *(uint32_t*)(sizebuf + 4) = htonl( (uint32_t)cnt );
     memcpy( & sizebuf[8], ach_stream_postsize, 4);
 
-    // send size
+    /* send size */
     r = write_fill( fd, sizebuf, sizeof(sizebuf) );
     if( r <= 0 ) return r;
     assert( sizeof(sizebuf) == r );
 
-    // send data
+    /* send data */
     r = write_fill( fd, buf, cnt );
     assert( (int)cnt == r || r <= 0 );
 
@@ -148,23 +148,23 @@ ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf
 }
 
 ssize_t ach_read_line( int fd, char *buf, size_t n ) {
-    // bit-bang cause it doesn't really matter
+    /* bit-bang cause it doesn't really matter */
     ssize_t r = 0;
     size_t i = 0;
     while(i < n - 1) {
         int tries = 0;
-        // get a byte
+        /* get a byte */
         do {
             r = read( fd, buf + i, 1 );
         } while( r != 1 &&
                  EINTR == errno &&
                  tries++ < ACH_INTR_RETRY );
-        // check for end
+        /* check for end */
         if( r != 1 || '\n' == buf[i] ){
             buf[++i] = '\0';
             return (int)i;
         }
-        // increment
+        /* increment */
         i++;
     }
     assert( buf[i - 1] != '\n' );

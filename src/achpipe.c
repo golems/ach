@@ -99,6 +99,11 @@
  *
  * \sa Todo List
  */
+
+
+/* GNU needs this for usleep */
+#define _XOPEN_SOURCE 500
+
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -116,9 +121,8 @@
 
 
 
-/// sleep for specified time
-static inline int
-_relsleep( struct timespec t ) {
+/** sleep for specified time */
+static int _relsleep( struct timespec t ) {
     struct timespec rem;
     int r;
     do {
@@ -143,8 +147,8 @@ _relsleep( struct timespec t ) {
 
 
 
-// lets pick the number POSIX specifies for atomic reads/writes
-/// Initial size of ach frame buffer
+/* lets pick the number POSIX specifies for atomic reads/writes */
+/** Initial size of ach frame buffer */
 #define INIT_BUF_SIZE 512
 
 /*
@@ -153,25 +157,25 @@ _relsleep( struct timespec t ) {
   #define HEADER_VALUE_MAX 4096
 */
 
-//#define DEBUGF(fmt, a... )
-//#define DEBUGF(fmt, a... )
-//fprintf(stderr, (fmt), ## a )
+/*#define DEBUGF(fmt, a... ) */
+/*#define DEBUGF(fmt, a... ) */
+/*fprintf(stderr, (fmt), ## a ) */
 
-/// CLI option: channel name
+/** CLI option: channel name */
 char opt_chan_name[ACH_CHAN_NAME_MAX + 2] = {0};
-/// CLI option: remote channel name
+/** CLI option: remote channel name */
 char opt_remote_chan_name[ACH_CHAN_NAME_MAX + 2] = {0};
-/// CLI option: publish mode
+/** CLI option: publish mode */
 int opt_pub = 0;
-/// CLI option: subscribe mode
+/** CLI option: subscribe mode */
 int opt_sub = 0;
-/// CLI option: verbosity level
+/** CLI option: verbosity level */
 int opt_verbosity = 0;
-/// CLI option: send only most recent frames
+/** CLI option: send only most recent frames */
 int opt_last = 0;
-/// CLI option: synchronous mode
+/** CLI option: synchronous mode */
 int opt_sync = 0;
-/// CLI option: frequency
+/** CLI option: frequency */
 double opt_freq = 0;
 /*
 /// CLI option: read option headers
@@ -180,10 +184,10 @@ int opt_read_headers = 0;
 int opt_write_headers = 0;
 */
 
-/// got a signel yet?
+/** got a signel yet? */
 int sig_received = 0;
 
-/// argp junk
+/* argp junk */
 
 static struct argp_option options[] = {
     {
@@ -261,19 +265,19 @@ static struct argp_option options[] = {
 
 };
 
-/// argp parsing function
+/** argp parsing function */
 static int parse_opt( int key, char *arg, struct argp_state *state);
-/// argp program version
+/** argp program version */
 const char *argp_program_version = "achpipe-" ACH_VERSION_STRING;
-/// argp program arguments documention
+/** argp program arguments documention */
 static char args_doc[] = "[-p|-s] channel";
-/// argp program doc line
+/** argp program doc line */
 static char doc[] = "copy ach frames to/from stdio";
-/// argp object
+/** argp object */
 static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
-/// print stuff based on verbosity level
+/** print stuff based on verbosity level */
 void verbprintf( int level, const char fmt[], ... ) {
     va_list args;
     va_start( args, fmt );
@@ -284,7 +288,7 @@ void verbprintf( int level, const char fmt[], ... ) {
     va_end( args );
 }
 
-/// Check test, if false, print error and abort.
+/** Check test, if false, print error and abort. */
 void hard_assert(int test, const char fmt[], ... ) {
     if( !test ) {
         va_list args;
@@ -415,13 +419,13 @@ static void *xmalloc( size_t size ) {
   }
 */
 
-/// publishing loop
+/** publishing loop */
 void publish( int fd, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
     assert(STDIN_FILENO == fd );
     ach_channel_t chan;
 
-    { // open channel
+    { /* open channel */
         int r;
         r = ach_open( &chan, chan_name, NULL );
         hard_assert(ACH_OK == r,
@@ -429,28 +433,28 @@ void publish( int fd, char *chan_name )  {
                     chan_name, ach_result_to_string(r) );
     }
 
-    { // publish loop
+    { /* publish loop */
         size_t max = INIT_BUF_SIZE;
         int cnt;
         char *buf = (char*)xmalloc( max );
         while( ! sig_received ) {
             ssize_t s;
-            // get size
+            /* get size */
             s = ach_stream_read_msg_size( fd, &cnt );
             verbprintf( 2, "Read %d bytes\n", s );
             if( s <= 0 ) break;
             hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
-            // make sure buf can hold it
+            /* make sure buf can hold it */
             if( (size_t)cnt > max ) {
                 max = (size_t)cnt;
                 free( buf );
                 buf = (char*)xmalloc( max );
             }
-            // get data
+            /* get data */
             s = ach_stream_read_msg_data( fd, buf, (size_t)cnt, max );
             if( s <= 0 ) break;
             assert( cnt == s );
-            // put data
+            /* put data */
             int r = ach_put( &chan, buf, (size_t)cnt );
             hard_assert( r == ACH_OK, "Invalid ach put %s\n",
                          ach_result_to_string( r ) );
@@ -466,12 +470,12 @@ static int streq32( const char *a, const char *b ) {
     return 0 == strcmp(a,b);
 }
 
-/// subscribing loop
+/** subscribing loop */
 void subscribe(int fd, char *chan_name) {
     verbprintf(1, "Subscribing()\n");
     verbprintf(1, "Synchronous: %s\n", opt_sync ? "yes" : "no");
     assert(STDOUT_FILENO == fd);
-    // get channel
+    /* get channel */
     ach_channel_t chan;
     {
         int r = ach_open( &chan, chan_name, NULL );
@@ -483,7 +487,7 @@ void subscribe(int fd, char *chan_name) {
                      "Failed to flush channel %s for on: %s\n",
                      chan_name, ach_result_to_string(r) );
     }
-    // frame buffer
+    /* frame buffer */
     size_t max = INIT_BUF_SIZE;
     char *buf = (char*)xmalloc(max);
     int t0 = 1;
@@ -500,20 +504,20 @@ void subscribe(int fd, char *chan_name) {
         is_freq = 1;
     }
 
-    // read loop
+    /* read loop */
     while( ! sig_received ) {
         if( opt_sync ) {
-            // wait for the pull command
+            /* wait for the pull command */
             ssize_t rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
             hard_assert(4 == rc, "Invalid command read: %d\n", rc );
             verbprintf(2, "Command %s\n", cmd );
         }
-        // read the data
+        /* read the data */
         int got_frame = 0;
         do {
             int r = -1;
             if( opt_sync ) {
-                // parse command
+                /* parse command */
                 if ( streq32("next", cmd ) ) {
                     r = ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
                 }else if ( streq32("last", cmd ) ){
@@ -524,14 +528,14 @@ void subscribe(int fd, char *chan_name) {
                     hard_assert(0, "Invalid command: %s\n", cmd );
                 }
             } else {
-                // push the data
+                /* push the data */
                 r = (opt_last || is_freq) ?
                     ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
                     ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
             }
-            // check return code
+            /* check return code */
             if( ACH_OVERFLOW == r ) {
-                // enlarge buffer and retry on overflow
+                /* enlarge buffer and retry on overflow */
                 assert(frame_size > max );
                 max = frame_size;
                 free(buf);
@@ -539,7 +543,7 @@ void subscribe(int fd, char *chan_name) {
             } else if (ACH_OK == r || ACH_MISSED_FRAME == r || t0 ) {
                 got_frame = 1;
             }else {
-                // abort on other errors
+                /* abort on other errors */
                 hard_assert( 0, "sub: ach_error: %s\n",
                              ach_result_to_string(r) );
                 assert(0);
@@ -548,19 +552,19 @@ void subscribe(int fd, char *chan_name) {
 
         verbprintf(2, "Got ach frame %d\n", frame_size );
 
-        // stream send
+        /* stream send */
         {
             ssize_t r = ach_stream_write_msg( fd, buf, frame_size );
             if( frame_size + ACH_STREAM_PREFIX_SIZE !=  (size_t)r ) {
                 break;
             }
             if( opt_sync ) {
-                fsync( fd ); // fails w/ sbcl, and maybe that's ok
+                fsync( fd ); /* fails w/ sbcl, and maybe that's ok */
             }
             verbprintf( 2, "Printed output\n");
         }
         t0 = 0;
-        // maybe sleep
+        /* maybe sleep */
         if( is_freq ) {
             assert( !opt_sync );
             _relsleep(period);
@@ -579,7 +583,7 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context) {
     sig_received = 1;
 }
 
-/// setup the signal handler
+/** setup the signal handler */
 void sighandler_install() {
     struct sigaction act;
     memset(&act, 0, sizeof(act));
@@ -605,7 +609,7 @@ void sighandler_install() {
 
 
 
-/// main
+/** main */
 int main( int argc, char **argv ) {
     argp_parse (&argp, argc, argv, 0, NULL, NULL);
 
@@ -620,7 +624,7 @@ int main( int argc, char **argv ) {
       }
     */
 
-    // validate arguments
+    /* validate arguments */
     hard_assert( 0 < strlen( opt_chan_name ),
                  "must specify channel\n" );
     hard_assert( ! ( opt_pub &&  opt_sub ),
@@ -631,14 +635,14 @@ int main( int argc, char **argv ) {
                  "frequency only valid on async subscribe mode\n" );
     hard_assert( opt_freq >= 0, "frequency must be positive\n" );
 
-    // maybe print
+    /* maybe print */
     verbprintf( 1, "Channel: %s\n", opt_chan_name );
     verbprintf( 1, "Publish: %s\n",  opt_pub ? "yes" : "no" );
     verbprintf( 1, "Subscribe: %s\n", opt_sub ? "yes" : "no" );
 
-    // install sighandler
+    /* install sighandler */
     sighandler_install();
-    // run
+    /* run */
     if (opt_pub) {
         publish( STDIN_FILENO, opt_chan_name );
     } else if (opt_sub) {
@@ -651,7 +655,7 @@ int main( int argc, char **argv ) {
 
 
 static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; // ignore unused parameter
+    (void) state; /* ignore unused parameter */
     switch(key) {
     case 'p':
         opt_pub = 1;
