@@ -153,8 +153,9 @@ def parse():
     p = OptionParser()
     p.add_option("-v", "--verbose",
                  action="count", dest="verbose")
-    p.add_option("-L", "--help.bin",
-                 action="store_true", dest="help_bin")
+    #removed
+    #p.add_option("-L", "--help.bin",
+    #             action="store_true", dest="help_bin")
     p.add_option("-l", "--last",
                  action="store_true", dest="last")
     p.add_option("-p", "--publish", dest="publish_channel")
@@ -175,8 +176,9 @@ def parse():
 
 def make_args(opts):
     args = ["achpipe.bin"]
-    if opts.help_bin :
-        args.append("--help")
+    #removed
+    #if opts.help_bin :
+    #    args.append("--help")
     if opts.verbose :
         for i in range(0, opts.verbose):
             args.append("-v")
