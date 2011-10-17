@@ -19,6 +19,7 @@ LISPDIR = ./lisp
 
 default: $(LIBFILES) $(BINFILES)  $(BUILDDIR)/achtest
 	$(BUILDDIR)/achtest -p 2 -s 4 -n 512
+	./achtooltest
 
 ifneq ($(PLATFORM),Darwin)
 CFLAGS += -DHAVE_STRNLEN
