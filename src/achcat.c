@@ -53,7 +53,6 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <argp.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <sched.h>
@@ -61,45 +60,6 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include "ach.h"
-
-
-/* argp junk */
-
-static struct argp_option options[] = {
-    {
-        .name = "publish",
-        .key = 'p',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Publish to a channel"
-    },
-    {
-        .name = "subscribe",
-        .key = 's',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Subscribe to a channel"
-    },
-    {
-        .name = NULL,
-        .key = 0,
-        .arg = NULL,
-        .flags = 0,
-        .doc = NULL
-    },
-
-};
-
-/* argp parsing function */
-static int parse_opt( int key, char *arg, struct argp_state *state);
-/* argp program version */
-const char *argp_program_version = "achcat-0";
-/* argp program arguments documention */
-static char args_doc[] = "[-p|-s] channel";
-/* argp program doc line */
-static char doc[] = "Copies ach frames as string lines to/from stdio.  Mostly intended as an ach testing tool.";
-/* argp object */
-static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
 void *publish_loop(void *);
@@ -192,7 +152,33 @@ int subscribe( ach_channel_t *chan) {
 int main( int argc, char **argv ) {
     fin = stdin;
     fout = stdout;
-    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+
+
+    int c;
+    while( (c = getopt( argc, argv, "p:s:hH?")) != -1 ) {
+        switch(c) {
+        case 'p':
+            opt_pub = 1;
+            opt_chan_name = optarg;
+            break;
+        case 's':
+            opt_sub = 1;
+            opt_chan_name = optarg;
+            break;
+        case 'h':
+        case 'H':
+        case '?':
+            puts( "Usage: achcat [OPTION...] [-p|-s] channel\n"
+                  "Copies ach frames as string lines to/from stdio.  Mostly intended as an ach\n"
+                  "testing tool.\n"
+                  "\n"
+                  "  -p CHANNEL-NAME,   Publish to a channel\n"
+                  "  -s CHANNEL-NAME,   Subscribe to a channel\n"
+                  "  -?,                Give this help list\n" );
+            exit(EXIT_SUCCESS);
+        }
+    }
+
     /*printf("chan: %s\n", opt_chan_name );*/
     /*printf("pub:  %d\n", opt_pub );*/
     /*printf("sub:  %d\n", opt_sub );*/
@@ -252,21 +238,5 @@ int main( int argc, char **argv ) {
     if( opt_sub ) return subscribe(&sub);
     if( opt_pub ) return publish(&pub);
     assert( 0 );
-    return 0;
-}
-
-static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; /* ignore unused parameter */
-    switch(key) {
-    case 'p':
-        opt_pub = 1;
-        break;
-    case 's':
-        opt_sub = 1;
-        break;
-    case 0:
-        opt_chan_name = arg;
-        break;
-    }
     return 0;
 }

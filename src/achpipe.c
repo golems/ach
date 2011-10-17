@@ -108,13 +108,13 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <argp.h>
 #include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
+#include <errno.h>
 #include <inttypes.h>
 #include "ach.h"
 
@@ -186,96 +186,6 @@ int opt_write_headers = 0;
 
 /** got a signel yet? */
 int sig_received = 0;
-
-/* argp junk */
-
-static struct argp_option options[] = {
-    {
-        .name = "publish",
-        .key = 'p',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Read input and publish to a channel"
-    },
-    {
-        .name = "subscribe",
-        .key = 's',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Subscribe to a channel and write to output"
-    },
-    {
-        .name = "synchronous",
-        .key = 'c',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Operate synchronously, only in subscribe mode"
-    },
-    {
-        .name = "last",
-        .key = 'l',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "gets the most recent message in subscribe mode (default is next)"
-    },
-    /*
-      {
-      .name = "read-headers",
-      .key = 'R',
-      .arg = NULL,
-      .flags = 0,
-      .doc = "Reads options from stdin"
-      },
-      {
-      .name = "write-headers",
-      .key = 'W',
-      .arg = NULL,
-      .flags = 0,
-      .doc = "Write options to stdout"
-      },
-    */
-    {
-        .name = "remote-channel",
-        .key = 'z',
-        .arg = "channel",
-        .flags = 0,
-        .doc = "Channel on other end of pipe for reader writing"
-    },
-    {
-        .name = "verbose",
-        .key = 'v',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "say more stuff"
-    },
-    {
-        .name = "frequency",
-        .key = 'f',
-        .arg = "hertz",
-        .flags = 0,
-        .doc = "Frequency to send data on subscribe"
-    },
-    {
-        .name = NULL,
-        .key = 0,
-        .arg = NULL,
-        .flags = 0,
-        .doc = NULL
-    },
-
-};
-
-/** argp parsing function */
-static int parse_opt( int key, char *arg, struct argp_state *state);
-/** argp program version */
-const char *argp_program_version = "achpipe-" ACH_VERSION_STRING;
-/** argp program arguments documention */
-static char args_doc[] = "[-p|-s] channel";
-/** argp program doc line */
-static char doc[] = "copy ach frames to/from stdio";
-/** argp object */
-static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
-
 
 /** print stuff based on verbosity level */
 void verbprintf( int level, const char fmt[], ... ) {
@@ -611,7 +521,39 @@ void sighandler_install() {
 
 /** main */
 int main( int argc, char **argv ) {
-    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+    int c;
+    while( (c = getopt( argc, argv, "p:s:z:vlcf:")) != -1 ) {
+        switch(c) {
+        case 'p':
+            opt_pub = 1;
+            hard_assert( strlen( optarg ) < ACH_CHAN_NAME_MAX-1,
+                         "Channel name argument to long" );
+            strncpy( opt_chan_name, optarg, ACH_CHAN_NAME_MAX );
+            break;
+        case 's':
+            opt_sub = 1;
+            hard_assert( strlen( optarg ) < ACH_CHAN_NAME_MAX-1,
+                         "Channel name argument to long" );
+            strncpy( opt_chan_name, optarg, ACH_CHAN_NAME_MAX );
+            break;
+        case 'z':
+            hard_assert( strlen( optarg ) < ACH_CHAN_NAME_MAX-1,
+                         "Channel name argument to long" );
+            strncpy( opt_remote_chan_name, optarg, ACH_CHAN_NAME_MAX );
+        case 'v':
+            opt_verbosity ++;
+            break;
+        case 'l':
+            opt_last = 1;
+            break;
+        case 'c':
+            opt_sync = 1;
+            break;
+        case 'f':
+            opt_freq = atof(optarg);
+            break;
+        }
+    }
 
     /*
       hard_assert( ! ( opt_write_headers &&  opt_read_headers ),
@@ -649,49 +591,6 @@ int main( int argc, char **argv ) {
         subscribe( STDOUT_FILENO, opt_chan_name );
     } else {
         assert(0);
-    }
-    return 0;
-}
-
-
-static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; /* ignore unused parameter */
-    switch(key) {
-    case 'p':
-        opt_pub = 1;
-        break;
-    case 's':
-        opt_sub = 1;
-        break;
-    case 'v':
-        opt_verbosity ++;
-        break;
-    case 'l':
-        opt_last = 1;
-        break;
-    case 'c':
-        opt_sync = 1;
-        break;
-    case 'f':
-        opt_freq = atof(arg);
-        break;
-        /*
-          case 'R':
-          opt_read_headers = 1;
-          break;
-          case 'W':
-          opt_write_headers = 1;
-          break;
-        */
-    case 'z':
-        hard_assert( strlen( arg ) < ACH_CHAN_NAME_MAX-1,
-                     "Channel name argument to long" );
-        strncpy( opt_remote_chan_name, arg, ACH_CHAN_NAME_MAX );
-    case 0:
-        hard_assert( strlen( arg ) < ACH_CHAN_NAME_MAX-1,
-                     "Channel name argument to long" );
-        strncpy( opt_chan_name, arg, ACH_CHAN_NAME_MAX );
-        break;
     }
     return 0;
 }

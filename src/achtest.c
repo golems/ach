@@ -47,11 +47,11 @@
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <argp.h>
 #include <inttypes.h>
 #include <sys/wait.h>
 #include <sched.h>
 #include <pthread.h>
+#include <stdio.h>
 #include "ach.h"
 
 #define CHAN  "ach-test"
@@ -66,62 +66,6 @@ int opt_n_pub = 8;
 int opt_pub_sleep_us = 250;
 int opt_n_msgs = 1024;
 const char *opt_channel_name = CHAN;
-
-static struct argp_option options[] = {
-    {
-        .name = "channel",
-        .key = 'c',
-        .arg = "channel-name",
-        .flags = 0,
-        .doc = "default `" CHAN "'"
-    },
-    {
-        .name = "publishers",
-        .key = 'p',
-        .arg = "num-publishers",
-        .flags = 0,
-        .doc = "number of publishers"
-    },
-    {
-        .name = "subscribers",
-        .key = 's',
-        .arg = "num-subscribers",
-        .flags = 0,
-        .doc = "number of subscribers"
-    },
-    {
-        .name = "usleep",
-        .key = 'u',
-        .arg = "microseconds",
-        .flags = 0,
-        .doc = "microseconds between publish"
-    },
-    {
-        .name = "messages",
-        .key = 'n',
-        .arg = "message-count",
-        .flags = 0,
-        .doc = "messages to publish"
-    },
-    {
-        .name = NULL,
-        .key = 0,
-        .arg = NULL,
-        .flags = 0,
-        .doc = NULL
-    }
-};
-
-/** argp parsing function */
-static int parse_opt( int key, char *arg, struct argp_state *state);
-/** argp program version */
-const char *argp_program_version = "achtest-" ACH_VERSION_STRING;
-/** argp program arguments documention */
-static char args_doc[] = "";
-/** argp program doc line */
-static char doc[] = "ach stress test";
-/** argp object */
-static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 static void test(int r, const char *thing) {
     if( r != ACH_OK ) {
@@ -392,7 +336,38 @@ int test_multi() {
 }
 
 int main( int argc, char **argv ){
-    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+    int c;
+    while( (c = getopt( argc, argv, "p:s:u:n:c:")) != -1 ) {
+        switch(c) {
+        case 'p':
+            opt_n_pub = atoi(optarg);
+            break;
+        case 's':
+            opt_n_sub = atoi(optarg);
+            break;
+        case 'u':
+            opt_pub_sleep_us = atoi(optarg);
+            break;
+        case 'n':
+            opt_n_msgs = atoi(optarg);
+            break;
+        case 'c':
+            opt_channel_name = strdup(optarg);
+            break;
+        case '?':
+        case 'h':
+        case 'H':
+            puts( "Usage: achtest [OPTION...]\n"
+                  "ach stress test\n"
+                  "\n"
+                  "  -c CHANNEL-NAME,           default `ach-test'\n"
+                  "  -n MESAGE-COUNT,           messages to publish\n"
+                  "  -p PUBLISHER-COUNT,        number of publishers\n"
+                  "  -s SUBSCRIBER-COUNT,       number of subscribers\n"
+                  "  -u MICROSECONDS            microseconds between publish\n"
+                  "  -?, -H, -h                 Give this help list\n" );
+        }
+    }
 
 
     printf("p: %d\ts: %d\tn: %d\tu: %d\n",
@@ -417,25 +392,3 @@ int main( int argc, char **argv ){
     return 0;
 }
 
-
-static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; /* ignore unused parameter */
-    switch(key) {
-    case 'p':
-        opt_n_pub = atoi(arg);
-        break;
-    case 's':
-        opt_n_sub = atoi(arg);
-        break;
-    case 'u':
-        opt_pub_sleep_us = atoi(arg);
-        break;
-    case 'n':
-        opt_n_msgs = atoi(arg);
-        break;
-    case 'c':
-        opt_channel_name = strdup(arg);
-        break;
-    }
-    return 0;
-}

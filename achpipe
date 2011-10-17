@@ -99,7 +99,7 @@ def is_true_string( s ):
     assert( not (is_true and is_false) )
     hard_assert( is_true or is_false, "Invalid boolean header value: %s", s )
     return is_true
-    
+
 def parse_header( header, opts ) :
     (label, value) = header
     if "mode" == label:
@@ -145,8 +145,8 @@ def write_headers(opts):
     if opts.remote_channel:
         channel = opts.remote_channel
     os.write( 1, "mode: %s\nchannel: %s\n\n" % (mode, channel) )
-    
-    
+
+
 ### CLI ARGS ###
 
 def parse():
@@ -166,37 +166,37 @@ def parse():
     p.add_option("-W", "--write-headers",
                  action="store_true", dest="write_headers")
     p.add_option("-H", "--host", dest="host")
-    p.add_option("-P", "--port", dest="port", 
+    p.add_option("-P", "--port", dest="port",
                  type="int", default=8075)
     p.add_option("-f", "--frequency",
                  dest="frequency", type="float", default=0)
     (options, args) = p.parse_args()
     return options
-    
+
 def make_args(opts):
     args = ["achpipe.bin"]
     if opts.help_bin :
         args.append("--help")
     if opts.verbose :
         for i in range(0, opts.verbose):
-            args.append("--verbose")
+            args.append("-v")
     if opts.last:
-        args.append("--last")
+        args.append("-l")
     if opts.publish_channel:
-        args.append("--publish")
+        args.append("-p")
         args.append(opts.publish_channel)
     if opts.subscribe_channel :
-        args.append("--subscribe")
+        args.append("-s")
         args.append(opts.subscribe_channel)
     if opts.remote_channel :
-        args.append("--remote-channel")
+        args.append("-z")
         args.append(opts.remote_channel)
     if opts.sync_channel :
-        args.append("--subscribe")
+        args.append("-s")
         args.append(opts.sync_channel)
-        args.append("--synchronous")
+        args.append("-c")
     if opts.frequency:
-        args.append("--frequency")
+        args.append("-f")
         args.append(str(opts.frequency))
     return args
 
@@ -223,7 +223,7 @@ def main():
         write_headers( options )
     args = make_args(options)
     os.execvp( "achpipe.bin", args )
-    
+
 
 
 if __name__ == "__main__":

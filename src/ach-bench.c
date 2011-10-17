@@ -58,7 +58,6 @@
 #include <ach.h>
 #include <sys/resource.h>
 #include <sched.h>
-#include <argp.h>
 #include <errno.h>
 #include <sys/mman.h>
 
@@ -70,40 +69,6 @@ double overhead = 0;
 
 /*#define BENCH_ACH */
 #define BENCH_PIPE
-
-static struct argp_option options[] = {
-    {
-        .name = "freq",
-        .key = 'f',
-        .arg = "frequency",
-        .flags = 0,
-        .doc = "frequency of publication"
-    },
-    {
-        .name = "sec",
-        .key = 's',
-        .arg = "seconds",
-        .flags = 0,
-        .doc = "seconds to collect for"
-    },
-    {
-        .name = NULL,
-        .key = 0,
-        .arg = NULL,
-        .flags = 0,
-        .doc = NULL
-    }
-};
-/** argp parsing function */
-static int parse_opt( int key, char *arg, struct argp_state *state);
-/** argp program version */
-const char *argp_program_version = "achbench-" ACH_VERSION_STRING;
-/** argp program arguments documention */
-static char args_doc[] = "";
-/** argp program doc line */
-static char doc[] = "ach benchark program";
-/** argp object */
-static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
 
 
 typedef struct timespec ticks_t ;
@@ -184,7 +149,7 @@ void destroy(void) {
     int r = ach_unlink("bench");
     assert(ACH_OK == r);
 }
-#endif //BENCH_ACH
+#endif /*BENCH_ACH */
 
 #ifdef BENCH_PIPE
 int fd[2];
@@ -248,7 +213,22 @@ void calibrate(void) {
 
 int main(int argc, char **argv) {
 
-    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+    /* parse args */
+    int c;
+    char *endptr = 0;
+    while( (c = getopt( argc, argv, "f:s:")) != -1 ) {
+        switch(c) {
+        case 'f':
+            FREQUENCY = strtod(optarg, &endptr);
+            assert(endptr);
+            break;
+        case 's':
+            SECS = strtod(optarg, &endptr);
+            assert(endptr);
+            break;
+        }
+    }
+
     fprintf(stderr, "freq: %f\n", FREQUENCY);
     fprintf(stderr, "secs: %f\n", SECS);
     size_t i;
@@ -281,20 +261,4 @@ int main(int argc, char **argv) {
     }
     destroy();
     exit(0);
-}
-
-static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; /* ignore unused parameter */
-    switch(key) {
-        char *endptr = 0;
-    case 'f':
-        FREQUENCY = strtod(arg, &endptr);
-        assert(endptr);
-        break;
-    case 's':
-        SECS = strtod(arg, &endptr);
-        assert(endptr);
-        break;
-    }
-    return 0;
 }

@@ -50,12 +50,12 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <argp.h>
 #include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <string.h>
 #include <inttypes.h>
+#include <errno.h>
 #include "ach.h"
 
 size_t opt_msg_cnt = 16;
@@ -65,125 +65,108 @@ char *opt_chan_name = NULL;
 int opt_verbosity = 0;
 int opt_1 = 0;
 int opt_mode = -1;
-
 int (*opt_command)(void) = NULL;
+
+/* Commands */
+int cmd_file(void);
+int cmd_dump(void);
+int cmd_unlink(void);
+int cmd_create(void);
+
+void cmd_help(void);
 
 void cleanup() {
     if(opt_chan_name) free(opt_chan_name);
     opt_chan_name = NULL;
 }
 
-/** argp junk */
 
-static struct argp_option options[] = {
-    {
-        .name = "create",
-        .key = 'C',
-        .arg = "channel_name",
-        .flags = 0,
-        .doc = "Create a new channel"
-    },
-    {
-        .name = "unlink",
-        .key = 'U',
-        .arg = "channel_name",
-        .flags = 0,
-        .doc = "Unlink a channel"
-    },
-    {
-        .name = "dump",
-        .key = 'D',
-        .arg = "channel_name",
-        .flags = 0,
-        .doc = "Dump info about channel"
-    },
-    {
-        .name = "file",
-        .key = 'F',
-        .arg = "channel_name",
-        .flags = 0,
-        .doc = "Print filename for channel"
-    },
-    {
-        .name = "verbose",
-        .key = 'v',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "Make output more verbose"
-    },
-
-    {
-        .name = "msg-size",
-        .key = 'n',
-        .arg = "bytes",
-        .flags = 0,
-        .doc = "Nominal size of a message (default 8192)"
-    },
-    {
-        .name = "msg-cnt",
-        .key = 'm',
-        .arg = "count",
-        .flags = 0,
-        .doc = "Max number of messages to buffer (default 16)"
-    },
-    {
-        .name = "mode",
-        .key = 'o',
-        .arg = "octal",
-        .flags = 0,
-        .doc = "mode for created channel"
-    },
-    {
-        .name = "once",
-        .key = '1',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "with -C, accept an already create channel"
-    },
-    {
-        .name = "truncate",
-        .key = 't',
-        .arg = NULL,
-        .flags = 0,
-        .doc = "truncate and reinit newly create channel (use only with -C).  WARNING: this will clobber processes currently using the channel."
-    },
-    {
-        .name = NULL,
-        .key = 0,
-        .arg = NULL,
-        .flags = 0,
-        .doc = NULL
-    },
-
-};
-
-/** argp parsing function */
-static int parse_opt( int key, char *arg, struct argp_state *state);
-/** argp program version */
-const char *argp_program_version = "ach-" ACH_VERSION_STRING;
-/** argp program arguments documention */
-static char args_doc[] = "";
-/** argp program doc line */
-static char doc[] = "general tool to interact with ach channels";
-/** argp object */
-static struct argp argp = {options, parse_opt, args_doc, doc, NULL, NULL, NULL };
-
+static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
+    if( NULL == opt_command ) {
+        opt_command = cmd_fun;
+        opt_chan_name = strdup( arg );
+    }else {
+        fprintf(stderr, "Can only specify one command\n");
+        cleanup();
+        exit(EXIT_FAILURE);
+    }
+}
 
 int main( int argc, char **argv ) {
-    argp_parse (&argp, argc, argv, 0, NULL, NULL);
+    /* Parse Options */
+    int c;
+    opterr = 0;
+    while( (c = getopt( argc, argv, "C:U:D:F:vnmo:1thH?")) != -1 ) {
+        switch(c) {
+        case 'C':   /* create   */
+            parse_cmd( cmd_create, optarg );
+            break;
+        case 'U':   /* unlink   */
+            parse_cmd( cmd_unlink, optarg );
+            break;
+        case 'D':   /* dump     */
+            parse_cmd( cmd_dump, optarg );
+            break;
+        case 'F':   /* file     */
+            parse_cmd( cmd_file, optarg );
+            break;
+        case 'n':   /* msg-size */
+            opt_msg_size = (size_t)atoi( optarg );
+            break;
+        case 'm':   /* msg-cnt  */
+            opt_msg_cnt = (size_t)atoi( optarg );
+            break;
+        case 'o':   /* mode     */
+            opt_mode = (int)strtol( optarg, NULL, 8 );
+            break;
+        case 't':   /* truncate */
+            opt_truncate++;
+            break;
+        case 'v':   /* verbose  */
+            opt_verbosity++;
+            break;
+        case '1':   /* once     */
+            opt_1++;
+            break;
+        case '?':   /* help     */
+        case 'h':
+        case 'H':
+            puts( "Usage: ach [OPTION...]\n"
+                  "General tool to interact with ach channels"
+                  "\n"
+                  "  -C CHANNEL-NAME,     Create a new channel\n"
+                  "  -U CHANNEL-NAME,     Unlink (delete) a channel\n"
+                  "  -D CHANNEL-NAME,     Dump info about channel\n"
+                  "  -1,                  With -C, accept an already created channel\n"
+                  "  -F CHANNEL-NAME,     Print filename for channel\n"
+                  "  -m MSG-COUNT,        Number of messages to buffer\n"
+                  "  -n MSG-SIZE,         Nominal size of a message\n"
+                  "  -o OCTAL,            Mode for created channel\n"
+                  "  -t,                  Truncate and reinit newly create channel (use only\n"
+                  "                       with -C).  WARNING: this will clobber processes\n"
+                  "                       Currently using the channel.\n"
+                  "  -v,                  Make output more verbose\n"
+                  "  -?,                  Give this help list\n"
+                  "  -V,                  Print program version\n" );
+            exit(EXIT_SUCCESS);
+        default:
+            printf("unknown: %c\n", c);
+        }
+    }
 
-
+    /* Be Verbose */
     if( opt_verbosity >= 2 ) {
         fprintf(stderr, "Verbosity:    %d\n", opt_verbosity);
         fprintf(stderr, "Channel Name: %s\n", opt_chan_name);
         fprintf(stderr, "Message Size: %"PRIuPTR"\n", opt_msg_size);
         fprintf(stderr, "Message Cnt:  %"PRIuPTR"\n", opt_msg_cnt);
     }
+    /* Do Something */
     int r;
     if( opt_command ) {
         r = opt_command();
     }else{
-        fprintf(stderr, "Must specify a command\n");
+        fprintf(stderr, "Must specify a command. Say `ach -H' for help.\n");
         r = 1;
     }
     cleanup();
@@ -241,6 +224,7 @@ int cmd_unlink(void) {
     }
 
     int r = ach_unlink(opt_chan_name);
+
     if( ACH_OK != r ) {
         fprintf(stderr, "Failed to remove channel `%s': %s\n", opt_chan_name, strerror(errno));
         exit(-1);
@@ -274,57 +258,5 @@ int cmd_file(void) {
         fprintf(stderr, "Printing file for %s\n", opt_chan_name);
     }
     printf("/dev/shm/" ACH_CHAN_NAME_PREFIX "%s\n", opt_chan_name );
-    return 0;
-}
-
-
-
-static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
-    if( NULL == opt_command ) {
-        opt_command = cmd_fun;
-        opt_chan_name = strdup( arg );
-    }else {
-        fprintf(stderr, "Can only specify one command\n");
-        cleanup();
-        exit(EXIT_FAILURE);
-    }
-}
-
-static int parse_opt( int key, char *arg, struct argp_state *state) {
-    (void) state; /* ignore unused parameter */
-    switch(key) {
-    case 'C':
-        parse_cmd( cmd_create, arg );
-        break;
-    case 'U':
-        parse_cmd( cmd_unlink, arg );
-        break;
-    case 'D':
-        parse_cmd( cmd_dump, arg );
-        break;
-    case 'F':
-        parse_cmd( cmd_file, arg );
-        break;
-    case 'n':
-        opt_msg_size = (size_t)atoi( arg );
-        break;
-    case 'm':
-        opt_msg_cnt = (size_t)atoi( arg );
-        break;
-    case 'o':
-        opt_mode = (int)strtol( arg, NULL, 8 );
-        break;
-    case 't':
-        opt_truncate++;
-        break;
-    case 'v':
-        opt_verbosity++;
-        break;
-    case '1':
-        opt_1++;
-        break;
-    case 0:
-        break;
-    }
     return 0;
 }
