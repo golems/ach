@@ -86,7 +86,7 @@ int test_basic() {
     }
 
     /* create */
-    r = ach_create(opt_channel_name, 32, 64, NULL );
+    r = ach_create(opt_channel_name, 32ul, 64ul, NULL );
     test(r, "ach_create");
 
     ach_channel_t chan;
@@ -301,7 +301,7 @@ int test_multi() {
         return -1;
     }
 
-    r = ach_create(opt_channel_name, 32, 64, NULL );
+    r = ach_create(opt_channel_name, 32ul, 64ul, NULL );
 
 
     pid_t sub_pid[opt_n_sub];

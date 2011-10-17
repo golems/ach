@@ -418,7 +418,7 @@ void subscribe(int fd, char *chan_name) {
     while( ! sig_received ) {
         if( opt_sync ) {
             /* wait for the pull command */
-            ssize_t rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4);
+            ssize_t rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4ul);
             hard_assert(4 == rc, "Invalid command read: %d\n", rc );
             verbprintf(2, "Command %s\n", cmd );
         }

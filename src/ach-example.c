@@ -111,7 +111,7 @@ void periodic_logger(void) {
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
         assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
         printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
-        usleep(1e6 * 0.1); /* 10 Hertz */
+        usleep((int) (1e6 * 0.1)); /* 10 Hertz */
     }
     exit(0);
 }
@@ -141,7 +141,7 @@ void controller(void) {
         double tm = now();
         u_t U = {sin(tm)};
         ach_put(&chan_control, U, sizeof(U));
-        usleep(1e6 * 1e-3); /* kilohertz */
+        usleep((int)(1e6 * 1e-3)); /* kilohertz */
     }
     exit(0);
 }
@@ -154,9 +154,9 @@ int main(int argc, char **argv) {
     assert( ACH_OK == r || ACH_ENOENT == r);
     r = ach_unlink("feedback");              /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
-    r = ach_create("control", 10, 256, NULL );
+    r = ach_create("control", 10ul, 256ul, NULL );
     assert(ACH_OK == r);
-    r = ach_create("feedback", 10, 256, NULL );
+    r = ach_create("feedback", 10ul, 256ul, NULL );
     assert(ACH_OK == r);
 
     /* fork processes */
@@ -178,4 +178,5 @@ int main(int argc, char **argv) {
 
     /* wait for a signal */
     pause();
+    return 0;
 }

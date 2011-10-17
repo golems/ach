@@ -184,7 +184,7 @@ extern "C" {
 #endif
 
 /**  maximum size of a channel name */
-#define ACH_CHAN_NAME_MAX 64
+#define ACH_CHAN_NAME_MAX 64ul
 
 /** prefix to apply to channel names to get the shared memory file name */
 #define ACH_CHAN_NAME_PREFIX "achshm-"
@@ -204,13 +204,13 @@ extern "C" {
         This one comes after the header.  Should aid debugging by
         showing we don't overstep and bounds.  64-bit for alignment.
     */
-#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8A)
+#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8ALLU)
     /** A separator between different shm sections.
 
         This ones comes after the index array.  Should aid debugging by
         showing we don't overstep and bounds.  64-bit for alignment.
     */
-#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8B)
+#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8BLLU)
 
     /** A separator between different shm sections.
 
@@ -218,7 +218,7 @@ extern "C" {
         file).  Should aid debugging by showing we don't overstep and
         bounds.  64-bit for alignment.
     */
-#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8C)
+#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)
 
     /** return status codes for ach functions */
     typedef enum {

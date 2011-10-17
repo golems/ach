@@ -91,11 +91,11 @@ void *publish_loop(void* pub) {
 
 
 int publish( ach_channel_t *chan) {
-    int r;
+    int r=0;
     while(1) {
         char *fr;
         /* get size */
-        fr = fgets( pbuffer, sizeof(pbuffer), fin );
+        fr = fgets( pbuffer, (int)sizeof(pbuffer), fin );
         if( !fr ) break;
         assert( pbuffer == fr );
         /* put data */
@@ -211,7 +211,7 @@ int main( int argc, char **argv ) {
             ach_create_attr_t cattr;
             ach_create_attr_init( &cattr );
             cattr.map_anon = 1;
-            ach_create( opt_chan_name, 10, 512, &cattr );
+            ach_create( opt_chan_name, 10ul, 512ul, &cattr );
             assert( cattr.shm );
             attr.map_anon = 1;
             attr.shm = cattr.shm;

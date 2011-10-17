@@ -311,7 +311,8 @@ int ach_create( const char *channel_name,
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 )
                 return check_errno();;
 
-            if( (shm = (ach_header_t *)mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+            if( (shm = (ach_header_t *)mmap( NULL, len, PROT_READ|PROT_WRITE,
+                                             MAP_SHARED, fd, 0ul) )
                 == MAP_FAILED )
                 return ACH_FAILED_SYSCALL;
 
@@ -428,8 +429,8 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
             return ACH_FAILED_SYSCALL;
-        if( (shm = (ach_header_t*) mmap(NULL, sizeof(ach_header_t),
-                                        PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        if( (shm = (ach_header_t*) mmap (NULL, sizeof(ach_header_t),
+                                         PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
             return ACH_FAILED_SYSCALL;
         if( ACH_SHM_MAGIC_NUM != shm->magic )
@@ -442,7 +443,8 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
             return ACH_FAILED_SYSCALL;
 
-        if( (shm = (ach_header_t*) mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0) )
+        if( (shm = (ach_header_t*) mmap( NULL, len, PROT_READ|PROT_WRITE,
+                                         MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
             return ACH_FAILED_SYSCALL;
     }
