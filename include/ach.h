@@ -187,7 +187,7 @@ extern "C" {
 #define ACH_CHAN_NAME_MAX 64ul
 
 /** prefix to apply to channel names to get the shared memory file name */
-#define ACH_CHAN_NAME_PREFIX "achshm-"
+#define ACH_CHAN_NAME_PREFIX "/achshm-"
 
 /** Number of times to retry a syscall on EINTR before giving up */
 #define ACH_INTR_RETRY 8

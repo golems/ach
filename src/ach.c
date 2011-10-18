@@ -61,6 +61,7 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 #include <string.h>
 #include <inttypes.h>
@@ -81,6 +82,7 @@
 /** macro to print debug messages */
 #define DEBUGF(fmt, a... )                      \
     fprintf(stderr, (fmt), ## a )
+#define DEBUG_PERROR(a)    perror(a)
 
 /** macro to do things when debugging */
 #define IFDEBUG( x ) (x)
@@ -170,6 +172,9 @@ static int fd_for_channel_name( const char *name, int oflag ) {
     int i = 0;
     do {
         fd = shm_open( shm_name, O_RDWR | oflag, 0666 );
+        if( fd < 0 ) {
+            DEBUG_PERROR("shm_open");
+        }
     }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
     return fd;
 }
@@ -308,24 +313,33 @@ int ach_create( const char *channel_name,
             if( attr ) {
                 if( attr->truncate ) oflag &= ~O_EXCL;
             }
-            if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 )
+            if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 ) {
+                DEBUGF("no fd\n");
                 return check_errno();;
+            }
 
-            if( (shm = (ach_header_t *)mmap( NULL, len, PROT_READ|PROT_WRITE,
-                                             MAP_SHARED, fd, 0ul) )
-                == MAP_FAILED )
-                return ACH_FAILED_SYSCALL;
-
-            /* initialize shm */
             { /* make file proper size */
+                /* FreeBSD needs ftruncate before mmap, Linux can do either order */
                 int r;
                 int i = 0;
                 do {
                     r = ftruncate( fd, (off_t) len );
                 }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
-                if( -1 == r )
+                if( -1 == r ) {
+                    DEBUGF( "ftruncate failed\n");
                     return ACH_FAILED_SYSCALL;
+                }
             }
+
+            /* mmap */
+            if( (shm = (ach_header_t *)mmap( NULL, len, PROT_READ|PROT_WRITE,
+                                             MAP_SHARED, fd, 0) )
+                == MAP_FAILED ) {
+                DEBUG_PERROR("mmap");
+                DEBUGF("mmap failed %s, len: %"PRIuPTR", fd: %d\n", strerror(errno), len, fd);
+                return ACH_FAILED_SYSCALL;
+            }
+
         }
 
         memset( shm, 0, len );
