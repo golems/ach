@@ -40,12 +40,6 @@
  *
  */
 
-/* GNU needs this for clock_gettime */
-#define _POSIX_C_SOURCE  199309L
-/* GNU needs this for usleep */
-#define _XOPEN_SOURCE  500
-
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>

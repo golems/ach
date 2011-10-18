@@ -45,9 +45,6 @@
  *  \author Neil T. Dantam
  */
 
-/* GNU needs this for fchmod/ftruncate */
-#define _XOPEN_SOURCE 500
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <errno.h>

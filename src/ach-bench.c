@@ -40,9 +40,6 @@
  *
  */
 
-
-#define _XOPEN_SOURCE 500
-
 #include <stdint.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -59,6 +56,7 @@
 #include <sys/resource.h>
 #include <sched.h>
 #include <errno.h>
+#include <signal.h>
 #include <sys/mman.h>
 
 double FREQUENCY = (1000.0);

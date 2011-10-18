@@ -44,9 +44,6 @@
  *  \author Neil T. Dantam
  */
 
-/* GNU needs this for mode_t */
-#define _XOPEN_SOURCE 500
-
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>

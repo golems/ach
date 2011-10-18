@@ -47,9 +47,6 @@
  *  ach channel.
  */
 
-/* GNU needs this for usleep */
-#define _XOPEN_SOURCE 500
-
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>

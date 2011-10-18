@@ -100,10 +100,6 @@
  * \sa Todo List
  */
 
-
-/* GNU needs this for usleep */
-#define _XOPEN_SOURCE 500
-
 #include <pthread.h>
 #include <signal.h>
 #include <stdlib.h>

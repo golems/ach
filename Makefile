@@ -14,7 +14,7 @@ make-common/common.1.mk:
 	git submodule update
 include	./make-common/common.1.mk
 
-CFLAGS += -O2 -ansi -DACH_VERSION_STRING=\"$(VERSION)\"
+CFLAGS += -O2 -ansi -DACH_VERSION_STRING=\"$(VERSION)\" -D_XOPEN_SOURCE=600
 LISPDIR = ./lisp
 
 default: $(LIBFILES) $(BINFILES)  $(BUILDDIR)/achtest
