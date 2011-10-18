@@ -323,7 +323,7 @@ int ach_create( const char *channel_name,
                     r = ftruncate( fd, (off_t) len );
                 }while(-1 == r && EINTR == errno && i++ < ACH_INTR_RETRY);
                 if( -1 == r ) {
-                    DEBUGF( "ftruncate failed\n");
+                    DEBUG_PERROR( "ftruncate");
                     return ACH_FAILED_SYSCALL;
                 }
             }
@@ -349,33 +349,61 @@ int ach_create( const char *channel_name,
             int r;
             pthread_condattr_t cond_attr;
             r = pthread_condattr_init( &cond_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_condattr_init");
+                return ACH_FAILED_SYSCALL;
+            }
+
             r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_condattr_setpshared");
+                return ACH_FAILED_SYSCALL;
+            }
 
             r = pthread_cond_init( & shm->sync.cond, &cond_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_cond_init");
+                return ACH_FAILED_SYSCALL;
+            }
 
             r = pthread_condattr_destroy( &cond_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_condattr_destroy");
+                return ACH_FAILED_SYSCALL;
+            }
         }
         { /* initialize mutex */
             int r;
             pthread_mutexattr_t mutex_attr;
             r = pthread_mutexattr_init( &mutex_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_init");
+                return ACH_FAILED_SYSCALL;
+            }
             r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_setpshared");
+                return ACH_FAILED_SYSCALL;
+            }
 #ifdef PTHREAD_MUTEX_ERRORCHECK_NP
             r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_settype");
+                return ACH_FAILED_SYSCALL;
+            }
 #endif
 
             pthread_mutex_init( &shm->sync.mutex, &mutex_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_init");
+                return ACH_FAILED_SYSCALL;
+            }
 
             r = pthread_mutexattr_destroy( &mutex_attr );
-            assert( 0 == r );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_destroy");
+                return ACH_FAILED_SYSCALL;
+            }
         }
     }
     /* initialize name */
@@ -404,7 +432,7 @@ int ach_create( const char *channel_name,
         /* remove mapping */
         r = munmap(shm, len);
         if( 0 != r ){
-            DEBUGF("Failed to munmap channel\n");
+            DEBUG_PERROR("munmap");
             return ACH_FAILED_SYSCALL;
         }
         /* close file */
@@ -414,7 +442,7 @@ int ach_create( const char *channel_name,
             r = close(fd);
         }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
         if( -1 == r ){
-            DEBUGF("Failed to close() channel fd\n");
+            DEBUG_PERROR("close");
             return ACH_FAILED_SYSCALL;
         }
     }
