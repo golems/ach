@@ -82,4 +82,34 @@ if [ -f "$file" ]; then
     exit 16;
 fi
 
+# create channel with args
+if ! $ach -C $chan -o 666 -m 10 -n 256; then
+    echo "Fail: couldn't create channel with args"
+    exit 17;
+fi
+if [ ! -f "$file" ]; then
+    echo "Fail: channel not created"
+    exit 18;
+fi
+
+# create channel with args
+if ! $ach -1 -C $chan -o 666 -m 10 -n 256; then
+    echo "Fail: couldn't -1 arg created channel"
+    exit 19;
+fi
+if [ ! -f "$file" ]; then
+    echo "Fail: channel not created"
+    exit 20;
+fi
+
+# unlink channel
+if ! $ach -U $chan; then
+    echo "Fail: couldn't remove channel"
+    exit 21
+fi
+if [ -f "$file" ]; then
+    echo "Fail: channel not removed"
+    exit 22;
+fi
+
 true

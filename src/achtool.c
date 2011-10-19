@@ -96,7 +96,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c;
     opterr = 0;
-    while( (c = getopt( argc, argv, "C:U:D:F:vnmo:1thH?")) != -1 ) {
+    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1thH?")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
             parse_cmd( cmd_create, optarg );
