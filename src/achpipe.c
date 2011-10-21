@@ -105,7 +105,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
