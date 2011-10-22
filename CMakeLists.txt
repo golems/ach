@@ -27,16 +27,20 @@ if(APPLE)
 endif()
 
 include_directories(include)
+
 add_library(ach SHARED src/ach.c src/ach_stream.c)
 target_link_libraries(ach pthread ${LIBRT})
 
+add_executable(achtool src/ach.c src/achtool.c)
+target_link_libraries(achtool pthread ${LIBRT})
+
+add_executable(achtest src/achtest.c)
+target_link_libraries(achtest ach pthread ${LIBRT} m)
+
+add_executable(achpipe.bin src/achpipe-bin.c)
+target_link_libraries(achpipe.bin ach pthread ${LIBRT})
+
 if(HAVE_LIBRT)
-   add_executable(achtool src/ach.c src/achtool.c)
-   target_link_libraries(achtool pthread ${LIBRT})
-
-   add_executable(achpipe.bin src/achpipe-bin.c)
-   target_link_libraries(achpipe.bin ach pthread ${LIBRT})
-
    add_executable(achcat src/achcat.c)
    target_link_libraries(achcat ach pthread ${LIBRT})
 
@@ -45,8 +49,4 @@ if(HAVE_LIBRT)
 
    add_executable(ach-example src/ach-example.c)
    target_link_libraries(ach-example ach pthread ${LIBRT} m)
-
-  add_executable(achtest src/achtest.c)
-  target_link_libraries(achtest ach pthread ${LIBRT} m)
-
 endif()

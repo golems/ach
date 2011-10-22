@@ -247,9 +247,10 @@ static int subscriber( int i ) {
     int seen_last = 0;
     int j;
     for( j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
-        struct timespec abstime;
-        clock_gettime( CLOCK_REALTIME, &abstime );
-        abstime.tv_sec += 1;
+
+        struct timespec abstime = {0};
+        abstime.tv_sec = time(NULL) + 1; /* wait 1 sec for msg */
+
         size_t frame_size;
         r = ach_wait_next( &chan, data, sizeof(data), &frame_size,
                            &abstime );

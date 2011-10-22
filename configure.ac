@@ -17,11 +17,8 @@ AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
 
-# Checks for libraries.
-
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h stdint.h stdlib.h string.h sys/socket.h syslog.h unistd.h time.h])
-
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -40,14 +37,19 @@ AC_CHECK_SIZEOF(uint64_t)
 AC_CHECK_SIZEOF(unsigned long)
 AC_CHECK_SIZEOF(unsigned long long)
 
+# Check 32/64 safe format specifiers
 AC_CHECK_DECLS([PRIuPTR,PRIu64,PRIx64])
-
 AC_CHECK_DECL([PRIuPTR],
         [],
         [AC_DEFINE([PRIuPTR], ["ul"], [Assume this is unsigned long])])
 
-# Check for CLOCK_MONOTONIC / CLOCK_HIGHRES
-AC_CHECK_DECLS([CLOCK_REALTIME,CLOCK_MONOTONIC,CLOCK_HIGHRES],[],[],[[#include <time.h>]])
+# Check for POSIX realtime extensions
+AC_CHECK_DECL([CLOCK_REALTIME],
+        AM_CONDITIONAL([HAVE_RT], true),
+        AM_CONDITIONAL([HAVE_RT], false),
+        [[#include <time.h>]])
+
+# Check available CLOCKs
 AC_CHECK_DECLS([CLOCK_MONOTONIC],
         [],
         [AC_CHECK_DECLS([CLOCK_HIGHRES],
@@ -73,7 +75,6 @@ AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
         [#include<pthread.h>])
 
 AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
-
 
 # Checks for library functions.
 AC_FUNC_FORK
