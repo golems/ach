@@ -1,19 +1,21 @@
-#SUBDIRS = .
-EXTRA_DIST = achpipe achlog
+EXTRA_DIST = CMakeLists.txt
+dist_bin_SCRIPTS = achpipe achlog achtooltest
 
 INCLUDES = -I$(top_srcdir)/include
 
 include_HEADERS = include/ach.h
 
 lib_LTLIBRARIES = libach.la
+bin_PROGRAMS = ach achpipe.bin ach-example achtest achcat ach-bench
+
+
 libach_la_SOURCES = src/ach.c src/ach_stream.c
 
 
-bin_PROGRAMS = ach achpipe.bin ach-example achtest achcat ach-bench
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la
 
-achpipe_bin_SOURCES = src/achtool.c
+achpipe_bin_SOURCES = src/achpipe-bin.c
 achpipe_bin_LDADD = libach.la
 
 achcat_SOURCES = src/achcat.c

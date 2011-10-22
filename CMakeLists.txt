@@ -18,9 +18,9 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 0.20110913)
+set(VERSION 0.20111021)
 add_definitions(-DACH_VERSION_STRING=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
-add_definitions(-ansi -Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings)
+add_definitions(-ansi -Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
 
 if(APPLE)
   add_definitions(-DHAVE_STRLEN)
@@ -34,7 +34,7 @@ if(HAVE_LIBRT)
    add_executable(achtool src/ach.c src/achtool.c)
    target_link_libraries(achtool pthread ${LIBRT})
 
-   add_executable(achpipe.bin src/achpipe.c)
+   add_executable(achpipe.bin src/achpipe-bin.c)
    target_link_libraries(achpipe.bin ach pthread ${LIBRT})
 
    add_executable(achcat src/achcat.c)

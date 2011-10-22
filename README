@@ -12,22 +12,13 @@ demonstrated on a variety of physical robotic systems. Finally, the
 source code for Ach is available under an Open Source BSD-style
 license.
 
-************************
-* INSTALL on GNU/LINUX *
-************************
+****************
+* INSTALLATION *
+****************
 
-- Build Dependecies: gcc, GNU make, git
-- Building: `make'
-- Install: `PREFIX=/usr/local make install'
-- Easier Install on Debian/Ubuntu: `make debinstall'
-- Building API docs: `make doc' (requires doxygen)
+`./configure && make && make install'
 
-************************
-* INSTALL on non-GNU   *
-************************
-
-- Build Dependecies: gcc, CMake
-- Building: `cmake . && make'
+See the INSTALL file for details.
 
 *********************
 * Example and Usage *

@@ -40,6 +40,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <string.h>
 #include <time.h>
 #include <stdlib.h>
@@ -363,6 +367,7 @@ int main( int argc, char **argv ){
                   "  -s SUBSCRIBER-COUNT,       number of subscribers\n"
                   "  -u MICROSECONDS            microseconds between publish\n"
                   "  -?, -H, -h                 Give this help list\n" );
+            exit(EXIT_SUCCESS);
         }
     }
 

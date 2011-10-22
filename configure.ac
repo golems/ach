@@ -1,8 +1,8 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_PREREQ([2.67])
-AC_INIT([ach], [0.20110913], [ntd@gatech.edu])
+AC_PREREQ([2.65])
+AC_INIT([ach], [0.20111021], [ntd@gatech.edu])
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/ach.c])
 AC_CONFIG_HEADERS([config.h])
@@ -12,11 +12,16 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_LIBTOOL
 
+AC_PROG_CC_C89
+AC_C_RESTRICT
+AC_C_INLINE
+AC_C_CONST
+
 # Checks for libraries.
 
 # Checks for header files.
 AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h stdint.h stdlib.h string.h sys/socket.h syslog.h unistd.h time.h])
-AC_HEADER_TIME
+
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
@@ -36,7 +41,28 @@ AC_CHECK_SIZEOF(unsigned long)
 AC_CHECK_SIZEOF(unsigned long long)
 
 AC_CHECK_DECLS([PRIuPTR,PRIu64,PRIx64])
-AC_CHECK_DECLS([CLOCK_REALIME,CLOCK_MONOTONIC,CLOCK_HIGHRES])
+
+AC_CHECK_DECL([PRIuPTR],
+        [],
+        [AC_DEFINE([PRIuPTR], ["ul"], [Assume this is unsigned long])])
+
+# Check for CLOCK_MONOTONIC / CLOCK_HIGHRES
+AC_CHECK_DECLS([CLOCK_REALTIME,CLOCK_MONOTONIC,CLOCK_HIGHRES],[],[],[[#include <time.h>]])
+AC_CHECK_DECLS([CLOCK_MONOTONIC],
+        [],
+        [AC_CHECK_DECLS([CLOCK_HIGHRES],
+                [AC_DEFINE([CLOCK_MONOTONIC],
+                        [CLOCK_HIGHRES],
+                        [Old Solaris lacks CLOCK_MONOTONIC,
+                         CLOCK_HIGHRES looks the same])],
+                [AC_CHECK_DECLS([CLOCK_REALTIME],
+                        [AC_DEFINE([CLOCK_MONOTONIC],
+                                [CLOCK_REALTIME],
+                                [use CLOCK_REALTIME if we can])],
+                        [],
+                        [[#include <time.h>]])]
+                [[#include <time.h>]])],
+        [[#include <time.h>]])
 
 # Checks for library functions.
 AC_FUNC_FORK

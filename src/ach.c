@@ -45,6 +45,11 @@
  *  \author Neil T. Dantam
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <time.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/mman.h>

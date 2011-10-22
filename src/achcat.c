@@ -47,15 +47,19 @@
  *  ach channel.
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
-#include <stdint.h>
 #include <pthread.h>
 #include <sched.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include "ach.h"
 
 

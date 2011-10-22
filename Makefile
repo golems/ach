@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20110913
+VERSION := 0.20111021
 
 SHAREDLIBS := ach
 
@@ -14,7 +14,7 @@ make-common/common.1.mk:
 	git submodule update
 include	./make-common/common.1.mk
 
-CFLAGS += -O2 -ansi -DACH_VERSION_STRING=\"$(VERSION)\" -D_XOPEN_SOURCE=600
+CFLAGS += -O2 -ansi -DACH_VERSION_STRING=\"$(VERSION)\" -D_XOPEN_SOURCE=600 -I.
 LISPDIR = ./lisp
 
 default: $(LIBFILES) $(BINFILES)  $(BUILDDIR)/achtest
