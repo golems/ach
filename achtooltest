@@ -37,8 +37,17 @@
 ##   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 ##   POSSIBILITY OF SUCH DAMAGE.
 
+if [ -f ./build/ach ]; then
+    ach=./build/ach
+elif [ -f ./bin/ach ]; then
+    ach=./bin/ach
+elif [ -f ./ach ]; then
+    ach=./ach
+else
+    "Can't find ach"
+    exit 9
+fi
 
-ach=./build/ach
 chan=ach-test-channel
 file=`$ach -F $chan`
 
@@ -57,23 +66,23 @@ if [ -f "$file" ]; then
 fi
 
 # create channel
-if ! $ach -C $chan; then
+if $ach -C $chan; then :; else
     echo "Fail: couldn't create channel"
     exit 12;
 fi
-if [ ! -f "$file" ]; then
+if [ `uname -s` = Linux ] && [ ! -f "$file" ] ; then
     echo "Fail: channel not created"
     exit 13;
 fi
 
 # dump channel
-if ! $ach -D $chan  > /dev/null 2>/dev/null ; then
+if $ach -D $chan  > /dev/null 2>/dev/null ; then :; else
     echo "Fail: couldn't dump channel"
     exit 14
 fi
 
 # unlink channel
-if ! $ach -U $chan; then
+if $ach -U $chan; then :; else
     echo "Fail: couldn't remove channel"
     exit 15
 fi
@@ -83,27 +92,27 @@ if [ -f "$file" ]; then
 fi
 
 # create channel with args
-if ! $ach -C $chan -o 666 -m 10 -n 256; then
+if $ach -C $chan -o 666 -m 10 -n 256; then :; else
     echo "Fail: couldn't create channel with args"
     exit 17;
 fi
-if [ ! -f "$file" ]; then
+if [ `uname -s` = Linux ] && [ ! -f "$file" ]; then
     echo "Fail: channel not created"
     exit 18;
 fi
 
 # create channel with args
-if ! $ach -1 -C $chan -o 666 -m 10 -n 256; then
+if $ach -1 -C $chan -o 666 -m 10 -n 256; then :; else
     echo "Fail: couldn't -1 arg created channel"
     exit 19;
 fi
-if [ ! -f "$file" ]; then
+if [ `uname -s` = Linux ] && [ ! -f "$file" ]; then
     echo "Fail: channel not created"
     exit 20;
 fi
 
 # unlink channel
-if ! $ach -U $chan; then
+if $ach -U $chan; then :; else
     echo "Fail: couldn't remove channel"
     exit 21
 fi
