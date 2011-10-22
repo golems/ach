@@ -3,6 +3,8 @@ dist_bin_SCRIPTS = achpipe achlog achtooltest
 
 INCLUDES = -I$(top_srcdir)/include
 
+TESTS = achtest achtooltest
+
 include_HEADERS = include/ach.h
 
 lib_LTLIBRARIES = libach.la

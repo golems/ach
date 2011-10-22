@@ -64,6 +64,17 @@ AC_CHECK_DECLS([CLOCK_MONOTONIC],
                 [[#include <time.h>]])],
         [[#include <time.h>]])
 
+# check pthread decls
+AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
+        [AC_DEFINE([HAVE_PTHREAD_MUTEX_ERRORCHECK_NP],
+                   [1],
+                   [Define to 1 if you have the declaration `PTHREAD_MUTEX_ERRORCHECK_NP'])],
+        [],
+        [#include<pthread.h>])
+
+AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
+
+
 # Checks for library functions.
 AC_FUNC_FORK
 AC_FUNC_MALLOC
