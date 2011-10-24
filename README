@@ -26,10 +26,10 @@ See the INSTALL file for details.
 
 - Example Code: ./src/ach-example.c
 - Shell Tool `ach': can be used to create channels:
-  - Create a channel `ach --create CHANNEL_NAME --msg-cnt 10 --msg-size 4096'
-  - Delete a channel `ach --unlink CHANNEL_NAME'
-  - Display channel stats `ach --dump CHANNEL_NAME'
-  - View options `ach --help'
+  - Create a channel `ach -C CHANNEL_NAME'
+  - Delete a channel `ach -U CHANNEL_NAME'
+  - Display channel stats `ach -D CHANNEL_NAME'
+  - View options `ach -H'
 
 ****************
 * Formal Model *
