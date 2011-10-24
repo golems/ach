@@ -55,18 +55,23 @@
 #include <stdio.h>
 #include "ach.h"
 
-#define CHAN  "ach-test"
+#define OPT_CHAN  "ach-test"
+
+#define OPT_N_SUB  8
+#define OPT_N_PUB  8
+#define OPT_PUB_SLEEP_US  500
+#define OPT_N_MSGS  1024
 
 /*#define MAX 102400 */
 
 /* A C2D can roughly handle 16 publishers and 16 subscribers with
  * publishers firing every 1/4 millisecond */
 
-int opt_n_sub = 8;
-int opt_n_pub = 8;
-int opt_pub_sleep_us = 250;
-int opt_n_msgs = 1024;
-const char *opt_channel_name = CHAN;
+int opt_n_sub = OPT_N_SUB;
+int opt_n_pub = OPT_N_PUB;
+int opt_pub_sleep_us = OPT_PUB_SLEEP_US;
+int opt_n_msgs = OPT_N_MSGS;
+const char *opt_channel_name = OPT_CHAN;
 
 static void test(int r, const char *thing) {
     if( r != ACH_OK ) {
@@ -343,14 +348,14 @@ int main( int argc, char **argv ){
     int c;
     while( (c = getopt( argc, argv, "p:s:u:n:c:")) != -1 ) {
         switch(c) {
+        case 'u':
+            opt_pub_sleep_us = atoi(optarg);
+            break;
         case 'p':
             opt_n_pub = atoi(optarg);
             break;
         case 's':
             opt_n_sub = atoi(optarg);
-            break;
-        case 'u':
-            opt_pub_sleep_us = atoi(optarg);
             break;
         case 'n':
             opt_n_msgs = atoi(optarg);
@@ -361,15 +366,17 @@ int main( int argc, char **argv ){
         case '?':
         case 'h':
         case 'H':
-            puts( "Usage: achtest [OPTION...]\n"
-                  "ach stress test\n"
-                  "\n"
-                  "  -c CHANNEL-NAME,           default `ach-test'\n"
-                  "  -n MESAGE-COUNT,           messages to publish\n"
-                  "  -p PUBLISHER-COUNT,        number of publishers\n"
-                  "  -s SUBSCRIBER-COUNT,       number of subscribers\n"
-                  "  -u MICROSECONDS            microseconds between publish\n"
-                  "  -?, -H, -h                 Give this help list\n" );
+            printf( "Usage: achtest [OPTION...]\n"
+                    "ach stress test\n"
+                    "\n"
+                    "  -u MICROSECONDS       Microseconds between messages (%d)\n"
+                    "  -p PUBLISHER-COUNT,   Number of publishers (%d)\n"
+                    "  -s SUBSCRIBER-COUNT,  Number of subscribers (%d)\n"
+                    "  -n MESAGE-COUNT,      Messages to publish (%d)\n"
+                    "  -c CHANNEL-NAME,      Channel (%s)\n"
+                    "  -?, -H, -h            This help list\n",
+                    OPT_PUB_SLEEP_US, OPT_N_PUB, OPT_N_SUB, OPT_N_MSGS,
+                    OPT_CHAN);
             exit(EXIT_SUCCESS);
         }
     }
