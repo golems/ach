@@ -1,7 +1,9 @@
+ACLOCAL_AMFLAGS = -I m4
+
 EXTRA_DIST = CMakeLists.txt
 dist_bin_SCRIPTS = achpipe achlog achtooltest
 
-INCLUDES = -I$(top_srcdir)/include
+AM_CPPFLAGS = -I$(top_srcdir)/include
 
 TESTS = achtest achtooltest
 

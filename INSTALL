@@ -11,11 +11,19 @@ You have two options to build and install ach.
 * OPTION 1: Autotools *
 ***********************
 
-0) If you have obtained ach from the git repo, initialize autotools with
+0) If you have obtained ach from the git repo, you need to initialize
+the autotools build scripts.  This requires the autotools and the
+autoconf macro archive. To install these on Debian or Ubuntu
+GNU/Linux, you can do
+
+`$ sudo apt-get install autoconf automake libtool autoconf-archive'
+
+Then, initialize autotools with
 
 `$ autoreconf -i'
 
-This is not necessary when you have obtained a distribution tarball.
+This whole step is not necessary when you have obtained a distribution
+tarball which already contains the autoconf-generated configure script.
 
 1) Configure for your system:
 

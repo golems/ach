@@ -3,16 +3,16 @@
 
 AC_PREREQ([2.65])
 AC_INIT([ach], [0.20111021], [ntd@gatech.edu])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_SRCDIR([src/ach.c])
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
-AC_PROG_CXX
 AC_PROG_CC
+AC_PROG_CC_C89
 AC_PROG_LIBTOOL
 
-AC_PROG_CC_C89
 AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
@@ -86,6 +86,23 @@ AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr
 AC_SEARCH_LIBS([pthread_create],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 AC_SEARCH_LIBS([sin],[m])
+
+
+# Enable maximum warnings
+AX_CFLAGS_WARN_ALL
+
+dnl APPEND_FLAG( [FLAG] )
+dnl Check if FLAG is supported, and if so, add it
+AC_DEFUN([APPEND_FLAG],
+         [AX_CHECK_COMPILER_FLAGS([$1], [CFLAGS="$1 $CFLAGS"])])
+
+APPEND_FLAG([-Wextra])
+APPEND_FLAG([-Wconversion])
+APPEND_FLAG([-Wpointer-arith])
+APPEND_FLAG([-Wfloat-equal])
+APPEND_FLAG([-Wshadow])
+APPEND_FLAG([-Wwrite-strings])
+APPEND_FLAG([-Wc++-compat])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
