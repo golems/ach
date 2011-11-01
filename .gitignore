@@ -3,7 +3,6 @@
 /build/ach-example
 /build/achcat
 /build/achpipe.bin
-/debian
 /.deps
 /build/achtest
 /lisp/grovel
@@ -37,6 +36,13 @@
 /autom4te.cache
 /aclocal.m4
 /.libs
+/debian/files
+/debian/libach0
+/debian/libach-dev
+/debian/tmp
+/debian/*.log
+/debian/*.debhelper
+/debian/*.substvars
 *.a
 *.o
 *.lo

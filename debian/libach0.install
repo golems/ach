@@ -1,0 +1,5 @@
+usr/lib/lib*.so.*
+usr/lib/lib*.la
+usr/lib/lib*.a
+usr/lib/*.la
+usr/bin/ach
