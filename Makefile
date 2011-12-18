@@ -1,6 +1,6 @@
 PROJECT := ach
 
-VERSION := 0.20111021
+VERSION := 0.`date +%Y%m%d`
 
 SHAREDLIBS := ach
 
@@ -33,7 +33,7 @@ $(call LINKLIB, ach, ach.o ach_stream.o, pthread rt)
 $(call LINKBIN, test_pub, test_pub.c ach.o, pthread rt)
 $(call LINKBIN, test_sub, test_sub.c ach.o, pthread rt)
 $(call LINKBIN, achcat, achcat.o ach.o, pthread rt)
-$(call LINKBIN, achpipe.bin, achpipe.o ach_stream.o ach.o, pthread rt)
+$(call LINKBIN, achpipe.bin, achpipe-bin.o ach_stream.o ach.o, pthread rt)
 $(call LINKBIN, achtest, achtest.o ach_stream.o ach.o, pthread rt)
 $(call LINKBIN, ach-example, ach-example.o ach_stream.o ach.o, pthread rt m)
 $(call LINKBIN, ach-bench, ach-bench.o ach_stream.o ach.o, pthread rt m)
