@@ -674,9 +674,11 @@ int ach_flush( ach_channel_t *chan ) {
 
 static void free_index(ach_header_t *shm, size_t i ) {
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+
     assert( index_ar[i].seq_num ); /* only free used indices */
     assert( index_ar[i].size );    /* must have some data */
-    assert( shm->index_free < shm->index_cnt - 1 ); /* must be some used index */
+    assert( shm->index_free < shm->index_cnt ); /* must be some used index */
+
     shm->data_free += index_ar[i].size;
     shm->index_free ++;
     memset( &index_ar[i], 0, sizeof( ach_index_t ) );
