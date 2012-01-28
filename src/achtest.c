@@ -253,7 +253,7 @@ static int subscriber( int i ) {
     int j;
     for( j = 0; j < opt_n_pub*opt_n_msgs; j++ ) {
 
-        struct timespec abstime = {0};
+        struct timespec abstime = {0,0};
         /* Wait at least 1 sec for msg. Adding 2 sec due to nanosecond
          * truncation of time() call */
         abstime.tv_sec = time(NULL) + 2;

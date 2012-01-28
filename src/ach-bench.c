@@ -79,8 +79,8 @@ static ticks_t get_ticks(void) {
     return t;
 }
 static double ticks_delta(ticks_t t0, ticks_t t1) {
-    double d0 = t0.tv_sec + t0.tv_nsec / 1e9;
-    double d1 = t1.tv_sec + t1.tv_nsec / 1e9;
+    double d0 = (double)t0.tv_sec + (double)t0.tv_nsec / 1e9;
+    double d1 = (double)t1.tv_sec + (double)t1.tv_nsec / 1e9;
     return (d1 - d0 - overhead);
 }
 
@@ -160,7 +160,7 @@ void sender(void) {
     size_t i;
     for(i = 0; i < SECS*FREQUENCY; i ++) {
         ticks_t ticks = get_ticks();
-        int r = write(fd[1], &ticks, sizeof(ticks));
+        ssize_t r = write(fd[1], &ticks, sizeof(ticks));
         assert(sizeof(ticks) == r);
         usleep((useconds_t)(1e6/FREQUENCY));
     }
@@ -173,13 +173,13 @@ void receiver(void) {
     size_t i;
     for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
-        int r = read(fd[0], &ticks, sizeof(ticks));
+        ssize_t r = read(fd[0], &ticks, sizeof(ticks));
         assert(sizeof(ticks) == r);
     }
     /* now the good stuff */
     while(1) {
         ticks_t ticks;
-        int r = read(fd[0], &ticks, sizeof(ticks));
+        ssize_t r = read(fd[0], &ticks, sizeof(ticks));
         ticks_t now = get_ticks();
         assert(sizeof(ticks) == r);
         double result = ticks_delta(ticks,now);
