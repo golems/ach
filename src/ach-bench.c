@@ -64,12 +64,15 @@
 
 double FREQUENCY = (1000.0);
 double SECS = 1;
+size_t RECV_RT = 1;
+size_t RECV_NRT = 0;
+size_t SEND_RT = 1;
 
 
 double overhead = 0;
 
-/*#define BENCH_ACH */
-#define BENCH_PIPE
+#define BENCH_ACH
+//#define BENCH_PIPE
 
 
 typedef struct timespec ticks_t ;
@@ -103,7 +106,8 @@ ach_channel_t chan;
 void sender(void) {
     fprintf(stderr,"sender\n");
     make_realtime();
-    for(size_t i = 0; i < SECS*FREQUENCY; i ++) {
+    size_t i;
+    for( i = 0; i < SECS*FREQUENCY; i ++) {
         ticks_t ticks = get_ticks();
         int r = ach_put(&chan, &ticks, sizeof(ticks));
         assert(ACH_OK == r);
@@ -111,11 +115,12 @@ void sender(void) {
     }
 }
 
-void receiver(void) {
+void receiver(int rt) {
     fprintf(stderr,"receiver\n");
-    make_realtime();
+    if (rt) make_realtime();
     // flush some initial delayed messages
-    for( size_t i = 0; i < 5; i ++ ) {
+    size_t i;
+    for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
         size_t fs;
         ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
@@ -129,8 +134,11 @@ void receiver(void) {
                         ACH_O_LAST | ACH_O_WAIT);
         ticks_t now = get_ticks();
         assert(ACH_OK == r || sizeof(ticks) == fs);
-        double result = ticks_delta(ticks,now);
-        printf("%f\n", result*1e6);
+        // only print real-time latencies
+        if (rt) {
+            double result = ticks_delta(ticks,now);
+            printf("%f\n", result*1e6);
+        }
     }
 
 }
@@ -166,7 +174,8 @@ void sender(void) {
     }
 }
 
-void receiver(void) {
+void receiver(int rt) {
+    (void)rt;
     fprintf(stderr,"receiver\n");
     make_realtime();
     /* flush some initial delayed messages */
@@ -217,7 +226,7 @@ int main(int argc, char **argv) {
     /* parse args */
     int c;
     char *endptr = 0;
-    while( (c = getopt( argc, argv, "f:s:")) != -1 ) {
+    while( (c = getopt( argc, argv, "f:s:p:r:l:")) != -1 ) {
         switch(c) {
         case 'f':
             FREQUENCY = strtod(optarg, &endptr);
@@ -227,12 +236,39 @@ int main(int argc, char **argv) {
             SECS = strtod(optarg, &endptr);
             assert(endptr);
             break;
+        case 'p':
+            SEND_RT = (size_t)atoi(optarg);
+            assert(SEND_RT);
+            break;
+        case 'r':
+            RECV_RT = (size_t)atoi(optarg);
+            assert(RECV_RT);
+            break;
+        case 'l':
+            RECV_NRT = (size_t)atoi(optarg);
+            assert(RECV_NRT);
+            break;
+        default:
+            puts("Usage: ach-bench [OPTION....]\n"
+                 "Benchmark Ach IPC\n"
+                 "\n"
+                 "  -f FREQUENCY,       Frequency in Hertz (1000)\n"
+                 "  -s SECONDS,         Duration in seconds (1)\n"
+                 "  -p COUNT,           Real-Time Publishers (1)\n"
+                 "  -r COUNT,           Real-Time Receivers (1)\n"
+                 "  -l COUNT,           Non-Real-Time Receivers (0)\n"
+                );
+            exit(EXIT_SUCCESS);
         }
     }
 
     fprintf(stderr, "freq: %f\n", FREQUENCY);
     fprintf(stderr, "secs: %f\n", SECS);
+    fprintf(stderr, "real-time receivers: %"PRIuPTR"\n", RECV_RT);
+    fprintf(stderr, "non-real-time receivers: %"PRIuPTR"\n", RECV_NRT);
+    fprintf(stderr, "real-time senders: %"PRIuPTR"\n", SEND_RT);
     size_t i;
+
     /* warm up */
     for( i = 0; i < 10; i++) get_ticks();
 
@@ -244,21 +280,32 @@ int main(int argc, char **argv) {
     setup();
 
     /* fork */
-    pid_t pid[1];
-    for( i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
-        pid[i] = fork();
-        assert( pid[i] >= 0 );
-        if(0 == pid[i]) {
-            receiver();
+    pid_t pid_recv_rt[RECV_RT+RECV_NRT];
+    for( i = 0; i < RECV_RT+RECV_NRT; i ++ ) {
+        pid_recv_rt[i] = fork();
+        assert( pid_recv_rt[i] >= 0 );
+        if(0 == pid_recv_rt[i]) {
+            receiver(i < RECV_RT);
             exit(0);
         }
     }
     /* send */
-    sender();
-    sleep(1);
+    pid_t pid_send_rt[SEND_RT];
+    for( i = 0; i < SEND_RT; i ++ ) {
+        pid_send_rt[i] = fork();
+        assert( pid_send_rt[i] >= 0 );
+        if(0 == pid_send_rt[i]) {
+            sender();
+            exit(0);
+        }
+    }
+    sleep((unsigned)(SECS * 1.5) + 5);
     /* stop */
-    for( i = 0; i < sizeof(pid)/sizeof(pid[0]); i ++ ) {
-        kill(pid[i],SIGTERM);
+    for( i = 0; i < RECV_RT; i ++ ) {
+        kill(pid_recv_rt[i],SIGTERM);
+    }
+    for( i = 0; i < SEND_RT; i ++ ) {
+        kill(pid_send_rt[i],SIGTERM);
     }
     destroy();
     exit(0);
