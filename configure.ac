@@ -9,6 +9,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
+AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_C89
 AC_PROG_LIBTOOL
@@ -68,11 +69,11 @@ AC_CHECK_DECLS([CLOCK_MONOTONIC],
 
 # check pthread decls
 AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
-        [AC_DEFINE([HAVE_PTHREAD_MUTEX_ERRORCHECK_NP],
-                   [1],
-                   [Define to 1 if you have the declaration `PTHREAD_MUTEX_ERRORCHECK_NP'])],
-        [],
+        [], [],
         [#include<pthread.h>])
+
+AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
+               [], [], [#include<pthread.h>])
 
 AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 

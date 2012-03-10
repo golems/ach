@@ -383,15 +383,27 @@ int ach_create( const char *channel_name,
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
             }
-            r = pthread_mutexattr_setpshared( &mutex_attr, PTHREAD_PROCESS_SHARED );
+            r = pthread_mutexattr_setpshared( &mutex_attr,
+                                              PTHREAD_PROCESS_SHARED );
             if( r ) {
                 DEBUG_PERROR("pthread_mutexattr_setpshared");
                 return ACH_FAILED_SYSCALL;
             }
+            /* Error Checking Mutex */
 #ifdef PTHREAD_MUTEX_ERRORCHECK_NP
-            r = pthread_mutexattr_settype( &mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP );
+            r = pthread_mutexattr_settype( &mutex_attr,
+                                           PTHREAD_MUTEX_ERRORCHECK_NP );
             if( r ) {
                 DEBUG_PERROR("pthread_mutexattr_settype");
+                return ACH_FAILED_SYSCALL;
+            }
+#endif
+            /* Priority Inheritance Mutex */
+#ifdef PTHREAD_PRIO_INHERIT
+            r = pthread_mutexattr_setprotocol( &mutex_attr,
+                                               PTHREAD_PRIO_INHERIT );
+            if( r ) {
+                DEBUG_PERROR("pthread_mutexattr_setprotocol");
                 return ACH_FAILED_SYSCALL;
             }
 #endif
