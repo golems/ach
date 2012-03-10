@@ -1,3 +1,0 @@
-[submodule "make-common"]
-	path = make-common
-	url = http://github.com/golems/make-common.git
