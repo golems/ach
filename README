@@ -2,15 +2,14 @@
 * OVERVIEW *
 ************
 
-Ach is a new Inter-Process Communication (IPC) mechanism and
-library. It is uniquely suited for coordinating perception, control
-drivers, and algorithms in real-time systems that sample data from
-physical processes. Ach eliminates the Head-of-Line Blocking problem
-for applications that always require access to the newest message. Ach
-is efficient, robust, and formally verified. It has been tested and
-demonstrated on a variety of physical robotic systems. Finally, the
-source code for Ach is available under an Open Source BSD-style
-license.
+Ach is an Inter-Process Communication (IPC) mechanism and library. It
+is especially suited for communication in real-time systems that
+sample data from physical processes. Ach eliminates the Head-of-Line
+Blocking problem for applications that always require access to the
+newest message. Ach is efficient, robust, and formally verified. It
+has been tested and demonstrated on a variety of physical robotic
+systems. Source code for Ach is available under an Open Source
+BSD-style license.
 
 ****************
 * INSTALLATION *
@@ -38,6 +37,15 @@ See the INSTALL file for details.
 Ach has been formally verified using the SPIN model checker.  This
 formal model is included in the sourc distribution under the ./spin/
 directory.
+
+**************************
+* Performance/Benchmarks *
+**************************
+
+To evaluate the performance of ach on your machine, you can use the
+included `ach-bench' program to test messaging latency.  See the shell
+script `src/run-benchmarks' which runs the benchmark with a variety of
+options.
 
 *******************
 * Further Details *

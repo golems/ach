@@ -18,7 +18,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 0.20111021)
+set(VERSION 0.20120312)
 add_definitions(-DACH_VERSION_STRING=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 add_definitions(-ansi -Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
 

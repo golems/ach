@@ -67,12 +67,17 @@ double SECS = 1;
 size_t RECV_RT = 1;
 size_t RECV_NRT = 0;
 size_t SEND_RT = 1;
-
+int PASS_NO_RT = 0;
 
 double overhead = 0;
 
-#define BENCH_ACH
-//#define BENCH_PIPE
+
+/**********/
+/* TIMING */
+/**********/
+
+ach_channel_t time_chan;
+
 
 
 typedef struct timespec ticks_t ;
@@ -87,23 +92,69 @@ static double ticks_delta(ticks_t t0, ticks_t t1) {
     return (d1 - d0 - overhead);
 }
 
+static void send_time(float t) {
+    int r = ach_put(&time_chan, &t, sizeof(t));
+    assert(ACH_OK == r);
+}
+
 void make_realtime(void) {
     if( mlockall( MCL_CURRENT | MCL_FUTURE ) ) {
         fprintf(stderr, "Couldn't lock pages in memory: %s\n",
                 strerror(errno) );
+        if(!PASS_NO_RT) exit(1);
     }
     struct sched_param sp;
     sp.sched_priority = 99; /* max priority on linux */
     if( sched_setscheduler( 0, SCHED_RR, &sp) < 0 ) {
         fprintf(stderr, "Couldn't set scheduling priority: %s\n",
                 strerror(errno) );
-
+        if(!PASS_NO_RT) exit(1);
     }
 }
 
-#ifdef BENCH_ACH
+void calibrate(void) {
+    make_realtime();
+    double a = 0;
+    ticks_t r0,r1;
+    size_t i;
+    for( i = 0; i<1000; i++ ) {
+        r0 = get_ticks();
+        r1 = get_ticks();
+        a += ticks_delta(r0,r1);
+    }
+    overhead = (a) / 1000;
+}
+
+void init_time_chan(void) {
+    /* create channel */
+    int r = ach_unlink("time");               /* delete first */
+    assert( ACH_OK == r || ACH_ENOENT == r);
+    r = ach_create("time", (size_t)FREQUENCY*(size_t)SECS*RECV_RT,
+                   sizeof(float), NULL );
+    assert(ACH_OK == r);
+
+    /* open channel */
+    r = ach_open(&time_chan, "time", NULL);
+    assert(ACH_OK == r);
+}
+
+void print_times(void) {
+    while(1){
+        float tm;
+        size_t fs;
+        int r = ach_get(&time_chan, &tm, sizeof(tm), &fs, NULL,
+                        ACH_O_WAIT);
+        assert(ACH_OK == r);
+        assert(fs == sizeof(tm));
+        printf("%f\n", tm*1e6);
+    }
+}
+
+/****************/
+/* ACH BENCHING */
+/****************/
 ach_channel_t chan;
-void sender(void) {
+void sender_ach(void) {
     fprintf(stderr,"sender\n");
     make_realtime();
     size_t i;
@@ -115,10 +166,9 @@ void sender(void) {
     }
 }
 
-void receiver(int rt) {
+void receiver_ach(int rt) {
     fprintf(stderr,"receiver\n");
-    if (rt) make_realtime();
-    // flush some initial delayed messages
+    /* flush some initial delayed messages */
     size_t i;
     for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
@@ -126,7 +176,7 @@ void receiver(int rt) {
         ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
                 ACH_O_LAST | ACH_O_WAIT);
     }
-    // now the good stuff
+    /* now the good stuff */
     while(1) {
         ticks_t ticks;
         size_t fs;
@@ -134,35 +184,36 @@ void receiver(int rt) {
                         ACH_O_LAST | ACH_O_WAIT);
         ticks_t now = get_ticks();
         assert(ACH_OK == r || sizeof(ticks) == fs);
-        // only print real-time latencies
+        /* only print real-time latencies */
         if (rt) {
-            double result = ticks_delta(ticks,now);
-            printf("%f\n", result*1e6);
+            send_time((float)ticks_delta(ticks,now));
         }
     }
 
 }
 
-void setup(void) {
-    // create channel
-    int r = ach_unlink("bench");               // delete first
+void setup_ach(void) {
+    /* create channel */
+    int r = ach_unlink("bench");               /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
     r = ach_create("bench", 10, 256, NULL );
     assert(ACH_OK == r);
 
-    // open channel
+    /* open channel */
     r = ach_open(&chan, "bench", NULL);
     assert(ACH_OK == r);
 }
-void destroy(void) {
+
+void destroy_ach(void) {
     int r = ach_unlink("bench");
     assert(ACH_OK == r);
 }
-#endif /*BENCH_ACH */
 
-#ifdef BENCH_PIPE
+/*****************/
+/* PIPE BENCHING */
+/*****************/
 int fd[2];
-void sender(void) {
+void sender_pipe(void) {
     fprintf(stderr,"sender\n");
     make_realtime();
     size_t i;
@@ -174,7 +225,7 @@ void sender(void) {
     }
 }
 
-void receiver(int rt) {
+void receiver_pipe(int rt) {
     (void)rt;
     fprintf(stderr,"receiver\n");
     make_realtime();
@@ -191,42 +242,51 @@ void receiver(int rt) {
         ssize_t r = read(fd[0], &ticks, sizeof(ticks));
         ticks_t now = get_ticks();
         assert(sizeof(ticks) == r);
-        double result = ticks_delta(ticks,now);
-        printf("%f\n", result*1e6);
+        send_time((float)ticks_delta(ticks,now));
     }
 
 }
 
-void setup(void) {
+void setup_pipe(void) {
     /* create channel */
     int r = pipe(fd);
     assert( !r );
 }
-void destroy(void) {
+void destroy_pipe(void) {
 }
-#endif /* BENCH_PIPE */
 
 
+/************/
+/* a vtable */
+/************/
+struct vtab {
+    void (*sender)(void);
+    void (*receiver)(int rt);
+    void (*setup)(void);
+    void (*destroy)(void);
+};
 
-void calibrate(void) {
-    make_realtime();
-    double a = 0;
-    ticks_t r0,r1;
-    size_t i;
-    for( i = 0; i<1000; i++ ) {
-        r0 = get_ticks();
-        r1 = get_ticks();
-        a += ticks_delta(r0,r1);
-    }
-    overhead = (a) / 1000;
-}
+struct vtab vtab_ach = {
+    sender_ach, receiver_ach, setup_ach, destroy_ach
+};
+
+struct vtab vtab_pipe = {
+    sender_pipe, receiver_pipe, setup_pipe, destroy_pipe
+};
+
+/********/
+/* MAIN */
+/********/
 
 int main(int argc, char **argv) {
 
     /* parse args */
     int c;
     char *endptr = 0;
-    while( (c = getopt( argc, argv, "f:s:p:r:l:")) != -1 ) {
+
+    struct vtab *vt = &vtab_ach;
+
+    while( (c = getopt( argc, argv, "f:s:p:r:l:gP")) != -1 ) {
         switch(c) {
         case 'f':
             FREQUENCY = strtod(optarg, &endptr);
@@ -242,11 +302,15 @@ int main(int argc, char **argv) {
             break;
         case 'r':
             RECV_RT = (size_t)atoi(optarg);
-            assert(RECV_RT);
             break;
         case 'l':
             RECV_NRT = (size_t)atoi(optarg);
-            assert(RECV_NRT);
+            break;
+        case 'g':
+            PASS_NO_RT = 1;
+            break;
+        case 'P':
+            vt = &vtab_pipe;
             break;
         default:
             puts("Usage: ach-bench [OPTION....]\n"
@@ -257,56 +321,88 @@ int main(int argc, char **argv) {
                  "  -p COUNT,           Real-Time Publishers (1)\n"
                  "  -r COUNT,           Real-Time Receivers (1)\n"
                  "  -l COUNT,           Non-Real-Time Receivers (0)\n"
+                 "  -g,                 Proceed even if real-time setup fails\n"
+                 "  -P,                 Benchmark pipes instead of ach\n"
                 );
             exit(EXIT_SUCCESS);
         }
     }
 
-    fprintf(stderr, "freq: %f\n", FREQUENCY);
-    fprintf(stderr, "secs: %f\n", SECS);
-    fprintf(stderr, "real-time receivers: %"PRIuPTR"\n", RECV_RT);
-    fprintf(stderr, "non-real-time receivers: %"PRIuPTR"\n", RECV_NRT);
-    fprintf(stderr, "real-time senders: %"PRIuPTR"\n", SEND_RT);
+    fprintf(stderr, "-f %.2f ", FREQUENCY);
+    fprintf(stderr, "-s %.2f ", SECS);
+    fprintf(stderr, "-r %"PRIuPTR" ", RECV_RT);
+    fprintf(stderr, "-l %"PRIuPTR" ", RECV_NRT);
+    fprintf(stderr, "-p %"PRIuPTR"\n", SEND_RT);
     size_t i;
+
+    init_time_chan();
 
     /* warm up */
     for( i = 0; i < 10; i++) get_ticks();
 
     /* compute overhead */
     calibrate();
-    fprintf(stderr,"overhead: %fus\n", overhead*1e6);
+    fprintf(stderr,"overhead 0: %fus\n", overhead*1e6);
 
     /* setup comms */
-    setup();
+    vt->setup();
 
-    /* fork */
+    /* fork printer */
+    pid_t pid_print = fork();
+    assert( pid_print >= 0 );
+    if(0 == pid_print ) {
+        print_times();
+        exit(0);
+    }
+
+    /* fork receivers */
     pid_t pid_recv_rt[RECV_RT+RECV_NRT];
-    for( i = 0; i < RECV_RT+RECV_NRT; i ++ ) {
+    /* non-realtime receivers */
+    for( i = 0; i < RECV_NRT; i ++ ) {
         pid_recv_rt[i] = fork();
         assert( pid_recv_rt[i] >= 0 );
         if(0 == pid_recv_rt[i]) {
-            receiver(i < RECV_RT);
+            vt->receiver(0);
             exit(0);
         }
     }
-    /* send */
+    /* realtime receivers */
+    make_realtime();
+    calibrate();
+    fprintf(stderr,"overhead 1: %fus\n", overhead*1e6);
+    for( i = RECV_NRT; i < RECV_NRT + RECV_RT; i ++ ) {
+        pid_recv_rt[i] = fork();
+        assert( pid_recv_rt[i] >= 0 );
+        if(0 == pid_recv_rt[i]) {
+            vt->receiver(1);
+            exit(0);
+        }
+    }
+
+    /* fork senders */
     pid_t pid_send_rt[SEND_RT];
     for( i = 0; i < SEND_RT; i ++ ) {
         pid_send_rt[i] = fork();
         assert( pid_send_rt[i] >= 0 );
         if(0 == pid_send_rt[i]) {
-            sender();
+            vt->sender();
             exit(0);
         }
     }
-    sleep((unsigned)(SECS * 1.5) + 5);
+
+    /* Wait for senders to finish */
+    for( i = 0; i < SEND_RT; i ++ ) {
+        int status;
+        waitpid( pid_send_rt[i], &status, 0 );
+    }
+    fprintf(stderr,"Senders done, sleep...\n");
+    sleep(2);
+    fprintf(stderr,"Killing receivers\n");
     /* stop */
-    for( i = 0; i < RECV_RT; i ++ ) {
+    for( i = 0; i < RECV_RT + RECV_NRT; i ++ ) {
         kill(pid_recv_rt[i],SIGTERM);
     }
-    for( i = 0; i < SEND_RT; i ++ ) {
-        kill(pid_send_rt[i],SIGTERM);
-    }
-    destroy();
+    kill(pid_print, SIGTERM );
+    vt->destroy();
     exit(0);
 }

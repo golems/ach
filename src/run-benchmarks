@@ -1,0 +1,33 @@
+#!/bin/sh
+
+FREQ_RANGE="1000 2000 4000 8000"
+SEC_RANGE="4"
+PUB_RANGE="1 2 4"
+SUBRT_RANGE="1 2 4 8 16"
+SUBNRT_RANGE="0 1 2 4 8 16"
+
+
+# Ach Benchmark
+
+for f in $FREQ_RANGE; do
+    for s in $SEC_RANGE; do
+        # pipe bench
+        FNAME=ach-bench-out-f$f-s$s-P.dat
+        echo $FNAME
+        sync
+        ./ach-bench -f $f -s $s -P > /dev/shm/$FNAME
+        mv /dev/shm/$FNAME .
+         for p in $PUB_RANGE; do
+             for r in $SUBRT_RANGE; do
+                 for l in $SUBNRT_RANGE; do
+                     FNAME=ach-bench-out-f$f-s$s-p$p-r$r-l$l.dat
+                     echo $FNAME
+                     sync
+                     ./ach-bench -f $f -s $s -p $p -r $r -l $l > /dev/shm/$FNAME
+                     sync
+                     mv /dev/shm/$FNAME .
+                 done
+             done
+         done
+    done
+done

@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = CMakeLists.txt
-dist_bin_SCRIPTS = achpipe achlog achtooltest
+dist_bin_SCRIPTS = achpipe achlog achtooltest src/run-benchmarks
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
@@ -42,4 +42,5 @@ ach_bench_LDADD = libach.la
 endif
 
 
-
+clean-local:
+	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/*
