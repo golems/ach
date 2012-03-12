@@ -105,5 +105,11 @@ APPEND_FLAG([-Wshadow])
 APPEND_FLAG([-Wwrite-strings])
 APPEND_FLAG([-Wc++-compat])
 
+# Doxygen
+DX_HTML_FEATURE(ON)
+DX_PDF_FEATURE(OFF)
+DX_PS_FEATURE(OFF)
+DX_INIT_DOXYGEN(ach)
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

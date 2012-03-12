@@ -40,7 +40,7 @@
  *
  */
 
-/** \file achpipe.c
+/** \file achpipe-bin.c
  *  \author Neil T. Dantam
  *
  *  \bug does not fail gracefully when the channel can't be opened

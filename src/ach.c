@@ -82,6 +82,8 @@
 /** macro to print debug messages */
 #define DEBUGF(fmt, a... )                      \
     fprintf(stderr, (fmt), ## a )
+
+/** Call perror() when debugging */
 #define DEBUG_PERROR(a)    perror(a)
 
 /** macro to do things when debugging */

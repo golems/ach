@@ -44,3 +44,5 @@ endif
 
 clean-local:
 	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/*
+
+include doxygen.am

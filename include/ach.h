@@ -171,10 +171,13 @@
 
 /* restict only in C99 */
 #ifdef __cplusplus
+/** Alias restrict keyword */
 # define ACH_RESTRICT
 #elif  __STDC_VERSION__ < 199901L
+/** Alias restrict keyword */
 #  define ACH_RESTRICT
 #else
+/** Alias restrict keyword */
 # define ACH_RESTRICT restrict
 #endif
 
