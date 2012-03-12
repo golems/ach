@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2008-2011, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2012, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -77,7 +77,7 @@
  * \author Developed at the Georgia Tech Humanoid Robotics Lab
  * \author Under Direction of Professor Mike Stilman
  *
- * Copyright (c) 2008-2011, Georgia Tech Research Corporation.
+ * Copyright (c) 2008-2012, Georgia Tech Research Corporation.
  * All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or
