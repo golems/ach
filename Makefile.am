@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = CMakeLists.txt
+EXTRA_DIST = CMakeLists.txt spin
 dist_bin_SCRIPTS = achpipe achlog achtooltest src/run-benchmarks
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
