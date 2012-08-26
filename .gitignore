@@ -1,0 +1,15 @@
+/.deps
+/config.*
+/autom4te.cache/
+/aclocal.m4
+/doc/
+/m4
+/Makefile.in
+/Makefile
+/configure
+/depcomp
+/install-sh
+/libtool
+/ltmain.sh
+/missing
+/stamp-h1
