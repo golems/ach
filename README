@@ -1,7 +1,5 @@
-************
-* OVERVIEW *
-************
-
+OVERVIEW
+========
 Ach is an Inter-Process Communication (IPC) mechanism and library. It
 is especially suited for communication in real-time systems that
 sample data from physical processes. Ach eliminates the Head-of-Line
@@ -11,45 +9,37 @@ has been tested and demonstrated on a variety of physical robotic
 systems. Source code for Ach is available under an Open Source
 BSD-style license.
 
-****************
-* INSTALLATION *
-****************
-
-`./configure && make && make install'
+INSTALLATION
+============
+    ./configure && make && make install
 
 See the INSTALL file for details.
 
-*********************
-* Example and Usage *
-*********************
+Example and Usage
+=================
+* Example Code: `./src/ach-example.c`
+* Shell Tool `ach`: can be used to create channels:
+  * Create a channel `ach -C CHANNEL_NAME`
+  * Delete a channel `ach -U CHANNEL_NAME`
+  * Display channel stats `ach -D CHANNEL_NAME`
+  * View options `ach -H`
 
-- Example Code: ./src/ach-example.c
-- Shell Tool `ach': can be used to create channels:
-  - Create a channel `ach -C CHANNEL_NAME'
-  - Delete a channel `ach -U CHANNEL_NAME'
-  - Display channel stats `ach -D CHANNEL_NAME'
-  - View options `ach -H'
-
-****************
-* Formal Model *
-****************
-
+Formal Model
+============
 Ach has been formally verified using the SPIN model checker.  This
-formal model is included in the sourc distribution under the ./spin/
+formal model is included in the source distribution under the `./spin/`
 directory.
 
-**************************
-* Performance/Benchmarks *
-**************************
-
+Performance/Benchmarks
+======================
 To evaluate the performance of ach on your machine, you can use the
-included `ach-bench' program to test messaging latency.  See the shell
-script `src/run-benchmarks' which runs the benchmark with a variety of
+included `ach-bench` program to test messaging latency.  See the shell
+script `src/run-benchmarks` which runs the benchmark with a variety of
 options.
 
-*******************
-* Further Details *
-*******************
-
+Further Details
+===============
 A technical report describing design and rationale behind Ach is available at:
 http://www.golems.org/node/1526
+
+API documentation is available at http://golems.github.com/ach/.
