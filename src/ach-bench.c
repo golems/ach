@@ -87,9 +87,9 @@ static ticks_t get_ticks(void) {
     return t;
 }
 static double ticks_delta(ticks_t t0, ticks_t t1) {
-    double d0 = (double)t0.tv_sec + (double)t0.tv_nsec / 1e9;
-    double d1 = (double)t1.tv_sec + (double)t1.tv_nsec / 1e9;
-    return (d1 - d0 - overhead);
+    double dsec =  ((double)t1.tv_sec -  (double)t0.tv_sec);
+    double dnsec = ((double)t1.tv_nsec - (double)t0.tv_nsec) / 1e9;
+    return dsec + dnsec - overhead;
 }
 
 static void send_time(float t) {
@@ -117,6 +117,7 @@ void calibrate(void) {
     double a = 0;
     ticks_t r0,r1;
     size_t i;
+    overhead = 0;
     for( i = 0; i<1000; i++ ) {
         r0 = get_ticks();
         r1 = get_ticks();
