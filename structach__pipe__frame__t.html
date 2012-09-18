@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ach: ach_create_attr_t Struct Reference</title>
+<title>ach: ach_pipe_frame_t Struct Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="doxygen.css" rel="stylesheet" type="text/css"/>
 </head>
@@ -28,29 +28,29 @@
   <div class="summary">
 <a href="#pub-attribs">Data Fields</a>  </div>
   <div class="headertitle">
-<h1>ach_create_attr_t Struct Reference</h1>  </div>
+<h1>ach_pipe_frame_t Struct Reference</h1>  </div>
 </div>
 <div class="contents">
-<!-- doxytag: class="ach_create_attr_t" -->
-<p>Attributes to pass to ach_create.  
+<!-- doxytag: class="ach_pipe_frame_t" -->
+<p>Format for ach frames sent over pipes or stored on disk.  
 <a href="#_details">More...</a></p>
 
 <p><code>#include &lt;<a class="el" href="ach_8h_source.html">ach.h</a>&gt;</code></p>
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6a71c790360ab2747a1e679d1fc529e9"></a><!-- doxytag: member="ach_create_attr_t::truncate" ref="a6a71c790360ab2747a1e679d1fc529e9" args="" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a6a71c790360ab2747a1e679d1fc529e9">truncate</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">remove and recreate an existing shm file <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a49290681ec1d48e1bbd4bebcee27df27"></a><!-- doxytag: member="ach_create_attr_t::map_anon" ref="a49290681ec1d48e1bbd4bebcee27df27" args="" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a49290681ec1d48e1bbd4bebcee27df27">map_anon</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">allocate channel in heap, rather than shm <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3bc28b142d07b12bb235d6ccc8028745"></a><!-- doxytag: member="ach_create_attr_t::shm" ref="a3bc28b142d07b12bb235d6ccc8028745" args="" -->
-<a class="el" href="structach__header__t.html">ach_header_t</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a3bc28b142d07b12bb235d6ccc8028745">shm</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">pointer to channel, set out output of create iff map_anon <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a91f05a1d0a41129cc43fa93a544b02db"></a><!-- doxytag: member="ach_pipe_frame_t::magic" ref="a91f05a1d0a41129cc43fa93a544b02db" args="[8]" -->
+char&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__pipe__frame__t.html#a91f05a1d0a41129cc43fa93a544b02db">magic</a> [8]</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">magic number: "achpipe", null terminated <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a037dcc837aa17bdeaa22f4d4549869ef"></a><!-- doxytag: member="ach_pipe_frame_t::size_bytes" ref="a037dcc837aa17bdeaa22f4d4549869ef" args="[8]" -->
+uint8_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__pipe__frame__t.html#a037dcc837aa17bdeaa22f4d4549869ef">size_bytes</a> [8]</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">size, stored little endian for disk and network transmission <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a604b9e9d5447918053237218201df7e4"></a><!-- doxytag: member="ach_pipe_frame_t::data" ref="a604b9e9d5447918053237218201df7e4" args="[1]" -->
+uint8_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__pipe__frame__t.html#a604b9e9d5447918053237218201df7e4">data</a> [1]</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">flexible array <br/></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
-<p>Attributes to pass to ach_create. </p>
+<p>Format for ach frames sent over pipes or stored on disk. </p>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/<a class="el" href="ach_8h_source.html">ach.h</a></li>
 </ul>

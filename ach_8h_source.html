@@ -307,33 +307,52 @@
 <a name="l00524"></a>00524 
 <a name="l00526"></a><a class="code" href="ach_8h.html#abaa663b4780171e76fc25289bab544e4">00526</a> <span class="preprocessor">#define ACH_STREAM_PREFIX_SIZE  12</span>
 <a name="l00527"></a>00527 <span class="preprocessor"></span>
-<a name="l00529"></a>00529     ssize_t <a class="code" href="ach_8h.html#abecb8fa38611d7bb9201a66825756d66" title="Writes message pointed to by but to stream fd.">ach_stream_write_msg</a>( <span class="keywordtype">int</span> fd, <span class="keyword">const</span> <span class="keywordtype">char</span> *buf, <span class="keywordtype">size_t</span> cnt);
-<a name="l00530"></a>00530 
-<a name="l00532"></a>00532     ssize_t <a class="code" href="ach_8h.html#a4987341305557d61dce8c283d39db906" title="Reads the size of a message from fd and stores in cnt.">ach_stream_read_msg_size</a>( <span class="keywordtype">int</span> fd, ssize_t *cnt);
-<a name="l00533"></a>00533 
-<a name="l00535"></a>00535     ssize_t <a class="code" href="ach_8h.html#afa510a3949daf4ac78ad411afccd547b" title="Reads msg_size bytes of data from fd and stores in buf.">ach_stream_read_msg_data</a>( <span class="keywordtype">int</span> fd, <span class="keywordtype">char</span> *buf, <span class="keywordtype">size_t</span> msg_size, <span class="keywordtype">size_t</span> buf_size);
-<a name="l00536"></a>00536 
+<a name="l00528"></a>00528 
+<a name="l00529"></a>00529     <span class="comment">/* /\** Writes message pointed to by but to stream fd *\/ */</span>
+<a name="l00530"></a>00530     <span class="comment">/* ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt); */</span>
+<a name="l00531"></a>00531 
+<a name="l00532"></a>00532     <span class="comment">/* /\** Reads the size of a message from fd and stores in cnt. *\/ */</span>
+<a name="l00533"></a>00533     <span class="comment">/* ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt); */</span>
+<a name="l00534"></a>00534 
+<a name="l00535"></a>00535     <span class="comment">/* /\** Reads msg_size bytes of data from fd and stores in buf. *\/ */</span>
+<a name="l00536"></a>00536     <span class="comment">/* ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size); */</span>
 <a name="l00537"></a>00537 
-<a name="l00539"></a>00539     ssize_t <a class="code" href="ach_8h.html#ad33a09b98150fad192879cf30a1d78bf" title="Reads from fd into buffer completely.">ach_stream_read_fill</a>( <span class="keywordtype">int</span> fd, <span class="keywordtype">char</span> *buf, <span class="keywordtype">size_t</span> cnt );
-<a name="l00540"></a>00540 
-<a name="l00542"></a>00542     ssize_t <a class="code" href="ach_8h.html#a6d78f1addd2a63c589bc87391d0fb5aa" title="Writes from buffer into fd completely.">ach_stream_write_fill</a>( <span class="keywordtype">int</span> fd, <span class="keyword">const</span> <span class="keywordtype">char</span> *buf, <span class="keywordtype">size_t</span> cnt );
-<a name="l00543"></a>00543 
-<a name="l00545"></a>00545     ssize_t <a class="code" href="ach_8h.html#ac837554b2554043cf1e6fcba757c38aa" title="Reads a line from fd.">ach_read_line</a>( <span class="keywordtype">int</span> fd, <span class="keywordtype">char</span> *buf, <span class="keywordtype">size_t</span> cnt );
-<a name="l00546"></a>00546 
-<a name="l00548"></a>00548     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00549"></a>00549     <a class="code" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635" title="Sets permissions of chan to specified mode.">ach_chmod</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, mode_t mode );
-<a name="l00550"></a>00550 
-<a name="l00552"></a>00552     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00553"></a>00553     <a class="code" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6" title="Delete an ach channel.">ach_unlink</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *name );
-<a name="l00554"></a>00554 
-<a name="l00555"></a>00555 <span class="preprocessor">#ifdef __cplusplus</span>
-<a name="l00556"></a>00556 <span class="preprocessor"></span>}
-<a name="l00557"></a>00557 <span class="preprocessor">#endif</span>
-<a name="l00558"></a>00558 <span class="preprocessor"></span>
-<a name="l00559"></a>00559 <span class="preprocessor">#endif </span><span class="comment">/* ACH_H */</span>
+<a name="l00538"></a>00538 
+<a name="l00539"></a>00539     <span class="comment">/* /\** Reads from fd into buffer completely *\/ */</span>
+<a name="l00540"></a>00540     <span class="comment">/* ssize_t ach_stream_read_fill( int fd, char *buf, size_t cnt ); */</span>
+<a name="l00541"></a>00541 
+<a name="l00542"></a>00542     <span class="comment">/* /\** Writes from buffer into fd completely *\/ */</span>
+<a name="l00543"></a>00543     <span class="comment">/* ssize_t ach_stream_write_fill( int fd, const char *buf, size_t cnt ); */</span>
+<a name="l00544"></a>00544 
+<a name="l00545"></a>00545     <span class="comment">/* /\** Reads a line from fd *\/ */</span>
+<a name="l00546"></a>00546     <span class="comment">/* ssize_t ach_read_line( int fd, char *buf, size_t cnt ); */</span>
+<a name="l00547"></a>00547 
+<a name="l00549"></a>00549     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00550"></a>00550     <a class="code" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635" title="Sets permissions of chan to specified mode.">ach_chmod</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, mode_t mode );
+<a name="l00551"></a>00551 
+<a name="l00553"></a>00553     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00554"></a>00554     <a class="code" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6" title="Delete an ach channel.">ach_unlink</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *name );
+<a name="l00555"></a>00555 
+<a name="l00557"></a><a class="code" href="structach__pipe__frame__t.html">00557</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00558"></a><a class="code" href="structach__pipe__frame__t.html#a91f05a1d0a41129cc43fa93a544b02db">00558</a>         <span class="keywordtype">char</span> magic[8];    
+<a name="l00559"></a><a class="code" href="structach__pipe__frame__t.html#a037dcc837aa17bdeaa22f4d4549869ef">00559</a>         uint8_t size_bytes[8]; 
+<a name="l00560"></a><a class="code" href="structach__pipe__frame__t.html#a604b9e9d5447918053237218201df7e4">00560</a>         uint8_t data[1];  
+<a name="l00561"></a>00561     } <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a>;
+<a name="l00562"></a>00562 
+<a name="l00568"></a>00568     <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *<a class="code" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce" title="Malloc an ach_pipe_frame_t with room for `size&amp;#39; data bytes.">ach_pipe_alloc</a>(<span class="keywordtype">size_t</span> size);
+<a name="l00569"></a>00569 
+<a name="l00571"></a>00571     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56" title="Set size field in ach frame, always little endian.">ach_pipe_set_size</a>(<a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame, uint64_t size);
+<a name="l00572"></a>00572 
+<a name="l00574"></a>00574     uint64_t <a class="code" href="ach_8h.html#a22a869cc3211869668fc530c875630ee" title="Set size field in ach frame, always little endian.">ach_pipe_get_size</a>(<span class="keyword">const</span> <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame );
+<a name="l00575"></a>00575 
+<a name="l00576"></a>00576 <span class="preprocessor">#ifdef __cplusplus</span>
+<a name="l00577"></a>00577 <span class="preprocessor"></span>}
+<a name="l00578"></a>00578 <span class="preprocessor">#endif</span>
+<a name="l00579"></a>00579 <span class="preprocessor"></span>
+<a name="l00580"></a>00580 <span class="preprocessor">#endif </span><span class="comment">/* ACH_H */</span>
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 00:05:38 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 04:07:39 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

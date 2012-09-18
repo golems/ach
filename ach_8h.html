@@ -51,6 +51,8 @@ Data Structures</h2></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Attributes to pass to ach_create.  <a href="structach__create__attr__t.html#_details">More...</a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html">ach_channel_t</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Descriptor for shared memory area.  <a href="structach__channel__t.html#_details">More...</a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">struct &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Format for ach frames sent over pipes or stored on disk.  <a href="structach__pipe__frame__t.html#_details">More...</a><br/></td></tr>
 <tr><td colspan="2"><h2><a name="define-members"></a>
 Defines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a36320691b8bddb17d7416a7c57e296f5"></a><!-- doxytag: member="ach.h::ACH_RESTRICT" ref="a36320691b8bddb17d7416a7c57e296f5" args="" -->
@@ -172,28 +174,18 @@ const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" hr
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Converts return code from ach call to a human readable string;. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#adccdafda2936a9f70087f950ba7e83e8">ach_dump</a> (<a class="el" href="structach__header__t.html">ach_header_t</a> *shm)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Prints information about the channel shm to stderr.  <a href="#adccdafda2936a9f70087f950ba7e83e8"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abecb8fa38611d7bb9201a66825756d66"></a><!-- doxytag: member="ach.h::ach_stream_write_msg" ref="abecb8fa38611d7bb9201a66825756d66" args="(int fd, const char *buf, size_t cnt)" -->
-ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#abecb8fa38611d7bb9201a66825756d66">ach_stream_write_msg</a> (int fd, const char *buf, size_t cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Writes message pointed to by but to stream fd. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a4987341305557d61dce8c283d39db906">ach_stream_read_msg_size</a> (int fd, ssize_t *cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads the size of a message from fd and stores in cnt.  <a href="#a4987341305557d61dce8c283d39db906"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#afa510a3949daf4ac78ad411afccd547b">ach_stream_read_msg_data</a> (int fd, char *buf, size_t msg_size, size_t buf_size)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads msg_size bytes of data from fd and stores in buf.  <a href="#afa510a3949daf4ac78ad411afccd547b"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad33a09b98150fad192879cf30a1d78bf"></a><!-- doxytag: member="ach.h::ach_stream_read_fill" ref="ad33a09b98150fad192879cf30a1d78bf" args="(int fd, char *buf, size_t cnt)" -->
-ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ad33a09b98150fad192879cf30a1d78bf">ach_stream_read_fill</a> (int fd, char *buf, size_t cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads from fd into buffer completely. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6d78f1addd2a63c589bc87391d0fb5aa"></a><!-- doxytag: member="ach.h::ach_stream_write_fill" ref="a6d78f1addd2a63c589bc87391d0fb5aa" args="(int fd, const char *buf, size_t cnt)" -->
-ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a6d78f1addd2a63c589bc87391d0fb5aa">ach_stream_write_fill</a> (int fd, const char *buf, size_t cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Writes from buffer into fd completely. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac837554b2554043cf1e6fcba757c38aa"></a><!-- doxytag: member="ach.h::ach_read_line" ref="ac837554b2554043cf1e6fcba757c38aa" args="(int fd, char *buf, size_t cnt)" -->
-ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ac837554b2554043cf1e6fcba757c38aa">ach_read_line</a> (int fd, char *buf, size_t cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads a line from fd. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab81866aaeb3995e12e12de27457e1635"></a><!-- doxytag: member="ach.h::ach_chmod" ref="ab81866aaeb3995e12e12de27457e1635" args="(ach_channel_t *chan, mode_t mode)" -->
 enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635">ach_chmod</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, mode_t mode)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Sets permissions of chan to specified mode. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3ca9384476568e624155fd7f17aa16f6"></a><!-- doxytag: member="ach.h::ach_unlink" ref="a3ca9384476568e624155fd7f17aa16f6" args="(const char *name)" -->
 enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6">ach_unlink</a> (const char *name)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Delete an ach channel. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce">ach_pipe_alloc</a> (size_t size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Malloc an <a class="el" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> with room for `size' data bytes.  <a href="#a401609c85440cb0b3d5a8f862b1436ce"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56">ach_pipe_set_size</a> (<a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *frame, uint64_t size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always little endian.  <a href="#a43db63c13e365879b6f345dadd606a56"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">uint64_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a22a869cc3211869668fc530c875630ee">ach_pipe_get_size</a> (const <a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *frame)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always little endian.  <a href="#a22a869cc3211869668fc530c875630ee"></a><br/></td></tr>
 <tr><td colspan="2"><h2><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab49bf40d8d514cd9c90044b570b6dbca"></a><!-- doxytag: member="ach.h::ach_channel_size" ref="ab49bf40d8d514cd9c90044b570b6dbca" args="" -->
@@ -684,6 +676,76 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
+<a class="anchor" id="a401609c85440cb0b3d5a8f862b1436ce"></a><!-- doxytag: member="ach.h::ach_pipe_alloc" ref="a401609c85440cb0b3d5a8f862b1436ce" args="(size_t size)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a>* ach_pipe_alloc </td>
+          <td>(</td>
+          <td class="paramtype">size_t&nbsp;</td>
+          <td class="paramname"> <em>size</em></td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Malloc an <a class="el" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> with room for `size' data bytes. </p>
+<dl class="return"><dt><b>Returns:</b></dt><dd>a newly allocated ach_pipe_frame with its magic and size fields properly filled. Size is big endian.. </dd></dl>
+
+</div>
+</div>
+<a class="anchor" id="a22a869cc3211869668fc530c875630ee"></a><!-- doxytag: member="ach.h::ach_pipe_get_size" ref="a22a869cc3211869668fc530c875630ee" args="(const ach_pipe_frame_t *frame)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint64_t ach_pipe_get_size </td>
+          <td>(</td>
+          <td class="paramtype">const <a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *&nbsp;</td>
+          <td class="paramname"> <em>frame</em></td>
+          <td>&nbsp;)&nbsp;</td>
+          <td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Set size field in ach frame, always little endian. </p>
+
+</div>
+</div>
+<a class="anchor" id="a43db63c13e365879b6f345dadd606a56"></a><!-- doxytag: member="ach.h::ach_pipe_set_size" ref="a43db63c13e365879b6f345dadd606a56" args="(ach_pipe_frame_t *frame, uint64_t size)" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ach_pipe_set_size </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *&nbsp;</td>
+          <td class="paramname"> <em>frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint64_t&nbsp;</td>
+          <td class="paramname"> <em>size</em></td><td>&nbsp;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td><td></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Set size field in ach frame, always little endian. </p>
+
+</div>
+</div>
 <a class="anchor" id="acb8fcfaba91a22e295a5e437cd5b9c9b"></a><!-- doxytag: member="ach.h::ach_put" ref="acb8fcfaba91a22e295a5e437cd5b9c9b" args="(ach_channel_t *chan, void *buf, size_t len)" -->
 <div class="memitem">
 <div class="memproto">
@@ -727,76 +789,6 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
   </dd>
 </dl>
 <dl class="return"><dt><b>Returns:</b></dt><dd>ACH_OK on success. </dd></dl>
-
-</div>
-</div>
-<a class="anchor" id="afa510a3949daf4ac78ad411afccd547b"></a><!-- doxytag: member="ach.h::ach_stream_read_msg_data" ref="afa510a3949daf4ac78ad411afccd547b" args="(int fd, char *buf, size_t msg_size, size_t buf_size)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t ach_stream_read_msg_data </td>
-          <td>(</td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">char *&nbsp;</td>
-          <td class="paramname"> <em>buf</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&nbsp;</td>
-          <td class="paramname"> <em>msg_size</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">size_t&nbsp;</td>
-          <td class="paramname"> <em>buf_size</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Reads msg_size bytes of data from fd and stores in buf. </p>
-
-</div>
-</div>
-<a class="anchor" id="a4987341305557d61dce8c283d39db906"></a><!-- doxytag: member="ach.h::ach_stream_read_msg_size" ref="a4987341305557d61dce8c283d39db906" args="(int fd, ssize_t *cnt)" -->
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">ssize_t ach_stream_read_msg_size </td>
-          <td>(</td>
-          <td class="paramtype">int&nbsp;</td>
-          <td class="paramname"> <em>fd</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">ssize_t *&nbsp;</td>
-          <td class="paramname"> <em>cnt</em></td><td>&nbsp;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td><td></td>
-        </tr>
-      </table>
-</div>
-<div class="memdoc">
-
-<p>Reads the size of a message from fd and stores in cnt. </p>
 
 </div>
 </div>
@@ -850,7 +842,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 </div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 00:05:38 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 04:07:39 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
