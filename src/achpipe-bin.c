@@ -48,7 +48,7 @@
  */
 
 
-/** \page "Pipe Protocol"
+/** \page pipe Pipe Protocol
  *
  * \section frame-format Frame Format
  *
@@ -78,8 +78,8 @@
  *
  *
  * <ul>
- * <li> \c next Send the next frame from channel. \sa ach_wait_next </li>
- * <li> \c last Send the last frame from channel. \sa ach_wait_last </li>
+ * <li> \c next Send the next frame from channel. </li>
+ * <li> \c last Send the last frame from channel.  </li>
  * </ul>
  *
  * These commands are sent as four ascii bytes, no '\\n' and no '\\0',

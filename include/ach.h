@@ -119,6 +119,12 @@
  *
  * - \code $ ach -U CHANNEL_NAME \endcode
  *
+ * \section log Logging Channel Data
+ *
+ * - \code $ achlog -d OUTPUT_DIRECTORY CHANNEL-1 CHANNEL-2 ... CHANNEL-N \endcode
+ *
+ * Log files use the ach \ref pipe "Pipe Protocol".
+ *
  * \section remote Remote Channels
  *
  * -# Ensure the the remote host has inetd running
@@ -131,11 +137,11 @@
  *
  * \subsection pull Pull a Channel from a Remote Host
  *
- * - \code $ ./achpipe -Wp CHANNEL_NAME -H REMOTE_HOST \endcode
+ * - \code $ achpipe -Wp CHANNEL_NAME -H REMOTE_HOST \endcode
  *
  * \subsection push Push a Channel to a Remote Host
  *
- * - \code $ ./achpipe -Ws CHANNEL_NAME -H REMOTE_HOST \endcode
+ * - \code $ achpipe -Ws CHANNEL_NAME -H REMOTE_HOST \endcode
  *
  */
 
@@ -182,8 +188,10 @@
 #endif
 
 #if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+/** Deprecated old symbol */
 #define ACH_DEPRECATED  __attribute__((__deprecated__))
 #else
+/** Deprecated old symbol */
 #define ACH_DEPRECATED
 #endif /* __GNUC__ */
 
