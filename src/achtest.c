@@ -259,8 +259,8 @@ static int subscriber( int i ) {
         abstime.tv_sec = time(NULL) + 2;
 
         size_t frame_size;
-        r = ach_wait_next( &chan, data, sizeof(data), &frame_size,
-                           &abstime );
+        r = ach_get( &chan, data, sizeof(data), &frame_size,
+                     &abstime, ACH_O_WAIT );
         if( seen_last && ACH_TIMEOUT == r ) {
             break;
         } else if( ACH_OK != r && ACH_MISSED_FRAME != r) {

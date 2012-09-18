@@ -119,7 +119,7 @@ int subscribe( ach_channel_t *chan) {
     while(1) {
         size_t frame_size = 0;
         size_t fr;
-        r = ach_get_last(chan, sbuffer, sizeof(sbuffer), &frame_size );
+        r = ach_get( chan, sbuffer, sizeof(sbuffer), &frame_size, NULL, ACH_O_LAST );
         if( ACH_OK != r )  {
             if( ACH_STALE_FRAMES == r ) {
                 usleep(1000);

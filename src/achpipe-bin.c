@@ -428,19 +428,22 @@ void subscribe(int fd, char *chan_name) {
             if( opt_sync ) {
                 /* parse command */
                 if ( streq32("next", cmd ) ) {
-                    r = ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
+                    r = ach_get(&chan, buf, max, &frame_size,  NULL,
+                                ACH_O_WAIT );
                 }else if ( streq32("last", cmd ) ){
-                    r = ach_wait_last(&chan, buf, max, &frame_size,  NULL ) ;
+                    r = ach_get(&chan, buf, max, &frame_size,  NULL,
+                                ACH_O_WAIT | ACH_O_LAST );
                 } else if ( streq32("poll", cmd) ) {
-                    r = ach_copy_last(&chan, buf, max, &frame_size ) ;
+                    r = ach_get( &chan, buf, max, &frame_size, NULL,
+                                 ACH_O_COPY | ACH_O_LAST );
                 } else {
                     hard_assert(0, "Invalid command: %s\n", cmd );
                 }
             } else {
                 /* push the data */
                 r = (opt_last || is_freq) ?
-                    ach_wait_last(&chan, buf, max, &frame_size,  NULL ) :
-                    ach_wait_next(&chan, buf, max, &frame_size,  NULL ) ;
+                    ach_get( &chan, buf, max, &frame_size,  NULL, ACH_O_WAIT | ACH_O_LAST ) :
+                    ach_get( &chan, buf, max, &frame_size,  NULL, ACH_O_WAIT ) ;
             }
             /* check return code */
             if( ACH_OVERFLOW == r ) {

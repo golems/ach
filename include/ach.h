@@ -181,6 +181,11 @@
 # define ACH_RESTRICT restrict
 #endif
 
+#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#define ACH_DEPRECATED  __attribute__((__deprecated__))
+#else
+#define ACH_DEPRECATED
+#endif /* __GNUC__ */
 
 #ifdef __cplusplus
 extern "C" {
@@ -253,7 +258,10 @@ extern "C" {
 
 
 
-    /** Option flags for ach_get()*/
+    /** Option flags for ach_get().
+     *
+     * Default behavior is to retrieve the oldest unseen frame without
+     * waiting.*/
     typedef enum {
         /** Blocks until an unseen message arrives
          *  or timeout.  If the channel already has data that this subscriber
@@ -392,10 +400,12 @@ extern "C" {
         \pre chan has been opened with ach_subscribe()
         \post buf contains the data for the next frame and chan.seq_num is incremented
     */
+    ACH_DEPRECATED
     enum ach_status
     ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
     /** like ach_get_next but blocks if no new data is there */
+    ACH_DEPRECATED
     enum ach_status
     ach_wait_next( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                   const struct timespec *ACH_RESTRICT abstime );
@@ -420,11 +430,13 @@ extern "C" {
         to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
         available.
     */
+    ACH_DEPRECATED
     enum ach_status
     ach_get_last( ach_channel_t *chan, void *buf,
                   size_t size, size_t *frame_size );
 
     /** always copies the last message, even if it is stale */
+    ACH_DEPRECATED
     enum ach_status
     ach_copy_last( ach_channel_t *chan, void *buf,
                    size_t size, size_t *frame_size );
@@ -438,6 +450,7 @@ extern "C" {
 
         See ach_get_next for parameters
     */
+    ACH_DEPRECATED
     enum ach_status
     ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
                        const struct timespec *ACH_RESTRICT abstime );
