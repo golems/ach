@@ -335,7 +335,7 @@ void publish( int fd, char *chan_name )  {
     ach_channel_t chan;
 
     { /* open channel */
-        int r;
+        ach_status_t r;
         r = ach_open( &chan, chan_name, NULL );
         hard_assert(ACH_OK == r,
                     "Failed to open channel %s for publish: %s\n",
@@ -344,7 +344,7 @@ void publish( int fd, char *chan_name )  {
 
     { /* publish loop */
         size_t max = INIT_BUF_SIZE;
-        int cnt;
+        ssize_t cnt;
         char *buf = (char*)xmalloc( max );
         while( ! sig_received ) {
             ssize_t s;
@@ -364,7 +364,7 @@ void publish( int fd, char *chan_name )  {
             if( s <= 0 ) break;
             assert( cnt == s );
             /* put data */
-            int r = ach_put( &chan, buf, (size_t)cnt );
+            ach_status_t r = ach_put( &chan, buf, (size_t)cnt );
             hard_assert( r == ACH_OK, "Invalid ach put %s\n",
                          ach_result_to_string( r ) );
         }
@@ -387,7 +387,7 @@ void subscribe(int fd, char *chan_name) {
     /* get channel */
     ach_channel_t chan;
     {
-        int r = ach_open( &chan, chan_name, NULL );
+        ach_status_t r = ach_open( &chan, chan_name, NULL );
         hard_assert( ACH_OK == r,
                      "Failed to open channel %s for subscribe: %s\n",
                      chan_name, ach_result_to_string(r) );
@@ -424,7 +424,7 @@ void subscribe(int fd, char *chan_name) {
         /* read the data */
         int got_frame = 0;
         do {
-            int r = -1;
+            ach_status_t r = ACH_BUG;
             if( opt_sync ) {
                 /* parse command */
                 if ( streq32("next", cmd ) ) {

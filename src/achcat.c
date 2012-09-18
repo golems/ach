@@ -114,7 +114,7 @@ int publish( ach_channel_t *chan) {
 
 
 int subscribe( ach_channel_t *chan) {
-    int r;
+    ach_status_t r;
     int t0 = 1;
     while(1) {
         size_t frame_size = 0;
@@ -139,7 +139,7 @@ int subscribe( ach_channel_t *chan) {
 
         fr = fwrite( sbuffer, sizeof(char), frame_size, fout );
         if ( fr != frame_size )  {
-            r = 0;
+            r = ACH_OK;
             break;
         }
         fflush(fout);

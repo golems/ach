@@ -185,7 +185,7 @@ int cmd_create(void) {
         fprintf(stderr, "Message size must be greater than zero, not %"PRIuPTR".\n", opt_msg_size);
         return -1;
     }
-    int i;
+    ach_status_t i;
     {
         ach_create_attr_t attr;
         ach_create_attr_init(&attr);
@@ -238,7 +238,7 @@ int cmd_dump(void) {
         fprintf(stderr, "Dumping Channel %s\n", opt_chan_name);
     }
     ach_channel_t chan;
-    int r = ach_open( &chan, opt_chan_name, NULL );
+    ach_status_t r = ach_open( &chan, opt_chan_name, NULL );
     if( ACH_OK == r ) {
         ach_dump( chan.shm );
     } else {

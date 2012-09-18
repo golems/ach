@@ -73,7 +73,7 @@ int opt_pub_sleep_us = OPT_PUB_SLEEP_US;
 int opt_n_msgs = OPT_N_MSGS;
 const char *opt_channel_name = OPT_CHAN;
 
-static void test(int r, const char *thing) {
+static void test(ach_status_t r, const char *thing) {
     if( r != ACH_OK ) {
         fprintf(stderr, "%s: %s\n",
                 thing, ach_result_to_string(r));
@@ -84,7 +84,7 @@ static void test(int r, const char *thing) {
 
 int test_basic() {
     /* unlink */
-    int r = ach_unlink(opt_channel_name);
+    ach_status_t r = ach_unlink(opt_channel_name);
     if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
                 ach_result_to_string(r));
@@ -204,7 +204,7 @@ int test_basic() {
 
 static int publisher( int32_t i ) {
     ach_channel_t chan;
-    int r = ach_open( &chan, opt_channel_name, NULL );
+    ach_status_t r = ach_open( &chan, opt_channel_name, NULL );
     if( r != ACH_OK ) {
         fprintf(stderr, "publisher %d couldn't ach_open: %s\n",
                 i, ach_result_to_string(r) );
@@ -241,7 +241,7 @@ static int subscriber( int i ) {
     ach_channel_t chan;
     int32_t ctr[opt_n_pub];
     memset(ctr,0,sizeof(ctr));
-    int r = ach_open( &chan, opt_channel_name, NULL );
+    ach_status_t r = ach_open( &chan, opt_channel_name, NULL );
     if( r != ACH_OK ) {
         fprintf(stderr, "subscriber %d couldn't ach_open: %s",
                 i, ach_result_to_string(r) );
@@ -303,7 +303,7 @@ static int subscriber( int i ) {
 
 int test_multi() {
 
-    int r = ach_unlink(opt_channel_name);
+    ach_status_t r = ach_unlink(opt_channel_name);
     if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
                 ach_result_to_string(r));
@@ -385,22 +385,25 @@ int main( int argc, char **argv ){
     printf("p: %d\ts: %d\tn: %d\tu: %d\n",
            opt_n_pub, opt_n_sub, opt_n_msgs, opt_pub_sleep_us );
 
-    int r;
+    {
+        int r;
 
-    r = test_basic();
-    if( 0 != r ) return r;
+        r = test_basic();
+        if( 0 != r ) return r;
 
-    r = test_multi();
-    if( 0 != r ) return r;
+        r = test_multi();
+        if( 0 != r ) return r;
 
+    }
 
-    r = ach_unlink(opt_channel_name);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
-        fprintf(stderr, "ach_unlink failed\n: %s",
-                ach_result_to_string(r));
-        return -1;
+    {
+        ach_status_t r = ach_unlink(opt_channel_name);
+        if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+            fprintf(stderr, "ach_unlink failed\n: %s",
+                    ach_result_to_string(r));
+            return -1;
+        }
     }
 
     return 0;
 }
-

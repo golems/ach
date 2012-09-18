@@ -115,7 +115,7 @@ ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt) {
 }
 
 
-ssize_t ach_stream_read_msg_size( int fd, int *cnt) {
+ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt) {
     char buf[4+4+4];
     ssize_t r;
 
@@ -129,7 +129,8 @@ ssize_t ach_stream_read_msg_size( int fd, int *cnt) {
 
     if( 0 == memcmp( ach_stream_presize,  & buf[0], 4ul ) &&
         0 == memcmp( ach_stream_postsize, & buf[8], 4ul ) ) {
-        *cnt = ntohl( *(uint32_t*)(buf + 4) );
+        uint32_t cnt_net = *(uint32_t*)(buf + 4);
+        *cnt = ntohl( cnt_net );
     } else {
         *cnt = -1;
     }
@@ -173,4 +174,3 @@ ssize_t ach_read_line( int fd, char *buf, size_t n ) {
     buf[i] = '\0';
     return (int)i;
 }
-

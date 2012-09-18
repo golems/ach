@@ -126,7 +126,8 @@ const char *ach_result_to_string(ach_status_t result) {
 
 }
 
-static int check_errno() {
+static enum ach_status
+check_errno() {
     switch(errno) {
     case EEXIST: return ACH_EEXIST;
     case ENOENT: return ACH_ENOENT;
@@ -155,12 +156,13 @@ static int channel_name_ok( const char *name ) {
     return 1;
 }
 
-static int shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
+static enum ach_status
+shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
     if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
     strcpy( buf, ACH_CHAN_NAME_PREFIX );
     strncat( buf, name, ACH_CHAN_NAME_MAX );
-    return 0;
+    return ACH_OK;
 }
 
 /** Opens shm file descriptor for a channel.
@@ -219,8 +221,9 @@ static int fd_for_channel_name( const char *name, int oflag ) {
  */
 
 
-static int rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
-                        const struct timespec *abstime ) {
+static enum ach_status
+rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
+             const struct timespec *abstime ) {
 
     int r;
     r = pthread_mutex_lock( & shm->sync.mutex );
@@ -289,9 +292,10 @@ void ach_create_attr_init( ach_create_attr_t *attr ) {
     memset( attr, 0, sizeof( ach_create_attr_t ) );
 }
 
-int ach_create( const char *channel_name,
-                size_t frame_cnt, size_t frame_size,
-                ach_create_attr_t *attr) {
+enum ach_status
+ach_create( const char *channel_name,
+            size_t frame_cnt, size_t frame_size,
+            ach_create_attr_t *attr) {
     ach_header_t *shm;
     int fd;
     size_t len;
@@ -466,8 +470,9 @@ int ach_create( const char *channel_name,
     return ACH_OK;
 }
 
-int ach_open(ach_channel_t *chan, const char *channel_name,
-             ach_attr_t *attr ) {
+enum ach_status
+ach_open( ach_channel_t *chan, const char *channel_name,
+          ach_attr_t *attr ) {
     ach_header_t * shm;
     size_t len;
     int fd = -1;
@@ -529,8 +534,9 @@ int ach_open(ach_channel_t *chan, const char *channel_name,
     are incremented. The variable pointed to by size_written holds the
     number of bytes written to buf (0 on failure).
 */
-static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
-                                char *buf, size_t size, size_t *frame_size ) {
+static enum ach_status
+ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
+                     char *buf, size_t size, size_t *frame_size ) {
     ach_header_t *shm = chan->shm;
     assert( index_offset < shm->index_cnt );
     ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
@@ -570,10 +576,11 @@ static int ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     }
 }
 
-int ach_get( ach_channel_t *chan, void *buf, size_t size,
-             size_t *frame_size,
-             const struct timespec *ACH_RESTRICT abstime,
-             ach_get_opts_t options ) {
+enum ach_status
+ach_get( ach_channel_t *chan, void *buf, size_t size,
+         size_t *frame_size,
+         const struct timespec *ACH_RESTRICT abstime,
+         int options ) {
     ach_header_t *shm = chan->shm;
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
     if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
@@ -587,8 +594,8 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
     const bool o_copy = options & ACH_O_COPY;
 
     /* take read lock */
-    int r;
     if( o_wait ) {
+        enum ach_status r;
         if( ACH_OK != (r = rdlock_wait( shm, chan, abstime ) ) ) {
             return r;
         }
@@ -596,7 +603,7 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
 
     assert( chan->seq_num <= shm->last_seq );
 
-    int retval = ACH_BUG;
+    enum ach_status retval = ACH_BUG;
     bool missed_frame = 0;
 
     /* get the data */
@@ -645,37 +652,43 @@ int ach_get( ach_channel_t *chan, void *buf, size_t size,
 /* The next few functions are variations on reading from an ach channel.
  */
 
-int ach_get_next(ach_channel_t *chan, void *buf, size_t size,
-                 size_t *frame_size) {
+enum ach_status
+ach_get_next( ach_channel_t *chan, void *buf, size_t size,
+             size_t *frame_size ) {
     return ach_get( chan, buf, size, frame_size, NULL, 0 );
 }
 
-int ach_get_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
+enum ach_status
+ach_get_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
     return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST );
 }
 
-int ach_copy_last(ach_channel_t *chan, void *buf,
-                  size_t size, size_t *frame_size) {
+enum ach_status
+ach_copy_last( ach_channel_t *chan, void *buf,
+               size_t size, size_t *frame_size ) {
     return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST | ACH_O_COPY );
 
 }
 
-int ach_wait_last(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *ACH_RESTRICT abstime) {
+enum ach_status
+ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+               const struct timespec *ACH_RESTRICT abstime) {
     return ach_get( chan, buf, size, frame_size, abstime,
                     ACH_O_WAIT | ACH_O_LAST );
 }
 
 
 
-int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *ACH_RESTRICT abstime) {
+enum ach_status
+ach_wait_next( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+               const struct timespec *ACH_RESTRICT abstime ) {
     return ach_get( chan, buf, size, frame_size, abstime, ACH_O_WAIT );
 }
 
 
 
-int ach_flush( ach_channel_t *chan ) {
+enum ach_status
+ach_flush( ach_channel_t *chan ) {
     /*int r; */
     ach_header_t *shm = chan->shm;
     rdlock(shm);
@@ -698,7 +711,8 @@ static void free_index(ach_header_t *shm, size_t i ) {
     memset( &index_ar[i], 0, sizeof( ach_index_t ) );
 }
 
-int ach_put(ach_channel_t *chan, void *buf, size_t len) {
+enum ach_status
+ach_put( ach_channel_t *chan, void *buf, size_t len ) {
     if( 0 == len || NULL == buf || NULL == chan->shm ) {
         return ACH_EINVAL;
     }
@@ -775,7 +789,8 @@ int ach_put(ach_channel_t *chan, void *buf, size_t len) {
     return ACH_OK;
 }
 
-int ach_close(ach_channel_t *chan) {
+enum ach_status
+ach_close( ach_channel_t *chan ) {
 
 
     assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
@@ -840,18 +855,20 @@ void ach_attr_init( ach_attr_t *attr ) {
     attr->map_anon = 0;
 }
 
-int ach_chmod( ach_channel_t *chan, mode_t mode ) {
+enum ach_status
+ach_chmod( ach_channel_t *chan, mode_t mode ) {
     return (0 == fchmod(chan->fd, mode)) ? ACH_OK : ACH_FAILED_SYSCALL;
 }
 
 
-int ach_unlink( const char *name ) {
+enum ach_status
+ach_unlink( const char *name ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
-    int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
+    enum ach_status r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
     if( ACH_OK == r ) {
         /*r = shm_unlink(name); */
-        r = shm_unlink(shm_name);
-        if( 0 == r ) return  ACH_OK;
+        int i = shm_unlink(shm_name);
+        if( 0 == i ) return  ACH_OK;
         else if( ENOENT == errno ) {
             return ACH_ENOENT;
         } else {

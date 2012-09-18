@@ -224,7 +224,7 @@ extern "C" {
 #define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)
 
     /** return status codes for ach functions */
-    typedef enum {
+    typedef enum ach_status {
         ACH_OK = 0,             /**< Call successful */
         ACH_OVERFLOW = 1,       /**< buffer to small to hold frame */
         ACH_INVALID_NAME = 2,   /**< invalid channel name */
@@ -372,14 +372,16 @@ extern "C" {
         \param frame_size nominal size of each frame
         \param attr options
     */
-    int ach_create( const char *channel_name,
-                    size_t frame_cnt, size_t frame_size,
-                    ach_create_attr_t *attr);
+    enum ach_status
+    ach_create( const char *channel_name,
+                size_t frame_cnt, size_t frame_size,
+                ach_create_attr_t *attr );
 
     /** Opens a handle to channel.
      */
-    int ach_open(ach_channel_t *chan, const char *channel_name,
-                 ach_attr_t *attr);
+    enum ach_status
+    ach_open( ach_channel_t *chan, const char *channel_name,
+              ach_attr_t *attr );
 
 
     /** Pulls the next message from a channel following the most recent
@@ -390,11 +392,13 @@ extern "C" {
         \pre chan has been opened with ach_subscribe()
         \post buf contains the data for the next frame and chan.seq_num is incremented
     */
-    int ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
+    enum ach_status
+    ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
 
     /** like ach_get_next but blocks if no new data is there */
-    int ach_wait_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                      const struct timespec *ACH_RESTRICT abstime);
+    enum ach_status
+    ach_wait_next( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                  const struct timespec *ACH_RESTRICT abstime );
 
     /** Pulls the most recent message from the channel.
         \pre chan has been opened with ach_open()
@@ -416,12 +420,14 @@ extern "C" {
         to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
         available.
     */
-    int ach_get_last(ach_channel_t *chan, void *buf,
-                     size_t size, size_t *frame_size);
+    enum ach_status
+    ach_get_last( ach_channel_t *chan, void *buf,
+                  size_t size, size_t *frame_size );
 
     /** always copies the last message, even if it is stale */
-    int ach_copy_last(ach_channel_t *chan, void *buf,
-                      size_t size, size_t *frame_size);
+    enum ach_status
+    ach_copy_last( ach_channel_t *chan, void *buf,
+                   size_t size, size_t *frame_size );
 
 
     /** Blocks until a new message is available.
@@ -432,8 +438,9 @@ extern "C" {
 
         See ach_get_next for parameters
     */
-    int ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                       const struct timespec *ACH_RESTRICT abstime);
+    enum ach_status
+    ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
+                       const struct timespec *ACH_RESTRICT abstime );
 
 
     /** Pulls a message from the channel.
@@ -445,10 +452,11 @@ extern "C" {
         effects occur.  The seq_num field of chan will be set to the
         latest sequence number (that of the gotten frame).
     */
-    int ach_get( ach_channel_t *chan, void *buf, size_t size,
-                 size_t *frame_size,
-                 const struct timespec *ACH_RESTRICT abstime,
-                 ach_get_opts_t options );
+    enum ach_status
+    ach_get( ach_channel_t *chan, void *buf, size_t size,
+             size_t *frame_size,
+             const struct timespec *ACH_RESTRICT abstime,
+             int options );
 
     /** Writes a new message in the channel.
 
@@ -462,13 +470,15 @@ extern "C" {
         \param len number of bytes in buf to copy, len > 0
         \return ACH_OK on success.
     */
-    int ach_put(ach_channel_t *chan, void *buf, size_t len);
+    enum ach_status
+    ach_put( ach_channel_t *chan, void *buf, size_t len );
 
 
     /** Discards all previously received messages for this handle.  Does
         not change the actual channel, just resets the sequence number in
         the handle.*/
-    int ach_flush( ach_channel_t *chan );
+    enum ach_status
+    ach_flush( ach_channel_t *chan );
 
     /** Closes the shared memory block.
 
@@ -476,7 +486,8 @@ extern "C" {
 
         \post the shared memory file for chan is closed
     */
-    int ach_close(ach_channel_t *chan);
+    enum ach_status
+    ach_close( ach_channel_t *chan );
 
 
     /** Converts return code from ach call to a human readable string;
@@ -497,7 +508,7 @@ extern "C" {
     ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt);
 
     /** Reads the size of a message from fd and stores in cnt. */
-    ssize_t ach_stream_read_msg_size( int fd, int *cnt);
+    ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt);
 
     /** Reads msg_size bytes of data from fd and stores in buf. */
     ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size);
@@ -513,10 +524,12 @@ extern "C" {
     ssize_t ach_read_line( int fd, char *buf, size_t cnt );
 
     /** Sets permissions of chan to specified mode */
-    int ach_chmod( ach_channel_t *chan, mode_t mode );
+    enum ach_status
+    ach_chmod( ach_channel_t *chan, mode_t mode );
 
     /** Delete an ach channel */
-    int ach_unlink( const char *name );
+    enum ach_status
+    ach_unlink( const char *name );
 
 #ifdef __cplusplus
 }
