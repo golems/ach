@@ -525,24 +525,25 @@ extern "C" {
 /** size of stream prefix (guard words and size word) */
 #define ACH_STREAM_PREFIX_SIZE  12
 
-    /** Writes message pointed to by but to stream fd */
-    ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt);
 
-    /** Reads the size of a message from fd and stores in cnt. */
-    ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt);
+    /* /\** Writes message pointed to by but to stream fd *\/ */
+    /* ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt); */
 
-    /** Reads msg_size bytes of data from fd and stores in buf. */
-    ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size);
+    /* /\** Reads the size of a message from fd and stores in cnt. *\/ */
+    /* ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt); */
+
+    /* /\** Reads msg_size bytes of data from fd and stores in buf. *\/ */
+    /* ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size); */
 
 
-    /** Reads from fd into buffer completely */
-    ssize_t ach_stream_read_fill( int fd, char *buf, size_t cnt );
+    /* /\** Reads from fd into buffer completely *\/ */
+    /* ssize_t ach_stream_read_fill( int fd, char *buf, size_t cnt ); */
 
-    /** Writes from buffer into fd completely */
-    ssize_t ach_stream_write_fill( int fd, const char *buf, size_t cnt );
+    /* /\** Writes from buffer into fd completely *\/ */
+    /* ssize_t ach_stream_write_fill( int fd, const char *buf, size_t cnt ); */
 
-    /** Reads a line from fd */
-    ssize_t ach_read_line( int fd, char *buf, size_t cnt );
+    /* /\** Reads a line from fd *\/ */
+    /* ssize_t ach_read_line( int fd, char *buf, size_t cnt ); */
 
     /** Sets permissions of chan to specified mode */
     enum ach_status
@@ -551,6 +552,26 @@ extern "C" {
     /** Delete an ach channel */
     enum ach_status
     ach_unlink( const char *name );
+
+    /** Format for ach frames sent over pipes or stored on disk */
+    typedef struct {
+        char magic[8];    ///< magic number: "achpipe", null terminated
+        uint8_t size_bytes[8]; ///< size, stored little endian for disk and network transmission
+        uint8_t data[1];  ///< flexible array
+    } ach_pipe_frame_t;
+
+    /** Malloc an ach_pipe_frame_t with room for `size' data bytes.
+     *
+     * \return a newly allocated ach_pipe_frame with its magic and
+     * size fields properly filled.  Size is big endian..
+     */
+    ach_pipe_frame_t *ach_pipe_alloc(size_t size);
+
+    /** Set size field in ach frame, always little endian. */
+    void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size);
+
+    /** Set size field in ach frame, always little endian. */
+    uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
 #ifdef __cplusplus
 }

@@ -17,7 +17,7 @@ else
 bin_PROGRAMS = ach achpipe.bin achtest
 endif
 
-libach_la_SOURCES = src/ach.c src/ach_stream.c
+libach_la_SOURCES = src/ach.c src/pipe.c
 
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la

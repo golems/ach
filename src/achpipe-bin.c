@@ -53,16 +53,17 @@
  * \section frame-format Frame Format
  *
  * <tt>
- * -----------------------------------\n
- * | "size" | int32 | "data" | $DATA |\n
- * -----------------------------------\n
+ * -------------------------------\n
+ * | "achpipe" | uint64  | $DATA |\n
+ * -------------------------------\n
  * </tt>
  *
  *
- * Ach frames are sent across the pipe as the four ascii bytes "size",
- * a big-endian 32-bit integer indicating the size in bytes of the
- * frame, the four ascii bytes "data", and the proper number of data
- * bytes.
+ * Ach frames are sent across the pipe as the 8 ascii bytes "achpipe"
+ * (null terminated), a little-endian 64-bit integer indicating the
+ * size in bytes of the frame, and the proper number of data bytes.
+ *
+ * This format is defined by the ach_pipe_frame_t struct.
  *
  * \section simple-mode Simple Mode
  *
@@ -82,12 +83,7 @@
  * <li> \c last Send the last frame from channel.  </li>
  * </ul>
  *
- * These commands are sent as four ascii bytes, no '\\n' and no '\\0',
- * just like the aforementioned "size" and "data" delimiters.  If
- * future commands need arguments, it may be best in increase the
- * length of all commands to 8 bytes so that a command can be obtained
- * with a single read().  That would avoid the additional system
- * call without having to resort to userspace buffering.
+ * These commands are sent as four ascii bytes, no '\\n' and no '\\0'.
  *
  * \section comparison-proper Comparison to Ach Proper
  *
@@ -141,6 +137,8 @@ static int _relsleep( struct timespec t ) {
 /* FIXME: It seems that the kernel buffers very small messages.  This
  * is really bad, because we want the data fast.  Should come up with
  * some way to force TCP to just send it.
+ *
+ * The answer: TCP_NODELAY
  *
  */
 
@@ -211,15 +209,15 @@ void hard_assert(int test, const char fmt[], ... ) {
     }
 }
 
-static void *xmalloc( size_t size ) {
-    void *p = malloc( size );
-    if( NULL == p ) {
-        fprintf(stderr, "Couldn't allocate %"PRIuPTR" bytes\n", size );
-        perror("malloc");
-        abort();
-    }
-    return p;
-}
+/* static void *xmalloc( size_t size ) { */
+/*     void *p = malloc( size ); */
+/*     if( NULL == p ) { */
+/*         fprintf(stderr, "Couldn't allocate %"PRIuPTR" bytes\n", size ); */
+/*         perror("malloc"); */
+/*         abort(); */
+/*     } */
+/*     return p; */
+/* } */
 /*
   int read_header( char label[HEADER_LABEL_MAX],
   char value[HEADER_VALUE_MAX] ) {
@@ -329,9 +327,9 @@ static void *xmalloc( size_t size ) {
 */
 
 /** publishing loop */
-void publish( int fd, char *chan_name )  {
+void publish( FILE *fin, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
-    assert(STDIN_FILENO == fd );
+    //assert(STDIN_FILENO == fd );
     ach_channel_t chan;
 
     { /* open channel */
@@ -343,47 +341,41 @@ void publish( int fd, char *chan_name )  {
     }
 
     { /* publish loop */
-        size_t max = INIT_BUF_SIZE;
-        ssize_t cnt;
-        char *buf = (char*)xmalloc( max );
+        uint64_t max = INIT_BUF_SIZE;
+        ach_pipe_frame_t *frame = ach_pipe_alloc( max );
         while( ! sig_received ) {
-            ssize_t s;
             /* get size */
-            s = ach_stream_read_msg_size( fd, &cnt );
+            size_t s = fread( frame, 1, 16, fin );
             verbprintf( 2, "Read %d bytes\n", s );
-            if( s <= 0 ) break;
-            hard_assert( cnt > 0, "Invalid Count: %d\n", cnt );
+            if( 16 != s ) break;
+            if( memcmp("achpipe", frame->magic, 8) ) break;
+            uint64_t cnt = ach_pipe_get_size( frame );
+            // FIXME: sanity check that cnt is not something outrageous
             /* make sure buf can hold it */
             if( (size_t)cnt > max ) {
-                max = (size_t)cnt;
-                free( buf );
-                buf = (char*)xmalloc( max );
+                max = cnt;
+                free( frame );
+                frame = ach_pipe_alloc( max );
             }
             /* get data */
-            s = ach_stream_read_msg_data( fd, buf, (size_t)cnt, max );
-            if( s <= 0 ) break;
-            assert( cnt == s );
+            s = fread( frame->data, 1, (size_t)cnt, fin );
+            if( cnt != s ) break;
             /* put data */
-            ach_status_t r = ach_put( &chan, buf, (size_t)cnt );
+            ach_status_t r = ach_put( &chan, frame->data, cnt );
             hard_assert( r == ACH_OK, "Invalid ach put %s\n",
                          ach_result_to_string( r ) );
         }
-        free(buf);
+        free(frame);
 
     }
     ach_close( &chan );
 }
 
 
-static int streq32( const char *a, const char *b ) {
-    return 0 == strcmp(a,b);
-}
-
 /** subscribing loop */
-void subscribe(int fd, char *chan_name) {
+void subscribe( FILE *fin, FILE *fout, char *chan_name ) {
     verbprintf(1, "Subscribing()\n");
     verbprintf(1, "Synchronous: %s\n", opt_sync ? "yes" : "no");
-    assert(STDOUT_FILENO == fd);
     /* get channel */
     ach_channel_t chan;
     {
@@ -398,11 +390,9 @@ void subscribe(int fd, char *chan_name) {
     }
     /* frame buffer */
     size_t max = INIT_BUF_SIZE;
-    char *buf = (char*)xmalloc(max);
+    ach_pipe_frame_t *frame = ach_pipe_alloc( max );
     int t0 = 1;
 
-    char cmd[5] = {0};
-    size_t frame_size = 0;
 
     struct timespec period = {0,0};
     int is_freq = 0;
@@ -415,26 +405,28 @@ void subscribe(int fd, char *chan_name) {
 
     /* read loop */
     while( ! sig_received ) {
+        char cmd[4] = {0};
         if( opt_sync ) {
             /* wait for the pull command */
-            ssize_t rc = ach_stream_read_fill(STDIN_FILENO, cmd, 4ul);
+            size_t rc = fread( cmd, 1, 4, fin);
             hard_assert(4 == rc, "Invalid command read: %d\n", rc );
             verbprintf(2, "Command %s\n", cmd );
         }
         /* read the data */
         int got_frame = 0;
         do {
+            size_t frame_size = 0;
             ach_status_t r = ACH_BUG;
             if( opt_sync ) {
                 /* parse command */
-                if ( streq32("next", cmd ) ) {
-                    r = ach_get(&chan, buf, max, &frame_size,  NULL,
+                if ( 0 == memcmp("next", cmd, 4) ) {
+                    r = ach_get(&chan, frame->data, max, &frame_size,  NULL,
                                 ACH_O_WAIT );
-                }else if ( streq32("last", cmd ) ){
-                    r = ach_get(&chan, buf, max, &frame_size,  NULL,
+                }else if ( 0 == memcmp("last", cmd, 4) ){
+                    r = ach_get(&chan, frame->data, max, &frame_size,  NULL,
                                 ACH_O_WAIT | ACH_O_LAST );
-                } else if ( streq32("poll", cmd) ) {
-                    r = ach_get( &chan, buf, max, &frame_size, NULL,
+                } else if ( 0 == memcmp("poll", cmd, 4) ) {
+                    r = ach_get( &chan, frame->data, max, &frame_size, NULL,
                                  ACH_O_COPY | ACH_O_LAST );
                 } else {
                     hard_assert(0, "Invalid command: %s\n", cmd );
@@ -442,18 +434,20 @@ void subscribe(int fd, char *chan_name) {
             } else {
                 /* push the data */
                 r = (opt_last || is_freq) ?
-                    ach_get( &chan, buf, max, &frame_size,  NULL, ACH_O_WAIT | ACH_O_LAST ) :
-                    ach_get( &chan, buf, max, &frame_size,  NULL, ACH_O_WAIT ) ;
+                    ach_get( &chan, frame->data, max, &frame_size,  NULL, ACH_O_WAIT | ACH_O_LAST ) :
+                    ach_get( &chan, frame->data, max, &frame_size,  NULL, ACH_O_WAIT ) ;
             }
             /* check return code */
             if( ACH_OVERFLOW == r ) {
                 /* enlarge buffer and retry on overflow */
                 assert(frame_size > max );
                 max = frame_size;
-                free(buf);
-                buf = (char*)xmalloc( max );
+                free(frame);
+                frame = ach_pipe_alloc( max );
             } else if (ACH_OK == r || ACH_MISSED_FRAME == r || t0 ) {
                 got_frame = 1;
+                ach_pipe_set_size( frame, frame_size );
+                verbprintf(2, "Got ach frame %d\n", frame_size );
             }else {
                 /* abort on other errors */
                 hard_assert( 0, "sub: ach_error: %s\n",
@@ -462,16 +456,17 @@ void subscribe(int fd, char *chan_name) {
             }
         }while( !got_frame );
 
-        verbprintf(2, "Got ach frame %d\n", frame_size );
 
         /* stream send */
         {
-            ssize_t r = ach_stream_write_msg( fd, buf, frame_size );
-            if( frame_size + ACH_STREAM_PREFIX_SIZE !=  (size_t)r ) {
+            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(frame);
+            size_t r = fwrite( frame, 1, size, fout );
+            if( r != size ) {
                 break;
             }
+            if( fflush( fout ) ) break;
             if( opt_sync ) {
-                fsync( fd ); /* fails w/ sbcl, and maybe that's ok */
+                fsync( fileno(fout) ); /* fails w/ sbcl, and maybe that's ok */
             }
             verbprintf( 2, "Printed output\n");
         }
@@ -482,7 +477,7 @@ void subscribe(int fd, char *chan_name) {
             _relsleep(period);
         }
     }
-    free(buf);
+    free(frame);
     ach_close( &chan );
 }
 
@@ -524,7 +519,7 @@ void sighandler_install() {
 /** main */
 int main( int argc, char **argv ) {
     int c;
-    while( (c = getopt( argc, argv, "p:s:z:vlcf:")) != -1 ) {
+    while( (c = getopt( argc, argv, "p:s:z:vlcf:h?")) != -1 ) {
         switch(c) {
         case 'p':
             opt_pub = 1;
@@ -554,6 +549,19 @@ int main( int argc, char **argv ) {
         case 'f':
             opt_freq = atof(optarg);
             break;
+        default:
+            puts( "Usage: achpipe.bin [OPTION...]\n"
+                  "Translate between ach channels and streams"
+                  "\n"
+                  "  -p CHANNEL-NAME,     Publish stream to channel\n"
+                  "  -s CHANNEL-NAME,     Subscribe from channel, print to stream\n"
+                  "  -z CHANNEL-NAME,     Set name of remote channel\n"
+                  "  -l CHANNEL-NAME,     Get latest messages\n"
+                  "  -c,                  Synchronous mode\n"
+                  "  -f FREQUENCY,        Output to stream at FREQUENCY\n"
+                  "  -o OCTAL,            Mode for created channel\n"
+                  "  -v,                  Be verbose\n" );
+            exit(EXIT_SUCCESS);
         }
     }
 
@@ -588,9 +596,9 @@ int main( int argc, char **argv ) {
     sighandler_install();
     /* run */
     if (opt_pub) {
-        publish( STDIN_FILENO, opt_chan_name );
+        publish( stdin, opt_chan_name );
     } else if (opt_sub) {
-        subscribe( STDOUT_FILENO, opt_chan_name );
+        subscribe( stdin, stdout, opt_chan_name );
     } else {
         assert(0);
     }
