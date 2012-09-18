@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
-<title>ach: </title>
+<title>ach: Pipe Protocol</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <link href="doxygen.css" rel="stylesheet" type="text/css"/>
 </head>
@@ -17,6 +17,10 @@
       <li><a href="files.html"><span>Files</span></a></li>
     </ul>
   </div>
+</div>
+<div class="header">
+  <div class="headertitle">
+<h1>Pipe Protocol </h1>  </div>
 </div>
 <div class="contents">
 <h2><a class="anchor" id="frame-format"></a>
@@ -34,11 +38,9 @@ Synchronous Mode</h2>
 <p>Subscribing achpipe processes can operate in synchronous mode. In this case, the process will read a command from the pipe and then perform an action based on that command. Current commands are:</p>
 <ul>
 <li>
-<code>next</code> Send the next frame from channel. <dl class="see"><dt><b>See also:</b></dt><dd><a class="el" href="ach_8c.html#a9155e0ffd0f27aeafea53f9d0e7c277a" title="like ach_get_next but blocks if no new data is there">ach_wait_next</a>  </dd></dl>
-</li>
+<code>next</code> Send the next frame from channel.  </li>
 <li>
-<code>last</code> Send the last frame from channel. <dl class="see"><dt><b>See also:</b></dt><dd><a class="el" href="ach_8c.html#a5d80d816258fbc0002fb5efb16577bf5" title="Blocks until a new message is available.">ach_wait_last</a>  </dd></dl>
-</li>
+<code>last</code> Send the last frame from channel.  </li>
 </ul>
 <p>These commands are sent as four ascii bytes, no '\n' and no '\0', just like the aforementioned "size" and "data" delimiters. If future commands need arguments, it may be best in increase the length of all commands to 8 bytes so that a command can be obtained with a single read(). That would avoid the additional system call without having to resort to userspace buffering.</p>
 <h2><a class="anchor" id="comparison-proper"></a>
@@ -46,7 +48,7 @@ Comparison to Ach Proper</h2>
 <p>Note that ach normally communicates using shared memory. The pipe protocol is only for intermachine communication or increasing robustness if one does not want a process to touch shared memory directly.</p>
 <dl class="see"><dt><b>See also:</b></dt><dd>Todo List </dd></dl>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Mon Sep 17 2012 23:36:57 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 00:05:38 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

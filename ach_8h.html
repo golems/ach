@@ -28,6 +28,7 @@
   <div class="summary">
 <a href="#nested-classes">Data Structures</a> &#124;
 <a href="#define-members">Defines</a> &#124;
+<a href="#typedef-members">Typedefs</a> &#124;
 <a href="#enum-members">Enumerations</a> &#124;
 <a href="#func-members">Functions</a> &#124;
 <a href="#var-members">Variables</a>  </div>
@@ -55,6 +56,9 @@ Defines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a36320691b8bddb17d7416a7c57e296f5"></a><!-- doxytag: member="ach.h::ACH_RESTRICT" ref="a36320691b8bddb17d7416a7c57e296f5" args="" -->
 #define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a36320691b8bddb17d7416a7c57e296f5">ACH_RESTRICT</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Alias restrict keyword. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8e5f044e5399e970841e35f1f059b697"></a><!-- doxytag: member="ach.h::ACH_DEPRECATED" ref="a8e5f044e5399e970841e35f1f059b697" args="" -->
+#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a8e5f044e5399e970841e35f1f059b697">ACH_DEPRECATED</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Deprecated old symbol. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abb5d1fae5fa66a03d7d8d4761011e86c"></a><!-- doxytag: member="ach.h::ACH_CHAN_NAME_MAX" ref="abb5d1fae5fa66a03d7d8d4761011e86c" args="" -->
 #define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#abb5d1fae5fa66a03d7d8d4761011e86c">ACH_CHAN_NAME_MAX</a>&nbsp;&nbsp;&nbsp;64ul</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">maximum size of a channel name <br/></td></tr>
@@ -90,21 +94,26 @@ Defines</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abaa663b4780171e76fc25289bab544e4"></a><!-- doxytag: member="ach.h::ACH_STREAM_PREFIX_SIZE" ref="abaa663b4780171e76fc25289bab544e4" args="" -->
 #define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#abaa663b4780171e76fc25289bab544e4">ACH_STREAM_PREFIX_SIZE</a>&nbsp;&nbsp;&nbsp;12</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">size of stream prefix (guard words and size word) <br/></td></tr>
+<tr><td colspan="2"><h2><a name="typedef-members"></a>
+Typedefs</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a37a6ca5cbf68c6e7f8f4abd5ce783ddc"></a><!-- doxytag: member="ach.h::ach_status_t" ref="a37a6ca5cbf68c6e7f8f4abd5ce783ddc" args="" -->
+typedef enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc">ach_status_t</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">return status codes for ach functions <br/></td></tr>
 <tr><td colspan="2"><h2><a name="enum-members"></a>
 Enumerations</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4">ach_status_t</a> { <br/>
-&nbsp;&nbsp;<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4afefe1a7f013444d4d3eeff6a47f1874e">ACH_OK</a> =  0, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a1af1e6af38bf18218a80b06195769062">ACH_OVERFLOW</a> =  1, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a136cba32d00e1e1065b31703bbf51f5a">ACH_INVALID_NAME</a> =  2, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a268e9e8e27c0d5f83ac4eb44369b772a">ACH_BAD_SHM_FILE</a> =  3, 
+<tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> { <br/>
+&nbsp;&nbsp;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e">ACH_OK</a> =  0, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062">ACH_OVERFLOW</a> =  1, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a">ACH_INVALID_NAME</a> =  2, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a">ACH_BAD_SHM_FILE</a> =  3, 
 <br/>
-&nbsp;&nbsp;<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a07c7b309136d251e83cab6c9647b634b">ACH_FAILED_SYSCALL</a> =  4, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a33c60b8c61f290af044ae15970ff0495">ACH_STALE_FRAMES</a> =  5, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4ab225cc19cdc5defd7f2cc034dd1308db">ACH_MISSED_FRAME</a> =  6, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a6403ef3ca27827f131e232e624ada43f">ACH_TIMEOUT</a> =  7, 
+&nbsp;&nbsp;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b">ACH_FAILED_SYSCALL</a> =  4, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495">ACH_STALE_FRAMES</a> =  5, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db">ACH_MISSED_FRAME</a> =  6, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f">ACH_TIMEOUT</a> =  7, 
 <br/>
-&nbsp;&nbsp;<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a50ab3aceb9e90eab0abcb771fcbff28f">ACH_EEXIST</a> =  8, 
-<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4a26094dd35827f5eeff52ac042adee837">ACH_ENOENT</a> =  9, 
+&nbsp;&nbsp;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f">ACH_EEXIST</a> =  8, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837">ACH_ENOENT</a> =  9, 
 <b>ACH_CLOSED</b> =  10, 
 <b>ACH_BUG</b> =  11, 
 <br/>
@@ -113,7 +122,7 @@ Enumerations</h2></td></tr>
 <br/>
  }</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>return status codes for ach functions </p>
- <a href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4">More...</a><br/></td></tr>
+ <a href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">More...</a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#acda036966ec908f2a2dc39cf715b3df1">ach_chan_state_t</a> { <a class="el" href="ach_8h.html#acda036966ec908f2a2dc39cf715b3df1a7755a18769b2f41fbe9c85db1975cb69">ACH_CHAN_STATE_INIT</a>, 
 <a class="el" href="ach_8h.html#acda036966ec908f2a2dc39cf715b3df1a050401a7ebafd30f94118545d1bc5ec3">ACH_CHAN_STATE_RUN</a>, 
 <a class="el" href="ach_8h.html#acda036966ec908f2a2dc39cf715b3df1a320260e6f66945ab4b6fdc315e99711e">ACH_CHAN_STATE_CLOSED</a>
@@ -125,7 +134,7 @@ Enumerations</h2></td></tr>
 <b>ACH_O_COPY</b> =  0x04, 
 <b>ACH_O_SKIP</b> =  0x08
  }</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Option flags for <a class="el" href="ach_8h.html#aaaf49ffc081328edc26f75221134a6fb" title="Pulls a message from the channel.">ach_get()</a>. </p>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Option flags for <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a>. </p>
  <a href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">More...</a><br/></td></tr>
 <tr><td colspan="2"><h2><a name="func-members"></a>
 Functions</h2></td></tr>
@@ -133,41 +142,41 @@ Functions</h2></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize attributes for opening channels.  <a href="#a860d84dfee4d1306fe58df7b073c440a"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c">ach_create_attr_init</a> (<a class="el" href="structach__create__attr__t.html">ach_create_attr_t</a> *attr)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Initialize attributes for creating channels.  <a href="#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#afd514236f7ce7b32dd4481c9a2d66577">ach_create</a> (const char *channel_name, size_t frame_cnt, size_t frame_size, <a class="el" href="structach__create__attr__t.html">ach_create_attr_t</a> *attr)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Creates a new channel.  <a href="#afd514236f7ce7b32dd4481c9a2d66577"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a21a9ce88a3b3b52003c221e17fee9bad"></a><!-- doxytag: member="ach.h::ach_open" ref="a21a9ce88a3b3b52003c221e17fee9bad" args="(ach_channel_t *chan, const char *channel_name, ach_attr_t *attr)" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a21a9ce88a3b3b52003c221e17fee9bad">ach_open</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const char *channel_name, <a class="el" href="structach__attr__t.html">ach_attr_t</a> *attr)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82">ach_create</a> (const char *channel_name, size_t frame_cnt, size_t frame_size, <a class="el" href="structach__create__attr__t.html">ach_create_attr_t</a> *attr)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Creates a new channel.  <a href="#afd2a92b13a96dc80bb4ce70b68c36e82"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaa61413f11032605e3dc46d0fb9a52c9"></a><!-- doxytag: member="ach.h::ach_open" ref="aaa61413f11032605e3dc46d0fb9a52c9" args="(ach_channel_t *chan, const char *channel_name, ach_attr_t *attr)" -->
+enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9">ach_open</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const char *channel_name, <a class="el" href="structach__attr__t.html">ach_attr_t</a> *attr)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Opens a handle to channel. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a9ddb76fad51fdf8c98628b94405f400f">ach_get_next</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls the next message from a channel following the most recent message this subscriber has read.  <a href="#a9ddb76fad51fdf8c98628b94405f400f"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac8ae7ed660eacc104755d3de9ddb60b6"></a><!-- doxytag: member="ach.h::ach_wait_next" ref="ac8ae7ed660eacc104755d3de9ddb60b6" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ac8ae7ed660eacc104755d3de9ddb60b6">ach_wait_next</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ab98a565d1f2fb46657943cd71421a15f">ach_get_next</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls the next message from a channel following the most recent message this subscriber has read.  <a href="#ab98a565d1f2fb46657943cd71421a15f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a12c099f9cb8c9f37883de15449def25d"></a><!-- doxytag: member="ach.h::ach_wait_next" ref="a12c099f9cb8c9f37883de15449def25d" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)" -->
+ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a12c099f9cb8c9f37883de15449def25d">ach_wait_next</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">like ach_get_next but blocks if no new data is there <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a7d6698b403bcb0952979674b69731e34">ach_get_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls the most recent message from the channel.  <a href="#a7d6698b403bcb0952979674b69731e34"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac17d0ce8887791805a6571ba8c912706"></a><!-- doxytag: member="ach.h::ach_copy_last" ref="ac17d0ce8887791805a6571ba8c912706" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ac17d0ce8887791805a6571ba8c912706">ach_copy_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a1d43d22e7e1e0a480171a7a7c6a8779f">ach_get_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls the most recent message from the channel.  <a href="#a1d43d22e7e1e0a480171a7a7c6a8779f"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a7ef53eb076fc89a6172ac09daa21d524"></a><!-- doxytag: member="ach.h::ach_copy_last" ref="a7ef53eb076fc89a6172ac09daa21d524" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
+ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a7ef53eb076fc89a6172ac09daa21d524">ach_copy_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">always copies the last message, even if it is stale <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a79118c8d91f1b014274099004fcb46e8">ach_wait_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Blocks until a new message is available.  <a href="#a79118c8d91f1b014274099004fcb46e8"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aaaf49ffc081328edc26f75221134a6fb">ach_get</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime, <a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">ach_get_opts_t</a> options)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls a message from the channel.  <a href="#aaaf49ffc081328edc26f75221134a6fb"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a51fa85001904de91e22930d8ad330504">ach_put</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t len)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Writes a new message in the channel.  <a href="#a51fa85001904de91e22930d8ad330504"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a725e22a4d865f91be864cea250995a85">ach_flush</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Discards all previously received messages for this handle.  <a href="#a725e22a4d865f91be864cea250995a85"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#acdc4d4306efc8e553dd9c58247f98d00">ach_close</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Closes the shared memory block.  <a href="#acdc4d4306efc8e553dd9c58247f98d00"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aa5e7c63c2aa74addf4ac65babcda79e6">ach_wait_last</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Blocks until a new message is available.  <a href="#aa5e7c63c2aa74addf4ac65babcda79e6"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386">ach_get</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime, int options)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Pulls a message from the channel.  <a href="#aee074eb5c6f1bb0256194b43f7164386"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#acb8fcfaba91a22e295a5e437cd5b9c9b">ach_put</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t len)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Writes a new message in the channel.  <a href="#acb8fcfaba91a22e295a5e437cd5b9c9b"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#af51fdf3b5edf39ce54f62ac0f031dd2b">ach_flush</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Discards all previously received messages for this handle.  <a href="#af51fdf3b5edf39ce54f62ac0f031dd2b"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c">ach_close</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Closes the shared memory block.  <a href="#a397913b30e59cd6c1ab0b9cf8c5b331c"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a11e481d90a14ba4485d3bb15a8bb77c3"></a><!-- doxytag: member="ach.h::ach_result_to_string" ref="a11e481d90a14ba4485d3bb15a8bb77c3" args="(ach_status_t result)" -->
-const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a11e481d90a14ba4485d3bb15a8bb77c3">ach_result_to_string</a> (<a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4">ach_status_t</a> result)</td></tr>
+const char *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a11e481d90a14ba4485d3bb15a8bb77c3">ach_result_to_string</a> (<a class="el" href="ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc">ach_status_t</a> result)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Converts return code from ach call to a human readable string;. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#adccdafda2936a9f70087f950ba7e83e8">ach_dump</a> (<a class="el" href="structach__header__t.html">ach_header_t</a> *shm)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Prints information about the channel shm to stderr.  <a href="#adccdafda2936a9f70087f950ba7e83e8"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abecb8fa38611d7bb9201a66825756d66"></a><!-- doxytag: member="ach.h::ach_stream_write_msg" ref="abecb8fa38611d7bb9201a66825756d66" args="(int fd, const char *buf, size_t cnt)" -->
 ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#abecb8fa38611d7bb9201a66825756d66">ach_stream_write_msg</a> (int fd, const char *buf, size_t cnt)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Writes message pointed to by but to stream fd. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a766ac112d3b577b197242f87219fc04e">ach_stream_read_msg_size</a> (int fd, int *cnt)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads the size of a message from fd and stores in cnt.  <a href="#a766ac112d3b577b197242f87219fc04e"></a><br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a4987341305557d61dce8c283d39db906">ach_stream_read_msg_size</a> (int fd, ssize_t *cnt)</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads the size of a message from fd and stores in cnt.  <a href="#a4987341305557d61dce8c283d39db906"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#afa510a3949daf4ac78ad411afccd547b">ach_stream_read_msg_data</a> (int fd, char *buf, size_t msg_size, size_t buf_size)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads msg_size bytes of data from fd and stores in buf.  <a href="#afa510a3949daf4ac78ad411afccd547b"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad33a09b98150fad192879cf30a1d78bf"></a><!-- doxytag: member="ach.h::ach_stream_read_fill" ref="ad33a09b98150fad192879cf30a1d78bf" args="(int fd, char *buf, size_t cnt)" -->
@@ -179,11 +188,11 @@ ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="a
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac837554b2554043cf1e6fcba757c38aa"></a><!-- doxytag: member="ach.h::ach_read_line" ref="ac837554b2554043cf1e6fcba757c38aa" args="(int fd, char *buf, size_t cnt)" -->
 ssize_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ac837554b2554043cf1e6fcba757c38aa">ach_read_line</a> (int fd, char *buf, size_t cnt)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reads a line from fd. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aeaa9e735f7c59622e5926c4df7b52928"></a><!-- doxytag: member="ach.h::ach_chmod" ref="aeaa9e735f7c59622e5926c4df7b52928" args="(ach_channel_t *chan, mode_t mode)" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aeaa9e735f7c59622e5926c4df7b52928">ach_chmod</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, mode_t mode)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab81866aaeb3995e12e12de27457e1635"></a><!-- doxytag: member="ach.h::ach_chmod" ref="ab81866aaeb3995e12e12de27457e1635" args="(ach_channel_t *chan, mode_t mode)" -->
+enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635">ach_chmod</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, mode_t mode)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Sets permissions of chan to specified mode. <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aacbf444d769cf34acaa53854c0490c69"></a><!-- doxytag: member="ach.h::ach_unlink" ref="aacbf444d769cf34acaa53854c0490c69" args="(const char *name)" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aacbf444d769cf34acaa53854c0490c69">ach_unlink</a> (const char *name)</td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3ca9384476568e624155fd7f17aa16f6"></a><!-- doxytag: member="ach.h::ach_unlink" ref="a3ca9384476568e624155fd7f17aa16f6" args="(const char *name)" -->
+enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6">ach_unlink</a> (const char *name)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Delete an ach channel. <br/></td></tr>
 <tr><td colspan="2"><h2><a name="var-members"></a>
 Variables</h2></td></tr>
@@ -302,15 +311,16 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 <div class="memdoc">
 
-<p>Option flags for <a class="el" href="ach_8h.html#aaaf49ffc081328edc26f75221134a6fb" title="Pulls a message from the channel.">ach_get()</a>. </p>
+<p>Option flags for <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a>. </p>
+<p>Default behavior is to retrieve the oldest unseen frame without waiting. </p>
 <dl><dt><b>Enumerator: </b></dt><dd><table border="0" cellspacing="2" cellpadding="0">
 <tr><td valign="top"><em><a class="anchor" id="ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885"></a><!-- doxytag: member="ACH_O_WAIT" ref="ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885" args="" -->ACH_O_WAIT</em>&nbsp;</td><td>
 <p>Blocks until an unseen message arrives or timeout. </p>
-<p>If the channel already has data that this subscriber has not seen, <a class="el" href="ach_8h.html#aaaf49ffc081328edc26f75221134a6fb" title="Pulls a message from the channel.">ach_get()</a> immediately copies the new data. Otherwise, it waits for some other process or thread to put data into the channel. </p>
+<p>If the channel already has data that this subscriber has not seen, <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a> immediately copies the new data. Otherwise, it waits for some other process or thread to put data into the channel. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74"></a><!-- doxytag: member="ACH_O_LAST" ref="ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74" args="" -->ACH_O_LAST</em>&nbsp;</td><td>
 <p>Reads the newest message out of the channel. </p>
-<p>If the channel contains multiple messages that this subscriber has not seen, <a class="el" href="ach_8h.html#aaaf49ffc081328edc26f75221134a6fb" title="Pulls a message from the channel.">ach_get()</a> will return the newest of these messages. The subscriber will skip past all older messages. </p>
+<p>If the channel contains multiple messages that this subscriber has not seen, <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a> will return the newest of these messages. The subscriber will skip past all older messages. </p>
 </td></tr>
 </table>
 </dd>
@@ -318,12 +328,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4"></a><!-- doxytag: member="ach.h::ach_status_t" ref="a6d56e0e44a3792918ce459a4a8deaad4" args="" -->
+<a class="anchor" id="a0b989f189bcea60548c3692b10eda551"></a><!-- doxytag: member="ach.h::ach_status" ref="a0b989f189bcea60548c3692b10eda551" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="ach_8h.html#a6d56e0e44a3792918ce459a4a8deaad4">ach_status_t</a></td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a></td>
         </tr>
       </table>
 </div>
@@ -331,34 +341,34 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 <p>return status codes for ach functions </p>
 <dl><dt><b>Enumerator: </b></dt><dd><table border="0" cellspacing="2" cellpadding="0">
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4afefe1a7f013444d4d3eeff6a47f1874e"></a><!-- doxytag: member="ACH_OK" ref="a6d56e0e44a3792918ce459a4a8deaad4afefe1a7f013444d4d3eeff6a47f1874e" args="" -->ACH_OK</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e"></a><!-- doxytag: member="ACH_OK" ref="a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e" args="" -->ACH_OK</em>&nbsp;</td><td>
 <p>Call successful. </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a1af1e6af38bf18218a80b06195769062"></a><!-- doxytag: member="ACH_OVERFLOW" ref="a6d56e0e44a3792918ce459a4a8deaad4a1af1e6af38bf18218a80b06195769062" args="" -->ACH_OVERFLOW</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062"></a><!-- doxytag: member="ACH_OVERFLOW" ref="a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062" args="" -->ACH_OVERFLOW</em>&nbsp;</td><td>
 <p>buffer to small to hold frame </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a136cba32d00e1e1065b31703bbf51f5a"></a><!-- doxytag: member="ACH_INVALID_NAME" ref="a6d56e0e44a3792918ce459a4a8deaad4a136cba32d00e1e1065b31703bbf51f5a" args="" -->ACH_INVALID_NAME</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a"></a><!-- doxytag: member="ACH_INVALID_NAME" ref="a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a" args="" -->ACH_INVALID_NAME</em>&nbsp;</td><td>
 <p>invalid channel name </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a268e9e8e27c0d5f83ac4eb44369b772a"></a><!-- doxytag: member="ACH_BAD_SHM_FILE" ref="a6d56e0e44a3792918ce459a4a8deaad4a268e9e8e27c0d5f83ac4eb44369b772a" args="" -->ACH_BAD_SHM_FILE</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a"></a><!-- doxytag: member="ACH_BAD_SHM_FILE" ref="a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a" args="" -->ACH_BAD_SHM_FILE</em>&nbsp;</td><td>
 <p>shared memory file didn't look right </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a07c7b309136d251e83cab6c9647b634b"></a><!-- doxytag: member="ACH_FAILED_SYSCALL" ref="a6d56e0e44a3792918ce459a4a8deaad4a07c7b309136d251e83cab6c9647b634b" args="" -->ACH_FAILED_SYSCALL</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b"></a><!-- doxytag: member="ACH_FAILED_SYSCALL" ref="a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b" args="" -->ACH_FAILED_SYSCALL</em>&nbsp;</td><td>
 <p>a system call failed </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a33c60b8c61f290af044ae15970ff0495"></a><!-- doxytag: member="ACH_STALE_FRAMES" ref="a6d56e0e44a3792918ce459a4a8deaad4a33c60b8c61f290af044ae15970ff0495" args="" -->ACH_STALE_FRAMES</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495"></a><!-- doxytag: member="ACH_STALE_FRAMES" ref="a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495" args="" -->ACH_STALE_FRAMES</em>&nbsp;</td><td>
 <p>no new data in the channel </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4ab225cc19cdc5defd7f2cc034dd1308db"></a><!-- doxytag: member="ACH_MISSED_FRAME" ref="a6d56e0e44a3792918ce459a4a8deaad4ab225cc19cdc5defd7f2cc034dd1308db" args="" -->ACH_MISSED_FRAME</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db"></a><!-- doxytag: member="ACH_MISSED_FRAME" ref="a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db" args="" -->ACH_MISSED_FRAME</em>&nbsp;</td><td>
 <p>we missed the next frame </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a6403ef3ca27827f131e232e624ada43f"></a><!-- doxytag: member="ACH_TIMEOUT" ref="a6d56e0e44a3792918ce459a4a8deaad4a6403ef3ca27827f131e232e624ada43f" args="" -->ACH_TIMEOUT</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f"></a><!-- doxytag: member="ACH_TIMEOUT" ref="a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f" args="" -->ACH_TIMEOUT</em>&nbsp;</td><td>
 <p>timeout before frame received </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a50ab3aceb9e90eab0abcb771fcbff28f"></a><!-- doxytag: member="ACH_EEXIST" ref="a6d56e0e44a3792918ce459a4a8deaad4a50ab3aceb9e90eab0abcb771fcbff28f" args="" -->ACH_EEXIST</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f"></a><!-- doxytag: member="ACH_EEXIST" ref="a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f" args="" -->ACH_EEXIST</em>&nbsp;</td><td>
 <p>shm already exists </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a6d56e0e44a3792918ce459a4a8deaad4a26094dd35827f5eeff52ac042adee837"></a><!-- doxytag: member="ACH_ENOENT" ref="a6d56e0e44a3792918ce459a4a8deaad4a26094dd35827f5eeff52ac042adee837" args="" -->ACH_ENOENT</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837"></a><!-- doxytag: member="ACH_ENOENT" ref="a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837" args="" -->ACH_ENOENT</em>&nbsp;</td><td>
 <p>shm doesn't </p>
 </td></tr>
 </table>
@@ -388,12 +398,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="acdc4d4306efc8e553dd9c58247f98d00"></a><!-- doxytag: member="ach.h::ach_close" ref="acdc4d4306efc8e553dd9c58247f98d00" args="(ach_channel_t *chan)" -->
+<a class="anchor" id="a397913b30e59cd6c1ab0b9cf8c5b331c"></a><!-- doxytag: member="ach.h::ach_close" ref="a397913b30e59cd6c1ab0b9cf8c5b331c" args="(ach_channel_t *chan)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_close </td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_close </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em></td>
@@ -410,12 +420,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="afd514236f7ce7b32dd4481c9a2d66577"></a><!-- doxytag: member="ach.h::ach_create" ref="afd514236f7ce7b32dd4481c9a2d66577" args="(const char *channel_name, size_t frame_cnt, size_t frame_size, ach_create_attr_t *attr)" -->
+<a class="anchor" id="afd2a92b13a96dc80bb4ce70b68c36e82"></a><!-- doxytag: member="ach.h::ach_create" ref="afd2a92b13a96dc80bb4ce70b68c36e82" args="(const char *channel_name, size_t frame_cnt, size_t frame_size, ach_create_attr_t *attr)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_create </td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_create </td>
           <td>(</td>
           <td class="paramtype">const char *&nbsp;</td>
           <td class="paramname"> <em>channel_name</em>, </td>
@@ -501,12 +511,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a725e22a4d865f91be864cea250995a85"></a><!-- doxytag: member="ach.h::ach_flush" ref="a725e22a4d865f91be864cea250995a85" args="(ach_channel_t *chan)" -->
+<a class="anchor" id="af51fdf3b5edf39ce54f62ac0f031dd2b"></a><!-- doxytag: member="ach.h::ach_flush" ref="af51fdf3b5edf39ce54f62ac0f031dd2b" args="(ach_channel_t *chan)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_flush </td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_flush </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em></td>
@@ -522,12 +532,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="aaaf49ffc081328edc26f75221134a6fb"></a><!-- doxytag: member="ach.h::ach_get" ref="aaaf49ffc081328edc26f75221134a6fb" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime, ach_get_opts_t options)" -->
+<a class="anchor" id="aee074eb5c6f1bb0256194b43f7164386"></a><!-- doxytag: member="ach.h::ach_get" ref="aee074eb5c6f1bb0256194b43f7164386" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime, int options)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_get </td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_get </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em>, </td>
@@ -559,7 +569,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">ach_get_opts_t</a>&nbsp;</td>
+          <td class="paramtype">int&nbsp;</td>
           <td class="paramname"> <em>options</em></td><td>&nbsp;</td>
         </tr>
         <tr>
@@ -572,17 +582,17 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <div class="memdoc">
 
 <p>Pulls a message from the channel. </p>
-<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#a21a9ce88a3b3b52003c221e17fee9bad" title="Opens a handle to channel.">ach_open()</a></dd></dl>
+<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9" title="Opens a handle to channel.">ach_open()</a></dd></dl>
 <dl class="post"><dt><b>Postcondition:</b></dt><dd>If buf is big enough to hold the next frame, buf contains the data for the last frame and chan.seq_num is set to the last frame. If buf is too small to hold the next frame, no side effects occur. The seq_num field of chan will be set to the latest sequence number (that of the gotten frame). </dd></dl>
 
 </div>
 </div>
-<a class="anchor" id="a7d6698b403bcb0952979674b69731e34"></a><!-- doxytag: member="ach.h::ach_get_last" ref="a7d6698b403bcb0952979674b69731e34" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
+<a class="anchor" id="a1d43d22e7e1e0a480171a7a7c6a8779f"></a><!-- doxytag: member="ach.h::ach_get_last" ref="a1d43d22e7e1e0a480171a7a7c6a8779f" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_get_last </td>
+          <td class="memname">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_get_last </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em>, </td>
@@ -615,7 +625,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <div class="memdoc">
 
 <p>Pulls the most recent message from the channel. </p>
-<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#a21a9ce88a3b3b52003c221e17fee9bad" title="Opens a handle to channel.">ach_open()</a></dd></dl>
+<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9" title="Opens a handle to channel.">ach_open()</a></dd></dl>
 <dl class="post"><dt><b>Postcondition:</b></dt><dd>If buf is big enough to hold the next frame, buf contains the data for the last frame and chan.seq_num is set to the last frame. If buf is too small to hold the next frame, no side effects occur. The seq_num field of chan will be set to the latest sequence number (that of the gotten frame).</dd></dl>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
@@ -630,12 +640,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a9ddb76fad51fdf8c98628b94405f400f"></a><!-- doxytag: member="ach.h::ach_get_next" ref="a9ddb76fad51fdf8c98628b94405f400f" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
+<a class="anchor" id="ab98a565d1f2fb46657943cd71421a15f"></a><!-- doxytag: member="ach.h::ach_get_next" ref="ab98a565d1f2fb46657943cd71421a15f" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_get_next </td>
+          <td class="memname">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_get_next </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em>, </td>
@@ -674,12 +684,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a51fa85001904de91e22930d8ad330504"></a><!-- doxytag: member="ach.h::ach_put" ref="a51fa85001904de91e22930d8ad330504" args="(ach_channel_t *chan, void *buf, size_t len)" -->
+<a class="anchor" id="acb8fcfaba91a22e295a5e437cd5b9c9b"></a><!-- doxytag: member="ach.h::ach_put" ref="acb8fcfaba91a22e295a5e437cd5b9c9b" args="(ach_channel_t *chan, void *buf, size_t len)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_put </td>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_put </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em>, </td>
@@ -706,7 +716,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <div class="memdoc">
 
 <p>Writes a new message in the channel. </p>
-<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#a21a9ce88a3b3b52003c221e17fee9bad" title="Opens a handle to channel.">ach_open()</a></dd></dl>
+<dl class="pre"><dt><b>Precondition:</b></dt><dd>chan has been opened with <a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9" title="Opens a handle to channel.">ach_open()</a></dd></dl>
 <dl class="post"><dt><b>Postcondition:</b></dt><dd>The contents of buf are copied into the channel and the sequence number of the channel is incremented.</dd></dl>
 <dl><dt><b>Parameters:</b></dt><dd>
   <table border="0" cellspacing="2" cellpadding="0">
@@ -761,7 +771,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a766ac112d3b577b197242f87219fc04e"></a><!-- doxytag: member="ach.h::ach_stream_read_msg_size" ref="a766ac112d3b577b197242f87219fc04e" args="(int fd, int *cnt)" -->
+<a class="anchor" id="a4987341305557d61dce8c283d39db906"></a><!-- doxytag: member="ach.h::ach_stream_read_msg_size" ref="a4987341305557d61dce8c283d39db906" args="(int fd, ssize_t *cnt)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -774,7 +784,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int *&nbsp;</td>
+          <td class="paramtype">ssize_t *&nbsp;</td>
           <td class="paramname"> <em>cnt</em></td><td>&nbsp;</td>
         </tr>
         <tr>
@@ -790,12 +800,12 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="a79118c8d91f1b014274099004fcb46e8"></a><!-- doxytag: member="ach.h::ach_wait_last" ref="a79118c8d91f1b014274099004fcb46e8" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)" -->
+<a class="anchor" id="aa5e7c63c2aa74addf4ac65babcda79e6"></a><!-- doxytag: member="ach.h::ach_wait_last" ref="aa5e7c63c2aa74addf4ac65babcda79e6" args="(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *ACH_RESTRICT abstime)" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int ach_wait_last </td>
+          <td class="memname">ACH_DEPRECATED enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_wait_last </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&nbsp;</td>
           <td class="paramname"> <em>chan</em>, </td>
@@ -840,7 +850,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 </div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Sun Aug 26 2012 17:54:07 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 00:05:38 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
