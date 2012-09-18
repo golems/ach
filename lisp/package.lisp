@@ -39,15 +39,9 @@
 
 ;; Author: Neil T. Dantam
 
-
-
 (defpackage :ach
-  (:use :cl :binio :usocket)
-  (:export :ach-connect :ach-close :ach-read :ach-write
-           :ach-next :ach-last :ach-poll :ach-put
-           :ach-closef
-           :ach-map :with-ach-log
-           :create-channel :open-channel :close-channel
-           :flush :chmod
-           :put :get-last :wait-next
-           ))
+  (:use :cl)
+  (:export
+   :open-channel :close-channel :flush-channel
+   :put-pointer :get-pointer
+   :put-buffer :get-buffer))
