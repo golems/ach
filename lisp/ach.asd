@@ -50,4 +50,4 @@
   :depends-on ("cffi")
   :components ((:file "package")
                (cffi-grovel:grovel-file "grovel" :depends-on ("package"))
-               (:file "ach" :depends-on ("package"))))
+               (:file "ach" :depends-on ("package" "grovel"))))

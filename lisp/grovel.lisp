@@ -48,6 +48,9 @@
   (include "time.h")
   (include "sys/stat.h")
   (include "ach.h")
+  (ctype mode-t "mode_t")
+  (ctype size-t "size_t")
+  (cstruct ach-channel-t "ach_channel_t")
   (cenum (ach-status :define-constants nil)
          ((:ok "ACH_OK"))
          ((:overflow "ACH_OVERFLOW"))
@@ -71,4 +74,3 @@
          ((:chan-state-init "ACH_CHAN_STATE_INIT"))
          ((:chan-state-run "ACH_CHAN_STATE_RUN"))
          ((:chan-state-closed "ACH_CHAN_STATE_CLOSED"))))
-
