@@ -58,9 +58,9 @@
 #include <errno.h>
 #include "ach.h"
 
-size_t opt_msg_cnt = 16;
+size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
-size_t opt_msg_size = 8192;
+size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
 int opt_verbosity = 0;
 int opt_1 = 0;

@@ -393,6 +393,9 @@ extern "C" {
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr );
 
+#define ACH_DEFAULT_FRAME_COUNT 16
+#define ACH_DEFAULT_FRAME_SIZE 512
+
     /** Opens a handle to channel.
      */
     enum ach_status
