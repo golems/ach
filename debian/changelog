@@ -1,3 +1,9 @@
+libach (0.20121004) unstable; urgency=low
+
+  * Change in achpipe protocol
+
+ -- Neil Dantam <ntd@gatech.edu>  Thu, 04 Oct 2012 20:06:00 -0400
+
 libach (0.20120916) unstable; urgency=low
 
   * New ach-utils package for binaries and scripts
