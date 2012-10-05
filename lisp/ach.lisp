@@ -209,12 +209,15 @@ WARNING -- if POINTER or LENGTH are wrong, this may trash your system."
                     &key wait last)
   "Get from CHANNEL into raw pointer POINTER.
 
+POINTER -- a CFFI pointer
+LENGTH -- number of octets able to be written start at POINTER
+
 WARNING -- if POINTER or LENGTH are wrong, this may trash your system.
 
 Returns -- (values ach-status frame-size)."
   (check-channel-open channel)
-  (let ((int-options (logior (if wait (cffi:foreign-enum-value 'ach-status :wait) 0)
-                             (if last (cffi:foreign-enum-value 'ach-status :last) 0)))
+  (let ((int-options (logior (if wait (cffi:foreign-enum-value 'ach-get-opts :wait) 0)
+                             (if last (cffi:foreign-enum-value 'ach-get-opts :last) 0)))
         (frame-size)
         (r))
     (cffi:with-foreign-object (p-frame-size 'size-t)
