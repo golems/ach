@@ -1,3 +1,5 @@
+INSTALLATION INSTRUCTIONS FOR ACH
+
 ************
 * Overview *
 ************
@@ -49,7 +51,62 @@ tarball which already contains the autoconf-generated configure script.
 
 `$ make'
 
-***************************************
+
+*******************
+* Cross Compiling *
+*******************
+
+Build an i386 (x86) on AMD64
+----------------------------
+
+1) Give configure the right option:
+
+    ./configure CC="gcc -m32"
+
+ NOTE: you may need to install 32-bit compatibility libraries and
+ headers for this to work.  On Debian/Ubuntu try:
+
+    sudo apt-get install ia32-libs ia32-libs-dev libc6-dev-i386
+
+2) Build and Install:
+
+     make
+
+3) Install.  You probably want to give the DESTDIR option to say where
+ to put the files.  For example, if you have the host's root
+ filesystem mounted at /mnt/HOST-ROOT:
+
+    make install DESTDIR=/mnt/HOST-ROOT/usr/local
+
+ Alternatively, you could set DESTDIR to some temporary location, tar
+ the result, and untar it on the actual host.
+
+General Cross Compilation
+-------------------------
+
+0) Install a cross compiler.  For Debian/Ubuntu see:
+
+* http://wiki.debian.org/BuildingCrossCompilers
+* https://wiki.ubuntu.com/MultiarchCross
+
+1) Tell configure the --build and --host.  The --build is what machine
+ the compiler runs on.  The --host is what machine the the compiled
+ output runs on.  For example, to compile on x86_64 GNU/Linux and run
+ on ARM GNU/Linux:
+
+    ./configure --host=arm-linux-gnueabi --build=x86_64-linux-gnu
+
+2) Build:
+
+    make
+
+3) Install as in the previous i386->AMD64 case:
+
+    make install DESTDIR=/mnt/HOST-ROOT/usr/local
+
+
+
+**************************************
 * GNU Autotools Standard Instructions *
 ***************************************
 

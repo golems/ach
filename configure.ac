@@ -77,12 +77,16 @@ AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
 
 AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 
-# Checks for library functions.
-AC_FUNC_FORK
-AC_FUNC_MALLOC
-AC_FUNC_MMAP
-AC_FUNC_REALLOC
-AC_FUNC_STRTOD
+## Checks for library functions.
+
+# If you don't have these functions, there's really no hope.
+# Also, these checks seem to complicate cross-compiling.
+# AC_FUNC_FORK
+# AC_FUNC_MALLOC
+# AC_FUNC_MMAP
+# AC_FUNC_REALLOC
+# AC_FUNC_STRTOD
+
 AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
 AC_SEARCH_LIBS([pthread_create],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
