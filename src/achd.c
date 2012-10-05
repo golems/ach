@@ -65,22 +65,13 @@ struct achd_config {
     int frame_size;
     int local_port;
     int remote_port;
+    int tcp_nodelay;
+    int retry;
+    int retry_delay_us;
     const char *remote_host;
     const char *transport;
     enum achd_direction direction;
 };
-
-typedef struct {
-    const char *chan_name;
-    const char *remote_chan_name;
-    const char *remote_host;
-    int port;
-    int remote_port;
-
-    int beep_fd;
-
-
-} achd_cx_t;
 
 void achd_make_realtime();
 void achd_daemonize();
@@ -166,13 +157,16 @@ int main(int argc, char **argv) {
                 "direction = %s\n"
                 "remote-host = %s\n"
                 "remote-port = %d\n"
-                "local-port = %d\n",
+                "local-port = %d\n"
+                "tcp-nodelay = %d\n",
                 config.chan_name,
-                config.frame_size, config.frame_count,
+                config.frame_size,
+                config.frame_count,
                 config.transport,
-                (DIRECTION_PUSH == config.direction) ? "PUSH" :
-                ((DIRECTION_PULL == config.direction) ? "PULL" : "unknown"),
-                config.remote_host, config.remote_port, config.local_port);
+                ((DIRECTION_PUSH == config.direction) ? "PUSH" :
+                 ((DIRECTION_PULL == config.direction) ? "PULL" : "unknown")),
+                config.remote_host, config.remote_port, config.local_port,
+                config.tcp_nodelay );
     }
 
     return 0;
@@ -257,6 +251,18 @@ void achd_set_int(int *pint, const char *name, const char *val) {
     }
 }
 
+int achd_parse_boolean( const char *value ) {
+    const char *yes[] = {"yes", "true", "1", NULL};
+    const char *no[] = {"no", "false", "0", NULL};
+    const char** s;
+    for( s = yes; *s; s++ )
+        if( 0 == strcasecmp(*s, value) ) return 1;
+    for( s = no; *s; s++ )
+        if( 0 == strcasecmp(*s, value) ) return 0;
+    fprintf(stderr, "Invalid boolean: %s\n", value);
+    exit(EXIT_FAILURE);
+}
+
 void achd_set_config (const char *key, const char *val, struct achd_config *config) {
     if       ( 0 == strcmp(key, "channel-name")) {
         config->chan_name = strdup(val);
@@ -272,6 +278,10 @@ void achd_set_config (const char *key, const char *val, struct achd_config *conf
         config->remote_host = strdup(val);
     } else if( 0 == strcmp(key, "transport")) {
         config->transport = strdup(val);
+    } else if( 0 == strcmp(key, "tcp-nodelay")) {
+        config->tcp_nodelay = achd_parse_boolean( val );
+    } else if( 0 == strcmp(key, "retry")) {
+        config->retry = achd_parse_boolean( val );
     } else if( 0 == strcmp(key, "direction")) {
         if( 0 == strcmp(val, "push") ) config->direction = DIRECTION_PUSH;
         else if( 0 == strcmp(val, "pull") ) config->direction = DIRECTION_PULL;
