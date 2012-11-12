@@ -48,6 +48,14 @@ included `ach-bench` program to test messaging latency.  See the shell
 script `src/run-benchmarks` which runs the benchmark with a variety of
 options.
 
+Improving Real-Time on Linux and i386/amd64
+-------------------------------------------
+* Disable CPU power-saving from BIOS
+* Use the PREEMPT_RT kernel patch
+* Disable USB and use a PS/2 keyboard
+* Give the 'quiet' flag on the kernel command line
+* Try disabling hyperthreading (may not help much)
+
 Further Details
 ===============
 A technical report describing design and rationale behind Ach is available at:
