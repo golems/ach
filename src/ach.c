@@ -357,26 +357,38 @@ ach_create( const char *channel_name,
         { /* initialize condition variables */
             int r;
             pthread_condattr_t cond_attr;
-            r = pthread_condattr_init( &cond_attr );
-            if( r ) {
+            if( (r = pthread_condattr_init(&cond_attr)) ) {
                 DEBUG_PERROR("pthread_condattr_init");
                 return ACH_FAILED_SYSCALL;
             }
-
-            r = pthread_condattr_setpshared( &cond_attr, PTHREAD_PROCESS_SHARED );
-            if( r ) {
-                DEBUG_PERROR("pthread_condattr_setpshared");
-                return ACH_FAILED_SYSCALL;
+            /* Process Shared */
+            if( ! (attr && attr->map_anon) ) {
+                /* Set shared if not anonymous mapping
+                   Default will be private. */
+                if( (r = pthread_condattr_setpshared(&cond_attr, PTHREAD_PROCESS_SHARED)) ) {
+                    DEBUG_PERROR("pthread_condattr_setpshared");
+                    return ACH_FAILED_SYSCALL;
+                }
+            }
+            /* Clock */
+            if( attr && attr->set_clock ) {
+                if( (r = pthread_condattr_setclock(&cond_attr, attr->clock)) ) {
+                    DEBUG_PERROR("pthread_condattr_setclock");
+                    return ACH_FAILED_SYSCALL;
+                }
+            } else {
+                if( (r = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC)) ) {
+                    DEBUG_PERROR("pthread_condattr_setclock");
+                    return ACH_FAILED_SYSCALL;
+                }
             }
 
-            r = pthread_cond_init( & shm->sync.cond, &cond_attr );
-            if( r ) {
+            if( (r = pthread_cond_init(&shm->sync.cond, &cond_attr)) ) {
                 DEBUG_PERROR("pthread_cond_init");
                 return ACH_FAILED_SYSCALL;
             }
 
-            r = pthread_condattr_destroy( &cond_attr );
-            if( r ) {
+            if( (r = pthread_condattr_destroy(&cond_attr)) ) {
                 DEBUG_PERROR("pthread_condattr_destroy");
                 return ACH_FAILED_SYSCALL;
             }
@@ -384,44 +396,38 @@ ach_create( const char *channel_name,
         { /* initialize mutex */
             int r;
             pthread_mutexattr_t mutex_attr;
-            r = pthread_mutexattr_init( &mutex_attr );
-            if( r ) {
+            if( (r = pthread_mutexattr_init(&mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
             }
-            r = pthread_mutexattr_setpshared( &mutex_attr,
-                                              PTHREAD_PROCESS_SHARED );
-            if( r ) {
+            if( (r = pthread_mutexattr_setpshared(&mutex_attr,
+                                                  PTHREAD_PROCESS_SHARED)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setpshared");
                 return ACH_FAILED_SYSCALL;
             }
             /* Error Checking Mutex */
 #ifdef PTHREAD_MUTEX_ERRORCHECK_NP
-            r = pthread_mutexattr_settype( &mutex_attr,
-                                           PTHREAD_MUTEX_ERRORCHECK_NP );
-            if( r ) {
+            if( (r = pthread_mutexattr_settype(&mutex_attr,
+                                               PTHREAD_MUTEX_ERRORCHECK_NP)) ) {
                 DEBUG_PERROR("pthread_mutexattr_settype");
                 return ACH_FAILED_SYSCALL;
             }
 #endif
             /* Priority Inheritance Mutex */
 #ifdef PTHREAD_PRIO_INHERIT
-            r = pthread_mutexattr_setprotocol( &mutex_attr,
-                                               PTHREAD_PRIO_INHERIT );
-            if( r ) {
+            if( (r = pthread_mutexattr_setprotocol(&mutex_attr,
+                                                   PTHREAD_PRIO_INHERIT)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setprotocol");
                 return ACH_FAILED_SYSCALL;
             }
 #endif
 
-            pthread_mutex_init( &shm->sync.mutex, &mutex_attr );
-            if( r ) {
+            if( (r = pthread_mutex_init(&shm->sync.mutex, &mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
             }
 
-            r = pthread_mutexattr_destroy( &mutex_attr );
-            if( r ) {
+            if( (r = pthread_mutexattr_destroy(&mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_destroy");
                 return ACH_FAILED_SYSCALL;
             }

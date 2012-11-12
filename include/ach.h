@@ -337,6 +337,9 @@ extern "C" {
         int truncate;      /**< remove and recreate an existing shm file */
         int map_anon;      /**< allocate channel in heap, rather than shm */
         ach_header_t *shm; /**< pointer to channel, set out output of create iff map_anon */
+        int set_clock;     /**< if true, set the clock of the condition variable */
+        clockid_t clock;   /**< Which clock to use if set_clock is true.
+                            *   The default is CLOCK_MONOTONIC. */
     } ach_create_attr_t;
 
 
@@ -475,6 +478,16 @@ extern "C" {
         frame.  If buf is too small to hold the next frame, no side
         effects occur.  The seq_num field of chan will be set to the
         latest sequence number (that of the gotten frame).
+
+        \param chan The previously opened channel handle
+        \param buf Buffer to store data
+        \param size Length of buffer in bytes
+        \param frame_size The number of bytes copied to buf, or the
+        size of the desired frame if buf is too small.
+        \param abstime An absolute timeout if ACH_O_WAIT is specified.
+        Take care that abstime is given in the correct clock.  The
+        default is CLOCK_MONOTONIC.
+        \param options Option flags
     */
     enum ach_status
     ach_get( ach_channel_t *chan, void *buf, size_t size,

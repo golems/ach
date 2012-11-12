@@ -98,6 +98,7 @@ int test_basic() {
     ach_channel_t chan;
     int s, p;
     size_t frame_size;
+    struct timespec ts;
 
     /* open */
     r = ach_open(&chan, opt_channel_name, NULL);
@@ -145,11 +146,35 @@ int test_basic() {
     }
     if(frame_size != sizeof(s) || s != 44 ) exit(-1);
 
+    /* wait last */
+    p = 45;
+    r = ach_put( &chan, &p, sizeof(p) );
+    test(r, "ach_put");
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ts.tv_sec += 30; /* don't yield too long now */
+    r = ach_get( &chan, &s, sizeof(s), &frame_size, &ts,
+                 ACH_O_LAST | ACH_O_WAIT );
+    if( ACH_OK != r ) {
+        printf("get wait failed: %s\n", ach_result_to_string(r));
+        exit(-1);
+    }
+    if(frame_size != sizeof(s) || s != 45 ) exit(-1);
+
     /* get last stale */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST);
     if( ACH_STALE_FRAMES != r ) {
         printf("get stale failed: %s\n", ach_result_to_string(r));
+        exit(-1);
+    }
+
+    /* timeout */
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    ts.tv_sec -= 10;
+    r = ach_get( &chan, &s, sizeof(s), &frame_size, &ts,
+                 ACH_O_LAST | ACH_O_WAIT );
+    if( ACH_TIMEOUT != r ) {
+        printf("get timeout failed: %s\n", ach_result_to_string(r));
         exit(-1);
     }
 
@@ -160,7 +185,7 @@ int test_basic() {
         printf("copy_last failed: %s\n", ach_result_to_string(r));
         exit(-1);
     }
-    if( 44 != s ) {
+    if( p != s ) {
         printf("wrong copy last : %d\n", s);
         exit(-1);
     }
