@@ -254,17 +254,6 @@ extern "C" {
         ACH_CORRUPT = 13
     } ach_status_t;
 
-    /** synchronization state of a channel */
-    typedef enum {
-        ACH_CHAN_STATE_INIT,    /**< channel is initializing */
-        ACH_CHAN_STATE_RUN,     /**< channel is uncontended */
-        /* //ACH_CHAN_STATE_READING, ///< readers using channel */
-        /* //ACH_CHAN_STATE_WRITING, ///< writer modifying channel */
-        ACH_CHAN_STATE_CLOSED   /**< channel has been closed */
-    } ach_chan_state_t;
-
-
-
 
     /** Option flags for ach_get().
      *
@@ -285,7 +274,6 @@ extern "C" {
          */
         ACH_O_LAST = 0x02,
         ACH_O_COPY = 0x04,
-        ACH_O_SKIP = 0x08
     } ach_get_opts_t;
 
     /** Header for shared memory area.
@@ -342,9 +330,9 @@ extern "C" {
     typedef struct {
         union {
             struct{
-                int truncate;      /**< remove and recreate an existing shm file */
                 int map_anon;      /**< allocate channel in heap, rather than shm */
-                ach_header_t *shm; /**< pointer to channel, set out output of create iff map_anon */
+                ach_header_t *shm; /**< pointer to channel, set on output of create iff map_anon */
+                int truncate;      /**< remove and recreate an existing shm file */
                 int set_clock;     /**< if true, set the clock of the condition variable */
                 clockid_t clock;   /**< Which clock to use if set_clock is true.
                                     *   The default is CLOCK_MONOTONIC. */
@@ -418,71 +406,6 @@ extern "C" {
     ach_open( ach_channel_t *chan, const char *channel_name,
               ach_attr_t *attr );
 
-
-    /** Pulls the next message from a channel following the most recent
-        message this subscriber has read.
-
-        see ach_get_last for parameter descriptions
-
-        \pre chan has been opened with ach_subscribe()
-        \post buf contains the data for the next frame and chan.seq_num is incremented
-    */
-    ACH_DEPRECATED
-    enum ach_status
-    ach_get_next(ach_channel_t *chan, void *buf, size_t size, size_t *frame_size);
-
-    /** like ach_get_next but blocks if no new data is there */
-    ACH_DEPRECATED
-    enum ach_status
-    ach_wait_next( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                  const struct timespec *ACH_RESTRICT abstime );
-
-    /** Pulls the most recent message from the channel.
-        \pre chan has been opened with ach_open()
-
-        \post If buf is big enough to hold the next frame, buf contains
-        the data for the last frame and chan.seq_num is set to the last
-        frame.  If buf is too small to hold the next frame, no side
-        effects occur.  The seq_num field of chan will be set to the
-        latest sequence number (that of the gotten frame).
-
-        \param chan the channel to read from
-        \param buf (output) The buffer to write data to
-        \param size the maximum number of bytes that may be written to buf
-        \param frame_size (output) The size of the frame.  This will be
-        the number of bytes that were written on ACH_SUCCESS or the
-        necessary size of the buffer on ACH_OVERFLOW.
-
-        \return ACH_OK on success.  ACH_OVERFLOW if buffer is too small
-        to hold the frame.  ACH_STALE_FRAMES if a new frame is not yet
-        available.
-    */
-    ACH_DEPRECATED
-    enum ach_status
-    ach_get_last( ach_channel_t *chan, void *buf,
-                  size_t size, size_t *frame_size );
-
-    /** always copies the last message, even if it is stale */
-    ACH_DEPRECATED
-    enum ach_status
-    ach_copy_last( ach_channel_t *chan, void *buf,
-                   size_t size, size_t *frame_size );
-
-
-    /** Blocks until a new message is available.
-
-        If the latest message is new than the most recently read
-        message, copy that message into buf.  Otherwise, sleep until a
-        new message is available.
-
-        See ach_get_next for parameters
-    */
-    ACH_DEPRECATED
-    enum ach_status
-    ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-                       const struct timespec *ACH_RESTRICT abstime );
-
-
     /** Pulls a message from the channel.
         \pre chan has been opened with ach_open()
 
@@ -550,29 +473,6 @@ extern "C" {
         This function is mostly for internal debugging.
     */
     void ach_dump( ach_header_t *shm);
-
-/** size of stream prefix (guard words and size word) */
-#define ACH_STREAM_PREFIX_SIZE  12
-
-
-    /* /\** Writes message pointed to by but to stream fd *\/ */
-    /* ssize_t ach_stream_write_msg( int fd, const char *buf, size_t cnt); */
-
-    /* /\** Reads the size of a message from fd and stores in cnt. *\/ */
-    /* ssize_t ach_stream_read_msg_size( int fd, ssize_t *cnt); */
-
-    /* /\** Reads msg_size bytes of data from fd and stores in buf. *\/ */
-    /* ssize_t ach_stream_read_msg_data( int fd, char *buf, size_t msg_size, size_t buf_size); */
-
-
-    /* /\** Reads from fd into buffer completely *\/ */
-    /* ssize_t ach_stream_read_fill( int fd, char *buf, size_t cnt ); */
-
-    /* /\** Writes from buffer into fd completely *\/ */
-    /* ssize_t ach_stream_write_fill( int fd, const char *buf, size_t cnt ); */
-
-    /* /\** Reads a line from fd *\/ */
-    /* ssize_t ach_read_line( int fd, char *buf, size_t cnt ); */
 
     /** Sets permissions of chan to specified mode */
     enum ach_status

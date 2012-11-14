@@ -234,10 +234,6 @@ rdlock_wait( ach_header_t *shm, ach_channel_t *chan,
     while( chan &&
            chan->seq_num == shm->last_seq ) {
 
-        if( ACH_CHAN_STATE_CLOSED == shm->state ) {
-            pthread_mutex_unlock( &shm->sync.mutex );
-            return ACH_CLOSED;
-        }
         if( abstime ) { /* timed wait */
             r = pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime );
             /* check for timeout */
@@ -350,7 +346,6 @@ ach_create( const char *channel_name,
 
         memset( shm, 0, len );
         shm->len = len;
-        shm->state = ACH_CHAN_STATE_INIT;
     }
 
     { /* initialize synchronization */
@@ -450,7 +445,6 @@ ach_create( const char *channel_name,
     *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
     *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
     shm->magic = ACH_SHM_MAGIC_NUM;
-    shm->state = ACH_CHAN_STATE_RUN;
 
     if( attr && attr->map_anon ) {
         attr->shm = shm;
@@ -653,44 +647,6 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
-
-
-/* The next few functions are variations on reading from an ach channel.
- */
-
-enum ach_status
-ach_get_next( ach_channel_t *chan, void *buf, size_t size,
-             size_t *frame_size ) {
-    return ach_get( chan, buf, size, frame_size, NULL, 0 );
-}
-
-enum ach_status
-ach_get_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size ) {
-    return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST );
-}
-
-enum ach_status
-ach_copy_last( ach_channel_t *chan, void *buf,
-               size_t size, size_t *frame_size ) {
-    return ach_get( chan, buf, size, frame_size, NULL, ACH_O_LAST | ACH_O_COPY );
-
-}
-
-enum ach_status
-ach_wait_last( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-               const struct timespec *ACH_RESTRICT abstime) {
-    return ach_get( chan, buf, size, frame_size, abstime,
-                    ACH_O_WAIT | ACH_O_LAST );
-}
-
-
-
-enum ach_status
-ach_wait_next( ach_channel_t *chan, void *buf, size_t size, size_t *frame_size,
-               const struct timespec *ACH_RESTRICT abstime ) {
-    return ach_get( chan, buf, size, frame_size, abstime, ACH_O_WAIT );
-}
-
 
 
 enum ach_status
