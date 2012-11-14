@@ -1,3 +1,26 @@
-See the git log for news:
+Ach 1.0.0
+=========
 
-`$ git log'
+* Removal of deprecated alternatives to ach_get()
+
+* Change of default condition variable clock from CLOCK_REALTIME to
+  CLOCK_MONOTONIC
+  - Callers can pass an absolute time value to ach_get() to limit the
+    amount of time spent waiting for a new message.
+  - Two values are added to ach_create_attr_t to allow setting
+    alternate clocks during channel creation (including CLOCK_REALTIME
+    if so desired).
+  - Rationale for the change:
+    + Despite the name, CLOCK_REALTIME is not suitable for Real-Time
+      applications.  CLOCK_REALTIME typically gives a "Wall" time in
+      UTC.  This value is discontinuous.  It may be reset by:
+      - The operator
+      - The NTP daemon
+      - Leap seconds, where UTC is /defined/ as discontinuous (see TAI for
+        a less bizarre alternative).
+    + CLOCK_MONOTONIC is monotonic, advancing from an arbitrary initial
+      time (e.g. system power-on).  For applications that need to do
+      something periodically, CLOCK_MONOTONIC is more suitable.
+    + Since Ach is intended for Real-Time control, where strict periodic
+      execution is important, CLOCK_MONOTONIC seems to be a better
+      default.
