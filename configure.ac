@@ -94,26 +94,49 @@ AC_SEARCH_LIBS([sin],[m])
 
 
 # Enable maximum warnings
-AX_CFLAGS_WARN_ALL
+m4_ifdef([AX_CFLAGS_WARN_ALL],
+         [AX_CFLAGS_WARN_ALL])
 
 dnl APPEND_FLAG( [FLAG] )
 dnl Check if FLAG is supported, and if so, add it
-AC_DEFUN([APPEND_FLAG],
-         [AX_CHECK_COMPILER_FLAGS([$1], [CFLAGS="$1 $CFLAGS"])])
 
-APPEND_FLAG([-Wextra])
-APPEND_FLAG([-Wconversion])
-APPEND_FLAG([-Wpointer-arith])
-APPEND_FLAG([-Wfloat-equal])
-APPEND_FLAG([-Wshadow])
-APPEND_FLAG([-Wwrite-strings])
-APPEND_FLAG([-Wc++-compat])
+dnl The AX_CHECK_COMPILER_FLAGS maco was renamed to AX_CHECK_COMPILE_FLAG
+dnl Checking for both versions
+m4_ifdef([AX_CHECK_COMPILE_FLAG],
+         [AC_DEFUN([APPEND_FLAG],
+                   [AX_CHECK_COMPILE_FLAG([$1], [CFLAGS="$1 $CFLAGS"])])])
+
+m4_ifdef([AX_CHECK_COMPILER_FLAGS],
+         [AC_DEFUN([APPEND_FLAG],
+                   [AX_CHECK_COMPILER_FLAGS([$1], [CFLAGS="$1 $CFLAGS"])])])
+
+dnl If we found the flag checking macro, check some flags
+m4_ifdef([APPEND_FLAG],
+         [APPEND_FLAG([-Wextra])
+          APPEND_FLAG([-Wconversion])
+          APPEND_FLAG([-Wpointer-arith])
+          APPEND_FLAG([-Wfloat-equal])
+          APPEND_FLAG([-Wshadow])
+          APPEND_FLAG([-Wwrite-strings])
+          APPEND_FLAG([-Wc++-compat])])
 
 # Doxygen
-DX_HTML_FEATURE(ON)
-DX_PDF_FEATURE(OFF)
-DX_PS_FEATURE(OFF)
-DX_INIT_DOXYGEN(ach)
+m4_ifdef([DX_INIT_DOXYGEN],
+         [DX_HTML_FEATURE(ON)
+          DX_PDF_FEATURE(OFF)
+          DX_PS_FEATURE(OFF)
+          DX_INIT_DOXYGEN(ach)],
+         [AM_CONDITIONAL([DX_COND_doc],   false)
+          AM_CONDITIONAL([DX_COND_html],  false)
+          AM_CONDITIONAL([DX_COND_chm],   false)
+          AM_CONDITIONAL([DX_COND_chi],   false)
+          AM_CONDITIONAL([DX_COND_rtf],   false)
+          AM_CONDITIONAL([DX_COND_xml],   false)
+          AM_CONDITIONAL([DX_COND_ps],    false)
+          AM_CONDITIONAL([DX_COND_pdf],   false)
+          AM_CONDITIONAL([DX_COND_latex], false)
+          AM_CONDITIONAL([DX_COND_man],   false)
+         ])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
