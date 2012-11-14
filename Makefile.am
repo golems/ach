@@ -12,7 +12,7 @@ include_HEADERS = include/ach.h
 lib_LTLIBRARIES = libach.la
 
 if HAVE_RT
-bin_PROGRAMS = ach achpipe.bin achcat ach-bench
+bin_PROGRAMS = ach achpipe.bin achcat achbench
 noinst_PROGRAMS = achtest achd ach-example
 else
 bin_PROGRAMS = ach achpipe.bin
@@ -41,8 +41,8 @@ achd_LDADD = libach.la
 ach_example_SOURCES = src/ach-example.c
 ach_example_LDADD = libach.la
 
-ach_bench_SOURCES = src/ach-bench.c
-ach_bench_LDADD = libach.la
+achbench_SOURCES = src/ach-bench.c
+achbench_LDADD = libach.la
 
 endif
 

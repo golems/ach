@@ -1,5 +1,5 @@
 /build/ach
-/build/ach-bench
+/build/achbench
 /build/ach-example
 /build/achcat
 /build/achpipe.bin
@@ -11,7 +11,7 @@
 /CMakeCache.txt
 /cmake_install.cmake
 /CMakeFiles
-/ach-bench
+/achbench
 /ach-example
 /achcat
 /achtest

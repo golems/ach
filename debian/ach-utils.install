@@ -3,3 +3,4 @@ usr/bin/achpipe
 usr/bin/achpipe.bin
 usr/bin/achlog
 usr/bin/achcat
+usr/bin/achbench

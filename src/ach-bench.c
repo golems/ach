@@ -330,7 +330,7 @@ int main(int argc, char **argv) {
         case 'H':
         case '?':
         default:
-            puts("Usage: ach-bench [OPTION....]\n"
+            puts("Usage: achbench [OPTION....]\n"
                  "Benchmark Ach IPC\n"
                  "\n"
                  "  -f FREQUENCY,       Frequency in Hertz (1000)\n"

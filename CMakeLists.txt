@@ -44,8 +44,8 @@ if(HAVE_LIBRT)
    add_executable(achcat src/achcat.c)
    target_link_libraries(achcat ach pthread ${LIBRT})
 
-   add_executable(ach-bench src/ach-bench.c)
-   target_link_libraries(ach-bench ach pthread ${LIBRT} m)
+   add_executable(achbench src/ach-bench.c)
+   target_link_libraries(achbench ach pthread ${LIBRT} m)
 
    add_executable(ach-example src/ach-example.c)
    target_link_libraries(ach-example ach pthread ${LIBRT} m)

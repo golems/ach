@@ -44,7 +44,7 @@ directory.
 Performance/Benchmarks
 ======================
 To evaluate the performance of ach on your machine, you can use the
-included `ach-bench` program to test messaging latency.  See the shell
+included `achbench` program to test messaging latency.  See the shell
 script `src/run-benchmarks` which runs the benchmark with a variety of
 options.
 
