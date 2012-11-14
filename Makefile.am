@@ -21,6 +21,10 @@ endif
 
 libach_la_SOURCES = src/ach.c src/pipe.c
 
+# This is a libtool version -- CURRENT:REVSION:AGE
+# Is /NOT/ major.minor.patch and the relationship is nontrivial
+libach_la_LDFLAGS = -version-info 1:0:0
+
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la
 

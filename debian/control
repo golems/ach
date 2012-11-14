@@ -1,4 +1,4 @@
-Source: libach
+Source: ach
 Priority: extra
 Maintainer: Neil Dantam <ntd@gatech.edu>
 Build-Depends: debhelper (>= 7.0.50~), autotools-dev
@@ -11,7 +11,7 @@ Vcs-Browser: https://github.com/golems/ach
 Package: libach-dev
 Section: libdevel
 Architecture: any
-Depends: libach0 (= ${binary:Version}), ${misc:Depends}
+Depends: libach1 (= ${binary:Version}), ${misc:Depends}
 Description: A realtime message bus IPC library
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control
@@ -23,7 +23,7 @@ Description: A realtime message bus IPC library
  systems. Finally, the source code for Ach is available under an Open
  Source BSD-style license.
 
-Package: libach0
+Package: libach1
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -41,7 +41,7 @@ Description: A realtime message bus IPC library
 Package: ach-utils
 Section: libs
 Architecture: any
-Depends: libach0, ${shlibs:Depends}, ${misc:Depends}, python
+Depends: libach1, ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}
 Description: A realtime message bus IPC library
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control

@@ -1,3 +1,11 @@
+ach (1.0.0) unstable; urgency=low
+
+  * Change condition variable clock to CLOCK_MONOTONIC
+  * Extend structure definitions to ease future upgrades
+  * Include achbench program
+
+ -- Neil Dantam <ntd@gatech.edu>  Wed, 14 Nov 2012 00:36:00 -0400
+
 libach (0.20121004) unstable; urgency=low
 
   * Change in achpipe protocol
