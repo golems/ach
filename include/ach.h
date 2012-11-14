@@ -296,16 +296,19 @@ extern "C" {
     typedef struct {
         uint32_t magic;          /**< magic number of ach shm files */
         size_t len;              /**< length of mmap'ed file */
-        size_t index_cnt;        /**< number of entries in index */
-        size_t data_size;        /**< size of data bytes */
-        size_t data_head;        /**< offset to first open byte of data */
-        size_t data_free;        /**< number of free data bytes */
-        size_t index_head;       /**< index into index array of first unused index entry */
-        size_t index_free;       /**< number of unused index entries */
-        int state;               /**< state of the channel (ie open/closed) */
-        int refcount;            /**< number of open handles to channel */
-        int anon;                /**< is channel in the heap? */
         char name[1+ACH_CHAN_NAME_MAX]; /**< Name of this channel */
+        union {
+            struct {
+                size_t index_cnt;        /**< number of entries in index */
+                size_t data_size;        /**< size of data bytes */
+                size_t data_head;        /**< offset to first open byte of data */
+                size_t data_free;        /**< number of free data bytes */
+                size_t index_head;       /**< index into index array of first unused index entry */
+                size_t index_free;       /**< number of unused index entries */
+                int anon;                /**< is channel in the heap? */
+            };
+            uint64_t reserved[16];  /**< Reserve to compatibly add future variables */
+        };
         struct /* anonymous structure */ {
             pthread_mutex_t mutex;         /**< mutex for condition variables */
             pthread_cond_t cond;           /**< condition variable */
@@ -326,34 +329,44 @@ extern "C" {
 
     /** Attributes to pass to ach_open */
     typedef struct {
-        int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
-        ach_header_t *shm;   /**< the memory buffer used by anonymous channels */
+        union {
+            struct{
+                int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
+                ach_header_t *shm;   /**< the memory buffer used by anonymous channels */
+            };
+            uint64_t reserved_size[8]; /**< Reserve space to compatibly add future options */
+        };
     } ach_attr_t;
-
-
 
     /** Attributes to pass to ach_create  */
     typedef struct {
-        int truncate;      /**< remove and recreate an existing shm file */
-        int map_anon;      /**< allocate channel in heap, rather than shm */
-        ach_header_t *shm; /**< pointer to channel, set out output of create iff map_anon */
-        int set_clock;     /**< if true, set the clock of the condition variable */
-        clockid_t clock;   /**< Which clock to use if set_clock is true.
-                            *   The default is CLOCK_MONOTONIC. */
+        union {
+            struct{
+                int truncate;      /**< remove and recreate an existing shm file */
+                int map_anon;      /**< allocate channel in heap, rather than shm */
+                ach_header_t *shm; /**< pointer to channel, set out output of create iff map_anon */
+                int set_clock;     /**< if true, set the clock of the condition variable */
+                clockid_t clock;   /**< Which clock to use if set_clock is true.
+                                    *   The default is CLOCK_MONOTONIC. */
+            };
+            uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
+        };
     } ach_create_attr_t;
-
 
     /** Descriptor for shared memory area
      */
     typedef struct {
-        ach_header_t *shm;   /**< pointer to mmap'ed block */
-        size_t len;          /**< length of memory mapping */
-        int fd;              /**< file descriptor of mmap'ed file */
-        uint64_t seq_num;    /**< last sequence number read */
-        uint64_t get_ticks;  /**< processor ticks at last get */
-        uint64_t put_ticks;  /**< processor ticks at last put */
-        size_t next_index;   /**< next index entry to try get from */
-        ach_attr_t attr;     /**< attributes used to create this channel */
+        union {
+            struct {
+                ach_header_t *shm;   /**< pointer to mmap'ed block */
+                size_t len;          /**< length of memory mapping */
+                int fd;              /**< file descriptor of mmap'ed file */
+                uint64_t seq_num;    /**< last sequence number read */
+                size_t next_index;   /**< next index entry to try get from */
+                ach_attr_t attr;     /**< attributes used to create this channel */
+            };
+            uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
+        };
     } ach_channel_t;
 
     /** Size of ach_channel_t */

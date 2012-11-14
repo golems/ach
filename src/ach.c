@@ -857,8 +857,7 @@ void ach_dump( ach_header_t *shm ) {
 }
 
 void ach_attr_init( ach_attr_t *attr ) {
-    attr->shm = NULL;
-    attr->map_anon = 0;
+    memset( attr, 0, sizeof(ach_attr_t) );
 }
 
 enum ach_status
