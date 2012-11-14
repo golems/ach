@@ -90,7 +90,6 @@ AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
 AC_SEARCH_LIBS([pthread_create],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
-AC_SEARCH_LIBS([sin],[m])
 
 
 # Enable maximum warnings

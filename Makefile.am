@@ -43,7 +43,7 @@ achd_SOURCES = src/achd.c
 achd_LDADD = libach.la
 
 ach_example_SOURCES = src/ach-example.c
-ach_example_LDADD = libach.la
+ach_example_LDADD = libach.la -lm
 
 achbench_SOURCES = src/ach-bench.c
 achbench_LDADD = libach.la
