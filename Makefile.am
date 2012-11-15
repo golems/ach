@@ -78,7 +78,7 @@ endif
 clean-local:
 	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/*
 
-distclean-local:
-	-rm -rf *.1
+maintainer-clean-local:
+	-rm -rf *.1 CMakeFiles CMakeCache.txt cmake_install.make
 
 include doxygen.am
