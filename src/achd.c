@@ -98,7 +98,7 @@ static int opt_verbosity = 0;
 
 /* Main */
 int main(int argc, char **argv) {
-    // process options
+    /* process options */
     int c = 0;
     while( -1 != c ) {
         while( (c = getopt( argc, argv, "vc:thH?")) != -1 ) {
@@ -129,13 +129,13 @@ int main(int argc, char **argv) {
         }
     }
 
-    // maybe print stuff
+    /* maybe print stuff */
     if( opt_verbosity ) {
         fprintf( stderr, "channel     = %s\n", opt_channel);
         fprintf( stderr, "config file = %s\n", opt_config_file);
     }
 
-    // parse config file
+    /* parse config file */
     FILE *fconfig = fopen(opt_config_file, "r" );
     struct achd_config config;
 

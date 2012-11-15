@@ -18,9 +18,10 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 0.20120312)
+set(VERSION 1.0.0)
+
 add_definitions(-DACH_VERSION_STRING=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
-add_definitions(-ansi -Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
+#add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
 
 if(APPLE)
   add_definitions(-DHAVE_STRLEN)
@@ -28,11 +29,19 @@ endif()
 
 include_directories(include)
 
-add_library(ach SHARED src/ach.c src/ach_stream.c)
+add_library(ach SHARED src/ach.c src/pipe.c)
 target_link_libraries(ach pthread ${LIBRT})
 
-add_executable(achtool src/ach.c src/achtool.c)
-target_link_libraries(achtool pthread ${LIBRT})
+# This needs to manually kept in sync with the libtool versions
+# Libtool-generated versions are authoratative
+# Does not correspond to the package version
+SET_TARGET_PROPERTIES( ach PROPERTIES
+                       SOVERSION 1     # Major version
+                       VERSION 1.0.0 ) # Major.minor.patch
+
+add_executable(achtool src/achtool.c)
+target_link_libraries(achtool ach pthread ${LIBRT})
+SET_TARGET_PROPERTIES(achtool PROPERTIES OUTPUT_NAME ach)
 
 add_executable(achtest src/achtest.c)
 target_link_libraries(achtest ach pthread ${LIBRT} m)

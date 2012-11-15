@@ -484,9 +484,9 @@ extern "C" {
 
     /** Format for ach frames sent over pipes or stored on disk */
     typedef struct {
-        char magic[8];    ///< magic number: "achpipe", null terminated
-        uint8_t size_bytes[8]; ///< size, stored little endian for disk and network transmission
-        uint8_t data[1];  ///< flexible array
+        char magic[8];         /**< magic number: "achpipe", null terminated */
+        uint8_t size_bytes[8]; /**< size, stored little endian for disk and network transmission */
+        uint8_t data[1];       /**< flexible array */
     } ach_pipe_frame_t;
 
     /** Malloc an ach_pipe_frame_t with room for `size' data bytes.

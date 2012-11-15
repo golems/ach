@@ -329,7 +329,7 @@ void hard_assert(int test, const char fmt[], ... ) {
 /** publishing loop */
 void publish( FILE *fin, char *chan_name )  {
     verbprintf(1, "Publishing()\n");
-    //assert(STDIN_FILENO == fd );
+    /* assert(STDIN_FILENO == fd ); */
     ach_channel_t chan;
 
     { /* open channel */
@@ -350,7 +350,7 @@ void publish( FILE *fin, char *chan_name )  {
             if( 16 != s ) break;
             if( memcmp("achpipe", frame->magic, 8) ) break;
             uint64_t cnt = ach_pipe_get_size( frame );
-            // FIXME: sanity check that cnt is not something outrageous
+            /* FIXME: sanity check that cnt is not something outrageous */
             /* make sure buf can hold it */
             if( (size_t)cnt > max ) {
                 max = cnt;
