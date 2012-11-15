@@ -4,3 +4,4 @@ usr/bin/achpipe.bin
 usr/bin/achlog
 usr/bin/achcat
 usr/bin/achbench
+usr/share/man/man1/*.1

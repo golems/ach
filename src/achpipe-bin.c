@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2008-2011, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2012, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -112,6 +112,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "ach.h"
+#include "achutil.h"
 
 
 
@@ -519,7 +520,7 @@ void sighandler_install() {
 /** main */
 int main( int argc, char **argv ) {
     int c;
-    while( (c = getopt( argc, argv, "p:s:z:vlcf:h?")) != -1 ) {
+    while( (c = getopt( argc, argv, "p:s:z:vlcf:h?V")) != -1 ) {
         switch(c) {
         case 'p':
             opt_pub = 1;
@@ -549,6 +550,9 @@ int main( int argc, char **argv ) {
         case 'f':
             opt_freq = atof(optarg);
             break;
+        case 'V':   /* version     */
+            ach_print_version("achpipe.bin");
+            exit(EXIT_SUCCESS);
         default:
             puts( "Usage: achpipe.bin [OPTION...]\n"
                   "Translate between ach channels and streams"

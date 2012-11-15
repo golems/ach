@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2008-2011, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2012, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -57,6 +57,7 @@
 #include <inttypes.h>
 #include <errno.h>
 #include "ach.h"
+#include "achutil.h"
 
 size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
@@ -96,7 +97,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c;
     opterr = 0;
-    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1thH?")) != -1 ) {
+    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1thH?V")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
             parse_cmd( cmd_create, optarg );
@@ -128,26 +129,38 @@ int main( int argc, char **argv ) {
         case '1':   /* once     */
             opt_1++;
             break;
+        case 'V':   /* version     */
+            ach_print_version("ach");
+            exit(EXIT_SUCCESS);
         case '?':   /* help     */
         case 'h':
         case 'H':
             puts( "Usage: ach [OPTION...]\n"
-                  "General tool to interact with ach channels"
+                  "General tool to interact with ach channels\n"
                   "\n"
-                  "  -C CHANNEL-NAME,     Create a new channel\n"
-                  "  -U CHANNEL-NAME,     Unlink (delete) a channel\n"
-                  "  -D CHANNEL-NAME,     Dump info about channel\n"
-                  "  -1,                  With -C, accept an already created channel\n"
-                  "  -F CHANNEL-NAME,     Print filename for channel\n"
-                  "  -m MSG-COUNT,        Number of messages to buffer\n"
-                  "  -n MSG-SIZE,         Nominal size of a message\n"
-                  "  -o OCTAL,            Mode for created channel\n"
-                  "  -t,                  Truncate and reinit newly create channel (use only\n"
-                  "                       with -C).  WARNING: this will clobber processes\n"
-                  "                       Currently using the channel.\n"
-                  "  -v,                  Make output more verbose\n"
-                  "  -?,                  Give this help list\n"
-                  "  -V,                  Print program version\n" );
+                  "  -C CHANNEL-NAME,          Create a new channel\n"
+                  "  -U CHANNEL-NAME,          Unlink (delete) a channel\n"
+                  "  -D CHANNEL-NAME,          Dump info about channel\n"
+                  "  -1,                       With -C, accept an already created channel\n"
+                  "  -F CHANNEL-NAME,          Print filename for channel\n"
+                  "  -m MSG-COUNT,             Number of messages to buffer\n"
+                  "  -n MSG-SIZE,              Nominal size of a message\n"
+                  "  -o OCTAL,                 Mode for created channel\n"
+                  "  -t,                       Truncate and reinit newly create channel (use only\n"
+                  "                            with -C).  WARNING: this will clobber processes\n"
+                  "                            Currently using the channel.\n"
+                  "  -v,                       Make output more verbose\n"
+                  "  -?,                       Give this help list\n"
+                  "  -V,                       Print program version\n"
+                  "\n"
+                  "Examples:\n"
+                  "  ach -C foo                Create channel 'foo'\n"
+                  "  ach -C foo -m 10 -n 1024  Create channel 'foo' which can buffer up to 10 messages\n"
+                  "                            of nominal size 1024 bytes (bigger/smaller messages are OK)\n"
+                  "  ach -U foo                Remove channel 'foo'\n"
+                  "\n"
+                  "Report bugs to <ntd@gatech.edu>"
+                );
             exit(EXIT_SUCCESS);
         default:
             printf("unknown: %c\n", c);

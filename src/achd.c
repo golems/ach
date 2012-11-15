@@ -51,6 +51,7 @@
 #include <regex.h>
 
 #include "ach.h"
+#include "achutil.h"
 
 /* Prototypes */
 enum achd_direction {
@@ -101,7 +102,7 @@ int main(int argc, char **argv) {
     /* process options */
     int c = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "vc:thH?")) != -1 ) {
+        while( (c = getopt( argc, argv, "vc:thHV?")) != -1 ) {
             switch(c) {
             case 'c':
                 opt_config_file = strdup(optarg);
@@ -109,6 +110,9 @@ int main(int argc, char **argv) {
             case 'v':
                 opt_verbosity ++;
                 break;
+            case 'V':   /* version     */
+                ach_print_version("ach");
+                exit(EXIT_SUCCESS);
             case 'h':
             case 'H':
             case '?':

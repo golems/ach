@@ -300,7 +300,7 @@ int main(int argc, char **argv) {
 
     struct vtab *vt = &vtab_ach;
 
-    while( (c = getopt( argc, argv, "f:s:p:r:l:gPhH?")) != -1 ) {
+    while( (c = getopt( argc, argv, "f:s:p:r:l:gPhH?V")) != -1 ) {
         switch(c) {
         case 'f':
             FREQUENCY = strtod(optarg, &endptr);
@@ -326,6 +326,9 @@ int main(int argc, char **argv) {
         case 'P':
             vt = &vtab_pipe;
             break;
+        case 'V':   /* version     */
+            ach_print_version("achbench");
+            exit(EXIT_SUCCESS);
         case 'h':
         case 'H':
         case '?':

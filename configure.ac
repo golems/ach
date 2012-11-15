@@ -137,5 +137,8 @@ m4_ifdef([DX_INIT_DOXYGEN],
           AM_CONDITIONAL([DX_COND_man],   false)
          ])
 
+AC_CHECK_PROGS([HELP2MAN], [help2man])
+AM_CONDITIONAL([HAVE_HELP2MAN], [test x$HELP2MAN != x])
+
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
