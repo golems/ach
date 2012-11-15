@@ -39,30 +39,26 @@
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad12d416ef130efe288fd186b3d6119bd"></a><!-- doxytag: member="ach_channel_t::shm" ref="ad12d416ef130efe288fd186b3d6119bd" args="" -->
-<a class="el" href="structach__header__t.html">ach_header_t</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#ad12d416ef130efe288fd186b3d6119bd">shm</a></td></tr>
+<tr><td class="memItemLeft" ><a class="anchor" id="a8f88b99be6de7dc7dbd29b0e93e2d7b2"></a><!-- doxytag: member="ach_channel_t::@14" ref="a8f88b99be6de7dc7dbd29b0e93e2d7b2" args="" -->
+union {</td></tr>
+<tr><td class="memItemLeft" ><a class="anchor" id="a7e906ee93c7dfde074f79132eecfb775"></a><!-- doxytag: member="ach_channel_t::@13::@16" ref="a7e906ee93c7dfde074f79132eecfb775" args="" -->
+&nbsp;&nbsp;&nbsp;struct {</td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="el" href="structach__header__t.html">ach_header_t</a> *&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#ad12d416ef130efe288fd186b3d6119bd">shm</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">pointer to mmap'ed block <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a90c8cfdb460ab6f8cdad5bd1920f011f"></a><!-- doxytag: member="ach_channel_t::len" ref="a90c8cfdb460ab6f8cdad5bd1920f011f" args="" -->
-size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#a90c8cfdb460ab6f8cdad5bd1920f011f">len</a></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a90c8cfdb460ab6f8cdad5bd1920f011f">len</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">length of memory mapping <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a1ca73e995dbe967ea54cba7f4a10d620"></a><!-- doxytag: member="ach_channel_t::fd" ref="a1ca73e995dbe967ea54cba7f4a10d620" args="" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#a1ca73e995dbe967ea54cba7f4a10d620">fd</a></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a1ca73e995dbe967ea54cba7f4a10d620">fd</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">file descriptor of mmap'ed file <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a18e3834a2712f9c917391d64e0563c7d"></a><!-- doxytag: member="ach_channel_t::seq_num" ref="a18e3834a2712f9c917391d64e0563c7d" args="" -->
-uint64_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#a18e3834a2712f9c917391d64e0563c7d">seq_num</a></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;uint64_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a18e3834a2712f9c917391d64e0563c7d">seq_num</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">last sequence number read <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab3a79a84676f45c41499d7b62e07f959"></a><!-- doxytag: member="ach_channel_t::get_ticks" ref="ab3a79a84676f45c41499d7b62e07f959" args="" -->
-uint64_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#ab3a79a84676f45c41499d7b62e07f959">get_ticks</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">processor ticks at last get <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ac8a64b3537c4ec0d9b1b5ef84dd8b0ac"></a><!-- doxytag: member="ach_channel_t::put_ticks" ref="ac8a64b3537c4ec0d9b1b5ef84dd8b0ac" args="" -->
-uint64_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#ac8a64b3537c4ec0d9b1b5ef84dd8b0ac">put_ticks</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">processor ticks at last put <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a786e22cafe4161682dd63832c35f9102"></a><!-- doxytag: member="ach_channel_t::next_index" ref="a786e22cafe4161682dd63832c35f9102" args="" -->
-size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#a786e22cafe4161682dd63832c35f9102">next_index</a></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;size_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a786e22cafe4161682dd63832c35f9102">next_index</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">next index entry to try get from <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a89379463e3c9b74bcda111f0bd91142d"></a><!-- doxytag: member="ach_channel_t::attr" ref="a89379463e3c9b74bcda111f0bd91142d" args="" -->
-<a class="el" href="structach__attr__t.html">ach_attr_t</a>&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html#a89379463e3c9b74bcda111f0bd91142d">attr</a></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="el" href="structach__attr__t.html">ach_attr_t</a>&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a89379463e3c9b74bcda111f0bd91142d">attr</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">attributes used to create this channel <br/></td></tr>
+<tr><td class="memItemLeft" valign="top">&nbsp;&nbsp;&nbsp;}&nbsp;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;uint64_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__channel__t.html#a9417645f205d70508fb1403dd8be28c4">reserved</a> [16]</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reserve space to compatibly add future options. <br/></td></tr>
+<tr><td class="memItemLeft" valign="top">};&nbsp;</td><td class="memItemRight" valign="bottom"></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>Descriptor for shared memory area. </p>
@@ -70,7 +66,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="st
 <li>include/<a class="el" href="ach_8h_source.html">ach.h</a></li>
 </ul>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 04:07:39 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 01:27:04 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

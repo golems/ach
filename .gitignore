@@ -16,10 +16,13 @@
 CMake*
 cmake*
 ach*.tar.gz
-ach-bench
+achbench
 ach-example
 achpipe.bin
 achtool
 achtest
 achcat
 ach
+achd
+*.1
+*.so*

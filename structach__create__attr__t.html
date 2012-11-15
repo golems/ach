@@ -39,23 +39,49 @@
 <table class="memberdecls">
 <tr><td colspan="2"><h2><a name="pub-attribs"></a>
 Data Fields</h2></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6a71c790360ab2747a1e679d1fc529e9"></a><!-- doxytag: member="ach_create_attr_t::truncate" ref="a6a71c790360ab2747a1e679d1fc529e9" args="" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a6a71c790360ab2747a1e679d1fc529e9">truncate</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">remove and recreate an existing shm file <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a49290681ec1d48e1bbd4bebcee27df27"></a><!-- doxytag: member="ach_create_attr_t::map_anon" ref="a49290681ec1d48e1bbd4bebcee27df27" args="" -->
-int&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a49290681ec1d48e1bbd4bebcee27df27">map_anon</a></td></tr>
+<tr><td class="memItemLeft" ><a class="anchor" id="af335b32591ae6f1d178e8d2212d037d3"></a><!-- doxytag: member="ach_create_attr_t::@10" ref="af335b32591ae6f1d178e8d2212d037d3" args="" -->
+union {</td></tr>
+<tr><td class="memItemLeft" ><a class="anchor" id="a77f5f70242b22328796e2ce88789a8bb"></a><!-- doxytag: member="ach_create_attr_t::@9::@12" ref="a77f5f70242b22328796e2ce88789a8bb" args="" -->
+&nbsp;&nbsp;&nbsp;struct {</td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#a49290681ec1d48e1bbd4bebcee27df27">map_anon</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">allocate channel in heap, rather than shm <br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3bc28b142d07b12bb235d6ccc8028745"></a><!-- doxytag: member="ach_create_attr_t::shm" ref="a3bc28b142d07b12bb235d6ccc8028745" args="" -->
-<a class="el" href="structach__header__t.html">ach_header_t</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__create__attr__t.html#a3bc28b142d07b12bb235d6ccc8028745">shm</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">pointer to channel, set out output of create iff map_anon <br/></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a class="el" href="structach__header__t.html">ach_header_t</a> *&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#a3bc28b142d07b12bb235d6ccc8028745">shm</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">pointer to channel, set on output of create iff map_anon <br/></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#a6a71c790360ab2747a1e679d1fc529e9">truncate</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">remove and recreate an existing shm file <br/></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;int&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#ae1350955c91dd4709ec7a832c62c7461">set_clock</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">if true, set the clock of the condition variable <br/></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;clockid_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#a6c1719b5eb15f909f02128889dc58104">clock</a></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Which clock to use if set_clock is true.  <a href="#a321128dc4a51b8fff87003a56b2bd961"></a><br/></td></tr>
+<tr><td class="memItemLeft" valign="top">&nbsp;&nbsp;&nbsp;}&nbsp;</td><td class="memItemRight" valign="bottom"></td></tr>
+<tr><td class="memItemLeft" >&nbsp;&nbsp;&nbsp;uint64_t&nbsp;&nbsp;&nbsp;<a class="el" href="structach__create__attr__t.html#af01027f0bee7f4014729eb9c4f27fdf0">reserved</a> [16]</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Reserve space to compatibly add future options. <br/></td></tr>
+<tr><td class="memItemLeft" valign="top">};&nbsp;</td><td class="memItemRight" valign="bottom"></td></tr>
 </table>
 <hr/><a name="_details"></a><h2>Detailed Description</h2>
 <p>Attributes to pass to ach_create. </p>
+<hr/><h2>Field Documentation</h2>
+<a class="anchor" id="a6c1719b5eb15f909f02128889dc58104"></a><!-- doxytag: member="ach_create_attr_t::clock" ref="a6c1719b5eb15f909f02128889dc58104" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">clockid_t <a class="el" href="structach__create__attr__t.html#a6c1719b5eb15f909f02128889dc58104">ach_create_attr_t::clock</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+<p>Which clock to use if set_clock is true. </p>
+<p>The default is CLOCK_MONOTONIC. </p>
+
+</div>
+</div>
 <hr/>The documentation for this struct was generated from the following file:<ul>
 <li>include/<a class="el" href="ach_8h_source.html">ach.h</a></li>
 </ul>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Tue Sep 18 2012 04:07:39 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 01:27:04 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
