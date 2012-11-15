@@ -15,7 +15,7 @@
 /stamp-h1
 CMake*
 cmake*
-ach*.tar.gz
+/ach*.tar*
 achbench
 ach-example
 achpipe.bin
