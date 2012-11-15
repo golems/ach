@@ -49,6 +49,7 @@
 *.lo
 *.la
 *.so
+*.so.*
 *.tar.gz
 *.tar.bz2
 *.tar.lzma
