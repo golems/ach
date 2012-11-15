@@ -1,5 +1,2 @@
 usr/lib/lib*.so.0.*
 usr/lib/lib*.so.0
-usr/lib/lib*.la
-usr/lib/lib*.a
-usr/lib/*.la
