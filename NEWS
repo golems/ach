@@ -2,6 +2,7 @@ Ach 1.0.1
 =========
 
 * Add ACH_DEFAULT_CLOCK symbol, set to CLOCK_MONOTONIC if available
+* Debian packaging uses debconf to configure inetd
 
 Ach 1.0.0
 =========

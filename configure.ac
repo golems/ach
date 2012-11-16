@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([ach], [1.0.1~GIT], [ntd@gatech.edu])
+AC_INIT([ach], [1.0.1], [ntd@gatech.edu])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_SRCDIR([src/ach.c])
 AC_CONFIG_HEADERS([config.h])

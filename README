@@ -13,6 +13,8 @@ INSTALLATION
 ============
     ./configure && make && make install
 
+See the INSTALL file for details.
+
 Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT repo.
 
 1. Add the following to /etc/apt/sources:
@@ -24,7 +26,7 @@ Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT
 
 2. `sudo apt-get update && sudo apt-get install libach-dev ach-utils`
 
-See the INSTALL file for details.
+3. `sudo dpkg-reconfigure ach-utils`
 
 Example and Usage
 =================
