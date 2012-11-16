@@ -56,29 +56,36 @@ endif
 dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1
 
 if HAVE_HELP2MAN
-ach.1: ach
-	help2man -h -h -v -V --no-info -n "manipulate ach channels" ./ach > ach.1
+ach.1: src/achtool.c $(top_srcdir)/configure.ac
+	$(MAKE) $(AM_MAKEFLAGS) ach$(EXEEXT)
+	help2man -h -h -v -V --no-info -n "manipulate ach channels" ./ach$(EXEEXT) -o ach.1
 
-achbench.1: achbench
-	help2man -h -h -v -V --no-info -n "benchmark and tune ach" ./achbench > achbench.1
+achbench.1: src/ach-bench.c $(top_srcdir)/configure.ac
+	$(MAKE) $(AM_MAKEFLAGS) achbench$(EXEEXT)
+	help2man -h -h -v -V --no-info -n "benchmark and tune ach" ./achbench$(EXEEXT) -o achbench.1
 
-achcat.1: achcat
-	help2man -h -h -v -V --no-info -n "ach debugging tool" ./achcat > achcat.1
+achcat.1: src/achcat.c $(top_srcdir)/configure.ac
+	$(MAKE) $(AM_MAKEFLAGS) achcat$(EXEEXT)
+	help2man -h -h -v -V --no-info -n "ach debugging tool" ./achcat$(EXEEXT) -o achcat.1
 
-achpipe.bin.1: achpipe.bin
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin > achpipe.bin.1
+achpipe.bin.1: src/achpipe-bin.c $(top_srcdir)/configure.ac
+	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin$(EXEEXT) -o achpipe.bin.1
 
-achpipe.1: achpipe
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe > achpipe.1
+achpipe.1: $(top_srcdir)/achpipe
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" $(top_srcdir)/achpipe -o achpipe.1
 
-achlog.1: achlog
-	help2man -h -h -v -V --no-info -n "log ach messages" ./achlog > achlog.1
+achlog.1: $(top_srcdir)/achlog
+	help2man -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o achlog.1
 endif
 
 clean-local:
-	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/*
+	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.*
+
+distclean-local:
+	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake
 
 maintainer-clean-local:
-	-rm -rf *.1 CMakeFiles CMakeCache.txt cmake_install.make
+	-rm -rf *.1 *.tar.gz
 
 include doxygen.am
