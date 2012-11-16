@@ -195,6 +195,22 @@
 #define ACH_DEPRECATED
 #endif /* __GNUC__ */
 
+/* Determine a default clock */
+#ifdef CLOCK_MONOTONIC
+/** Default condition variable clock */
+#define ACH_DEFAULT_CLOCK CLOCK_MONOTONIC
+#elif defined CLOCK_HIGHRES /* Old Solaris lacks CLOCK_MONOTONIC,
+                               CLOCK_HIGHRES looks the same */
+/** Default condition variable clock */
+#define ACH_DEFAULT_CLOCK CLOCK_HIGHRES
+#elif defined CLOCK_REALTIME /* Try fallback to CLOCK_REALTIME */
+/** Default condition variable clock */
+#define ACH_DEFAULT_CLOCK CLOCK_REALTIME
+#else
+#error No valid CLOCKS defined.  Expecting CLOCK_MONOTONIC.
+#endif /* CLOCK_MONOTONIC */
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -335,7 +351,7 @@ extern "C" {
                 int truncate;      /**< remove and recreate an existing shm file */
                 int set_clock;     /**< if true, set the clock of the condition variable */
                 clockid_t clock;   /**< Which clock to use if set_clock is true.
-                                    *   The default is CLOCK_MONOTONIC. */
+                                    *   The default is defined by ACH_DEFAULT_CLOCK. */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
@@ -422,7 +438,7 @@ extern "C" {
         size of the desired frame if buf is too small.
         \param abstime An absolute timeout if ACH_O_WAIT is specified.
         Take care that abstime is given in the correct clock.  The
-        default is CLOCK_MONOTONIC.
+        default is defined by ACH_DEFAULT_CLOCK.
         \param options Option flags
     */
     enum ach_status

@@ -50,23 +50,6 @@ AC_CHECK_DECL([CLOCK_REALTIME],
         AM_CONDITIONAL([HAVE_RT], false),
         [[#include <time.h>]])
 
-# Check available CLOCKs
-AC_CHECK_DECLS([CLOCK_MONOTONIC],
-        [],
-        [AC_CHECK_DECLS([CLOCK_HIGHRES],
-                [AC_DEFINE([CLOCK_MONOTONIC],
-                        [CLOCK_HIGHRES],
-                        [Old Solaris lacks CLOCK_MONOTONIC,
-                         CLOCK_HIGHRES looks the same])],
-                [AC_CHECK_DECLS([CLOCK_REALTIME],
-                        [AC_DEFINE([CLOCK_MONOTONIC],
-                                [CLOCK_REALTIME],
-                                [use CLOCK_REALTIME if we can])],
-                        [],
-                        [[#include <time.h>]])]
-                [[#include <time.h>]])],
-        [[#include <time.h>]])
-
 # check pthread decls
 AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
         [], [],

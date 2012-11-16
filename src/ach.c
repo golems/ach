@@ -372,7 +372,7 @@ ach_create( const char *channel_name,
                     return ACH_FAILED_SYSCALL;
                 }
             } else {
-                if( (r = pthread_condattr_setclock(&cond_attr, CLOCK_MONOTONIC)) ) {
+                if( (r = pthread_condattr_setclock(&cond_attr, ACH_DEFAULT_CLOCK)) ) {
                     DEBUG_PERROR("pthread_condattr_setclock");
                     return ACH_FAILED_SYSCALL;
                 }

@@ -150,7 +150,7 @@ int test_basic() {
     p = 45;
     r = ach_put( &chan, &p, sizeof(p) );
     test(r, "ach_put");
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(ACH_DEFAULT_CLOCK, &ts);
     ts.tv_sec += 30; /* don't yield too long now */
     r = ach_get( &chan, &s, sizeof(s), &frame_size, &ts,
                  ACH_O_LAST | ACH_O_WAIT );
@@ -169,7 +169,7 @@ int test_basic() {
     }
 
     /* timeout */
-    clock_gettime(CLOCK_MONOTONIC, &ts);
+    clock_gettime(ACH_DEFAULT_CLOCK, &ts);
     ts.tv_sec -= 10;
     r = ach_get( &chan, &s, sizeof(s), &frame_size, &ts,
                  ACH_O_LAST | ACH_O_WAIT );

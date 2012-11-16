@@ -85,7 +85,7 @@ ach_channel_t time_chan;
 typedef struct timespec ticks_t ;
 static ticks_t get_ticks(void) {
     struct timespec t;
-    clock_gettime( CLOCK_MONOTONIC, &t );
+    clock_gettime( ACH_DEFAULT_CLOCK, &t );
     return t;
 }
 static double ticks_delta(ticks_t t0, ticks_t t1) {
