@@ -257,17 +257,17 @@ extern "C" {
         ACH_OK = 0,             /**< Call successful */
         ACH_OVERFLOW = 1,       /**< buffer to small to hold frame */
         ACH_INVALID_NAME = 2,   /**< invalid channel name */
-        ACH_BAD_SHM_FILE = 3,   /**< shared memory file didn't look right */
+        ACH_BAD_SHM_FILE = 3,   /**< channel file didn't look right */
         ACH_FAILED_SYSCALL = 4, /**< a system call failed */
         ACH_STALE_FRAMES = 5,   /**< no new data in the channel */
         ACH_MISSED_FRAME = 6,   /**< we missed the next frame */
         ACH_TIMEOUT = 7,        /**< timeout before frame received */
-        ACH_EEXIST = 8,         /**< shm already exists */
-        ACH_ENOENT = 9,         /**< shm doesn't */
-        ACH_CLOSED = 10,
-        ACH_BUG = 11,
-        ACH_EINVAL = 12,
-        ACH_CORRUPT = 13
+        ACH_EEXIST = 8,         /**< channel file already exists */
+        ACH_ENOENT = 9,         /**< channel file doesn't exist */
+        ACH_CLOSED = 10,        /**< unused */
+        ACH_BUG = 11,           /**< internal ach error */
+        ACH_EINVAL = 12,        /**< invalid channel */
+        ACH_CORRUPT = 13        /**< channel memory has been corrupted */
     } ach_status_t;
 
 
@@ -289,7 +289,10 @@ extern "C" {
          * will skip past all older messages.
          */
         ACH_O_LAST = 0x02,
-        ACH_O_COPY = 0x04,
+        /** Copy the message out of the channel, even if already seen.
+         *  Return code of ach_get() for successful copy will be ACH_OK.
+         */
+        ACH_O_COPY = 0x04
     } ach_get_opts_t;
 
     /** Header for shared memory area.
@@ -413,7 +416,10 @@ extern "C" {
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr );
 
+/** Default number of index entries in a channel */
 #define ACH_DEFAULT_FRAME_COUNT 16
+
+/** Default nominal frame size for a channel */
 #define ACH_DEFAULT_FRAME_SIZE 512
 
     /** Opens a handle to channel.
@@ -508,14 +514,20 @@ extern "C" {
     /** Malloc an ach_pipe_frame_t with room for `size' data bytes.
      *
      * \return a newly allocated ach_pipe_frame with its magic and
-     * size fields properly filled.  Size is big endian..
+     * size fields properly filled.
      */
     ach_pipe_frame_t *ach_pipe_alloc(size_t size);
 
-    /** Set size field in ach frame, always little endian. */
+    /** Set size field in ach frame, always stored little endian.
+     * \param frame The frame struct
+     * \param size The size in native byte order
+     */
     void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size);
 
-    /** Set size field in ach frame, always little endian. */
+    /** Set size field in ach frame, always stored little endian.
+     * \param frame The frame struct
+     * \returns The size in native byte order
+     */
     uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
 #ifdef __cplusplus
