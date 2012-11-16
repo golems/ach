@@ -63,6 +63,9 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 <li>ACH_BAD_SHM_FILE
 : <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a">ach.h</a>
 </li>
+<li>ACH_BUG
+: <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7">ach.h</a>
+</li>
 <li>ACH_CHAN_NAME_MAX
 : <a class="el" href="ach_8h.html#abb5d1fae5fa66a03d7d8d4761011e86c">ach.h</a>
 </li>
@@ -81,6 +84,12 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 : <a class="el" href="ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c">ach.h</a>
 , <a class="el" href="ach_8c.html#a397913b30e59cd6c1ab0b9cf8c5b331c">ach.c</a>
 </li>
+<li>ACH_CLOSED
+: <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8">ach.h</a>
+</li>
+<li>ACH_CORRUPT
+: <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020">ach.h</a>
+</li>
 <li>ach_create()
 : <a class="el" href="ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82">ach.h</a>
 , <a class="el" href="ach_8c.html#afd2a92b13a96dc80bb4ce70b68c36e82">ach.c</a>
@@ -88,6 +97,12 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 <li>ach_create_attr_init()
 : <a class="el" href="ach_8h.html#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c">ach.h</a>
 , <a class="el" href="ach_8c.html#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c">ach.c</a>
+</li>
+<li>ACH_DEFAULT_FRAME_COUNT
+: <a class="el" href="ach_8h.html#a2d73b74eebe49d7d7ce537f851a89624">ach.h</a>
+</li>
+<li>ACH_DEFAULT_FRAME_SIZE
+: <a class="el" href="ach_8h.html#ad10d62183dd6bc592899f5bc93dabf7e">ach.h</a>
 </li>
 <li>ACH_DEPRECATED
 : <a class="el" href="ach_8h.html#a8e5f044e5399e970841e35f1f059b697">ach.h</a>
@@ -98,6 +113,9 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 </li>
 <li>ACH_EEXIST
 : <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f">ach.h</a>
+</li>
+<li>ACH_EINVAL
+: <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47">ach.h</a>
 </li>
 <li>ACH_ENOENT
 : <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837">ach.h</a>
@@ -124,6 +142,9 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 </li>
 <li>ACH_MISSED_FRAME
 : <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db">ach.h</a>
+</li>
+<li>ACH_O_COPY
+: <a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260">ach.h</a>
 </li>
 <li>ACH_O_LAST
 : <a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74">ach.h</a>
@@ -201,8 +222,8 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 : <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f">ach.h</a>
 </li>
 <li>ach_unlink()
-: <a class="el" href="ach_8c.html#a3ca9384476568e624155fd7f17aa16f6">ach.c</a>
-, <a class="el" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6">ach.h</a>
+: <a class="el" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6">ach.h</a>
+, <a class="el" href="ach_8c.html#a3ca9384476568e624155fd7f17aa16f6">ach.c</a>
 </li>
 </ul>
 
@@ -295,7 +316,7 @@ Here is a list of all documented functions, variables, defines, enums, and typed
 </li>
 </ul>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 01:27:04 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 23:27:05 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

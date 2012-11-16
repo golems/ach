@@ -119,198 +119,215 @@
 <a name="l00195"></a><a class="code" href="ach_8h.html#a8e5f044e5399e970841e35f1f059b697">00195</a> <span class="preprocessor">#define ACH_DEPRECATED</span>
 <a name="l00196"></a>00196 <span class="preprocessor"></span><span class="preprocessor">#endif </span><span class="comment">/* __GNUC__ */</span>
 <a name="l00197"></a>00197 
-<a name="l00198"></a>00198 <span class="preprocessor">#ifdef __cplusplus</span>
-<a name="l00199"></a>00199 <span class="preprocessor"></span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {
-<a name="l00200"></a>00200 <span class="preprocessor">#endif</span>
-<a name="l00201"></a>00201 <span class="preprocessor"></span>
-<a name="l00203"></a><a class="code" href="ach_8h.html#abb5d1fae5fa66a03d7d8d4761011e86c">00203</a> <span class="preprocessor">#define ACH_CHAN_NAME_MAX 64ul</span>
-<a name="l00204"></a>00204 <span class="preprocessor"></span>
-<a name="l00206"></a><a class="code" href="ach_8h.html#afd256125e8e540929dd1b945e4a9c791">00206</a> <span class="preprocessor">#define ACH_CHAN_NAME_PREFIX &quot;/achshm-&quot;</span>
-<a name="l00207"></a>00207 <span class="preprocessor"></span>
-<a name="l00209"></a><a class="code" href="ach_8h.html#a01aa865155a30c16a6a5c5643d0f6cfe">00209</a> <span class="preprocessor">#define ACH_INTR_RETRY 8</span>
-<a name="l00210"></a>00210 <span class="preprocessor"></span>
-<a name="l00215"></a><a class="code" href="ach_8h.html#a6ee6cd8dede61e5c4413a70317f63731">00215</a> <span class="preprocessor">#define ACH_SHM_MAGIC_NUM 0xb07511f3</span>
-<a name="l00216"></a>00216 <span class="preprocessor"></span>
-<a name="l00217"></a>00217 
-<a name="l00223"></a><a class="code" href="ach_8h.html#a4c1ae385acbd87b06971e19753462423">00223</a> <span class="preprocessor">#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8ALLU)</span>
-<a name="l00224"></a>00224 <span class="preprocessor"></span>
-<a name="l00229"></a><a class="code" href="ach_8h.html#a9756b6b93b39fbed2645e463dfc7d327">00229</a> <span class="preprocessor">#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8BLLU)</span>
-<a name="l00230"></a>00230 <span class="preprocessor"></span>
-<a name="l00237"></a><a class="code" href="ach_8h.html#ae81e27183c5ad6111cf19685f942ab7e">00237</a> <span class="preprocessor">#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)</span>
-<a name="l00238"></a>00238 <span class="preprocessor"></span>
-<a name="l00240"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">00240</a>     <span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a> {
-<a name="l00241"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e">00241</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e" title="Call successful.">ACH_OK</a> = 0,             
-<a name="l00242"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062">00242</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062" title="buffer to small to hold frame">ACH_OVERFLOW</a> = 1,       
-<a name="l00243"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a">00243</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a" title="invalid channel name">ACH_INVALID_NAME</a> = 2,   
-<a name="l00244"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a">00244</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a" title="shared memory file didn&amp;#39;t look right">ACH_BAD_SHM_FILE</a> = 3,   
-<a name="l00245"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b">00245</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b" title="a system call failed">ACH_FAILED_SYSCALL</a> = 4, 
-<a name="l00246"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495">00246</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495" title="no new data in the channel">ACH_STALE_FRAMES</a> = 5,   
-<a name="l00247"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db">00247</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db" title="we missed the next frame">ACH_MISSED_FRAME</a> = 6,   
-<a name="l00248"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f">00248</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f" title="timeout before frame received">ACH_TIMEOUT</a> = 7,        
-<a name="l00249"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f">00249</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f" title="shm already exists">ACH_EEXIST</a> = 8,         
-<a name="l00250"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837">00250</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837" title="shm doesn&amp;#39;t">ACH_ENOENT</a> = 9,         
-<a name="l00251"></a>00251         ACH_CLOSED = 10,
-<a name="l00252"></a>00252         ACH_BUG = 11,
-<a name="l00253"></a>00253         ACH_EINVAL = 12,
-<a name="l00254"></a>00254         ACH_CORRUPT = 13
-<a name="l00255"></a>00255     } ach_status_t;
-<a name="l00256"></a>00256 
-<a name="l00257"></a>00257 
-<a name="l00262"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">00262</a>     <span class="keyword">typedef</span> <span class="keyword">enum</span> {
-<a name="l00269"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885">00269</a>         <a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885" title="Blocks until an unseen message arrives or timeout.">ACH_O_WAIT</a> = 0x01,
-<a name="l00275"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74">00275</a>         <a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74" title="Reads the newest message out of the channel.">ACH_O_LAST</a> = 0x02,
-<a name="l00276"></a>00276         ACH_O_COPY = 0x04,
-<a name="l00277"></a>00277     } ach_get_opts_t;
-<a name="l00278"></a>00278 
-<a name="l00284"></a><a class="code" href="structach__header__t.html">00284</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00285"></a><a class="code" href="structach__header__t.html#a2b3fe30a9e7f9fe192e19fb3ee04c2c8">00285</a>         uint32_t magic;          
-<a name="l00286"></a><a class="code" href="structach__header__t.html#a46437c42eb0dc8f00af4ecd91539f79f">00286</a>         <span class="keywordtype">size_t</span> len;              
-<a name="l00287"></a><a class="code" href="structach__header__t.html#a40a74c9be148bd3cf9299620df06dc94">00287</a>         <span class="keywordtype">char</span> name[1+ACH_CHAN_NAME_MAX]; 
-<a name="l00288"></a>00288         <span class="keyword">union </span>{
-<a name="l00289"></a>00289             <span class="keyword">struct </span>{
-<a name="l00290"></a><a class="code" href="structach__header__t.html#adc943882b1a4c31492d48e05e9ed2003">00290</a>                 <span class="keywordtype">size_t</span> index_cnt;        
-<a name="l00291"></a><a class="code" href="structach__header__t.html#ac3a0b9cc9c357bfa04eb2e3c69fd8ab8">00291</a>                 <span class="keywordtype">size_t</span> data_size;        
-<a name="l00292"></a><a class="code" href="structach__header__t.html#ae1dc7f6b5b662efba797155226fdbf93">00292</a>                 <span class="keywordtype">size_t</span> data_head;        
-<a name="l00293"></a><a class="code" href="structach__header__t.html#a6f5b6ea50e8b913c5863ff7b19d6a41b">00293</a>                 <span class="keywordtype">size_t</span> data_free;        
-<a name="l00294"></a><a class="code" href="structach__header__t.html#a26e129af024067341db090d9eef816b2">00294</a>                 <span class="keywordtype">size_t</span> index_head;       
-<a name="l00295"></a><a class="code" href="structach__header__t.html#a2a187943af11a7cbce0b936b6dbb134e">00295</a>                 <span class="keywordtype">size_t</span> index_free;       
-<a name="l00296"></a><a class="code" href="structach__header__t.html#a5f5a2e669d0a3b82d2f3e557974d1f25">00296</a>                 <span class="keywordtype">int</span> anon;                
-<a name="l00297"></a>00297             };
-<a name="l00298"></a><a class="code" href="structach__header__t.html#ab3cfddb8219871af25772dce701c154d">00298</a>             uint64_t reserved[16];  
-<a name="l00299"></a>00299         };
-<a name="l00300"></a>00300         <span class="keyword">struct </span><span class="comment">/* anonymous structure */</span> {
-<a name="l00301"></a><a class="code" href="structach__header__t.html#afe10c18fe3174cfffa275272d5eb513e">00301</a>             pthread_mutex_t mutex;         
-<a name="l00302"></a><a class="code" href="structach__header__t.html#adf481b28dae0920d505cc4d54839258f">00302</a>             pthread_cond_t cond;           
-<a name="l00303"></a>00303             <span class="keywordtype">int</span> dirty;
-<a name="l00304"></a>00304         } sync;                   
-<a name="l00305"></a>00305         <span class="comment">/* should force our alignment to 8-bytes... */</span>
-<a name="l00306"></a><a class="code" href="structach__header__t.html#a2d14db42fa0de56fba848f84b236e233">00306</a>         uint64_t last_seq;        
-<a name="l00307"></a>00307     } <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a>;
-<a name="l00308"></a>00308 
-<a name="l00311"></a><a class="code" href="structach__index__t.html">00311</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00312"></a><a class="code" href="structach__index__t.html#a09d62d5a30564852d0273797b7f6288f">00312</a>         <span class="keywordtype">size_t</span> size;      
-<a name="l00313"></a><a class="code" href="structach__index__t.html#a8f36436d8e2236167e20f12a24f87963">00313</a>         <span class="keywordtype">size_t</span> offset;    
-<a name="l00314"></a><a class="code" href="structach__index__t.html#ae36ca8f336ee4deaf32ee5b109cf0f56">00314</a>         uint64_t seq_num; 
-<a name="l00315"></a>00315     } <a class="code" href="structach__index__t.html" title="Entry in shared memory index array.">ach_index_t</a> ;
-<a name="l00316"></a>00316 
-<a name="l00317"></a>00317 
-<a name="l00319"></a><a class="code" href="structach__attr__t.html">00319</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00320"></a>00320         <span class="keyword">union </span>{
-<a name="l00321"></a>00321             <span class="keyword">struct</span>{
-<a name="l00322"></a><a class="code" href="structach__attr__t.html#a28acf4026402daa2b322af32052160b2">00322</a>                 <span class="keywordtype">int</span> map_anon;        
-<a name="l00323"></a><a class="code" href="structach__attr__t.html#a9661e1da582c74766120408f5e9bfda2">00323</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm;   
-<a name="l00324"></a>00324             };
-<a name="l00325"></a><a class="code" href="structach__attr__t.html#ad628a9b6a04df17d33c23fe75e08ff99">00325</a>             uint64_t reserved_size[8]; 
-<a name="l00326"></a>00326         };
-<a name="l00327"></a>00327     } <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a>;
-<a name="l00328"></a>00328 
-<a name="l00330"></a><a class="code" href="structach__create__attr__t.html">00330</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00331"></a>00331         <span class="keyword">union </span>{
-<a name="l00332"></a>00332             <span class="keyword">struct</span>{
-<a name="l00333"></a><a class="code" href="structach__create__attr__t.html#a49290681ec1d48e1bbd4bebcee27df27">00333</a>                 <span class="keywordtype">int</span> map_anon;      
-<a name="l00334"></a><a class="code" href="structach__create__attr__t.html#a3bc28b142d07b12bb235d6ccc8028745">00334</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm; 
-<a name="l00335"></a><a class="code" href="structach__create__attr__t.html#a6a71c790360ab2747a1e679d1fc529e9">00335</a>                 <span class="keywordtype">int</span> truncate;      
-<a name="l00336"></a><a class="code" href="structach__create__attr__t.html#ae1350955c91dd4709ec7a832c62c7461">00336</a>                 <span class="keywordtype">int</span> set_clock;     
-<a name="l00337"></a><a class="code" href="structach__create__attr__t.html#a6c1719b5eb15f909f02128889dc58104">00337</a>                 clockid_t clock;   
-<a name="l00339"></a>00339             };
-<a name="l00340"></a><a class="code" href="structach__create__attr__t.html#af01027f0bee7f4014729eb9c4f27fdf0">00340</a>             uint64_t reserved[16]; 
-<a name="l00341"></a>00341         };
-<a name="l00342"></a>00342     } <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a>;
-<a name="l00343"></a>00343 
-<a name="l00346"></a><a class="code" href="structach__channel__t.html">00346</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00347"></a>00347         <span class="keyword">union </span>{
-<a name="l00348"></a>00348             <span class="keyword">struct </span>{
-<a name="l00349"></a><a class="code" href="structach__channel__t.html#ad12d416ef130efe288fd186b3d6119bd">00349</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm;   
-<a name="l00350"></a><a class="code" href="structach__channel__t.html#a90c8cfdb460ab6f8cdad5bd1920f011f">00350</a>                 <span class="keywordtype">size_t</span> len;          
-<a name="l00351"></a><a class="code" href="structach__channel__t.html#a1ca73e995dbe967ea54cba7f4a10d620">00351</a>                 <span class="keywordtype">int</span> fd;              
-<a name="l00352"></a><a class="code" href="structach__channel__t.html#a18e3834a2712f9c917391d64e0563c7d">00352</a>                 uint64_t seq_num;    
-<a name="l00353"></a><a class="code" href="structach__channel__t.html#a786e22cafe4161682dd63832c35f9102">00353</a>                 <span class="keywordtype">size_t</span> next_index;   
-<a name="l00354"></a><a class="code" href="structach__channel__t.html#a89379463e3c9b74bcda111f0bd91142d">00354</a>                 <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> attr;     
-<a name="l00355"></a>00355             };
-<a name="l00356"></a><a class="code" href="structach__channel__t.html#a9417645f205d70508fb1403dd8be28c4">00356</a>             uint64_t reserved[16]; 
-<a name="l00357"></a>00357         };
-<a name="l00358"></a>00358     } <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a>;
-<a name="l00359"></a>00359 
-<a name="l00361"></a>00361     <span class="keyword">extern</span> <span class="keywordtype">size_t</span> <a class="code" href="ach_8h.html#ab49bf40d8d514cd9c90044b570b6dbca" title="Size of ach_channel_t.">ach_channel_size</a>;
-<a name="l00363"></a>00363     <span class="keyword">extern</span> <span class="keywordtype">size_t</span> <a class="code" href="ach_8h.html#a7bdba00f25de2f8ac2887056d0a34154" title="Size of ach_attr_t.">ach_attr_size</a>;
-<a name="l00364"></a>00364 
-<a name="l00366"></a><a class="code" href="ach_8h.html#a8448a67475a582f8515335a3e88c8856">00366</a> <span class="preprocessor">#define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))</span>
-<a name="l00367"></a>00367 <span class="preprocessor"></span>
-<a name="l00369"></a><a class="code" href="ach_8h.html#a1a58bc54a5ccd573e5d6185696c5b93f">00369</a> <span class="preprocessor">#define ACH_SHM_INDEX( shm ) ((ach_index_t*)(ACH_SHM_GUARD_HEADER(shm) + 1))</span>
-<a name="l00370"></a>00370 <span class="preprocessor"></span>
-<a name="l00372"></a><a class="code" href="ach_8h.html#a8daa921151d1ad687da018f8caf072d2">00372</a> <span class="preprocessor">#define ACH_SHM_GUARD_INDEX( shm )                                      \</span>
-<a name="l00373"></a>00373 <span class="preprocessor">    ((uint64_t*)(ACH_SHM_INDEX(shm) + ((ach_header_t*)(shm))-&gt;index_cnt))</span>
-<a name="l00374"></a>00374 <span class="preprocessor"></span>
-<a name="l00376"></a><a class="code" href="ach_8h.html#af61e34af50bd47ecc2ef3f5bdc77e545">00376</a> <span class="preprocessor">#define ACH_SHM_DATA( shm ) ( (uint8_t*)(ACH_SHM_GUARD_INDEX(shm) + 1) )</span>
-<a name="l00377"></a>00377 <span class="preprocessor"></span>
-<a name="l00379"></a><a class="code" href="ach_8h.html#af20a50fe51b61358d83442841d2182ea">00379</a> <span class="preprocessor">#define ACH_SHM_GUARD_DATA( shm )                                       \</span>
-<a name="l00380"></a>00380 <span class="preprocessor">    ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))-&gt;data_size))</span>
-<a name="l00381"></a>00381 <span class="preprocessor"></span>
-<a name="l00382"></a>00382 
-<a name="l00384"></a>00384     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a860d84dfee4d1306fe58df7b073c440a" title="Initialize attributes for opening channels.">ach_attr_init</a>( <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> *attr );
-<a name="l00385"></a>00385 
-<a name="l00387"></a>00387     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c" title="Initialize attributes for creating channels.">ach_create_attr_init</a>( <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a> *attr );
-<a name="l00388"></a>00388 
-<a name="l00395"></a>00395     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00396"></a>00396     <a class="code" href="ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82" title="Creates a new channel.">ach_create</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *channel_name,
-<a name="l00397"></a>00397                 <span class="keywordtype">size_t</span> frame_cnt, <span class="keywordtype">size_t</span> frame_size,
-<a name="l00398"></a>00398                 <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a> *attr );
-<a name="l00399"></a>00399 
-<a name="l00400"></a>00400 <span class="preprocessor">#define ACH_DEFAULT_FRAME_COUNT 16</span>
-<a name="l00401"></a>00401 <span class="preprocessor"></span><span class="preprocessor">#define ACH_DEFAULT_FRAME_SIZE 512</span>
-<a name="l00402"></a>00402 <span class="preprocessor"></span>
-<a name="l00405"></a>00405     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00406"></a>00406     <a class="code" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9" title="Opens a handle to channel.">ach_open</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keyword">const</span> <span class="keywordtype">char</span> *channel_name,
-<a name="l00407"></a>00407               <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> *attr );
-<a name="l00408"></a>00408 
-<a name="l00428"></a>00428     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00429"></a>00429     <a class="code" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keywordtype">void</span> *buf, <span class="keywordtype">size_t</span> size,
-<a name="l00430"></a>00430              <span class="keywordtype">size_t</span> *frame_size,
-<a name="l00431"></a>00431              <span class="keyword">const</span> <span class="keyword">struct</span> timespec *<a class="code" href="ach_8h.html#a36320691b8bddb17d7416a7c57e296f5" title="Alias restrict keyword.">ACH_RESTRICT</a> abstime,
-<a name="l00432"></a>00432              <span class="keywordtype">int</span> options );
-<a name="l00433"></a>00433 
-<a name="l00446"></a>00446     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00447"></a>00447     <a class="code" href="ach_8h.html#acb8fcfaba91a22e295a5e437cd5b9c9b" title="Writes a new message in the channel.">ach_put</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keywordtype">void</span> *buf, <span class="keywordtype">size_t</span> len );
-<a name="l00448"></a>00448 
-<a name="l00449"></a>00449 
-<a name="l00453"></a>00453     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00454"></a>00454     <a class="code" href="ach_8h.html#af51fdf3b5edf39ce54f62ac0f031dd2b" title="Discards all previously received messages for this handle.">ach_flush</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan );
+<a name="l00198"></a>00198 <span class="comment">/* Determine a default clock */</span>
+<a name="l00199"></a>00199 <span class="preprocessor">#ifdef CLOCK_MONOTONIC</span>
+<a name="l00200"></a>00200 <span class="preprocessor"></span>
+<a name="l00201"></a>00201 <span class="preprocessor">#define ACH_DEFAULT_CLOCK CLOCK_MONOTONIC</span>
+<a name="l00202"></a>00202 <span class="preprocessor"></span><span class="preprocessor">#elif defined CLOCK_HIGHRES </span><span class="comment">/* Old Solaris lacks CLOCK_MONOTONIC,</span>
+<a name="l00203"></a>00203 <span class="comment">                               CLOCK_HIGHRES looks the same */</span>
+<a name="l00204"></a>00204 
+<a name="l00205"></a>00205 <span class="preprocessor">#define ACH_DEFAULT_CLOCK CLOCK_HIGHRES</span>
+<a name="l00206"></a>00206 <span class="preprocessor"></span><span class="preprocessor">#elif defined CLOCK_REALTIME </span><span class="comment">/* Try fallback to CLOCK_REALTIME */</span>
+<a name="l00207"></a>00207 
+<a name="l00208"></a>00208 <span class="preprocessor">#define ACH_DEFAULT_CLOCK CLOCK_REALTIME</span>
+<a name="l00209"></a>00209 <span class="preprocessor"></span><span class="preprocessor">#else</span>
+<a name="l00210"></a>00210 <span class="preprocessor"></span><span class="preprocessor">#error No valid CLOCKS defined.  Expecting CLOCK_MONOTONIC.</span>
+<a name="l00211"></a>00211 <span class="preprocessor"></span><span class="preprocessor">#endif </span><span class="comment">/* CLOCK_MONOTONIC */</span>
+<a name="l00212"></a>00212 
+<a name="l00213"></a>00213 
+<a name="l00214"></a>00214 <span class="preprocessor">#ifdef __cplusplus</span>
+<a name="l00215"></a>00215 <span class="preprocessor"></span><span class="keyword">extern</span> <span class="stringliteral">&quot;C&quot;</span> {
+<a name="l00216"></a>00216 <span class="preprocessor">#endif</span>
+<a name="l00217"></a>00217 <span class="preprocessor"></span>
+<a name="l00219"></a><a class="code" href="ach_8h.html#abb5d1fae5fa66a03d7d8d4761011e86c">00219</a> <span class="preprocessor">#define ACH_CHAN_NAME_MAX 64ul</span>
+<a name="l00220"></a>00220 <span class="preprocessor"></span>
+<a name="l00222"></a><a class="code" href="ach_8h.html#afd256125e8e540929dd1b945e4a9c791">00222</a> <span class="preprocessor">#define ACH_CHAN_NAME_PREFIX &quot;/achshm-&quot;</span>
+<a name="l00223"></a>00223 <span class="preprocessor"></span>
+<a name="l00225"></a><a class="code" href="ach_8h.html#a01aa865155a30c16a6a5c5643d0f6cfe">00225</a> <span class="preprocessor">#define ACH_INTR_RETRY 8</span>
+<a name="l00226"></a>00226 <span class="preprocessor"></span>
+<a name="l00231"></a><a class="code" href="ach_8h.html#a6ee6cd8dede61e5c4413a70317f63731">00231</a> <span class="preprocessor">#define ACH_SHM_MAGIC_NUM 0xb07511f3</span>
+<a name="l00232"></a>00232 <span class="preprocessor"></span>
+<a name="l00233"></a>00233 
+<a name="l00239"></a><a class="code" href="ach_8h.html#a4c1ae385acbd87b06971e19753462423">00239</a> <span class="preprocessor">#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8ALLU)</span>
+<a name="l00240"></a>00240 <span class="preprocessor"></span>
+<a name="l00245"></a><a class="code" href="ach_8h.html#a9756b6b93b39fbed2645e463dfc7d327">00245</a> <span class="preprocessor">#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8BLLU)</span>
+<a name="l00246"></a>00246 <span class="preprocessor"></span>
+<a name="l00253"></a><a class="code" href="ach_8h.html#ae81e27183c5ad6111cf19685f942ab7e">00253</a> <span class="preprocessor">#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)</span>
+<a name="l00254"></a>00254 <span class="preprocessor"></span>
+<a name="l00256"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">00256</a>     <span class="keyword">typedef</span> <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a> {
+<a name="l00257"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e">00257</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afefe1a7f013444d4d3eeff6a47f1874e" title="Call successful.">ACH_OK</a> = 0,             
+<a name="l00258"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062">00258</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a1af1e6af38bf18218a80b06195769062" title="buffer to small to hold frame">ACH_OVERFLOW</a> = 1,       
+<a name="l00259"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a">00259</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a136cba32d00e1e1065b31703bbf51f5a" title="invalid channel name">ACH_INVALID_NAME</a> = 2,   
+<a name="l00260"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a">00260</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a" title="channel file didn&amp;#39;t look right">ACH_BAD_SHM_FILE</a> = 3,   
+<a name="l00261"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b">00261</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b" title="a system call failed">ACH_FAILED_SYSCALL</a> = 4, 
+<a name="l00262"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495">00262</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a33c60b8c61f290af044ae15970ff0495" title="no new data in the channel">ACH_STALE_FRAMES</a> = 5,   
+<a name="l00263"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db">00263</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab225cc19cdc5defd7f2cc034dd1308db" title="we missed the next frame">ACH_MISSED_FRAME</a> = 6,   
+<a name="l00264"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f">00264</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a6403ef3ca27827f131e232e624ada43f" title="timeout before frame received">ACH_TIMEOUT</a> = 7,        
+<a name="l00265"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f">00265</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f" title="channel file already exists">ACH_EEXIST</a> = 8,         
+<a name="l00266"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837">00266</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837" title="channel file doesn&amp;#39;t exist">ACH_ENOENT</a> = 9,         
+<a name="l00267"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8">00267</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8" title="unused">ACH_CLOSED</a> = 10,        
+<a name="l00268"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7">00268</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7" title="internal ach error">ACH_BUG</a> = 11,           
+<a name="l00269"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47">00269</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47" title="invalid channel">ACH_EINVAL</a> = 12,        
+<a name="l00270"></a><a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020">00270</a>         <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020" title="channel memory has been corrupted">ACH_CORRUPT</a> = 13        
+<a name="l00271"></a>00271     } ach_status_t;
+<a name="l00272"></a>00272 
+<a name="l00273"></a>00273 
+<a name="l00278"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">00278</a>     <span class="keyword">typedef</span> <span class="keyword">enum</span> {
+<a name="l00285"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885">00285</a>         <a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885" title="Blocks until an unseen message arrives or timeout.">ACH_O_WAIT</a> = 0x01,
+<a name="l00291"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74">00291</a>         <a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74" title="Reads the newest message out of the channel.">ACH_O_LAST</a> = 0x02,
+<a name="l00295"></a><a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260">00295</a>         <a class="code" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260" title="Copy the message out of the channel, even if already seen.">ACH_O_COPY</a> = 0x04
+<a name="l00296"></a>00296     } ach_get_opts_t;
+<a name="l00297"></a>00297 
+<a name="l00303"></a><a class="code" href="structach__header__t.html">00303</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00304"></a><a class="code" href="structach__header__t.html#a2b3fe30a9e7f9fe192e19fb3ee04c2c8">00304</a>         uint32_t magic;          
+<a name="l00305"></a><a class="code" href="structach__header__t.html#a46437c42eb0dc8f00af4ecd91539f79f">00305</a>         <span class="keywordtype">size_t</span> len;              
+<a name="l00306"></a><a class="code" href="structach__header__t.html#a40a74c9be148bd3cf9299620df06dc94">00306</a>         <span class="keywordtype">char</span> name[1+ACH_CHAN_NAME_MAX]; 
+<a name="l00307"></a>00307         <span class="keyword">union </span>{
+<a name="l00308"></a>00308             <span class="keyword">struct </span>{
+<a name="l00309"></a><a class="code" href="structach__header__t.html#adc943882b1a4c31492d48e05e9ed2003">00309</a>                 <span class="keywordtype">size_t</span> index_cnt;        
+<a name="l00310"></a><a class="code" href="structach__header__t.html#ac3a0b9cc9c357bfa04eb2e3c69fd8ab8">00310</a>                 <span class="keywordtype">size_t</span> data_size;        
+<a name="l00311"></a><a class="code" href="structach__header__t.html#ae1dc7f6b5b662efba797155226fdbf93">00311</a>                 <span class="keywordtype">size_t</span> data_head;        
+<a name="l00312"></a><a class="code" href="structach__header__t.html#a6f5b6ea50e8b913c5863ff7b19d6a41b">00312</a>                 <span class="keywordtype">size_t</span> data_free;        
+<a name="l00313"></a><a class="code" href="structach__header__t.html#a26e129af024067341db090d9eef816b2">00313</a>                 <span class="keywordtype">size_t</span> index_head;       
+<a name="l00314"></a><a class="code" href="structach__header__t.html#a2a187943af11a7cbce0b936b6dbb134e">00314</a>                 <span class="keywordtype">size_t</span> index_free;       
+<a name="l00315"></a><a class="code" href="structach__header__t.html#a5f5a2e669d0a3b82d2f3e557974d1f25">00315</a>                 <span class="keywordtype">int</span> anon;                
+<a name="l00316"></a>00316             };
+<a name="l00317"></a><a class="code" href="structach__header__t.html#ab3cfddb8219871af25772dce701c154d">00317</a>             uint64_t reserved[16];  
+<a name="l00318"></a>00318         };
+<a name="l00319"></a>00319         <span class="keyword">struct </span><span class="comment">/* anonymous structure */</span> {
+<a name="l00320"></a><a class="code" href="structach__header__t.html#afe10c18fe3174cfffa275272d5eb513e">00320</a>             pthread_mutex_t mutex;         
+<a name="l00321"></a><a class="code" href="structach__header__t.html#adf481b28dae0920d505cc4d54839258f">00321</a>             pthread_cond_t cond;           
+<a name="l00322"></a>00322             <span class="keywordtype">int</span> dirty;
+<a name="l00323"></a>00323         } sync;                   
+<a name="l00324"></a>00324         <span class="comment">/* should force our alignment to 8-bytes... */</span>
+<a name="l00325"></a><a class="code" href="structach__header__t.html#a2d14db42fa0de56fba848f84b236e233">00325</a>         uint64_t last_seq;        
+<a name="l00326"></a>00326     } <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a>;
+<a name="l00327"></a>00327 
+<a name="l00330"></a><a class="code" href="structach__index__t.html">00330</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00331"></a><a class="code" href="structach__index__t.html#a09d62d5a30564852d0273797b7f6288f">00331</a>         <span class="keywordtype">size_t</span> size;      
+<a name="l00332"></a><a class="code" href="structach__index__t.html#a8f36436d8e2236167e20f12a24f87963">00332</a>         <span class="keywordtype">size_t</span> offset;    
+<a name="l00333"></a><a class="code" href="structach__index__t.html#ae36ca8f336ee4deaf32ee5b109cf0f56">00333</a>         uint64_t seq_num; 
+<a name="l00334"></a>00334     } <a class="code" href="structach__index__t.html" title="Entry in shared memory index array.">ach_index_t</a> ;
+<a name="l00335"></a>00335 
+<a name="l00336"></a>00336 
+<a name="l00338"></a><a class="code" href="structach__attr__t.html">00338</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00339"></a>00339         <span class="keyword">union </span>{
+<a name="l00340"></a>00340             <span class="keyword">struct</span>{
+<a name="l00341"></a><a class="code" href="structach__attr__t.html#a28acf4026402daa2b322af32052160b2">00341</a>                 <span class="keywordtype">int</span> map_anon;        
+<a name="l00342"></a><a class="code" href="structach__attr__t.html#a9661e1da582c74766120408f5e9bfda2">00342</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm;   
+<a name="l00343"></a>00343             };
+<a name="l00344"></a><a class="code" href="structach__attr__t.html#ad628a9b6a04df17d33c23fe75e08ff99">00344</a>             uint64_t reserved_size[8]; 
+<a name="l00345"></a>00345         };
+<a name="l00346"></a>00346     } <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a>;
+<a name="l00347"></a>00347 
+<a name="l00349"></a><a class="code" href="structach__create__attr__t.html">00349</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00350"></a>00350         <span class="keyword">union </span>{
+<a name="l00351"></a>00351             <span class="keyword">struct</span>{
+<a name="l00352"></a><a class="code" href="structach__create__attr__t.html#a49290681ec1d48e1bbd4bebcee27df27">00352</a>                 <span class="keywordtype">int</span> map_anon;      
+<a name="l00353"></a><a class="code" href="structach__create__attr__t.html#a3bc28b142d07b12bb235d6ccc8028745">00353</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm; 
+<a name="l00354"></a><a class="code" href="structach__create__attr__t.html#a6a71c790360ab2747a1e679d1fc529e9">00354</a>                 <span class="keywordtype">int</span> truncate;      
+<a name="l00355"></a><a class="code" href="structach__create__attr__t.html#ae1350955c91dd4709ec7a832c62c7461">00355</a>                 <span class="keywordtype">int</span> set_clock;     
+<a name="l00356"></a><a class="code" href="structach__create__attr__t.html#a6c1719b5eb15f909f02128889dc58104">00356</a>                 clockid_t clock;   
+<a name="l00358"></a>00358             };
+<a name="l00359"></a><a class="code" href="structach__create__attr__t.html#af01027f0bee7f4014729eb9c4f27fdf0">00359</a>             uint64_t reserved[16]; 
+<a name="l00360"></a>00360         };
+<a name="l00361"></a>00361     } <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a>;
+<a name="l00362"></a>00362 
+<a name="l00365"></a><a class="code" href="structach__channel__t.html">00365</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00366"></a>00366         <span class="keyword">union </span>{
+<a name="l00367"></a>00367             <span class="keyword">struct </span>{
+<a name="l00368"></a><a class="code" href="structach__channel__t.html#ad12d416ef130efe288fd186b3d6119bd">00368</a>                 <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm;   
+<a name="l00369"></a><a class="code" href="structach__channel__t.html#a90c8cfdb460ab6f8cdad5bd1920f011f">00369</a>                 <span class="keywordtype">size_t</span> len;          
+<a name="l00370"></a><a class="code" href="structach__channel__t.html#a1ca73e995dbe967ea54cba7f4a10d620">00370</a>                 <span class="keywordtype">int</span> fd;              
+<a name="l00371"></a><a class="code" href="structach__channel__t.html#a18e3834a2712f9c917391d64e0563c7d">00371</a>                 uint64_t seq_num;    
+<a name="l00372"></a><a class="code" href="structach__channel__t.html#a786e22cafe4161682dd63832c35f9102">00372</a>                 <span class="keywordtype">size_t</span> next_index;   
+<a name="l00373"></a><a class="code" href="structach__channel__t.html#a89379463e3c9b74bcda111f0bd91142d">00373</a>                 <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> attr;     
+<a name="l00374"></a>00374             };
+<a name="l00375"></a><a class="code" href="structach__channel__t.html#a9417645f205d70508fb1403dd8be28c4">00375</a>             uint64_t reserved[16]; 
+<a name="l00376"></a>00376         };
+<a name="l00377"></a>00377     } <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a>;
+<a name="l00378"></a>00378 
+<a name="l00380"></a>00380     <span class="keyword">extern</span> <span class="keywordtype">size_t</span> <a class="code" href="ach_8h.html#ab49bf40d8d514cd9c90044b570b6dbca" title="Size of ach_channel_t.">ach_channel_size</a>;
+<a name="l00382"></a>00382     <span class="keyword">extern</span> <span class="keywordtype">size_t</span> <a class="code" href="ach_8h.html#a7bdba00f25de2f8ac2887056d0a34154" title="Size of ach_attr_t.">ach_attr_size</a>;
+<a name="l00383"></a>00383 
+<a name="l00385"></a><a class="code" href="ach_8h.html#a8448a67475a582f8515335a3e88c8856">00385</a> <span class="preprocessor">#define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))</span>
+<a name="l00386"></a>00386 <span class="preprocessor"></span>
+<a name="l00388"></a><a class="code" href="ach_8h.html#a1a58bc54a5ccd573e5d6185696c5b93f">00388</a> <span class="preprocessor">#define ACH_SHM_INDEX( shm ) ((ach_index_t*)(ACH_SHM_GUARD_HEADER(shm) + 1))</span>
+<a name="l00389"></a>00389 <span class="preprocessor"></span>
+<a name="l00391"></a><a class="code" href="ach_8h.html#a8daa921151d1ad687da018f8caf072d2">00391</a> <span class="preprocessor">#define ACH_SHM_GUARD_INDEX( shm )                                      \</span>
+<a name="l00392"></a>00392 <span class="preprocessor">    ((uint64_t*)(ACH_SHM_INDEX(shm) + ((ach_header_t*)(shm))-&gt;index_cnt))</span>
+<a name="l00393"></a>00393 <span class="preprocessor"></span>
+<a name="l00395"></a><a class="code" href="ach_8h.html#af61e34af50bd47ecc2ef3f5bdc77e545">00395</a> <span class="preprocessor">#define ACH_SHM_DATA( shm ) ( (uint8_t*)(ACH_SHM_GUARD_INDEX(shm) + 1) )</span>
+<a name="l00396"></a>00396 <span class="preprocessor"></span>
+<a name="l00398"></a><a class="code" href="ach_8h.html#af20a50fe51b61358d83442841d2182ea">00398</a> <span class="preprocessor">#define ACH_SHM_GUARD_DATA( shm )                                       \</span>
+<a name="l00399"></a>00399 <span class="preprocessor">    ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))-&gt;data_size))</span>
+<a name="l00400"></a>00400 <span class="preprocessor"></span>
+<a name="l00401"></a>00401 
+<a name="l00403"></a>00403     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a860d84dfee4d1306fe58df7b073c440a" title="Initialize attributes for opening channels.">ach_attr_init</a>( <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> *attr );
+<a name="l00404"></a>00404 
+<a name="l00406"></a>00406     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c" title="Initialize attributes for creating channels.">ach_create_attr_init</a>( <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a> *attr );
+<a name="l00407"></a>00407 
+<a name="l00414"></a>00414     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00415"></a>00415     <a class="code" href="ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82" title="Creates a new channel.">ach_create</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *channel_name,
+<a name="l00416"></a>00416                 <span class="keywordtype">size_t</span> frame_cnt, <span class="keywordtype">size_t</span> frame_size,
+<a name="l00417"></a>00417                 <a class="code" href="structach__create__attr__t.html" title="Attributes to pass to ach_create.">ach_create_attr_t</a> *attr );
+<a name="l00418"></a>00418 
+<a name="l00420"></a><a class="code" href="ach_8h.html#a2d73b74eebe49d7d7ce537f851a89624">00420</a> <span class="preprocessor">#define ACH_DEFAULT_FRAME_COUNT 16</span>
+<a name="l00421"></a>00421 <span class="preprocessor"></span>
+<a name="l00423"></a><a class="code" href="ach_8h.html#ad10d62183dd6bc592899f5bc93dabf7e">00423</a> <span class="preprocessor">#define ACH_DEFAULT_FRAME_SIZE 512</span>
+<a name="l00424"></a>00424 <span class="preprocessor"></span>
+<a name="l00427"></a>00427     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00428"></a>00428     <a class="code" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9" title="Opens a handle to channel.">ach_open</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keyword">const</span> <span class="keywordtype">char</span> *channel_name,
+<a name="l00429"></a>00429               <a class="code" href="structach__attr__t.html" title="Attributes to pass to ach_open.">ach_attr_t</a> *attr );
+<a name="l00430"></a>00430 
+<a name="l00450"></a>00450     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00451"></a>00451     <a class="code" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keywordtype">void</span> *buf, <span class="keywordtype">size_t</span> size,
+<a name="l00452"></a>00452              <span class="keywordtype">size_t</span> *frame_size,
+<a name="l00453"></a>00453              <span class="keyword">const</span> <span class="keyword">struct</span> timespec *<a class="code" href="ach_8h.html#a36320691b8bddb17d7416a7c57e296f5" title="Alias restrict keyword.">ACH_RESTRICT</a> abstime,
+<a name="l00454"></a>00454              <span class="keywordtype">int</span> options );
 <a name="l00455"></a>00455 
-<a name="l00462"></a>00462     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00463"></a>00463     <a class="code" href="ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c" title="Closes the shared memory block.">ach_close</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan );
-<a name="l00464"></a>00464 
-<a name="l00465"></a>00465 
-<a name="l00468"></a>00468     <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code" href="ach_8h.html#a11e481d90a14ba4485d3bb15a8bb77c3" title="Converts return code from ach call to a human readable string;.">ach_result_to_string</a>(<a class="code" href="ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc" title="return status codes for ach functions">ach_status_t</a> result);
-<a name="l00469"></a>00469 
+<a name="l00468"></a>00468     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00469"></a>00469     <a class="code" href="ach_8h.html#acb8fcfaba91a22e295a5e437cd5b9c9b" title="Writes a new message in the channel.">ach_put</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, <span class="keywordtype">void</span> *buf, <span class="keywordtype">size_t</span> len );
 <a name="l00470"></a>00470 
-<a name="l00475"></a>00475     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#adccdafda2936a9f70087f950ba7e83e8" title="Prints information about the channel shm to stderr.">ach_dump</a>( <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm);
-<a name="l00476"></a>00476 
-<a name="l00478"></a>00478     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00479"></a>00479     <a class="code" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635" title="Sets permissions of chan to specified mode.">ach_chmod</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, mode_t mode );
-<a name="l00480"></a>00480 
-<a name="l00482"></a>00482     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
-<a name="l00483"></a>00483     <a class="code" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6" title="Delete an ach channel.">ach_unlink</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *name );
-<a name="l00484"></a>00484 
-<a name="l00486"></a><a class="code" href="structach__pipe__frame__t.html">00486</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
-<a name="l00487"></a><a class="code" href="structach__pipe__frame__t.html#a91f05a1d0a41129cc43fa93a544b02db">00487</a>         <span class="keywordtype">char</span> magic[8];         
-<a name="l00488"></a><a class="code" href="structach__pipe__frame__t.html#a037dcc837aa17bdeaa22f4d4549869ef">00488</a>         uint8_t size_bytes[8]; 
-<a name="l00489"></a><a class="code" href="structach__pipe__frame__t.html#a604b9e9d5447918053237218201df7e4">00489</a>         uint8_t data[1];       
-<a name="l00490"></a>00490     } <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a>;
+<a name="l00471"></a>00471 
+<a name="l00475"></a>00475     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00476"></a>00476     <a class="code" href="ach_8h.html#af51fdf3b5edf39ce54f62ac0f031dd2b" title="Discards all previously received messages for this handle.">ach_flush</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan );
+<a name="l00477"></a>00477 
+<a name="l00484"></a>00484     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00485"></a>00485     <a class="code" href="ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c" title="Closes the shared memory block.">ach_close</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan );
+<a name="l00486"></a>00486 
+<a name="l00487"></a>00487 
+<a name="l00490"></a>00490     <span class="keyword">const</span> <span class="keywordtype">char</span> *<a class="code" href="ach_8h.html#a11e481d90a14ba4485d3bb15a8bb77c3" title="Converts return code from ach call to a human readable string;.">ach_result_to_string</a>(<a class="code" href="ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc" title="return status codes for ach functions">ach_status_t</a> result);
 <a name="l00491"></a>00491 
-<a name="l00497"></a>00497     <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *<a class="code" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce" title="Malloc an ach_pipe_frame_t with room for `size&amp;#39; data bytes.">ach_pipe_alloc</a>(<span class="keywordtype">size_t</span> size);
+<a name="l00492"></a>00492 
+<a name="l00497"></a>00497     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#adccdafda2936a9f70087f950ba7e83e8" title="Prints information about the channel shm to stderr.">ach_dump</a>( <a class="code" href="structach__header__t.html" title="Header for shared memory area.">ach_header_t</a> *shm);
 <a name="l00498"></a>00498 
-<a name="l00500"></a>00500     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56" title="Set size field in ach frame, always little endian.">ach_pipe_set_size</a>(<a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame, uint64_t size);
-<a name="l00501"></a>00501 
-<a name="l00503"></a>00503     uint64_t <a class="code" href="ach_8h.html#a22a869cc3211869668fc530c875630ee" title="Set size field in ach frame, always little endian.">ach_pipe_get_size</a>(<span class="keyword">const</span> <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame );
-<a name="l00504"></a>00504 
-<a name="l00505"></a>00505 <span class="preprocessor">#ifdef __cplusplus</span>
-<a name="l00506"></a>00506 <span class="preprocessor"></span>}
-<a name="l00507"></a>00507 <span class="preprocessor">#endif</span>
-<a name="l00508"></a>00508 <span class="preprocessor"></span>
-<a name="l00509"></a>00509 <span class="preprocessor">#endif </span><span class="comment">/* ACH_H */</span>
+<a name="l00500"></a>00500     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00501"></a>00501     <a class="code" href="ach_8h.html#ab81866aaeb3995e12e12de27457e1635" title="Sets permissions of chan to specified mode.">ach_chmod</a>( <a class="code" href="structach__channel__t.html" title="Descriptor for shared memory area.">ach_channel_t</a> *chan, mode_t mode );
+<a name="l00502"></a>00502 
+<a name="l00504"></a>00504     <span class="keyword">enum</span> <a class="code" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551" title="return status codes for ach functions">ach_status</a>
+<a name="l00505"></a>00505     <a class="code" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6" title="Delete an ach channel.">ach_unlink</a>( <span class="keyword">const</span> <span class="keywordtype">char</span> *name );
+<a name="l00506"></a>00506 
+<a name="l00508"></a><a class="code" href="structach__pipe__frame__t.html">00508</a>     <span class="keyword">typedef</span> <span class="keyword">struct </span>{
+<a name="l00509"></a><a class="code" href="structach__pipe__frame__t.html#a91f05a1d0a41129cc43fa93a544b02db">00509</a>         <span class="keywordtype">char</span> magic[8];         
+<a name="l00510"></a><a class="code" href="structach__pipe__frame__t.html#a037dcc837aa17bdeaa22f4d4549869ef">00510</a>         uint8_t size_bytes[8]; 
+<a name="l00511"></a><a class="code" href="structach__pipe__frame__t.html#a604b9e9d5447918053237218201df7e4">00511</a>         uint8_t data[1];       
+<a name="l00512"></a>00512     } <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a>;
+<a name="l00513"></a>00513 
+<a name="l00519"></a>00519     <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *<a class="code" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce" title="Malloc an ach_pipe_frame_t with room for `size&amp;#39; data bytes.">ach_pipe_alloc</a>(<span class="keywordtype">size_t</span> size);
+<a name="l00520"></a>00520 
+<a name="l00525"></a>00525     <span class="keywordtype">void</span> <a class="code" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56" title="Set size field in ach frame, always stored little endian.">ach_pipe_set_size</a>(<a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame, uint64_t size);
+<a name="l00526"></a>00526 
+<a name="l00531"></a>00531     uint64_t <a class="code" href="ach_8h.html#a22a869cc3211869668fc530c875630ee" title="Set size field in ach frame, always stored little endian.">ach_pipe_get_size</a>(<span class="keyword">const</span> <a class="code" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> *frame );
+<a name="l00532"></a>00532 
+<a name="l00533"></a>00533 <span class="preprocessor">#ifdef __cplusplus</span>
+<a name="l00534"></a>00534 <span class="preprocessor"></span>}
+<a name="l00535"></a>00535 <span class="preprocessor">#endif</span>
+<a name="l00536"></a>00536 <span class="preprocessor"></span>
+<a name="l00537"></a>00537 <span class="preprocessor">#endif </span><span class="comment">/* ACH_H */</span>
 </pre></div></div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 01:27:04 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 23:27:05 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>

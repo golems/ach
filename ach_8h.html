@@ -94,9 +94,11 @@ Defines</h2></td></tr>
 #define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#af20a50fe51b61358d83442841d2182ea">ACH_SHM_GUARD_DATA</a>(shm)&nbsp;&nbsp;&nbsp;((uint64_t*)(ACH_SHM_DATA(shm) + ((<a class="el" href="structach__header__t.html">ach_header_t</a>*)(shm))-&gt;data_size))</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Gets the pointer to the guard following data buffer in the shm block. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2d73b74eebe49d7d7ce537f851a89624"></a><!-- doxytag: member="ach.h::ACH_DEFAULT_FRAME_COUNT" ref="a2d73b74eebe49d7d7ce537f851a89624" args="" -->
-#define&nbsp;</td><td class="memItemRight" valign="bottom"><b>ACH_DEFAULT_FRAME_COUNT</b>&nbsp;&nbsp;&nbsp;16</td></tr>
+#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a2d73b74eebe49d7d7ce537f851a89624">ACH_DEFAULT_FRAME_COUNT</a>&nbsp;&nbsp;&nbsp;16</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Default number of index entries in a channel. <br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad10d62183dd6bc592899f5bc93dabf7e"></a><!-- doxytag: member="ach.h::ACH_DEFAULT_FRAME_SIZE" ref="ad10d62183dd6bc592899f5bc93dabf7e" args="" -->
-#define&nbsp;</td><td class="memItemRight" valign="bottom"><b>ACH_DEFAULT_FRAME_SIZE</b>&nbsp;&nbsp;&nbsp;512</td></tr>
+#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ad10d62183dd6bc592899f5bc93dabf7e">ACH_DEFAULT_FRAME_SIZE</a>&nbsp;&nbsp;&nbsp;512</td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Default nominal frame size for a channel. <br/></td></tr>
 <tr><td colspan="2"><h2><a name="typedef-members"></a>
 Typedefs</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a37a6ca5cbf68c6e7f8f4abd5ce783ddc"></a><!-- doxytag: member="ach.h::ach_status_t" ref="a37a6ca5cbf68c6e7f8f4abd5ce783ddc" args="" -->
@@ -117,18 +119,18 @@ Enumerations</h2></td></tr>
 <br/>
 &nbsp;&nbsp;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f">ACH_EEXIST</a> =  8, 
 <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837">ACH_ENOENT</a> =  9, 
-<b>ACH_CLOSED</b> =  10, 
-<b>ACH_BUG</b> =  11, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8">ACH_CLOSED</a> =  10, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7">ACH_BUG</a> =  11, 
 <br/>
-&nbsp;&nbsp;<b>ACH_EINVAL</b> =  12, 
-<b>ACH_CORRUPT</b> =  13
+&nbsp;&nbsp;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47">ACH_EINVAL</a> =  12, 
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020">ACH_CORRUPT</a> =  13
 <br/>
  }</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>return status codes for ach functions </p>
  <a href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">More...</a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">ach_get_opts_t</a> { <a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885">ACH_O_WAIT</a> =  0x01, 
 <a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea42b2241346389ea6f63b685b19346d74">ACH_O_LAST</a> =  0x02, 
-<b>ACH_O_COPY</b> =  0x04
+<a class="el" href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260">ACH_O_COPY</a> =  0x04
  }</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Option flags for <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a>. </p>
  <a href="ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe">More...</a><br/></td></tr>
@@ -165,9 +167,9 @@ enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_stat
 <tr><td class="memItemLeft" align="right" valign="top"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce">ach_pipe_alloc</a> (size_t size)</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Malloc an <a class="el" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> with room for `size' data bytes.  <a href="#a401609c85440cb0b3d5a8f862b1436ce"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">void&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56">ach_pipe_set_size</a> (<a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *frame, uint64_t size)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always little endian.  <a href="#a43db63c13e365879b6f345dadd606a56"></a><br/></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always stored little endian.  <a href="#a43db63c13e365879b6f345dadd606a56"></a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">uint64_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a22a869cc3211869668fc530c875630ee">ach_pipe_get_size</a> (const <a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *frame)</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always little endian.  <a href="#a22a869cc3211869668fc530c875630ee"></a><br/></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">Set size field in ach frame, always stored little endian.  <a href="#a22a869cc3211869668fc530c875630ee"></a><br/></td></tr>
 <tr><td colspan="2"><h2><a name="var-members"></a>
 Variables</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ab49bf40d8d514cd9c90044b570b6dbca"></a><!-- doxytag: member="ach.h::ach_channel_size" ref="ab49bf40d8d514cd9c90044b570b6dbca" args="" -->
@@ -268,6 +270,10 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <p>Reads the newest message out of the channel. </p>
 <p>If the channel contains multiple messages that this subscriber has not seen, <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a> will return the newest of these messages. The subscriber will skip past all older messages. </p>
 </td></tr>
+<tr><td valign="top"><em><a class="anchor" id="ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260"></a><!-- doxytag: member="ACH_O_COPY" ref="ae42d0299e86224c0ac39dc58959bd7fea8080640c6e9e728d339810675afdf260" args="" -->ACH_O_COPY</em>&nbsp;</td><td>
+<p>Copy the message out of the channel, even if already seen. </p>
+<p>Return code of <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a> for successful copy will be ACH_OK. </p>
+</td></tr>
 </table>
 </dd>
 </dl>
@@ -297,7 +303,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <p>invalid channel name </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a"></a><!-- doxytag: member="ACH_BAD_SHM_FILE" ref="a0b989f189bcea60548c3692b10eda551a268e9e8e27c0d5f83ac4eb44369b772a" args="" -->ACH_BAD_SHM_FILE</em>&nbsp;</td><td>
-<p>shared memory file didn't look right </p>
+<p>channel file didn't look right </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b"></a><!-- doxytag: member="ACH_FAILED_SYSCALL" ref="a0b989f189bcea60548c3692b10eda551a07c7b309136d251e83cab6c9647b634b" args="" -->ACH_FAILED_SYSCALL</em>&nbsp;</td><td>
 <p>a system call failed </p>
@@ -312,10 +318,22 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <p>timeout before frame received </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f"></a><!-- doxytag: member="ACH_EEXIST" ref="a0b989f189bcea60548c3692b10eda551a50ab3aceb9e90eab0abcb771fcbff28f" args="" -->ACH_EEXIST</em>&nbsp;</td><td>
-<p>shm already exists </p>
+<p>channel file already exists </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837"></a><!-- doxytag: member="ACH_ENOENT" ref="a0b989f189bcea60548c3692b10eda551a26094dd35827f5eeff52ac042adee837" args="" -->ACH_ENOENT</em>&nbsp;</td><td>
-<p>shm doesn't </p>
+<p>channel file doesn't exist </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8"></a><!-- doxytag: member="ACH_CLOSED" ref="a0b989f189bcea60548c3692b10eda551a30700cae0d026134bb4c4c3f171393d8" args="" -->ACH_CLOSED</em>&nbsp;</td><td>
+<p>unused </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7"></a><!-- doxytag: member="ACH_BUG" ref="a0b989f189bcea60548c3692b10eda551aee0f13015388d15702d2b256c21fb2d7" args="" -->ACH_BUG</em>&nbsp;</td><td>
+<p>internal ach error </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47"></a><!-- doxytag: member="ACH_EINVAL" ref="a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47" args="" -->ACH_EINVAL</em>&nbsp;</td><td>
+<p>invalid channel </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020"></a><!-- doxytag: member="ACH_CORRUPT" ref="a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020" args="" -->ACH_CORRUPT</em>&nbsp;</td><td>
+<p>channel memory has been corrupted </p>
 </td></tr>
 </table>
 </dd>
@@ -536,7 +554,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
     <tr><td valign="top"></td><td valign="top"><em>buf</em>&nbsp;</td><td>Buffer to store data </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>size</em>&nbsp;</td><td>Length of buffer in bytes </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>frame_size</em>&nbsp;</td><td>The number of bytes copied to buf, or the size of the desired frame if buf is too small. </td></tr>
-    <tr><td valign="top"></td><td valign="top"><em>abstime</em>&nbsp;</td><td>An absolute timeout if ACH_O_WAIT is specified. Take care that abstime is given in the correct clock. The default is CLOCK_MONOTONIC. </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>abstime</em>&nbsp;</td><td>An absolute timeout if ACH_O_WAIT is specified. Take care that abstime is given in the correct clock. The default is defined by ACH_DEFAULT_CLOCK. </td></tr>
     <tr><td valign="top"></td><td valign="top"><em>options</em>&nbsp;</td><td>Option flags </td></tr>
   </table>
   </dd>
@@ -561,7 +579,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <div class="memdoc">
 
 <p>Malloc an <a class="el" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> with room for `size' data bytes. </p>
-<dl class="return"><dt><b>Returns:</b></dt><dd>a newly allocated ach_pipe_frame with its magic and size fields properly filled. Size is big endian.. </dd></dl>
+<dl class="return"><dt><b>Returns:</b></dt><dd>a newly allocated ach_pipe_frame with its magic and size fields properly filled. </dd></dl>
 
 </div>
 </div>
@@ -581,7 +599,14 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 <div class="memdoc">
 
-<p>Set size field in ach frame, always little endian. </p>
+<p>Set size field in ach frame, always stored little endian. </p>
+<dl><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>frame</em>&nbsp;</td><td>The frame struct </td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="return"><dt><b>Returns:</b></dt><dd>The size in native byte order </dd></dl>
 
 </div>
 </div>
@@ -610,7 +635,14 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 <div class="memdoc">
 
-<p>Set size field in ach frame, always little endian. </p>
+<p>Set size field in ach frame, always stored little endian. </p>
+<dl><dt><b>Parameters:</b></dt><dd>
+  <table border="0" cellspacing="2" cellpadding="0">
+    <tr><td valign="top"></td><td valign="top"><em>frame</em>&nbsp;</td><td>The frame struct </td></tr>
+    <tr><td valign="top"></td><td valign="top"><em>size</em>&nbsp;</td><td>The size in native byte order </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>
@@ -661,7 +693,7 @@ size_t&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </div>
 </div>
 </div>
-<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 01:27:04 for ach by&nbsp;
+<hr class="footer"/><address class="footer"><small>Generated on Thu Nov 15 2012 23:27:05 for ach by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.7.1 </small></address>
 </body>
