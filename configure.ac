@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([ach], [1.0.1], [ntd@gatech.edu])
+AC_INIT([ach], [1.0.2~GIT], [ntd@gatech.edu])
 AM_INIT_AUTOMAKE([-Wall])
 AC_CONFIG_SRCDIR([src/ach.c])
 AC_CONFIG_HEADERS([config.h])
@@ -19,27 +19,27 @@ AC_C_INLINE
 AC_C_CONST
 
 # Checks for header files.
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h stdint.h stdlib.h string.h sys/socket.h syslog.h unistd.h time.h])
+dnl AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h stdint.h stdlib.h string.h sys/socket.h syslog.h unistd.h time.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
-AC_HEADER_STDBOOL
-AC_TYPE_INT32_T
-AC_TYPE_MODE_T
-AC_TYPE_OFF_T
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_TYPE_SSIZE_T
-AC_TYPE_UINT32_T
-AC_TYPE_UINT64_T
-AC_TYPE_UINT8_T
+dnl AC_HEADER_STDBOOL
+dnl AC_TYPE_INT32_T
+dnl AC_TYPE_MODE_T
+dnl AC_TYPE_OFF_T
+dnl AC_TYPE_PID_T
+dnl AC_TYPE_SIZE_T
+dnl AC_TYPE_SSIZE_T
+dnl AC_TYPE_UINT32_T
+dnl AC_TYPE_UINT64_T
+dnl AC_TYPE_UINT8_T
 
-AC_CHECK_SIZEOF(void *)
-AC_CHECK_SIZEOF(uint64_t)
-AC_CHECK_SIZEOF(unsigned long)
-AC_CHECK_SIZEOF(unsigned long long)
+dnl AC_CHECK_SIZEOF(void *)
+dnl AC_CHECK_SIZEOF(uint64_t)
+dnl AC_CHECK_SIZEOF(unsigned long)
+dnl AC_CHECK_SIZEOF(unsigned long long)
 
 # Check 32/64 safe format specifiers
-AC_CHECK_DECLS([PRIuPTR,PRIu64,PRIx64])
+dnl AC_CHECK_DECLS([PRIuPTR,PRIu64,PRIx64])
 AC_CHECK_DECL([PRIuPTR],
         [],
         [AC_DEFINE([PRIuPTR], ["ul"], [Assume this is unsigned long])])
@@ -51,14 +51,14 @@ AC_CHECK_DECL([CLOCK_REALTIME],
         [[#include <time.h>]])
 
 # check pthread decls
-AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
-        [], [],
-        [#include<pthread.h>])
+dnl AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
+dnl        [], [],
+dnl        [#include<pthread.h>])
 
-AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
-               [], [], [#include<pthread.h>])
+dnl AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
+dnl               [], [], [#include<pthread.h>])
 
-AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
+dnl AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 
 ## Checks for library functions.
 
@@ -70,7 +70,7 @@ AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 # AC_FUNC_REALLOC
 # AC_FUNC_STRTOD
 
-AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
+dnl AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
 AC_SEARCH_LIBS([pthread_create],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 

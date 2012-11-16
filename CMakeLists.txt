@@ -18,7 +18,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 1.0.1)
+set(VERSION 1.0.2~GIT)
 
 add_definitions(-DPACKAGE_VERSION=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 #add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
