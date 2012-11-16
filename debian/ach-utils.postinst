@@ -1,0 +1,15 @@
+#!/bin/sh -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+update-inetd --add '8075\t\tstream\t\ttcp\tnowait\tnobody\t/usr/bin/achpipe\t/usr/bin/achpipe -R'
+
+db_get ach-utils/enable-remote
+if [ "$RET" = "false" ]; then
+    update-inetd --disable 8075
+else
+    update-inetd --enable 8075
+fi
+
+#DEBHELPER#

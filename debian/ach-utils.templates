@@ -1,0 +1,8 @@
+Template: ach-utils/enable-remote
+Type: boolean
+Default: false
+Description: Should achpipe listen via inetd?
+ Ach can be configured to listen for incoming TCP connections via the
+ inetd superserver.  If so configured, other hosts can put and get
+ messages to and from channels on the local machine.  Please see the
+ manual for details on how to push and pull channels.

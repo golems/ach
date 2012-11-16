@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+update-inetd --remove '.*achpipe.*'
+
+#DEBHELPER#
