@@ -18,9 +18,9 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 1.0.0)
+set(VERSION 1.0.1~GIT)
 
-add_definitions(-DACH_VERSION_STRING=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
+add_definitions(-DPACKAGE_VERSION=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 #add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
 
 if(APPLE)
@@ -39,21 +39,21 @@ SET_TARGET_PROPERTIES( ach PROPERTIES
                        SOVERSION 1     # Major version
                        VERSION 1.0.0 ) # Major.minor.patch
 
-add_executable(achtool src/achtool.c)
+add_executable(achtool src/achtool.c src/achutil.c)
 target_link_libraries(achtool ach pthread ${LIBRT})
 SET_TARGET_PROPERTIES(achtool PROPERTIES OUTPUT_NAME ach)
 
 add_executable(achtest src/achtest.c)
 target_link_libraries(achtest ach pthread ${LIBRT} m)
 
-add_executable(achpipe.bin src/achpipe-bin.c)
+add_executable(achpipe.bin src/achpipe-bin.c src/achutil.c)
 target_link_libraries(achpipe.bin ach pthread ${LIBRT})
 
 if(HAVE_LIBRT)
-   add_executable(achcat src/achcat.c)
+   add_executable(achcat src/achcat.c src/achutil.c)
    target_link_libraries(achcat ach pthread ${LIBRT})
 
-   add_executable(achbench src/ach-bench.c)
+   add_executable(achbench src/ach-bench.c src/achutil.c)
    target_link_libraries(achbench ach pthread ${LIBRT} m)
 
    add_executable(ach-example src/ach-example.c)

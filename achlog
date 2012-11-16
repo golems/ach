@@ -105,7 +105,7 @@ def main():
     (options, args) = parse()
 
     if options.version :
-        print ("achlog 1.0.0\n"
+        print ("achlog 1.0.1~GIT\n"
                "\n"
                "Copyright (c) 2008-2012, Georgia Tech Research Corporation\n"
                "This is free software; see the source for copying conditions.  There is NO\n"
