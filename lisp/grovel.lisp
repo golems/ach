@@ -68,9 +68,4 @@
   (cenum (ach-get-opts :define-constants nil)
          ((:wait "ACH_O_WAIT"))
          ((:last "ACH_O_LAST"))
-         ((:copy "ACH_O_COPY"))
-         ((:skip "ACH_O_SKIP")))
-  (cenum ach-chan-state
-         ((:chan-state-init "ACH_CHAN_STATE_INIT"))
-         ((:chan-state-run "ACH_CHAN_STATE_RUN"))
-         ((:chan-state-closed "ACH_CHAN_STATE_CLOSED"))))
+         ((:copy "ACH_O_COPY"))))
