@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML><HEAD><TITLE>Man page of ACH</TITLE>
+</HEAD><BODY>
+<H1>ACH</H1>
+Section: User Commands (1)<BR>Updated: November 2012<BR><A HREF="#index">Index</A>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+ach - manipulate ach channels
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>ach</B>
+
+[<I>OPTION</I>...]
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+General tool to interact with ach channels
+<DL COMPACT>
+<DT><B>-C</B> CHANNEL-NAME,<DD>
+Create a new channel
+<DT><B>-U</B> CHANNEL-NAME,<DD>
+Unlink (delete) a channel
+<DT><B>-D</B> CHANNEL-NAME,<DD>
+Dump info about channel
+<DT><B>-1</B>,<DD>
+With <B>-C</B>, accept an already created channel
+<DT><B>-F</B> CHANNEL-NAME,<DD>
+Print filename for channel (Linux-only)
+<DT><B>-m</B> MSG-COUNT,<DD>
+Number of messages to buffer
+<DT><B>-n</B> MSG-SIZE,<DD>
+Nominal size of a message
+<DT><B>-o</B> OCTAL,<DD>
+Mode for created channel
+<DT><B>-t</B>,<DD>
+Truncate and reinit newly create channel (use only
+with <B>-C</B>).  WARNING: this will clobber processes
+Currently using the channel.
+<DT><B>-v</B>,<DD>
+Make output more verbose
+<DT>-?,<DD>
+Give this help list
+<DT><B>-V</B>,<DD>
+Print program version
+</DL>
+<A NAME="lbAE">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<DL COMPACT>
+<DT>ach <B>-C</B> foo<DD>
+Create channel 'foo' with default buffer sizes.
+<DT>ach <B>-C</B> foo <B>-m</B> 10 <B>-n</B> 1024<DD>
+Create channel 'foo' which can buffer up to 10
+messages of nominal size 1024 bytes. Bigger/smaller
+messages are OK, up to 10*1024 bytes max (only one
+message of that size can be buffered at a time).
+<DT>ach <B>-U</B> foo<DD>
+Remove channel 'foo'
+<DT>ach <B>-1C</B> foo<DD>
+Create channel 'foo' unless it already exists,
+in which case leave it alone.
+<DT>ach <B>-C</B> foo <B>-o</B> 600<DD>
+Create channel 'foo' with octal permissions '600'.
+Note that r/w (6) permission necessary for channel
+access in order to properly synchronize.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Written by Neil T. Dantam
+<A NAME="lbAG">&nbsp;</A>
+<H2>REPORTING BUGS</H2>
+
+Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+<A NAME="lbAH">&nbsp;</A>
+<H2>COPYRIGHT</H2>
+
+Copyright &#169; 2008-2012, Georgia Tech Research Corporation
+<BR>
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">EXAMPLES</A><DD>
+<DT><A HREF="#lbAF">AUTHOR</A><DD>
+<DT><A HREF="#lbAG">REPORTING BUGS</A><DD>
+<DT><A HREF="#lbAH">COPYRIGHT</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 22:59:02 GMT, November 17, 2012
+</BODY>
+</HTML>

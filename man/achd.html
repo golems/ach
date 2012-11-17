@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML><HEAD><TITLE>Man page of ACHD</TITLE>
+</HEAD><BODY>
+<H1>ACHD</H1>
+Section: User Commands (1)<BR>Updated: November 2012<BR><A HREF="#index">Index</A>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+achd - send ach messages over streams
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>achd</B>
+
+[<I>OPTIONS</I>...] <I>CHANNEL-NAME</I>
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+Daemon process to forward ach channels over network and dump to files
+<DL COMPACT>
+<DT><B>-S</B> HOST,<DD>
+push messages to HOST
+<DT><B>-P</B> HOST,<DD>
+pull messages from HOST
+<DT><B>-d</B>,<DD>
+daemonize (client-mode only)
+<DT><B>-p</B> PORT,<DD>
+TCP port
+<DT><B>-u</B> PORT,<DD>
+UDP transport on PORT
+<DT><B>-f</B> FILE,<DD>
+lock FILE and write pid
+<DT><B>-v</B>,<DD>
+be verbose
+<DT><B>-V</B>,<DD>
+version
+<DT>-?,<DD>
+show help
+</DL>
+<A NAME="lbAE">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<DL COMPACT>
+<DT>achd<DD>
+Server process reading from stdin/stdout.
+This can be run from inetd
+<DT>achd <B>-S</B> golem cmd-chan<DD>
+Forward frames via TCP from local channel
+'cmd-chan' to remote channel on host 'golem'.
+An achd server must be listening the remote host.
+<DT>achd <B>-P</B> golem state-chan<DD>
+Forward frames via TCP from remote channel
+'state-chan' on host golem to local channel 'cmd'.
+An achd server must be listening on the remote
+host.
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Written by Neil T. Dantam
+<A NAME="lbAG">&nbsp;</A>
+<H2>REPORTING BUGS</H2>
+
+Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+<A NAME="lbAH">&nbsp;</A>
+<H2>COPYRIGHT</H2>
+
+Copyright &#169; 2008-2012, Georgia Tech Research Corporation
+<BR>
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">EXAMPLES</A><DD>
+<DT><A HREF="#lbAF">AUTHOR</A><DD>
+<DT><A HREF="#lbAG">REPORTING BUGS</A><DD>
+<DT><A HREF="#lbAH">COPYRIGHT</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 22:59:02 GMT, November 17, 2012
+</BODY>
+</HTML>
