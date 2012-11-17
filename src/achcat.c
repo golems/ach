@@ -61,6 +61,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include "ach.h"
+#include "achutil.h"
 
 
 void *publish_loop(void *);

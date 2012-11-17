@@ -48,19 +48,21 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <signal.h>
 #include <regex.h>
+#include <assert.h>
 
 #include "ach.h"
 #include "achutil.h"
 
 /* Prototypes */
 enum achd_direction {
-    DIRECTION_VOID = 0,
-    DIRECTION_PUSH,
-    DIRECTION_PULL
+    ACHD_DIRECTION_VOID = 0,
+    ACHD_DIRECTION_PUSH,
+    ACHD_DIRECTION_PULL
 };
 
-struct achd_config {
+struct achd_headers {
     const char *chan_name;
     int frame_count;
     int frame_size;
@@ -74,133 +76,271 @@ struct achd_config {
     enum achd_direction direction;
 };
 
+
 void achd_make_realtime();
 void achd_daemonize();
-void achd_parse_config(FILE *fptr, struct achd_config *config);
-void achd_set_config (const char *key, const char *val, struct achd_config *config);
+void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
+void achd_set_header (const char *key, const char *val, struct achd_headers *headers);
 void achd_write_pid();
-void achd_push_tcp();
-void achd_pull_tcp();
-void achd_push_udp();
-void achd_pull_udp();
+void achd_serve();
+void achd_print_status( FILE *file, int code );
+void achd_set_int(int *pint, const char *name, const char *val);
 
-void achd_help(FILE *fptr);
+/*  handlers */
+void achd_error_main( int code, const char *msg );
+void achd_error_server( int code, const char *msg );
+void achd_error_client( int code, const char *msg );
 
-struct achd_config chan_config = {
-    .chan_name = 0,
-    .frame_count = ACH_DEFAULT_FRAME_COUNT,
-    .frame_size = ACH_DEFAULT_FRAME_SIZE
+/* i/o handlers */
+void achd_push_tcp( const struct achd_headers *headers, int is_server );
+void achd_pull_tcp( const struct achd_headers *headers, int is_server );
+void achd_push_udp( const struct achd_headers *headers, int is_server );
+void achd_pull_udp( const struct achd_headers *headers, int is_server );
+
+/* global data */
+struct {
+    struct achd_headers cl_opts; /** Options from command line */
+    int serve;
+    int verbosity;
+    int daemonize;
+    int port;
+    const char *pidfile;
+    sig_atomic_t received_sigterm;
+    void (*error_handler)(int code, const char *msg);
+} cx;
+
+struct achd_handler {
+    const char *transport;
+    enum achd_direction direction;
+    void (*handler)( const struct achd_headers *headers, int is_server );
 };
 
-
-static const char *opt_config_file = "/etc/ach.conf";
-static const char *opt_channel = NULL;
-static int opt_verbosity = 0;
+struct achd_handler handlers[] = {
+    {.transport = "tcp",
+     .direction = ACHD_DIRECTION_PUSH,
+     .handler = achd_push_tcp },
+    {.transport = "tcp",
+     .direction = ACHD_DIRECTION_PULL,
+     .handler = achd_pull_tcp },
+    {.transport = "udp",
+     .direction = ACHD_DIRECTION_PUSH,
+     .handler = achd_push_udp },
+    {.transport = "udp",
+     .direction = ACHD_DIRECTION_PULL,
+     .handler = achd_pull_udp },
+    {.transport = NULL,
+     .direction = 0,
+     .handler = NULL }
+};
 
 /* Main */
 int main(int argc, char **argv) {
+
+    /* set some defaults */
+    cx.cl_opts.transport = "tcp";
+    cx.cl_opts.frame_size = ACH_DEFAULT_FRAME_SIZE;
+    cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
+    cx.serve = 1;
+
     /* process options */
     int c = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "vc:thHV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "S:P:dp:u:f:vV?")) != -1 ) {
             switch(c) {
-            case 'c':
-                opt_config_file = strdup(optarg);
+            case 'S':
+                cx.cl_opts.remote_host = strdup(optarg);
+                cx.cl_opts.direction = ACHD_DIRECTION_PUSH;
+                cx.serve = 0;
+                break;
+            case 'P':
+                cx.cl_opts.remote_host = strdup(optarg);
+                cx.cl_opts.direction = ACHD_DIRECTION_PULL;
+                cx.serve = 0;
+                break;
+            case 'd':
+                cx.daemonize = 1;
+                break;
+            case 'p':
+                cx.port = atoi(optarg);
+                if( !optarg ) {
+                    fprintf(stderr, "Invalid port: %s\n", optarg);
+                    exit(EXIT_FAILURE);
+                }
+                break;
+            case 'f':
+                cx.pidfile = strdup(optarg);
+                break;
+            case 'u':
                 break;
             case 'v':
-                opt_verbosity ++;
+                cx.verbosity ++;
                 break;
             case 'V':   /* version     */
-                ach_print_version("ach");
+                ach_print_version("achd");
                 exit(EXIT_SUCCESS);
-            case 'h':
-            case 'H':
             case '?':
-                achd_help(stdout);
+                puts( "Usage: achd [OPTIONS...] CHANNEL-NAME\n"
+                      "Daemon process to forward ach channels over network and dump to files\n"
+                      "\n"
+                      "  -S HOST,                    push messages to HOST\n"
+                      "  -P HOST,                    pull messages from HOST\n"
+                      "  -d,                         daemonize (client-mode only)\n"
+                      "  -p PORT,                    TCP port\n"
+                      "  -u PORT,                    UDP transport on PORT\n"
+                      "  -f FILE,                    lock FILE and write pid\n"
+                      "  -v,                         be verbose\n"
+                      "  -V,                         version\n"
+                      "  -?,                         show help\n"
+                      "\n"
+                      "Examples:\n"
+                      "  achd                        Server process reading from stdin/stdout.\n"
+                      "                              This can be run from inetd\n"
+                      "  achd -S golem cmd-chan      Forward frames via TCP from local channel\n"
+                      "                              'cmd-chan' to remote channel on host 'golem'.\n"
+                      "                              An achd server must be listening the remote host.\n"
+                      "  achd -P golem state-chan    Forward frames via TCP from remote channel\n"
+                      "                              'state-chan' on host golem to local channel 'cmd'.\n"
+                      "                              An achd server must be listening on the remote\n"
+                      "                              host.\n"
+                      "\n"
+                      "Report bugs to <ntd@gatech.edu>"
+                       );
+
                 exit(EXIT_SUCCESS);
                 break;
             default:
-                opt_channel = strdup(optarg);
+                cx.cl_opts.chan_name = strdup(optarg);
                 break;
             }
         }
         if( optind < argc ) {
-            if( opt_channel ) {
+            if( cx.cl_opts.chan_name ) {
                 fprintf(stderr, "Multiple channel names given\n");
                 exit(EXIT_FAILURE);
             }
-            opt_channel = strdup(argv[optind]);
+            cx.cl_opts.chan_name = strdup(argv[optind]);
         }
     }
 
+    /* dispatch based on mode */
+    /* serve */
+    if ( cx.serve ) {
+        achd_serve();
+        return 0;
+    }
+
     /* maybe print stuff */
-    if( opt_verbosity ) {
-        fprintf( stderr, "channel     = %s\n", opt_channel);
-        fprintf( stderr, "config file = %s\n", opt_config_file);
-    }
+    /* if( cx.verbosity ) { */
+    /*     fprintf( stderr, "channel     = %s\n", cx.cl_opts.chan_name ); */
+    /*     /\* fprintf( stderr, "config file = %s\n", opt_config_file); *\/ */
+    /* } */
 
-    /* parse config file */
-    FILE *fconfig = fopen(opt_config_file, "r" );
-    struct achd_config config;
+    /* /\* parse config file *\/ */
+    /* FILE *fconfig = fopen(opt_config_file, "r" ); */
+    /* struct achd_config config; */
 
-    memset(&config,0,sizeof(config));
-    if( fconfig ) {
-        achd_parse_config(fconfig, &config );
-        fclose(fconfig);
-    } else {
-        fprintf(stderr, "Couldn't open config file %s\n", opt_config_file);
-    }
+    /* memset(&config,0,sizeof(config)); */
+    /* if( fconfig ) { */
+    /*     achd_parse_config(fconfig, &config ); */
+    /*     fclose(fconfig); */
+    /* } else { */
+    /*     fprintf(stderr, "Couldn't open config file %s\n", opt_config_file); */
+    /* } */
 
 
-    if( opt_verbosity >= 2 ) {
-        fprintf(stderr,
-                "channel-name = %s\n"
-                "frame-size = %d\n"
-                "frame-count = %d\n"
-                "transport = %s\n"
-                "direction = %s\n"
-                "remote-host = %s\n"
-                "remote-port = %d\n"
-                "local-port = %d\n"
-                "tcp-nodelay = %d\n",
-                config.chan_name,
-                config.frame_size,
-                config.frame_count,
-                config.transport,
-                ((DIRECTION_PUSH == config.direction) ? "PUSH" :
-                 ((DIRECTION_PULL == config.direction) ? "PULL" : "unknown")),
-                config.remote_host, config.remote_port, config.local_port,
-                config.tcp_nodelay );
-    }
+    /* if( opt_verbosity >= 2 ) { */
+    /*     fprintf(stderr, */
+    /*             "channel-name = %s\n" */
+    /*             "frame-size = %d\n" */
+    /*             "frame-count = %d\n" */
+    /*             "transport = %s\n" */
+    /*             "direction = %s\n" */
+    /*             "remote-host = %s\n" */
+    /*             "remote-port = %d\n" */
+    /*             "local-port = %d\n" */
+    /*             "tcp-nodelay = %d\n", */
+    /*             config.chan_name, */
+    /*             config.frame_size, */
+    /*             config.frame_count, */
+    /*             config.transport, */
+    /*             ((ACHD_DIRECTION_PUSH == config.direction) ? "PUSH" : */
+    /*              ((ACHD_DIRECTION_PULL == config.direction) ? "PULL" : "unknown")), */
+    /*             config.remote_host, config.remote_port, config.local_port, */
+    /*             config.tcp_nodelay ); */
+    /* } */
 
     return 0;
 }
 
 /* Defs */
 
-void achd_help(FILE *fptr) {
-    fputs( "Usage: achd [OPTIONS...] CHANNEL-NAME\n"
-           ,
-        fptr);
+void achd_serve() {
+
+    struct achd_headers srv_headers;
+    memset( &srv_headers, 0, sizeof(srv_headers) );
+    achd_parse_headers( stdin, &srv_headers );
+
+    ach_channel_t chan;
+
+    /* open channel */
+    if( srv_headers.chan_name ) {
+        int r = ach_open( &chan, srv_headers.chan_name, NULL );
+        if( ACH_OK != r)
+            achd_print_status( stdout, r );
+    } else {
+        achd_print_status( stdout, ACH_BAD_PARAM );
+    }
+
+    /* start serving */
+    if( srv_headers.transport ) {
+        /* dispatch to the requested mode */
+        size_t i;
+        for( i = 0; handlers[i].transport; i ++ ) {
+            if( srv_headers.direction ==  handlers[i].direction &&
+                0 == strcasecmp( handlers[i].transport, srv_headers.transport ) )
+            {
+                return handlers[i].handler(&srv_headers, 1);
+            }
+        }
+        achd_print_status( stdout, ACH_BAD_PARAM );
+    } else {
+        achd_print_status( stdout, ACH_BAD_PARAM );
+    }
+}
+
+void achd_print_status( FILE *file, int code ) {
+    fprintf( file, "status: %d # %s\n.\n",
+             code, ach_result_to_string(code) );
+    fflush(file);
+
+    if( ACH_OK != code ) {
+        exit(EXIT_FAILURE);
+    }
 }
 
 #define REGEX_WORD "([[:alnum:]_\\-]*)"
 #define REGEX_SPACE "[ \t\n\r]*"
 
-void achd_parse_config(FILE *fptr, struct achd_config *config) {
-    regex_t line_regex;
+void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
+    regex_t line_regex, dot_regex;
     regmatch_t match[3];
     if (regcomp(&line_regex,
-                "^"REGEX_SPACE"$|"     // empty line
-                "^"REGEX_SPACE         // beginning space
-                REGEX_WORD             // key
-                REGEX_SPACE            // mid space
-                "="
-                REGEX_SPACE            // mid space
-                REGEX_WORD             // value
-                REGEX_SPACE            // end space
+                "^"REGEX_SPACE"$|"     /* empty line */
+                "^"REGEX_SPACE         /* beginning space */
+                REGEX_WORD             /* key */
+                REGEX_SPACE            /* mid space */
+                ":"
+                REGEX_SPACE            /* mid space */
+                REGEX_WORD             /* value */
+                REGEX_SPACE            /* end space */
                 "$",
                 REG_EXTENDED ) ) {
+        fprintf(stderr,"couldn't compile regex\n");
+        exit(EXIT_FAILURE);
+    }
+    if( regcomp(&dot_regex,
+                "^"REGEX_SPACE "." REGEX_SPACE "$",
+                REG_EXTENDED) ) {
         fprintf(stderr,"couldn't compile regex\n");
         exit(EXIT_FAILURE);
     }
@@ -209,28 +349,18 @@ void achd_parse_config(FILE *fptr, struct achd_config *config) {
     size_t n = 1024;
     char *lineptr = (char*)malloc(n);
     ssize_t r;
-    while( (r = getline(&lineptr, &n, fptr)) > 0 ) {
+    while( (r = getline(&lineptr, &n, fptr)) > 0 &&
+           (! regexec(&dot_regex, lineptr, 0, NULL, 0)) )
+    {
         line++;
-        if( opt_verbosity >= 3 ) printf("line %d: `%s'", line, lineptr);
-        // kill comments and translate
-        char *p = lineptr;
-        while( *p && '#' != *p )  {
-            switch(*p) {
-            case '_':
-                *p = '-';
-                break;
-            default:
-                *p = tolower(*p);
-                break;
-            }
-
-            p++;
-        }
-        *p = '\0';
-        // match key/value
+        if( cx.verbosity >= 3 ) printf("line %d: `%s'", line, lineptr);
+        /* kill comments and translate */
+        char *cmt = strchr(lineptr, '#');
+        if( cmt ) *cmt = '\0';
+        /* match key/value */
         int i = regexec(&line_regex, lineptr, sizeof(match)/sizeof(match[0]), match, 0);
         if( i ) {
-            fprintf(stderr, "Bad config file, error on line %d\n", line);
+            fprintf(stderr, "Bad header, error on line %d\n", line);
             exit(EXIT_FAILURE);
         }
         if( match[1].rm_so >= 0 && match[2].rm_so >=0 ) {
@@ -238,12 +368,13 @@ void achd_parse_config(FILE *fptr, struct achd_config *config) {
             lineptr[match[2].rm_eo] = '\0';
             char *key = lineptr+match[1].rm_so;
             char *val = lineptr+match[2].rm_so;
-            if( opt_verbosity >= 3 ) printf("`%s' : `%s'\n", key, val );
-            achd_set_config(key, val, config);
+            if( cx.verbosity >= 3 ) printf("`%s' : `%s'\n", key, val );
+            achd_set_header(key, val, headers);
         }
 
     }
     regfree(&line_regex);
+    regfree(&dot_regex);
     free(lineptr);
 }
 
@@ -256,8 +387,8 @@ void achd_set_int(int *pint, const char *name, const char *val) {
 }
 
 int achd_parse_boolean( const char *value ) {
-    const char *yes[] = {"yes", "true", "1", NULL};
-    const char *no[] = {"no", "false", "0", NULL};
+    const char *yes[] = {"yes", "true", "1", "t", "y", NULL};
+    const char *no[] = {"no", "false", "0", "f", "n", NULL};
     const char** s;
     for( s = yes; *s; s++ )
         if( 0 == strcasecmp(*s, value) ) return 1;
@@ -267,28 +398,28 @@ int achd_parse_boolean( const char *value ) {
     exit(EXIT_FAILURE);
 }
 
-void achd_set_config (const char *key, const char *val, struct achd_config *config) {
-    if       ( 0 == strcmp(key, "channel-name")) {
-        config->chan_name = strdup(val);
-    } else if( 0 == strcmp(key, "frame-size")) {
-        achd_set_int( &config->frame_size, "frame size", val );
-    } else if( 0 == strcmp(key, "frame-count")) {
-        achd_set_int( &config->frame_count, "frame count", val );
-    } else if( 0 == strcmp(key, "remote-port")) {
-        achd_set_int( &config->remote_port, "remote port", val );
-    } else if( 0 == strcmp(key, "local-port")) {
-        achd_set_int( &config->local_port, "local port", val );
-    } else if( 0 == strcmp(key, "remote-host")) {
-        config->remote_host = strdup(val);
-    } else if( 0 == strcmp(key, "transport")) {
-        config->transport = strdup(val);
-    } else if( 0 == strcmp(key, "tcp-nodelay")) {
-        config->tcp_nodelay = achd_parse_boolean( val );
-    } else if( 0 == strcmp(key, "retry")) {
-        config->retry = achd_parse_boolean( val );
-    } else if( 0 == strcmp(key, "direction")) {
-        if( 0 == strcmp(val, "push") ) config->direction = DIRECTION_PUSH;
-        else if( 0 == strcmp(val, "pull") ) config->direction = DIRECTION_PULL;
+void achd_set_header (const char *key, const char *val, struct achd_headers *headers) {
+    if       ( 0 == strcasecmp(key, "channel-name")) {
+        headers->chan_name = strdup(val);
+    } else if( 0 == strcasecmp(key, "frame-size")) {
+        achd_set_int( &headers->frame_size, "frame size", val );
+    } else if( 0 == strcasecmp(key, "frame-count")) {
+        achd_set_int( &headers->frame_count, "frame count", val );
+    } else if( 0 == strcasecmp(key, "remote-port")) {
+        achd_set_int( &headers->remote_port, "remote port", val );
+    } else if( 0 == strcasecmp(key, "local-port")) {
+        achd_set_int( &headers->local_port, "local port", val );
+    } else if( 0 == strcasecmp(key, "remote-host")) {
+        headers->remote_host = strdup(val);
+    } else if( 0 == strcasecmp(key, "transport")) {
+        headers->transport = strdup(val);
+    } else if( 0 == strcasecmp(key, "tcp-nodelay")) {
+        headers->tcp_nodelay = achd_parse_boolean( val );
+    } else if( 0 == strcasecmp(key, "retry")) {
+        headers->retry = achd_parse_boolean( val );
+    } else if( 0 == strcasecmp(key, "direction")) {
+        if( 0 == strcasecmp(val, "push") ) headers->direction = ACHD_DIRECTION_PUSH;
+        else if( 0 == strcasecmp(val, "pull") ) headers->direction = ACHD_DIRECTION_PULL;
         else {
             fprintf(stderr, "Invalid direction: %s\n", val);
             exit(EXIT_FAILURE);
@@ -296,4 +427,31 @@ void achd_set_config (const char *key, const char *val, struct achd_config *conf
     } else {
         fprintf(stderr, "Invalid configuration key: %s\n", key );
     }
+}
+
+
+/* handler definitions */
+void achd_push_tcp( const struct achd_headers *headers, int is_server ) {
+    if( is_server ) achd_print_status( stdout, ACH_OK );
+    else { /* connect */
+        assert(0);
+    }
+    assert(0); /* unimplemented */
+}
+
+void achd_pull_tcp( const struct achd_headers *headers, int is_server ) {
+    if( is_server ) achd_print_status( stdout, ACH_OK );
+    else { /* connect */
+        assert(0);
+    }
+    assert(0); /* unimplemented */
+}
+
+void achd_push_udp( const struct achd_headers *headers, int is_server ) {
+    /* check port set */
+    assert(0); /* unimplemented */
+}
+
+void achd_pull_udp( const struct achd_headers *headers, int is_server ) {
+    assert(0); /* unimplemented */
 }

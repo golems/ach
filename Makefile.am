@@ -53,7 +53,7 @@ achbench_LDADD = libach.la
 
 endif
 
-dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1
+dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1 achd.1
 
 if HAVE_HELP2MAN
 ach.1: src/achtool.c $(top_srcdir)/configure.ac
@@ -72,11 +72,16 @@ achpipe.bin.1: src/achpipe-bin.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
 	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin$(EXEEXT) -o achpipe.bin.1
 
+achd.1: src/achd.c $(top_srcdir)/configure.ac
+	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achd$(EXEEXT) -o achd.1
+
 achpipe.1: $(top_srcdir)/achpipe
 	help2man -h -h -v -V --no-info -n "send ach messages over streams" $(top_srcdir)/achpipe -o achpipe.1
 
 achlog.1: $(top_srcdir)/achlog
 	help2man -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o achlog.1
+
 endif
 
 clean-local:
