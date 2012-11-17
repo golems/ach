@@ -60,7 +60,8 @@ Improving Real-Time on Linux and i386/amd64
 
 Further Details
 ===============
-A technical report describing design and rationale behind Ach is available at:
-http://www.golems.org/node/1526
-
-API documentation is available at http://golems.github.com/ach/.
+* A technical report describing design and rationale behind Ach is
+  available at: http://www.golems.org/node/1526
+* API documentation is available at http://code.golems.org/pkg/ach/.
+* User commands are described in the Unix man pages and browseable at
+  http://code.golems.org/pkg/ach/man/.

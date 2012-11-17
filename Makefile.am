@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = CMakeLists.txt spin
+EXTRA_DIST = CMakeLists.txt spin doc/ach.html
 dist_bin_SCRIPTS = achpipe achlog achtooltest src/run-benchmarks
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
@@ -53,34 +53,47 @@ achbench_LDADD = libach.la
 
 endif
 
-dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1 achd.1
+dist_man_MANS = doc/ach.1 doc/achbench.1 doc/achcat.1 doc/achpipe.bin.1 doc/achpipe.1 doc/achlog.1 doc/achd.1
+dist_doc_DATA = doc/ach.html doc/achbench.html doc/achcat.html doc/achpipe.bin.html doc/achpipe.html doc/achlog.html doc/achd.html
 
 if HAVE_HELP2MAN
-ach.1: src/achtool.c $(top_srcdir)/configure.ac
+doc/ach.1: src/achtool.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) ach$(EXEEXT)
-	help2man -h -h -v -V --no-info -n "manipulate ach channels" ./ach$(EXEEXT) -o ach.1
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "manipulate ach channels" ./ach$(EXEEXT) -o $@
 
-achbench.1: src/ach-bench.c $(top_srcdir)/configure.ac
+doc/achbench.1: src/ach-bench.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) achbench$(EXEEXT)
-	help2man -h -h -v -V --no-info -n "benchmark and tune ach" ./achbench$(EXEEXT) -o achbench.1
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "benchmark and tune ach" ./achbench$(EXEEXT) -o $@
 
-achcat.1: src/achcat.c $(top_srcdir)/configure.ac
+doc/achcat.1: src/achcat.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) achcat$(EXEEXT)
-	help2man -h -h -v -V --no-info -n "ach debugging tool" ./achcat$(EXEEXT) -o achcat.1
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "ach debugging tool" ./achcat$(EXEEXT) -o $@
 
-achpipe.bin.1: src/achpipe-bin.c $(top_srcdir)/configure.ac
+doc/achpipe.bin.1: src/achpipe-bin.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin$(EXEEXT) -o achpipe.bin.1
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin$(EXEEXT) -o $@
 
-achd.1: src/achd.c $(top_srcdir)/configure.ac
+doc/achd.1: src/achd.c $(top_srcdir)/configure.ac
 	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achd$(EXEEXT) -o achd.1
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achd$(EXEEXT) -o $@
 
-achpipe.1: $(top_srcdir)/achpipe
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" $(top_srcdir)/achpipe -o achpipe.1
+doc/achpipe.1: $(top_srcdir)/achpipe
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "send ach messages over streams" $(top_srcdir)/achpipe -o $@
 
-achlog.1: $(top_srcdir)/achlog
-	help2man -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o achlog.1
+doc/achlog.1: $(top_srcdir)/achlog
+	mkdir -p doc
+	help2man -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
+
+if HAVE_MAN2HTML
+.1.html:
+	man2html -r $< | sed -e '1d;2d;8d;s/@\|&amp;/{at}/g' > $@
+endif
 
 endif
 
@@ -91,6 +104,6 @@ distclean-local:
 	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake
 
 maintainer-clean-local:
-	-rm -rf *.1 *.tar.gz
+	-rm -rf doc/*.1 doc/*.html *.tar.gz
 
 include doxygen.am
