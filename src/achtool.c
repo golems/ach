@@ -138,6 +138,7 @@ int main( int argc, char **argv ) {
             puts( "Usage: ach [OPTION...]\n"
                   "General tool to interact with ach channels\n"
                   "\n"
+                  "Options:\n"
                   "  -C CHANNEL-NAME,          Create a new channel\n"
                   "  -U CHANNEL-NAME,          Unlink (delete) a channel\n"
                   "  -D CHANNEL-NAME,          Dump info about channel\n"

@@ -337,6 +337,9 @@ int main(int argc, char **argv) {
             puts("Usage: achbench [OPTION....]\n"
                  "Benchmark Ach IPC\n"
                  "\n"
+                 "Note: Disable CPU power-saving to minimize latency\n"
+                 "\n"
+                 "Options:\n"
                  "  -f FREQUENCY,       Frequency in Hertz (1000)\n"
                  "  -s SECONDS,         Duration in seconds (1)\n"
                  "  -p COUNT,           Real-Time Publishers (1)\n"
@@ -344,9 +347,6 @@ int main(int argc, char **argv) {
                  "  -l COUNT,           Non-Real-Time Receivers (0)\n"
                  "  -g,                 Proceed even if real-time setup fails\n"
                  "  -P,                 Benchmark pipes instead of ach\n"
-                 "\n"
-                 "IMPORTANT:\n"
-                 " Disable CPU power-saving to minimize latency"
                 );
             exit(EXIT_SUCCESS);
         }

@@ -557,6 +557,7 @@ int main( int argc, char **argv ) {
             puts( "Usage: achpipe.bin [OPTION...]\n"
                   "Translate between ach channels and streams"
                   "\n"
+                  "Options:\n"
                   "  -p CHANNEL-NAME,     Publish stream to channel\n"
                   "  -s CHANNEL-NAME,     Subscribe from channel, print to stream\n"
                   "  -z CHANNEL-NAME,     Set name of remote channel\n"
