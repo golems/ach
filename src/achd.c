@@ -52,12 +52,17 @@
 #include <regex.h>
 #include <assert.h>
 #include <stdarg.h>
+#include <errno.h>
 #include <syslog.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
 
 #include "ach.h"
 #include "achutil.h"
 
 #define ACHD_PORT 8076
+#define INIT_BUF_SIZE 512
 
 /* Prototypes */
 enum achd_direction {
@@ -68,16 +73,20 @@ enum achd_direction {
 
 struct achd_headers {
     const char *chan_name;
+    const char *remote_chan_name;
     int frame_count;
     int frame_size;
     int local_port;
     int remote_port;
     int tcp_nodelay;
     int retry;
+    int get_last;
     int retry_delay_us;
+    int64_t period_ns;
     const char *remote_host;
     const char *transport;
     enum achd_direction direction;
+    int status;
 };
 
 void achd_make_realtime();
@@ -90,36 +99,45 @@ void achd_set_int(int *pint, const char *name, const char *val);
 void achd_serve();
 void achd_open( ach_channel_t *channel, const struct achd_headers *headers );
 
+void achd_client();
+int achd_connect();
+
 /* error handlers */
 void achd_error_interactive( int code, const char fmt[], ... );
 void achd_error_header( int code, const char fmt[], ... );
 void achd_error_syslog( int code, const char fmt[],  ...);
 
 /* i/o handlers */
+typedef void (*achd_io_handler_t)(const struct achd_headers *headers, ach_channel_t *channel );
 void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel );
 void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel );
 void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel );
 void achd_pull_udp( const struct achd_headers *headers, ach_channel_t *channel );
+achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction direction );
 
 /* global data */
-struct {
+static struct {
     struct achd_headers cl_opts; /** Options from command line */
     int serve;
     int verbosity;
     int daemonize;
     int port;
     const char *pidfile;
-    sig_atomic_t received_sigterm;
+    sig_atomic_t sig_received;
     void (*error)(int code, const char fmt[], ...);
+    int in;
+    int out;
+    FILE *fin;
+    FILE *fout;
 } cx;
 
 struct achd_handler {
     const char *transport;
     enum achd_direction direction;
-    void (*handler)( const struct achd_headers *headers, ach_channel_t *channel );
+    achd_io_handler_t handler;
 };
 
-struct achd_handler handlers[] = {
+static const struct achd_handler handlers[] = {
     {.transport = "tcp",
      .direction = ACHD_DIRECTION_PUSH,
      .handler = achd_push_tcp },
@@ -146,11 +164,15 @@ int main(int argc, char **argv) {
     cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
     cx.serve = 1;
     cx.error = achd_error_interactive;
+    cx.in = STDIN_FILENO;
+    cx.in = STDOUT_FILENO;
+    cx.fin = stdin;
+    cx.fout = stdout;
 
     /* process options */
     int c = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "S:P:dp:t:f:qvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "S:P:dp:t:f:z:qvV?")) != -1 ) {
             switch(c) {
             case 'S':
                 cx.cl_opts.remote_host = strdup(optarg);
@@ -161,6 +183,9 @@ int main(int argc, char **argv) {
                 cx.cl_opts.remote_host = strdup(optarg);
                 cx.cl_opts.direction = ACHD_DIRECTION_PULL;
                 cx.serve = 0;
+                break;
+            case 'z':
+                cx.cl_opts.remote_chan_name = strdup(optarg);
                 break;
             case 'd':
                 cx.daemonize = 1;
@@ -198,6 +223,7 @@ int main(int argc, char **argv) {
                       "  -p PORT,                    port\n"
                       "  -f FILE,                    lock FILE and write pid\n"
                       "  -t (tcp|udp),               transport (default tcp)\n"
+                      "  -z CHANNEL_NAME,            remote channel name\n"
                       "  -q,                         be quiet\n"
                       "  -v,                         be verbose\n"
                       "  -V,                         version\n"
@@ -242,11 +268,14 @@ int main(int argc, char **argv) {
     /* serve */
     if ( cx.serve ) {
         if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
-            /*fprintf(stderr, "We don't serve TTYs here!\n");*/
-            /*exit(EXIT_FAILURE);*/
+            fprintf(stderr, "We don't serve TTYs here!\n");
+            exit(EXIT_FAILURE);
         }
         cx.error = achd_error_header;
         achd_serve();
+        return 0;
+    } else {
+        achd_client();
         return 0;
     }
 
@@ -296,9 +325,10 @@ int main(int argc, char **argv) {
 /* Defs */
 
 void achd_serve() {
+    syslog( LOG_NOTICE, "Server started\n");
     struct achd_headers srv_headers;
     memset( &srv_headers, 0, sizeof(srv_headers) );
-    achd_parse_headers( stdin, &srv_headers );
+    achd_parse_headers( cx.fin, &srv_headers );
     /* open channel */
     ach_channel_t channel;
     achd_open( &channel, &srv_headers );
@@ -312,27 +342,117 @@ void achd_serve() {
         cx.error( ACH_BAD_HEADER, "No direction header");
         assert(0);
     }
-    /* dispatch to the requested mode */
-    size_t i;
-    for( i = 0; handlers[i].transport; i ++ ) {
-        if( srv_headers.direction ==  handlers[i].direction &&
-            0 == strcasecmp( handlers[i].transport, srv_headers.transport ) )
-        {
-            /* print headers */
-            fprintf(stdout,
-                    "status: %d # %s\n"
-                    ".\n",
-                    ACH_OK, ach_result_to_string(ACH_OK)
-                );
-            fflush(stdout);
 
-            /* start i/o */
-            return handlers[i].handler( &srv_headers, &channel );
-        }
+    /* dispatch to the requested mode */
+    achd_io_handler_t handler = achd_get_handler( srv_headers.transport, srv_headers.direction );
+    assert( handler );
+
+    /* print headers */
+    fprintf(cx.fout,
+            "status: %d # %s\n"
+            ".\n",
+            ACH_OK, ach_result_to_string(ACH_OK)
+        );
+    fflush(cx.fout);
+    syslog( LOG_NOTICE, "Serving channel %s\n", srv_headers.chan_name );
+    /* start i/o */
+    return handler( &srv_headers, &channel );
+}
+
+void achd_client() {
+    /* Create request headers */
+    achd_io_handler_t handler = achd_get_handler( cx.cl_opts.transport, cx.cl_opts.direction );
+    assert( handler );
+    struct achd_headers req_headers;
+
+    if( cx.cl_opts.remote_chan_name ) {
+        req_headers.chan_name = cx.cl_opts.remote_chan_name;
+    } else if ( cx.cl_opts.chan_name )  {
+        req_headers.chan_name = cx.cl_opts.chan_name;
+    } else {
+        cx.error( ACH_BAD_HEADER, "No channel name given\n");
+        assert(0);
     }
-    /* Couldn't find handler */
-    cx.error( ACH_BAD_HEADER, "Requested transport or direction not found");
-    assert(0);
+
+    assert( cx.cl_opts.transport );
+    assert( cx.cl_opts.direction == ACHD_DIRECTION_PUSH ||
+            cx.cl_opts.direction == ACHD_DIRECTION_PULL );
+    req_headers.transport = cx.cl_opts.transport;
+
+
+    /* Open Channel */
+    ach_channel_t channel;
+    achd_open( &channel, &cx.cl_opts );
+
+    /* Connect to server */
+    cx.in = cx.out = achd_connect();
+    assert( cx.in >= 0 && cx.out >= 0 && cx.in == cx.out );
+
+    cx.fin = fdopen( cx.in, "r" );
+    cx.fout = fdopen( cx.in, "w" );
+    if( NULL == cx.fin || NULL == cx.fout ) {
+        cx.error( ACH_FAILED_SYSCALL, "Couldn't fdopen sock: %s\n", strerror(errno) );
+        assert(0);
+    }
+
+    /* Write request */
+    fprintf(cx.fout,
+            "channel-name: %s\n"
+            "transport: %s\n"
+            "direction: %s\n"
+            ".\n",
+            req_headers.chan_name,
+            req_headers.transport,
+            ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
+              "push" : "pull" ) /* remote end does the opposite */
+        );
+    fflush(cx.fout);
+
+    /* Get Response */
+    struct achd_headers resp_headers;
+    resp_headers.status = ACH_BUG;
+    achd_parse_headers( cx.fin, &resp_headers );
+    if( ACH_OK != resp_headers.status ) {
+        cx.error( resp_headers.status, "Bad response from server\n" );
+    }
+
+    /* Start running */
+    handler( &cx.cl_opts, &channel );
+
+}
+
+int achd_connect() {
+    /* Make socket */
+    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        cx.error(ACH_FAILED_SYSCALL, "Couldn't open socket: %s\n", strerror(errno));
+        assert(0);
+    }
+
+    /* Lookup Host */
+    assert( cx.cl_opts.remote_host );
+    struct hostent *server = gethostbyname( cx.cl_opts.remote_host );
+    if( NULL == server ) {
+        cx.error(ACH_FAILED_SYSCALL, "Host '%s' not found\n", cx.cl_opts.remote_host);
+        assert(0);
+    }
+
+    /* Make socket address */
+    struct sockaddr_in serv_addr;
+    memset( &serv_addr, 0, sizeof(serv_addr) );
+    serv_addr.sin_family = AF_INET;
+    memcpy( &serv_addr.sin_addr.s_addr,
+            server->h_addr,
+            server->h_length);
+    serv_addr.sin_port = htons(ACHD_PORT); /* Well, ipv4 only for now */
+
+    /* Connect */
+    if( connect(sockfd,  (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
+        cx.error(ACH_FAILED_SYSCALL, "Couldn't connect: %s\n", strerror(errno));
+        assert(0);
+    }
+
+    return sockfd;
 }
 
 #define REGEX_WORD "([[:alnum:]_\\-]*)"
@@ -396,11 +516,13 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
 }
 
 void achd_set_int(int *pint, const char *name, const char *val) {
-    *pint = atoi(val);
-    if( !*pint ) {
-        fprintf(stderr, "Invalid %s %s\n", name, val);
-        exit(EXIT_FAILURE);
+    errno = 0;
+    long i = strtol( val, NULL, 10 );
+    if( errno ) {
+        cx.error( ACH_BAD_HEADER, "Invalid %s %s: %s\n", name, val, strerror(errno) );
+        assert(0);
     }
+    *pint = (int) i;
 }
 
 int achd_parse_boolean( const char *value ) {
@@ -441,17 +563,21 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
             cx.error( ACH_BAD_HEADER, "Invalid direction: %s\n", val);
             assert(0);
         }
+    } else if ( 0 == strcasecmp(key, "status") ) {
+        achd_set_int( &headers->status, "status", val );
     } else {
-        fprintf(stderr, "Invalid configuration key: %s\n", key );
+        cx.error( ACH_BAD_HEADER, "Invalid header: %s\n", key );
     }
 }
 
 
 void achd_open( ach_channel_t *channel, const struct achd_headers *headers ) {
-    if( headers->chan_name ) {
-        int r = ach_open( channel, headers->chan_name, NULL );
+    const char *name = (headers->chan_name ?
+                        headers->chan_name : headers->remote_chan_name);
+    if( name ) {
+        int r = ach_open( channel, name, NULL );
         if( ACH_OK != r)
-            cx.error( r, "Couldn't open channel %s\n", headers->chan_name );
+            cx.error( r, "Couldn't open channel %s\n", name );
     } else {
         cx.error( ACH_BAD_HEADER, "No channel name header");
     }
@@ -459,12 +585,156 @@ void achd_open( ach_channel_t *channel, const struct achd_headers *headers ) {
 
 
 /* handler definitions */
+achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction direction ) {
+    /* check transport headers */
+    if( ! transport ) {
+        cx.error( ACH_BAD_HEADER, "No transport header");
+        assert(0);
+    }
+    if( ! direction ) {
+        cx.error( ACH_BAD_HEADER, "No direction header");
+        assert(0);
+    }
+    int i = 0;
+    for( i = 0; handlers[i].transport; i ++ ) {
+        if( direction ==  handlers[i].direction &&
+            0 == strcasecmp( handlers[i].transport, transport ) )
+        {
+            return handlers[i].handler;
+        }
+    }
+    /* Couldn't find handler */
+    cx.error( ACH_BAD_HEADER, "Requested transport or direction not found");
+    assert(0);
+}
+
+
 void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
-    assert(0); /* unimplemented */
+    /* Subscribe and Write */
+
+    /* frame buffer */
+    size_t max = INIT_BUF_SIZE;
+    ach_pipe_frame_t *frame = ach_pipe_alloc( max );
+    int t0 = 1;
+
+    /* struct timespec period = {0,0}; */
+    /* int is_freq = 0; */
+    /* if(opt_freq > 0) { */
+    /*     double p = 1.0 / opt_freq; */
+    /*     period.tv_sec = (time_t)p; */
+    /*     period.tv_nsec = (long) ((p - (double)period.tv_sec)*1e9); */
+    /*     is_freq = 1; */
+    /* } */
+
+    /* read loop */
+    while( ! cx.sig_received ) {
+        /* char cmd[4] = {0}; */
+        /* if( opt_sync ) { */
+        /*     /\* wait for the pull command *\/ */
+        /*     size_t rc = fread( cmd, 1, 4, fin); */
+        /*     hard_assert(4 == rc, "Invalid command read: %d\n", rc ); */
+        /*     verbprintf(2, "Command %s\n", cmd ); */
+        /* } */
+        /* read the data */
+        int got_frame = 0;
+        do {
+            size_t frame_size = 0;
+            ach_status_t r = ACH_BUG;
+            if( 0 ) {
+                /* parse command */
+                /* if ( 0 == memcmp("next", cmd, 4) ) { */
+                /*     r = ach_get(&chan, frame->data, max, &frame_size,  NULL, */
+                /*                 ACH_O_WAIT ); */
+                /* }else if ( 0 == memcmp("last", cmd, 4) ){ */
+                /*     r = ach_get(&chan, frame->data, max, &frame_size,  NULL, */
+                /*                 ACH_O_WAIT | ACH_O_LAST ); */
+                /* } else if ( 0 == memcmp("poll", cmd, 4) ) { */
+                /*     r = ach_get( &chan, frame->data, max, &frame_size, NULL, */
+                /*                  ACH_O_COPY | ACH_O_LAST ); */
+                /* } else { */
+                /*     hard_assert(0, "Invalid command: %s\n", cmd ); */
+                /* } */
+            } else {
+                /* push the data */
+                r = ach_get( channel, frame->data, max, &frame_size,  NULL,
+                             ( (headers->get_last /*|| is_freq*/) ?
+                               (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
+            }
+            /* check return code */
+            if( ACH_OVERFLOW == r ) {
+                /* enlarge buffer and retry on overflow */
+                assert(frame_size > max );
+                max = frame_size;
+                free(frame);
+                frame = ach_pipe_alloc( max );
+            } else if (ACH_OK == r || ACH_MISSED_FRAME == r || t0 ) {
+                got_frame = 1;
+                ach_pipe_set_size( frame, frame_size );
+                //verbprintf(2, "Got ach frame %d\n", frame_size );
+            }else {
+                /* abort on other errors */
+                /* hard_assert( 0, "sub: ach_error: %s\n", */
+                /*              ach_result_to_string(r) ); */
+                assert(0);
+            }
+        }while( !got_frame );
+
+
+        /* stream send */
+        {
+            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(frame);
+            size_t r = fwrite( frame, 1, size, cx.fout );
+            if( r != size ) {
+                break;
+            }
+            if( fflush( cx.fout ) ) break;
+            /* if( opt_sync ) { */
+            /*     fsync( fileno(fout) ); /\* fails w/ sbcl, and maybe that's ok *\/ */
+            /* } */
+            /* verbprintf( 2, "Printed output\n"); */
+        }
+        /* t0 = 0; */
+        /* /\* maybe sleep *\/ */
+        /* if( is_freq ) { */
+        /*     assert( !opt_sync ); */
+        /*     _relsleep(period); */
+        /* } */
+    }
+    free(frame);
+    ach_close( channel );
+
+
 }
 
 void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
-    assert(0); /* unimplemented */
+    uint64_t max = INIT_BUF_SIZE;
+    ach_pipe_frame_t *frame = ach_pipe_alloc( max );
+    /* Read and Publish Loop */
+    while( ! cx.sig_received ) {
+        /* get size */
+        size_t s = fread( frame, 1, 16, cx.fin );
+        if( 16 != s ) break;
+        if( memcmp("achpipe", frame->magic, 8) ) break;
+        uint64_t cnt = ach_pipe_get_size( frame );
+        /* FIXME: sanity check that cnt is not something outrageous */
+        /* make sure buf can hold it */
+        if( (size_t)cnt > max ) {
+            max = cnt;
+            free( frame );
+            frame = ach_pipe_alloc( max );
+        }
+        /* get data */
+        s = fread( frame->data, 1, (size_t)cnt, cx.fin );
+        if( cnt != s ) break;
+        /* put data */
+        ach_status_t r = ach_put( channel, frame->data, cnt );
+        assert( r == ACH_OK );
+    }
+    free(frame);
+
+    ach_close( channel );
+
+    exit(EXIT_SUCCESS);
 }
 
 void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel ) {
@@ -517,8 +787,9 @@ void achd_error_header( int code, const char fmt[], ... ) {
     va_end( argp );
 
     va_start( argp, fmt );
-    fprintf(stdout, "status: %d # %s - ", code, ach_result_to_string(code) );
-    vfprintf( stdout, fmt, argp );
+    fprintf(cx.fout, "status: %d # %s - ", code, ach_result_to_string(code) );
+    vfprintf( cx.fout, fmt, argp );
+    fflush( cx.fout );
     va_end( argp );
     achd_exit_failure(code);
 }

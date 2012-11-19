@@ -13,8 +13,8 @@ noinst_HEADERS = include/achutil.h
 lib_LTLIBRARIES = libach.la
 
 if HAVE_RT
-bin_PROGRAMS = ach achpipe.bin achcat achbench
-noinst_PROGRAMS = achtest achd ach-example
+bin_PROGRAMS = ach achpipe.bin achcat achbench achd
+noinst_PROGRAMS = achtest ach-example
 else
 bin_PROGRAMS = ach achpipe.bin
 noinst_PROGRAMS = achtest
@@ -78,9 +78,9 @@ doc/achpipe.bin.1: src/achpipe-bin.c $(top_srcdir)/configure.ac
 	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achpipe.bin$(EXEEXT) -o $@
 
 doc/achd.1: src/achd.c $(top_srcdir)/configure.ac
-	$(MAKE) $(AM_MAKEFLAGS) achpipe.bin$(EXEEXT)
+	$(MAKE) $(AM_MAKEFLAGS) achd$(EXEEXT)
 	mkdir -p doc
-	help2man -h -h -v -V --no-info -n "send ach messages over streams" ./achd$(EXEEXT) -o $@
+	help2man -h -\? -v -V --no-info -n "send ach messages over streams" ./achd$(EXEEXT) -o $@
 
 doc/achpipe.1: $(top_srcdir)/achpipe
 	mkdir -p doc
