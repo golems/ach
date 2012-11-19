@@ -106,6 +106,10 @@ int achd_connect();
 
 void achd_log( int level, const char fmt[], ...);
 
+/* signal handlers */
+static void sighandler(int sig, siginfo_t *siginfo, void *context);
+static void sighandler_install();
+
 /* error handlers */
 void achd_error_interactive( int code, const char fmt[], ... );
 void achd_error_header( int code, const char fmt[], ... );
@@ -332,6 +336,7 @@ int main(int argc, char **argv) {
 
 void achd_serve() {
     fclose(stderr);
+    sighandler_install();
     achd_log( LOG_INFO, "Server started\n");
     struct achd_headers srv_headers;
     memset( &srv_headers, 0, sizeof(srv_headers) );
@@ -436,8 +441,8 @@ void achd_client() {
     }
 
     /* Start running */
+    sighandler_install();
     handler( &cx.cl_opts, &channel );
-
 }
 
 int achd_connect() {
@@ -462,7 +467,7 @@ int achd_connect() {
     serv_addr.sin_family = AF_INET;
     memcpy( &serv_addr.sin_addr.s_addr,
             server->h_addr,
-            server->h_length);
+            (size_t)server->h_length);
     serv_addr.sin_port = htons(cx.port); /* Well, ipv4 only for now */
 
     /* Connect */
@@ -869,4 +874,39 @@ dolog:
         vsyslog(level, fmt, argp);
     }
     va_end( argp );
+}
+
+
+
+
+static void sighandler(int sig, siginfo_t *siginfo, void *context) {
+    achd_log( LOG_DEBUG, "Received signal: %d\n", sig );
+    switch(sig) {
+    case SIGTERM:
+    case SIGINT:
+        cx.sig_received = 1;
+        break;
+    default:
+        achd_log( LOG_WARNING, "Received unexpected signal: %d\n", sig );
+    }
+}
+
+/** setup the signal handler */
+static void sighandler_install() {
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+
+    act.sa_sigaction = &sighandler;
+
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
+       not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGTERM, &act, NULL) < 0) {
+        achd_log( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+    }
+
+    if (sigaction(SIGINT, &act, NULL) < 0) {
+        achd_log( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+    }
 }
