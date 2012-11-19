@@ -268,7 +268,7 @@ extern "C" {
         ACH_BUG = 11,           /**< internal ach error */
         ACH_EINVAL = 12,        /**< invalid channel */
         ACH_CORRUPT = 13,        /**< channel memory has been corrupted */
-        ACH_BAD_PARAM = 14      /**< an invalid parameter was given*/
+        ACH_BAD_HEADER = 14      /**< an invalid header was given */
     } ach_status_t;
 
 

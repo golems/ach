@@ -121,7 +121,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_BUG: return "ACH_BUG";
     case ACH_EINVAL: return "ACH_EINVAL";
     case ACH_CORRUPT: return "ACH_CORRUPT";
-    case ACH_BAD_PARAM: return "ACH_BAD_PARAM";
+    case ACH_BAD_HEADER: return "ACH_BAD_HEADER";
     }
     return "UNKNOWN";
 

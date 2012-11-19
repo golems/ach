@@ -51,9 +51,13 @@
 #include <signal.h>
 #include <regex.h>
 #include <assert.h>
+#include <stdarg.h>
+#include <syslog.h>
 
 #include "ach.h"
 #include "achutil.h"
+
+#define ACHD_PORT 8076
 
 /* Prototypes */
 enum achd_direction {
@@ -76,26 +80,26 @@ struct achd_headers {
     enum achd_direction direction;
 };
 
-
 void achd_make_realtime();
 void achd_daemonize();
 void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
 void achd_set_header (const char *key, const char *val, struct achd_headers *headers);
 void achd_write_pid();
-void achd_serve();
-void achd_print_status( FILE *file, int code );
 void achd_set_int(int *pint, const char *name, const char *val);
 
-/*  handlers */
-void achd_error_main( int code, const char *msg );
-void achd_error_server( int code, const char *msg );
-void achd_error_client( int code, const char *msg );
+void achd_serve();
+void achd_open( ach_channel_t *channel, const struct achd_headers *headers );
+
+/* error handlers */
+void achd_error_interactive( int code, const char fmt[], ... );
+void achd_error_header( int code, const char fmt[], ... );
+void achd_error_syslog( int code, const char fmt[],  ...);
 
 /* i/o handlers */
-void achd_push_tcp( const struct achd_headers *headers, int is_server );
-void achd_pull_tcp( const struct achd_headers *headers, int is_server );
-void achd_push_udp( const struct achd_headers *headers, int is_server );
-void achd_pull_udp( const struct achd_headers *headers, int is_server );
+void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel );
+void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel );
+void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel );
+void achd_pull_udp( const struct achd_headers *headers, ach_channel_t *channel );
 
 /* global data */
 struct {
@@ -106,13 +110,13 @@ struct {
     int port;
     const char *pidfile;
     sig_atomic_t received_sigterm;
-    void (*error_handler)(int code, const char *msg);
+    void (*error)(int code, const char fmt[], ...);
 } cx;
 
 struct achd_handler {
     const char *transport;
     enum achd_direction direction;
-    void (*handler)( const struct achd_headers *headers, int is_server );
+    void (*handler)( const struct achd_headers *headers, ach_channel_t *channel );
 };
 
 struct achd_handler handlers[] = {
@@ -141,11 +145,12 @@ int main(int argc, char **argv) {
     cx.cl_opts.frame_size = ACH_DEFAULT_FRAME_SIZE;
     cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
     cx.serve = 1;
+    cx.error = achd_error_interactive;
 
     /* process options */
     int c = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "S:P:dp:u:f:vV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "S:P:dp:t:f:qvV?")) != -1 ) {
             switch(c) {
             case 'S':
                 cx.cl_opts.remote_host = strdup(optarg);
@@ -170,10 +175,14 @@ int main(int argc, char **argv) {
             case 'f':
                 cx.pidfile = strdup(optarg);
                 break;
-            case 'u':
+            case 't':
+                cx.cl_opts.transport = strdup(optarg);
+                break;
+            case 'q':
+                cx.verbosity ++;
                 break;
             case 'v':
-                cx.verbosity ++;
+                cx.verbosity --;
                 break;
             case 'V':   /* version     */
                 ach_print_version("achd");
@@ -186,9 +195,10 @@ int main(int argc, char **argv) {
                       "  -S HOST,                    push messages to HOST\n"
                       "  -P HOST,                    pull messages from HOST\n"
                       "  -d,                         daemonize (client-mode only)\n"
-                      "  -p PORT,                    TCP port\n"
-                      "  -u PORT,                    UDP transport on PORT\n"
+                      "  -p PORT,                    port\n"
                       "  -f FILE,                    lock FILE and write pid\n"
+                      "  -t (tcp|udp),               transport (default tcp)\n"
+                      "  -q,                         be quiet\n"
                       "  -v,                         be verbose\n"
                       "  -V,                         version\n"
                       "  -?,                         show help\n"
@@ -231,6 +241,11 @@ int main(int argc, char **argv) {
     /* dispatch based on mode */
     /* serve */
     if ( cx.serve ) {
+        if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
+            /*fprintf(stderr, "We don't serve TTYs here!\n");*/
+            /*exit(EXIT_FAILURE);*/
+        }
+        cx.error = achd_error_header;
         achd_serve();
         return 0;
     }
@@ -281,47 +296,43 @@ int main(int argc, char **argv) {
 /* Defs */
 
 void achd_serve() {
-
     struct achd_headers srv_headers;
     memset( &srv_headers, 0, sizeof(srv_headers) );
     achd_parse_headers( stdin, &srv_headers );
-
-    ach_channel_t chan;
-
     /* open channel */
-    if( srv_headers.chan_name ) {
-        int r = ach_open( &chan, srv_headers.chan_name, NULL );
-        if( ACH_OK != r)
-            achd_print_status( stdout, r );
-    } else {
-        achd_print_status( stdout, ACH_BAD_PARAM );
-    }
+    ach_channel_t channel;
+    achd_open( &channel, &srv_headers );
 
-    /* start serving */
-    if( srv_headers.transport ) {
-        /* dispatch to the requested mode */
-        size_t i;
-        for( i = 0; handlers[i].transport; i ++ ) {
-            if( srv_headers.direction ==  handlers[i].direction &&
-                0 == strcasecmp( handlers[i].transport, srv_headers.transport ) )
-            {
-                return handlers[i].handler(&srv_headers, 1);
-            }
+    /* check transport headers */
+    if( ! srv_headers.transport ) {
+        cx.error( ACH_BAD_HEADER, "No transport header");
+        assert(0);
+    }
+    if( ! srv_headers.direction ) {
+        cx.error( ACH_BAD_HEADER, "No direction header");
+        assert(0);
+    }
+    /* dispatch to the requested mode */
+    size_t i;
+    for( i = 0; handlers[i].transport; i ++ ) {
+        if( srv_headers.direction ==  handlers[i].direction &&
+            0 == strcasecmp( handlers[i].transport, srv_headers.transport ) )
+        {
+            /* print headers */
+            fprintf(stdout,
+                    "status: %d # %s\n"
+                    ".\n",
+                    ACH_OK, ach_result_to_string(ACH_OK)
+                );
+            fflush(stdout);
+
+            /* start i/o */
+            return handlers[i].handler( &srv_headers, &channel );
         }
-        achd_print_status( stdout, ACH_BAD_PARAM );
-    } else {
-        achd_print_status( stdout, ACH_BAD_PARAM );
     }
-}
-
-void achd_print_status( FILE *file, int code ) {
-    fprintf( file, "status: %d # %s\n.\n",
-             code, ach_result_to_string(code) );
-    fflush(file);
-
-    if( ACH_OK != code ) {
-        exit(EXIT_FAILURE);
-    }
+    /* Couldn't find handler */
+    cx.error( ACH_BAD_HEADER, "Requested transport or direction not found");
+    assert(0);
 }
 
 #define REGEX_WORD "([[:alnum:]_\\-]*)"
@@ -341,24 +352,24 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
                 REGEX_SPACE            /* end space */
                 "$",
                 REG_EXTENDED ) ) {
-        fprintf(stderr,"couldn't compile regex\n");
-        exit(EXIT_FAILURE);
+        cx.error(ACH_BUG, "couldn't compile regex\n");
+        assert(0);
     }
     if( regcomp(&dot_regex,
                 "^"REGEX_SPACE "." REGEX_SPACE "$",
                 REG_EXTENDED) ) {
-        fprintf(stderr,"couldn't compile regex\n");
-        exit(EXIT_FAILURE);
+        cx.error(ACH_BUG, "couldn't compile regex\n");
+        assert(0);
     }
 
     int line = 0;
     size_t n = 1024;
     char *lineptr = (char*)malloc(n);
     ssize_t r;
-    while( (r = getline(&lineptr, &n, fptr)) > 0 &&
-           (! regexec(&dot_regex, lineptr, 0, NULL, 0)) )
-    {
+    while( (r = getline(&lineptr, &n, fptr)) > 0 ) {
         line++;
+        /* Break on ".\n" */
+        if (! regexec(&dot_regex, lineptr, 0, NULL, 0)) break;
         if( cx.verbosity >= 3 ) printf("line %d: `%s'", line, lineptr);
         /* kill comments and translate */
         char *cmt = strchr(lineptr, '#');
@@ -366,8 +377,8 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
         /* match key/value */
         int i = regexec(&line_regex, lineptr, sizeof(match)/sizeof(match[0]), match, 0);
         if( i ) {
-            fprintf(stderr, "Bad header, error on line %d\n", line);
-            exit(EXIT_FAILURE);
+            cx.error( ACH_BAD_HEADER, "malformed header\n");
+            assert(0);
         }
         if( match[1].rm_so >= 0 && match[2].rm_so >=0 ) {
             lineptr[match[1].rm_eo] = '\0';
@@ -393,8 +404,8 @@ void achd_set_int(int *pint, const char *name, const char *val) {
 }
 
 int achd_parse_boolean( const char *value ) {
-    const char *yes[] = {"yes", "true", "1", "t", "y", NULL};
-    const char *no[] = {"no", "false", "0", "f", "n", NULL};
+    const char *yes[] = {"yes", "true", "1", "t", "y", "+", "aye", NULL};
+    const char *no[] = {"no", "false", "0", "f", "n", "-", "nay", NULL};
     const char** s;
     for( s = yes; *s; s++ )
         if( 0 == strcasecmp(*s, value) ) return 1;
@@ -427,8 +438,8 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         if( 0 == strcasecmp(val, "push") ) headers->direction = ACHD_DIRECTION_PUSH;
         else if( 0 == strcasecmp(val, "pull") ) headers->direction = ACHD_DIRECTION_PULL;
         else {
-            fprintf(stderr, "Invalid direction: %s\n", val);
-            exit(EXIT_FAILURE);
+            cx.error( ACH_BAD_HEADER, "Invalid direction: %s\n", val);
+            assert(0);
         }
     } else {
         fprintf(stderr, "Invalid configuration key: %s\n", key );
@@ -436,28 +447,86 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
 }
 
 
+void achd_open( ach_channel_t *channel, const struct achd_headers *headers ) {
+    if( headers->chan_name ) {
+        int r = ach_open( channel, headers->chan_name, NULL );
+        if( ACH_OK != r)
+            cx.error( r, "Couldn't open channel %s\n", headers->chan_name );
+    } else {
+        cx.error( ACH_BAD_HEADER, "No channel name header");
+    }
+}
+
+
 /* handler definitions */
-void achd_push_tcp( const struct achd_headers *headers, int is_server ) {
-    if( is_server ) achd_print_status( stdout, ACH_OK );
-    else { /* connect */
-        assert(0);
-    }
+void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
     assert(0); /* unimplemented */
 }
 
-void achd_pull_tcp( const struct achd_headers *headers, int is_server ) {
-    if( is_server ) achd_print_status( stdout, ACH_OK );
-    else { /* connect */
-        assert(0);
-    }
+void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
     assert(0); /* unimplemented */
 }
 
-void achd_push_udp( const struct achd_headers *headers, int is_server ) {
+void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel ) {
     /* check port set */
     assert(0); /* unimplemented */
 }
 
-void achd_pull_udp( const struct achd_headers *headers, int is_server ) {
+void achd_pull_udp( const struct achd_headers *headers, ach_channel_t *channel ) {
     assert(0); /* unimplemented */
+}
+
+
+/* error handlers */
+
+void achd_exit_failure( int code ) {
+    assert( 0 == ACH_OK );
+    exit( code ? code : EXIT_FAILURE );
+}
+
+void achd_error_interactive( int code, const char fmt[], ... ) {
+    if( cx.verbosity >= 0 ) {
+        va_list argp;
+        va_start( argp, fmt );
+        if( ACH_OK != code ) {
+            fprintf(stderr, "status: %s\n", ach_result_to_string(code));
+        }
+        vfprintf( stderr, fmt, argp );
+        va_end( argp );
+    }
+    achd_exit_failure(code);
+}
+
+void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
+    if( ACH_OK != code ) {
+        const char *scode = ach_result_to_string(code);
+        char fmt_buf[ strlen(scode) + 3 + strlen(fmt) + 1 ];
+        strcpy( fmt_buf, scode );
+        strcat( fmt_buf, " - " );
+        strcat( fmt_buf, fmt );
+        vsyslog( LOG_ERR, fmt_buf, argp );
+    } else {
+        vsyslog(LOG_ERR, fmt, argp);
+    }
+}
+
+void achd_error_header( int code, const char fmt[], ... ) {
+    va_list argp;
+    va_start( argp, fmt );
+    achd_error_vsyslog( code, fmt, argp );
+    va_end( argp );
+
+    va_start( argp, fmt );
+    fprintf(stdout, "status: %d # %s - ", code, ach_result_to_string(code) );
+    vfprintf( stdout, fmt, argp );
+    va_end( argp );
+    achd_exit_failure(code);
+}
+
+void achd_error_syslog( int code, const char fmt[],  ...) {
+    va_list argp;
+    va_start( argp, fmt );
+    achd_error_vsyslog( code, fmt, argp );
+    va_end( argp );
+    achd_exit_failure(code);
 }
