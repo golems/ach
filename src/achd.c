@@ -42,6 +42,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <stdio.h>
 #include <pthread.h>
 #include <string.h>
@@ -87,6 +88,7 @@ struct achd_headers {
     const char *transport;
     enum achd_direction direction;
     int status;
+    const char *message;
 };
 
 void achd_make_realtime();
@@ -101,6 +103,8 @@ void achd_open( ach_channel_t *channel, const struct achd_headers *headers );
 
 void achd_client();
 int achd_connect();
+
+void achd_log( int level, const char fmt[], ...);
 
 /* error handlers */
 void achd_error_interactive( int code, const char fmt[], ... );
@@ -157,6 +161,7 @@ static const struct achd_handler handlers[] = {
 
 /* Main */
 int main(int argc, char **argv) {
+    achd_log( LOG_DEBUG, "achd started\n");
 
     /* set some defaults */
     cx.cl_opts.transport = "tcp";
@@ -168,6 +173,7 @@ int main(int argc, char **argv) {
     cx.in = STDOUT_FILENO;
     cx.fin = stdin;
     cx.fout = stdout;
+    cx.port = ACHD_PORT;
 
     /* process options */
     int c = 0;
@@ -204,10 +210,10 @@ int main(int argc, char **argv) {
                 cx.cl_opts.transport = strdup(optarg);
                 break;
             case 'q':
-                cx.verbosity ++;
+                cx.verbosity --;
                 break;
             case 'v':
-                cx.verbosity --;
+                cx.verbosity ++;
                 break;
             case 'V':   /* version     */
                 ach_print_version("achd");
@@ -325,7 +331,8 @@ int main(int argc, char **argv) {
 /* Defs */
 
 void achd_serve() {
-    syslog( LOG_NOTICE, "Server started\n");
+    fclose(stderr);
+    achd_log( LOG_INFO, "Server started\n");
     struct achd_headers srv_headers;
     memset( &srv_headers, 0, sizeof(srv_headers) );
     achd_parse_headers( cx.fin, &srv_headers );
@@ -349,12 +356,16 @@ void achd_serve() {
 
     /* print headers */
     fprintf(cx.fout,
+            "frame-count: %" PRIuPTR "\n"
+            "frame-size: %" PRIuPTR "\n"
             "status: %d # %s\n"
             ".\n",
+            channel.shm->index_cnt,
+            channel.shm->data_size / channel.shm->index_cnt,
             ACH_OK, ach_result_to_string(ACH_OK)
         );
     fflush(cx.fout);
-    syslog( LOG_NOTICE, "Serving channel %s\n", srv_headers.chan_name );
+    syslog( LOG_NOTICE, "Serving channel %s via %s\n", srv_headers.chan_name, srv_headers.transport );
     /* start i/o */
     return handler( &srv_headers, &channel );
 }
@@ -410,10 +421,18 @@ void achd_client() {
 
     /* Get Response */
     struct achd_headers resp_headers;
+    memset( &resp_headers, 0, sizeof(resp_headers) );
     resp_headers.status = ACH_BUG;
     achd_parse_headers( cx.fin, &resp_headers );
     if( ACH_OK != resp_headers.status ) {
-        cx.error( resp_headers.status, "Bad response from server\n" );
+        if( resp_headers.message ) {
+            cx.error( resp_headers.status, "Server error: %s\n", resp_headers.message );
+            assert(0);
+        } else {
+            cx.error( resp_headers.status, "Bad response from server\n" );
+            assert(0);
+        }
+
     }
 
     /* Start running */
@@ -444,7 +463,7 @@ int achd_connect() {
     memcpy( &serv_addr.sin_addr.s_addr,
             server->h_addr,
             server->h_length);
-    serv_addr.sin_port = htons(ACHD_PORT); /* Well, ipv4 only for now */
+    serv_addr.sin_port = htons(cx.port); /* Well, ipv4 only for now */
 
     /* Connect */
     if( connect(sockfd,  (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
@@ -455,8 +474,8 @@ int achd_connect() {
     return sockfd;
 }
 
-#define REGEX_WORD "([[:alnum:]_\\-]*)"
-#define REGEX_SPACE "[ \t\n\r]*"
+#define REGEX_WORD "([^:=\n]*)"
+#define REGEX_SPACE "[[:blank:]\n\r]*"
 
 void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
     regex_t line_regex, dot_regex;
@@ -466,7 +485,7 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
                 "^"REGEX_SPACE         /* beginning space */
                 REGEX_WORD             /* key */
                 REGEX_SPACE            /* mid space */
-                ":"
+                "[:=]"
                 REGEX_SPACE            /* mid space */
                 REGEX_WORD             /* value */
                 REGEX_SPACE            /* end space */
@@ -490,7 +509,7 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
         line++;
         /* Break on ".\n" */
         if (! regexec(&dot_regex, lineptr, 0, NULL, 0)) break;
-        if( cx.verbosity >= 3 ) printf("line %d: `%s'", line, lineptr);
+        achd_log(LOG_DEBUG, "header line %d: %s", line, lineptr);
         /* kill comments and translate */
         char *cmt = strchr(lineptr, '#');
         if( cmt ) *cmt = '\0';
@@ -500,12 +519,13 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
             cx.error( ACH_BAD_HEADER, "malformed header\n");
             assert(0);
         }
+        assert( ! strchr(lineptr, '#') );
         if( match[1].rm_so >= 0 && match[2].rm_so >=0 ) {
             lineptr[match[1].rm_eo] = '\0';
             lineptr[match[2].rm_eo] = '\0';
             char *key = lineptr+match[1].rm_so;
             char *val = lineptr+match[2].rm_so;
-            if( cx.verbosity >= 3 ) printf("`%s' : `%s'\n", key, val );
+            achd_log( LOG_DEBUG, "header line %d parsed `%s' : `%s'\n", line, key, val );
             achd_set_header(key, val, headers);
         }
 
@@ -565,6 +585,8 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         }
     } else if ( 0 == strcasecmp(key, "status") ) {
         achd_set_int( &headers->status, "status", val );
+    } else if ( 0 == strcasecmp(key, "message") ) {
+        headers->message = strdup(val);
     } else {
         cx.error( ACH_BAD_HEADER, "Invalid header: %s\n", key );
     }
@@ -782,15 +804,22 @@ void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
 
 void achd_error_header( int code, const char fmt[], ... ) {
     va_list argp;
+    /* Log */
     va_start( argp, fmt );
     achd_error_vsyslog( code, fmt, argp );
     va_end( argp );
 
+    /* Header */
+    fprintf(cx.fout,
+            "status: %d # %s\n"
+            "message: ",
+            code, ach_result_to_string(code));
     va_start( argp, fmt );
-    fprintf(cx.fout, "status: %d # %s - ", code, ach_result_to_string(code) );
     vfprintf( cx.fout, fmt, argp );
+    fprintf(cx.fout,"\n");
     fflush( cx.fout );
     va_end( argp );
+
     achd_exit_failure(code);
 }
 
@@ -800,4 +829,44 @@ void achd_error_syslog( int code, const char fmt[],  ...) {
     achd_error_vsyslog( code, fmt, argp );
     va_end( argp );
     achd_exit_failure(code);
+}
+
+
+void achd_log( int level, const char fmt[], ...) {
+    va_list argp;
+
+    switch( level ) {
+    case LOG_EMERG:
+        goto dolog;
+    case LOG_ALERT:
+        goto dolog;
+    case LOG_CRIT:
+        goto dolog;
+    case LOG_ERR:
+        goto dolog;
+    case LOG_WARNING:
+        if( cx.verbosity >= -1 ) goto dolog;
+        else return;
+    case LOG_NOTICE:
+        if( cx.verbosity >= 0 ) goto dolog;
+        else return;
+    case LOG_INFO:
+        if( cx.verbosity >= 1 ) goto dolog;
+        else return;
+    case LOG_DEBUG:
+        if( cx.verbosity >= 2 ) goto dolog;
+        else return;
+    default: assert(0);
+    }
+
+dolog:
+    va_start( argp, fmt );
+
+    if( isatty(STDERR_FILENO) ) {
+        vfprintf(stderr, fmt, argp );
+        fflush(stderr);
+    } else {
+        vsyslog(level, fmt, argp);
+    }
+    va_end( argp );
 }
