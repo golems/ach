@@ -104,6 +104,18 @@ General Cross Compilation
 
     make install DESTDIR=/mnt/HOST-ROOT/usr/local
 
+Cross Compilation Notes
+-----------------------
+
+Try cross-compiling from the distribution tarball rather than a clean
+git checkout.  This is because part of the build runs the built
+executables to generate the unix man pages, and cross-compiled
+binaries are of course not runnable on the build machine.  The
+distribution tarball already includes the man pages, so they will not
+need to be rebuilt.  You can build the tarball yourself with `make &&
+make dist`.  Alternatively, running `./configure && make && make
+clean` will build the manpages and clean out the binaries.  Then, you
+can re- `./configure ...` for your cross-compile setup.
 
 
 **************************************

@@ -18,7 +18,7 @@
 /achtool
 /ach
 /achpipe.bin
-/Makefile.in
+Makefile.in
 /Makefile
 /autoscan.log
 /config.guess
@@ -59,7 +59,10 @@
 /m4/ltsugar.m4
 /m4/ltversion.m4
 /m4/lt~obsolete.m4
-/doc
+/doc/*.1
+/doc/*.html
+/doc/html
+/doc/Makefile
 /debian/ach-utils
 /achd
 /debian/libach1
