@@ -247,7 +247,8 @@ int cmd_unlink(void) {
     int r = ach_unlink(opt_chan_name);
 
     if( ACH_OK != r ) {
-        fprintf(stderr, "Failed to remove channel `%s': %s\n", opt_chan_name, strerror(errno));
+        fprintf(stderr, "Failed to remove channel `%s': %s (%s)\n",
+                opt_chan_name, strerror(errno), ach_result_to_string(r));
         exit(-1);
     }
 

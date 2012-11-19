@@ -122,6 +122,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_EINVAL: return "ACH_EINVAL";
     case ACH_CORRUPT: return "ACH_CORRUPT";
     case ACH_BAD_HEADER: return "ACH_BAD_HEADER";
+    case ACH_EACCES: return "ACH_EACCES";
     }
     return "UNKNOWN";
 
@@ -132,6 +133,7 @@ check_errno() {
     switch(errno) {
     case EEXIST: return ACH_EEXIST;
     case ENOENT: return ACH_ENOENT;
+    case EACCES: return ACH_EACCES;
     default: return ACH_FAILED_SYSCALL;
     }
 }
@@ -177,9 +179,6 @@ static int fd_for_channel_name( const char *name, int oflag ) {
     int i = 0;
     do {
         fd = shm_open( shm_name, O_RDWR | oflag, 0666 );
-        if( fd < 0 ) {
-            DEBUG_PERROR("shm_open");
-        }
     }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
     return fd;
 }
@@ -317,7 +316,6 @@ ach_create( const char *channel_name,
                 if( attr->truncate ) oflag &= ~O_EXCL;
             }
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 ) {
-                DEBUGF("no fd\n");
                 return check_errno();;
             }
 
@@ -489,8 +487,9 @@ ach_open( ach_channel_t *chan, const char *channel_name,
             return ACH_INVALID_NAME;
         /* open shm */
         if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
-        if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 )
-            return ACH_FAILED_SYSCALL;
+        if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
+            return check_errno();
+        }
         if( (shm = (ach_header_t*) mmap (NULL, sizeof(ach_header_t),
                                          PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
@@ -819,7 +818,7 @@ void ach_attr_init( ach_attr_t *attr ) {
 
 enum ach_status
 ach_chmod( ach_channel_t *chan, mode_t mode ) {
-    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : ACH_FAILED_SYSCALL;
+    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno();;
 }
 
 
@@ -830,11 +829,10 @@ ach_unlink( const char *name ) {
     if( ACH_OK == r ) {
         /*r = shm_unlink(name); */
         int i = shm_unlink(shm_name);
-        if( 0 == i ) return  ACH_OK;
-        else if( ENOENT == errno ) {
-            return ACH_ENOENT;
+        if( 0 == i ) {
+            return  ACH_OK;
         } else {
-            return ACH_FAILED_SYSCALL;
+            return check_errno();
         }
     } else {
         return r;

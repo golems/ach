@@ -99,8 +99,6 @@ void achd_write_pid();
 void achd_set_int(int *pint, const char *name, const char *val);
 
 void achd_serve();
-void achd_open( ach_channel_t *channel, const struct achd_headers *headers );
-
 void achd_client();
 int achd_connect();
 
@@ -274,6 +272,14 @@ int main(int argc, char **argv) {
         }
     }
 
+    /* Set some other default options */
+    if( !cx.cl_opts.chan_name ) {
+        cx.cl_opts.chan_name  = cx.cl_opts.remote_chan_name;
+    }
+    if( !cx.cl_opts.remote_chan_name ) {
+        cx.cl_opts.remote_chan_name  = cx.cl_opts.chan_name;
+    }
+
     /* dispatch based on mode */
     /* serve */
     if ( cx.serve ) {
@@ -341,9 +347,20 @@ void achd_serve() {
     struct achd_headers srv_headers;
     memset( &srv_headers, 0, sizeof(srv_headers) );
     achd_parse_headers( cx.fin, &srv_headers );
+
     /* open channel */
     ach_channel_t channel;
-    achd_open( &channel, &srv_headers );
+    if( !srv_headers.chan_name ) srv_headers.chan_name = srv_headers.remote_chan_name;
+    if( srv_headers.chan_name ) {
+        int r = ach_open( &channel, srv_headers.chan_name, NULL );
+        if( ACH_OK != r ) {
+            cx.error( r, "Couldn't open channel %s - %s\n", srv_headers.chan_name, strerror(errno) );
+            assert(0);
+        }
+    } else {
+        cx.error( ACH_BAD_HEADER, "No channel name header");
+        assert(0);
+    }
 
     /* check transport headers */
     if( ! srv_headers.transport ) {
@@ -383,8 +400,6 @@ void achd_client() {
 
     if( cx.cl_opts.remote_chan_name ) {
         req_headers.chan_name = cx.cl_opts.remote_chan_name;
-    } else if ( cx.cl_opts.chan_name )  {
-        req_headers.chan_name = cx.cl_opts.chan_name;
     } else {
         cx.error( ACH_BAD_HEADER, "No channel name given\n");
         assert(0);
@@ -396,9 +411,15 @@ void achd_client() {
     req_headers.transport = cx.cl_opts.transport;
 
 
-    /* Open Channel */
+    /* Try to open Channel */
     ach_channel_t channel;
-    achd_open( &channel, &cx.cl_opts );
+    int r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
+    if( ACH_ENOENT == r ) {
+        achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
+    } else if (ACH_OK != r) {
+        cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
+        assert(0);
+    }
 
     /* Connect to server */
     cx.in = cx.out = achd_connect();
@@ -438,6 +459,17 @@ void achd_client() {
             assert(0);
         }
 
+    }
+
+    /* Try to create channel if needed */
+    if( ACH_ENOENT == r ) {
+        int frame_size = resp_headers.frame_size ? resp_headers.frame_size : ACH_DEFAULT_FRAME_SIZE;
+        int frame_count = resp_headers.frame_count ? resp_headers.frame_count : ACH_DEFAULT_FRAME_COUNT;
+        /* Fixme: should sanity check these counts */
+        r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
+        if( ACH_OK != r )  cx.error( r, "Couldn't create channel");
+        r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
+        if( ACH_OK != r )  cx.error( r, "Couldn't open channel");
     }
 
     /* Start running */
@@ -594,19 +626,6 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         headers->message = strdup(val);
     } else {
         cx.error( ACH_BAD_HEADER, "Invalid header: %s\n", key );
-    }
-}
-
-
-void achd_open( ach_channel_t *channel, const struct achd_headers *headers ) {
-    const char *name = (headers->chan_name ?
-                        headers->chan_name : headers->remote_chan_name);
-    if( name ) {
-        int r = ach_open( channel, name, NULL );
-        if( ACH_OK != r)
-            cx.error( r, "Couldn't open channel %s\n", name );
-    } else {
-        cx.error( ACH_BAD_HEADER, "No channel name header");
     }
 }
 
@@ -880,6 +899,7 @@ dolog:
 
 
 static void sighandler(int sig, siginfo_t *siginfo, void *context) {
+    (void)siginfo; (void)context;
     achd_log( LOG_DEBUG, "Received signal: %d\n", sig );
     switch(sig) {
     case SIGTERM:
