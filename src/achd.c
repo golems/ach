@@ -48,6 +48,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <ctype.h>
 #include <signal.h>
 #include <regex.h>
@@ -100,6 +101,7 @@ void achd_set_int(int *pint, const char *name, const char *val);
 
 void achd_serve();
 void achd_client();
+void achd_client_retry();
 int achd_connect();
 
 void achd_log( int level, const char fmt[], ...);
@@ -128,6 +130,7 @@ static struct {
     int verbosity;
     int daemonize;
     int port;
+    int reconnect;
     const char *pidfile;
     sig_atomic_t sig_received;
     void (*error)(int code, const char fmt[], ...);
@@ -166,6 +169,7 @@ int main(int argc, char **argv) {
     achd_log( LOG_DEBUG, "achd started\n");
 
     /* set some defaults */
+    memset( &cx, 0, sizeof(cx) );
     cx.cl_opts.transport = "tcp";
     cx.cl_opts.frame_size = ACH_DEFAULT_FRAME_SIZE;
     cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
@@ -180,7 +184,7 @@ int main(int argc, char **argv) {
     /* process options */
     int c = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "S:P:dp:t:f:z:qvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "S:P:dp:t:f:z:qrvV?")) != -1 ) {
             switch(c) {
             case 'S':
                 cx.cl_opts.remote_host = strdup(optarg);
@@ -208,6 +212,9 @@ int main(int argc, char **argv) {
             case 'f':
                 cx.pidfile = strdup(optarg);
                 break;
+            case 'r':
+                cx.reconnect = 1;
+                break;
             case 't':
                 cx.cl_opts.transport = strdup(optarg);
                 break;
@@ -232,6 +239,7 @@ int main(int argc, char **argv) {
                       "  -f FILE,                    lock FILE and write pid\n"
                       "  -t (tcp|udp),               transport (default tcp)\n"
                       "  -z CHANNEL_NAME,            remote channel name\n"
+                      "  -r,                         reconnect if connection is lost\n"
                       "  -q,                         be quiet\n"
                       "  -v,                         be verbose\n"
                       "  -V,                         version\n"
@@ -393,6 +401,8 @@ void achd_serve() {
 }
 
 void achd_client() {
+    /* First, do some checks to make sure we can process the request */
+
     /* Create request headers */
     achd_io_handler_t handler = achd_get_handler( cx.cl_opts.transport, cx.cl_opts.direction );
     assert( handler );
@@ -410,16 +420,45 @@ void achd_client() {
             cx.cl_opts.direction == ACHD_DIRECTION_PULL );
     req_headers.transport = cx.cl_opts.transport;
 
+    /* Check the channel */
+    {
+        ach_channel_t channel;
+        int r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
+        if( ACH_ENOENT == r ) {
+            achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
+        } else if (ACH_OK != r) {
+            /* Something is wrong with the channel, probably permissions */
+            cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
+            assert(0);
+        } else {
+            r = ach_close(&channel);
+            if( ACH_OK != r ) {
+                cx.error( r, "Couldn't close channel %s\n", cx.cl_opts.chan_name );
+            }
+        }
+    }
 
-    /* Try to open Channel */
+    /* Second, fork a work if we are to retry connectons */
+    achd_client_retry();
+
+    /* Finally, start the show, possibly in a child process */
+
+    /* Open the channel */
     ach_channel_t channel;
     int r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
     if( ACH_ENOENT == r ) {
         achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
     } else if (ACH_OK != r) {
+        /* Something is wrong with the channel, probably permissions */
         cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
         assert(0);
     }
+
+    /* TODO: potential issue here if the channel gets broken between
+     * check in parent process and open in child process.  Should add
+     * some signal/return value from the child to parent for this
+     * case.
+     */
 
     /* Connect to server */
     cx.in = cx.out = achd_connect();
@@ -723,11 +762,11 @@ void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel )
                 /*              ach_result_to_string(r) ); */
                 assert(0);
             }
-        }while( !got_frame );
+        }while( !got_frame && !cx.sig_received );
 
 
         /* stream send */
-        {
+        if(!cx.sig_received) {
             size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(frame);
             size_t r = fwrite( frame, 1, size, cx.fout );
             if( r != size ) {
@@ -773,8 +812,10 @@ void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel )
         s = fread( frame->data, 1, (size_t)cnt, cx.fin );
         if( cnt != s ) break;
         /* put data */
-        ach_status_t r = ach_put( channel, frame->data, cnt );
-        assert( r == ACH_OK );
+        if( !cx.sig_received ) {
+            ach_status_t r = ach_put( channel, frame->data, cnt );
+            assert( r == ACH_OK );
+        }
     }
     free(frame);
 
@@ -820,9 +861,9 @@ void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
         strcpy( fmt_buf, scode );
         strcat( fmt_buf, " - " );
         strcat( fmt_buf, fmt );
-        vsyslog( LOG_ERR, fmt_buf, argp );
+        vsyslog( LOG_CRIT, fmt_buf, argp );
     } else {
-        vsyslog(LOG_ERR, fmt, argp);
+        vsyslog(LOG_CRIT, fmt, argp);
     }
 }
 
@@ -895,8 +936,101 @@ dolog:
     va_end( argp );
 }
 
+/* Wait till child returns or signal received */
+pid_t achd_client_wait( pid_t pid ) {
+    assert( pid > 0 );
+    while(1)
+    {
+        int status;
+        achd_log(LOG_DEBUG, "now waiting: %d...\n", pid);
+        pid_t wpid = wait( &status );
+        achd_log(LOG_DEBUG, "wait(): %d, errno:  %s\n", wpid, strerror(errno));
+        if( wpid == pid ) {
+            achd_log(LOG_DEBUG, "WIFEXITED: %d, WIFSIGNALED: %d, WIFSTOPPED: %d\n",
+                     WIFEXITED(status),
+                     WIFSIGNALED(status),
+                     WIFSTOPPED(status));
+            /* Child did something */
+            if( WIFEXITED(status) ) {
+                achd_log(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
+                return 0;
+            } else if ( WIFSIGNALED(status) ) {
+                achd_log(LOG_DEBUG, "child signalled with %d\n", WTERMSIG(status));
+                return 0;
+            } else {
+                achd_log(LOG_WARNING, "Unexpected wait result %d\n", status);
+                continue; /* I guess we keep waiting then */
+            }
+        } else if ( wpid < 0 ) {
+            /* Wait failed */
+            if (cx.sig_received ) {
+                achd_log(LOG_DEBUG, "signal during wait\n", status);
+                return pid; /* process still running */
+            } else if( EINTR == errno ) {
+                achd_log(LOG_DEBUG, "wait interrupted\n", status);
+                continue; /* interrupted */
+            } else if (ECHILD == errno) {
+                achd_log(LOG_WARNING, "unexpected ECHILD\n", status);
+                return 0; /* child somehow died */
+            } else { /* something bad */
+                cx.error(ACH_FAILED_SYSCALL, "Couldn't wait for child\n", strerror(errno));
+            }
+        } else {
+            /* Wrong child somehow */
+            cx.error(ACH_BUG, "Got unexpected PID, child %d, wait %d\n", pid, wpid);
+        }
+        assert(0);
+    }
+}
+
+void achd_client_retry() {
+    /* FIXME: When we refork the child, we "forget" our position in
+     * the channel.  This means some frames may be missed or resent.
+     * It would be better to have the child attempt to reconnect if
+     * the connection gets broken.
+     */
+    if( !cx.reconnect ) return;
+
+    pid_t pid = 0;
+
+    /* Loop to fork children when the die */
+    while( ! cx.sig_received ) {
+        assert( 0 == pid );
+        pid = fork();
+        if( 0 == pid ) { /* Child case */
+            return;
+        } else if ( pid > 0 ) {
+            achd_log( LOG_DEBUG, "Forked child %d\n", pid );
+            /* Parent Case */
+            pid = achd_client_wait(pid);
+            /* TODO: maybe add some delay for reconnects or check that
+             * child doesn't die too fast */
+            if( 0 == pid && !cx.sig_received ) {
+                achd_log( LOG_WARNING, "Child died, reforking\n" );
+            }
+        } else {
+            assert( pid < 0 );
+            /* Error Case */
+            /* TODO: retry on EAGAIN */
+            cx.error(ACH_FAILED_SYSCALL, "Couldn't fork: %s\n", strerror(errno));
+        }
+    }
+
+    /* still in parent */
+    if( pid > 0 ) {
+        /* kill child if running */
+        if( kill( pid, SIGTERM ) ) {
+            achd_log( LOG_ERR, "Couldn't kill child: %s\n", strerror(errno) );
+        }
+    }
+
+    exit(EXIT_SUCCESS);
+}
 
 
+/* TODO:
+ *   For client daemons, have SIGHUP kill and restart the subprocess.
+ */
 
 static void sighandler(int sig, siginfo_t *siginfo, void *context) {
     (void)siginfo; (void)context;
