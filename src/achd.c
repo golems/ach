@@ -66,6 +66,7 @@
 #define ACHD_PORT 8076
 #define INIT_BUF_SIZE 512
 
+
 /* Prototypes */
 enum achd_direction {
     ACHD_DIRECTION_VOID = 0,
@@ -91,6 +92,7 @@ struct achd_headers {
     int status;
     const char *message;
 };
+typedef void (*achd_io_handler_t)(const struct achd_headers *headers, ach_channel_t *channel );
 
 void achd_make_realtime();
 void achd_daemonize();
@@ -102,6 +104,7 @@ void achd_set_int(int *pint, const char *name, const char *val);
 void achd_serve();
 void achd_client();
 void achd_client_retry();
+void achd_client_cycle( ach_channel_t *chan, const struct achd_headers *req_headers, achd_io_handler_t handler);
 int achd_connect();
 
 void achd_log( int level, const char fmt[], ...);
@@ -116,7 +119,6 @@ void achd_error_header( int code, const char fmt[], ... );
 void achd_error_syslog( int code, const char fmt[],  ...);
 
 /* i/o handlers */
-typedef void (*achd_io_handler_t)(const struct achd_headers *headers, ach_channel_t *channel );
 void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel );
 void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel );
 void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel );
@@ -138,6 +140,8 @@ static struct {
     int out;
     FILE *fin;
     FILE *fout;
+    ach_pipe_frame_t *frame;
+    size_t frame_max;
 } cx;
 
 struct achd_handler {
@@ -234,10 +238,10 @@ int main(int argc, char **argv) {
                       "Options:\n"
                       "  -S HOST,                    push messages to HOST\n"
                       "  -P HOST,                    pull messages from HOST\n"
-                      "  -d,                         daemonize (client-mode only)\n"
+                      "  -d,                         TODO: daemonize (client-mode only)\n"
                       "  -p PORT,                    port\n"
-                      "  -f FILE,                    lock FILE and write pid\n"
-                      "  -t (tcp|udp),               transport (default tcp)\n"
+                      "  -f FILE,                    TODO: lock FILE and write pid\n"
+                      "  -t (tcp|udp),               TODO: transport (default tcp)\n"
                       "  -z CHANNEL_NAME,            remote channel name\n"
                       "  -r,                         reconnect if connection is lost\n"
                       "  -q,                         be quiet\n"
@@ -248,18 +252,20 @@ int main(int argc, char **argv) {
                       "Files:\n"
                       "  /etc/inetd.conf             Use to enable network serving of ach channels.\n"
                       "                              Use a line like this:\n"
-                      "                              '8075  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd'\n"
+                      "                              '8076  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd'\n"
                       "\n"
                       "Examples:\n"
                       "  achd                        Server process reading from stdin/stdout.\n"
-                      "                              This can be run from inetd\n"
-                      "  achd -S golem cmd-chan      Forward frames via TCP from local channel\n"
-                      "                              'cmd-chan' to remote channel on host 'golem'.\n"
-                      "                              An achd server must be listening the remote host.\n"
+                      "                              This can be run from inetd.\n"
                       "  achd -P golem state-chan    Forward frames via TCP from remote channel\n"
-                      "                              'state-chan' on host golem to local channel 'cmd'.\n"
+                      "                              'state-chan' on host 'golem' to local channel\n"
+                      "                              (a pull from the remote server).\n"
                       "                              An achd server must be listening on the remote\n"
                       "                              host.\n"
+                      "  achd -rS golem cmd-chan     Forward frames via TCP from local channel\n"
+                      "                              'cmd-chan' to remote channel on host 'golem'\n"
+                      "                              (a push to the remote server).\n"
+                      "                              An achd server must be listening the remote host.\n"
                       "\n"
                       "Report bugs to <ntd@gatech.edu>"
                        );
@@ -287,6 +293,8 @@ int main(int argc, char **argv) {
     if( !cx.cl_opts.remote_chan_name ) {
         cx.cl_opts.remote_chan_name  = cx.cl_opts.chan_name;
     }
+    cx.frame_max = INIT_BUF_SIZE;
+    cx.frame = ach_pipe_alloc( cx.frame_max );
 
     /* dispatch based on mode */
     /* serve */
@@ -364,6 +372,8 @@ void achd_serve() {
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't open channel %s - %s\n", srv_headers.chan_name, strerror(errno) );
             assert(0);
+        } else {
+            ach_flush(&channel);
         }
     } else {
         cx.error( ACH_BAD_HEADER, "No channel name header");
@@ -421,8 +431,9 @@ void achd_client() {
     req_headers.transport = cx.cl_opts.transport;
 
     /* Check the channel */
+    ach_channel_t channel;
+    memset( &channel, 0, sizeof(channel) );
     {
-        ach_channel_t channel;
         int r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
         if( ACH_ENOENT == r ) {
             achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
@@ -431,35 +442,37 @@ void achd_client() {
             cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
             assert(0);
         } else {
-            r = ach_close(&channel);
-            if( ACH_OK != r ) {
-                cx.error( r, "Couldn't close channel %s\n", cx.cl_opts.chan_name );
-            }
+            ach_flush(&channel);
         }
     }
+
+    sighandler_install();
 
     /* Second, fork a work if we are to retry connectons */
     achd_client_retry();
 
     /* Finally, start the show, possibly in a child process */
 
-    /* Open the channel */
-    ach_channel_t channel;
-    int r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
-    if( ACH_ENOENT == r ) {
-        achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
-    } else if (ACH_OK != r) {
-        /* Something is wrong with the channel, probably permissions */
-        cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
-        assert(0);
-    }
-
-    /* TODO: potential issue here if the channel gets broken between
-     * check in parent process and open in child process.  Should add
-     * some signal/return value from the child to parent for this
-     * case.
+    /* TODO: If we lose and then re-establish a connections, frames
+     * may be missed or duplicated.
+     *
+     * This can be more easily fixed with a pushing client, since it
+     * can maintain channel context and try to reconnect.  We just
+     * need to buffer the last read frame till we reconnect, or re-get
+     * it with ACH_O_COPY.  Other frames can remain buffered in the
+     * channel.  If the client dies, though, we lose context.
+     *
+     * Fixing this for pulling requires the server process to persist
+     * after lost connection.  That seems harder to implement.
      */
 
+    do {
+        achd_client_cycle( &channel, &req_headers, handler );
+    } while( cx.reconnect && !cx.sig_received );
+}
+
+void achd_client_cycle( ach_channel_t *channel, const struct achd_headers *req_headers, achd_io_handler_t handler ) {
+    achd_log( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
     /* Connect to server */
     cx.in = cx.out = achd_connect();
     assert( cx.in >= 0 && cx.out >= 0 && cx.in == cx.out );
@@ -477,8 +490,8 @@ void achd_client() {
             "transport: %s\n"
             "direction: %s\n"
             ".\n",
-            req_headers.chan_name,
-            req_headers.transport,
+            req_headers->chan_name,
+            req_headers->transport,
             ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
               "push" : "pull" ) /* remote end does the opposite */
         );
@@ -501,20 +514,22 @@ void achd_client() {
     }
 
     /* Try to create channel if needed */
-    if( ACH_ENOENT == r ) {
+    if( ! channel->shm ) {
         int frame_size = resp_headers.frame_size ? resp_headers.frame_size : ACH_DEFAULT_FRAME_SIZE;
         int frame_count = resp_headers.frame_count ? resp_headers.frame_count : ACH_DEFAULT_FRAME_COUNT;
         /* Fixme: should sanity check these counts */
-        r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
-        if( ACH_OK != r )  cx.error( r, "Couldn't create channel");
-        r = ach_open(&channel, cx.cl_opts.chan_name, NULL );
-        if( ACH_OK != r )  cx.error( r, "Couldn't open channel");
+        int r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
+        if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
+        r = ach_open(channel, cx.cl_opts.chan_name, NULL );
+        if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
     }
 
     /* Start running */
-    sighandler_install();
-    handler( &cx.cl_opts, &channel );
+    handler( &cx.cl_opts, channel );
+
+    achd_log(LOG_NOTICE, "connection closed\n");
 }
+
 
 int achd_connect() {
     /* Make socket */
@@ -697,11 +712,6 @@ achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction d
 void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
     /* Subscribe and Write */
 
-    /* frame buffer */
-    size_t max = INIT_BUF_SIZE;
-    ach_pipe_frame_t *frame = ach_pipe_alloc( max );
-    int t0 = 1;
-
     /* struct timespec period = {0,0}; */
     /* int is_freq = 0; */
     /* if(opt_freq > 0) { */
@@ -741,20 +751,20 @@ void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel )
                 /* } */
             } else {
                 /* push the data */
-                r = ach_get( channel, frame->data, max, &frame_size,  NULL,
+                r = ach_get( channel, cx.frame->data, cx.frame_max, &frame_size,  NULL,
                              ( (headers->get_last /*|| is_freq*/) ?
                                (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
             }
             /* check return code */
             if( ACH_OVERFLOW == r ) {
                 /* enlarge buffer and retry on overflow */
-                assert(frame_size > max );
-                max = frame_size;
-                free(frame);
-                frame = ach_pipe_alloc( max );
-            } else if (ACH_OK == r || ACH_MISSED_FRAME == r || t0 ) {
+                assert(frame_size > cx.frame_max );
+                cx.frame_max = frame_size;
+                free(cx.frame);
+                cx.frame = ach_pipe_alloc( cx.frame_max );
+            } else if (ACH_OK == r || ACH_MISSED_FRAME == r ) {
                 got_frame = 1;
-                ach_pipe_set_size( frame, frame_size );
+                ach_pipe_set_size( cx.frame, frame_size );
                 //verbprintf(2, "Got ach frame %d\n", frame_size );
             }else {
                 /* abort on other errors */
@@ -767,8 +777,8 @@ void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel )
 
         /* stream send */
         if(!cx.sig_received) {
-            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(frame);
-            size_t r = fwrite( frame, 1, size, cx.fout );
+            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(cx.frame);
+            size_t r = fwrite( cx.frame, 1, size, cx.fout );
             if( r != size ) {
                 break;
             }
@@ -785,41 +795,32 @@ void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel )
         /*     _relsleep(period); */
         /* } */
     }
-    free(frame);
-    ach_close( channel );
-
-
 }
 
 void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel ) {
-    uint64_t max = INIT_BUF_SIZE;
-    ach_pipe_frame_t *frame = ach_pipe_alloc( max );
     /* Read and Publish Loop */
     while( ! cx.sig_received ) {
         /* get size */
-        size_t s = fread( frame, 1, 16, cx.fin );
+        size_t s = fread( cx.frame, 1, 16, cx.fin );
         if( 16 != s ) break;
-        if( memcmp("achpipe", frame->magic, 8) ) break;
-        uint64_t cnt = ach_pipe_get_size( frame );
+        if( memcmp("achpipe", cx.frame->magic, 8) ) break;
+        uint64_t cnt = ach_pipe_get_size( cx.frame );
         /* FIXME: sanity check that cnt is not something outrageous */
         /* make sure buf can hold it */
-        if( (size_t)cnt > max ) {
-            max = cnt;
-            free( frame );
-            frame = ach_pipe_alloc( max );
+        if( (size_t)cnt > cx.frame_max ) {
+            cx.frame_max = cnt;
+            free( cx.frame );
+            cx.frame = ach_pipe_alloc( cx.frame_max );
         }
         /* get data */
-        s = fread( frame->data, 1, (size_t)cnt, cx.fin );
+        s = fread( cx.frame->data, 1, (size_t)cnt, cx.fin );
         if( cnt != s ) break;
         /* put data */
         if( !cx.sig_received ) {
-            ach_status_t r = ach_put( channel, frame->data, cnt );
+            ach_status_t r = ach_put( channel, cx.frame->data, cnt );
             assert( r == ACH_OK );
         }
     }
-    free(frame);
-
-    ach_close( channel );
 
     exit(EXIT_SUCCESS);
 }
@@ -1062,5 +1063,9 @@ static void sighandler_install() {
 
     if (sigaction(SIGINT, &act, NULL) < 0) {
         achd_log( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+    }
+
+    if( SIG_ERR == signal(SIGPIPE, SIG_IGN) ) {
+        achd_log( LOG_ERR, "Couldn't ignore SIGPIPE: %s", strerror(errno) );
     }
 }

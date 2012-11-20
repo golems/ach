@@ -18,7 +18,7 @@ the autotools build scripts.  This requires the autotools and the
 autoconf macro archive. To install these on Debian or Ubuntu
 GNU/Linux, you can do
 
-`$ sudo apt-get install autoconf automake libtool autoconf-archive'
+`$ sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html'
 
 Then, initialize autotools with
 
