@@ -74,6 +74,13 @@ enum achd_direction {
     ACHD_DIRECTION_PULL
 };
 
+enum achd_mode {
+    ACHD_MODE_VOID = 0,
+    ACHD_MODE_SERVE,
+    ACHD_MODE_PUSH,
+    ACHD_MODE_PULL
+};
+
 struct achd_headers {
     const char *chan_name;
     const char *remote_chan_name;
@@ -93,6 +100,8 @@ struct achd_headers {
     const char *message;
 };
 typedef void (*achd_io_handler_t)(const struct achd_headers *headers, ach_channel_t *channel );
+
+void achd_posarg(int i, const char *arg);
 
 void achd_make_realtime();
 void achd_daemonize();
@@ -128,7 +137,7 @@ achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction d
 /* global data */
 static struct {
     struct achd_headers cl_opts; /** Options from command line */
-    int serve;
+    int mode;
     int verbosity;
     int daemonize;
     int port;
@@ -177,7 +186,6 @@ int main(int argc, char **argv) {
     cx.cl_opts.transport = "tcp";
     cx.cl_opts.frame_size = ACH_DEFAULT_FRAME_SIZE;
     cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
-    cx.serve = 1;
     cx.error = achd_error_interactive;
     cx.in = STDIN_FILENO;
     cx.in = STDOUT_FILENO;
@@ -186,20 +194,10 @@ int main(int argc, char **argv) {
     cx.port = ACHD_PORT;
 
     /* process options */
-    int c = 0;
+    int c = 0, i = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "S:P:dp:t:f:z:qrvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "dp:t:f:z:qrvV?")) != -1 ) {
             switch(c) {
-            case 'S':
-                cx.cl_opts.remote_host = strdup(optarg);
-                cx.cl_opts.direction = ACHD_DIRECTION_PUSH;
-                cx.serve = 0;
-                break;
-            case 'P':
-                cx.cl_opts.remote_host = strdup(optarg);
-                cx.cl_opts.direction = ACHD_DIRECTION_PULL;
-                cx.serve = 0;
-                break;
             case 'z':
                 cx.cl_opts.remote_chan_name = strdup(optarg);
                 break;
@@ -232,40 +230,39 @@ int main(int argc, char **argv) {
                 ach_print_version("achd");
                 exit(EXIT_SUCCESS);
             case '?':
-                puts( "Usage: achd [OPTIONS...] CHANNEL-NAME\n"
+                puts( "Usage: achd [OPTIONS...] [serve|push|pull] [HOST] [CHANNEL] \n"
                       "Daemon process to forward ach channels over network and dump to files\n"
                       "\n"
                       "Options:\n"
-                      "  -S HOST,                    push messages to HOST\n"
-                      "  -P HOST,                    pull messages from HOST\n"
-                      "  -d,                         TODO: daemonize (client-mode only)\n"
-                      "  -p PORT,                    port\n"
-                      "  -f FILE,                    TODO: lock FILE and write pid\n"
-                      "  -t (tcp|udp),               TODO: transport (default tcp)\n"
-                      "  -z CHANNEL_NAME,            remote channel name\n"
-                      "  -r,                         reconnect if connection is lost\n"
-                      "  -q,                         be quiet\n"
-                      "  -v,                         be verbose\n"
-                      "  -V,                         version\n"
-                      "  -?,                         show help\n"
+                      "  -d,                          TODO: daemonize (client-mode only)\n"
+                      "  -p PORT,                     port\n"
+                      "  -f FILE,                     TODO: lock FILE and write pid\n"
+                      "  -t (tcp|udp),                TODO: transport (default tcp)\n"
+                      "  -z CHANNEL_NAME,             remote channel name\n"
+                      "  -r,                          reconnect if connection is lost\n"
+                      "  -q,                          be quiet\n"
+                      "  -v,                          be verbose\n"
+                      "  -V,                          version\n"
+                      "  -?,                          show help\n"
                       "\n"
                       "Files:\n"
-                      "  /etc/inetd.conf             Use to enable network serving of ach channels.\n"
-                      "                              Use a line like this:\n"
-                      "                              '8076  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd'\n"
+                      "  /etc/inetd.conf              Use to enable network serving of ach channels.\n"
+                      "                               Use a line like this:\n"
+                      "                               '8076  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd'\n"
                       "\n"
                       "Examples:\n"
-                      "  achd                        Server process reading from stdin/stdout.\n"
-                      "                              This can be run from inetd.\n"
-                      "  achd -P golem state-chan    Forward frames via TCP from remote channel\n"
-                      "                              'state-chan' on host 'golem' to local channel\n"
-                      "                              (a pull from the remote server).\n"
-                      "                              An achd server must be listening on the remote\n"
-                      "                              host.\n"
-                      "  achd -rS golem cmd-chan     Forward frames via TCP from local channel\n"
-                      "                              'cmd-chan' to remote channel on host 'golem'\n"
-                      "                              (a push to the remote server).\n"
-                      "                              An achd server must be listening the remote host.\n"
+                      "  achd serve                   Server process reading from stdin/stdout.\n"
+                      "                               This can be run from inetd.\n"
+                      "  achd pull golem state-chan   Forward frames via TCP from remote channel\n"
+                      "                               'state-chan' on host 'golem' to local channel\n"
+                      "                               (a pull from the remote server).\n"
+                      "                               An achd server must be listening on the remote\n"
+                      "                               host.\n"
+                      "  achd -r push golem cmd-chan  Forward frames via TCP from local channel\n"
+                      "                               'cmd-chan' to remote channel on host 'golem'\n"
+                      "                               (a push to the remote server).\n"
+                      "                               Retry dropped connections.\n"
+                      "                               An achd server must be listening the remote host.\n"
                       "\n"
                       "Report bugs to <ntd@gatech.edu>"
                        );
@@ -273,16 +270,12 @@ int main(int argc, char **argv) {
                 exit(EXIT_SUCCESS);
                 break;
             default:
-                cx.cl_opts.chan_name = strdup(optarg);
+                achd_posarg(i++, optarg);
                 break;
             }
         }
-        if( optind < argc ) {
-            if( cx.cl_opts.chan_name ) {
-                fprintf(stderr, "Multiple channel names given\n");
-                exit(EXIT_FAILURE);
-            }
-            cx.cl_opts.chan_name = strdup(argv[optind]);
+        while( optind < argc ) {
+            achd_posarg(i++, argv[optind++]);
         }
     }
 
@@ -298,7 +291,7 @@ int main(int argc, char **argv) {
 
     /* dispatch based on mode */
     /* serve */
-    if ( cx.serve ) {
+    if ( ACHD_MODE_SERVE == cx.mode ) {
         if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
             fprintf(stderr, "We don't serve TTYs here!\n");
             exit(EXIT_FAILURE);
@@ -353,6 +346,38 @@ int main(int argc, char **argv) {
 
     return 0;
 }
+
+void achd_posarg(int i, const char *arg) {
+    switch(i) {
+    case 0:
+        achd_log(LOG_DEBUG, "mode %s\n", arg);
+        if( 0 == strcasecmp(arg, "serve") ) {
+            cx.mode = ACHD_MODE_SERVE;
+        } else if( 0 == strcasecmp(arg, "push") ) {
+            cx.mode = ACHD_MODE_PUSH;
+            cx.cl_opts.direction = ACHD_DIRECTION_PUSH;
+        } else if( 0 == strcasecmp(arg, "pull") ) {
+            cx.mode = ACHD_MODE_PULL;
+            cx.cl_opts.direction = ACHD_DIRECTION_PULL;
+        } else {
+            achd_log(LOG_ERR, "Invalid command: %s\n", arg);
+            exit(EXIT_FAILURE);
+        }
+        break;
+    case 1:
+        achd_log(LOG_DEBUG, "host %s\n", arg);
+        cx.cl_opts.remote_host = strdup(arg);
+        break;
+    case 2:
+        achd_log(LOG_DEBUG, "channel %s\n", arg);
+        cx.cl_opts.remote_chan_name = strdup(arg);
+        break;
+    default:
+        achd_log(LOG_ERR, "Spurious argument: %s\n", arg);
+        exit(EXIT_FAILURE);
+    }
+}
+
 
 /* Defs */
 
