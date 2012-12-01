@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
             case 'p':
                 cx.port = atoi(optarg);
                 if( !optarg ) {
-                    fprintf(stderr, "Invalid port: %s\n", optarg);
+                    achd_log(LOG_ERR, "Invalid port: %s\n", optarg);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
     /* serve */
     if ( ACHD_MODE_SERVE == cx.mode ) {
         if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
-            fprintf(stderr, "We don't serve TTYs here!\n");
+            achd_log(LOG_ERR, "We don't serve TTYs here!\n");
             exit(EXIT_FAILURE);
         }
         cx.error = achd_error_header;
@@ -473,7 +473,12 @@ void achd_client() {
 
     sighandler_install();
 
-    /* Second, fork a work if we are to retry connectons */
+    /* maybe daemonize */
+    if( cx.daemonize ) {
+        achd_daemonize();
+    }
+
+    /* fork a worker if we are to retry connectons */
     achd_client_retry();
 
     /* Finally, start the show, possibly in a child process */
@@ -493,6 +498,7 @@ void achd_client() {
 
     do {
         achd_client_cycle( &channel, &req_headers, handler );
+        /* TODO: should delay around here */
     } while( cx.reconnect && !cx.sig_received );
 }
 
@@ -590,6 +596,59 @@ int achd_connect() {
     return sockfd;
 }
 
+
+void achd_daemonize() {
+    /* fork */
+    pid_t grandparent = getpid();
+    pid_t pid1 = fork();
+    if( pid1 < 0 ) {
+        achd_log( LOG_CRIT, "First fork failed: %s\n", strerror(errno) );
+        exit(EXIT_FAILURE);
+    } else if ( pid1 ) { /* parent */
+        exit(EXIT_SUCCESS);
+    } /* else child */
+    pid1 = getppid();
+
+    /* set session id to lose our controlling terminal */
+    if( setsid() < 0 ) {
+        achd_log( LOG_WARNING, "Couldn't set sid: %s\n", strerror(errno) );
+    }
+
+    /* refork to prevent future controlling ttys */
+    pid_t parent = getpid();
+    pid_t pid2 = fork();
+    if( pid2 < 0 ) {
+        achd_log( LOG_ERR, "Second fork failed: %s\n", strerror(errno) );
+        /* Don't give up */
+    } else if ( pid2 ) { /* parent */
+        exit(EXIT_SUCCESS);
+    } /* else child */
+
+    /* ignore sighup */
+    if( SIG_ERR == signal(SIGHUP, SIG_IGN) ) {
+        achd_log( LOG_ERR, "Couldn't ignore SIGHUP: %s", strerror(errno) );
+    }
+
+    /* cd to root */
+    if( chdir("/") ) {
+        achd_log( LOG_ERR, "Couldn't cd to /: %s", strerror(errno) );
+    }
+
+    /* file mask */
+    umask(0);
+
+    /* close stdin/stdout/stderr */
+    if( close(STDIN_FILENO) ) {
+        achd_log( LOG_ERR, "Couldn't close stdin: %s", strerror(errno) );
+    }
+    if( close(STDOUT_FILENO) ) {
+        achd_log( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
+    }
+    if( close(STDERR_FILENO) ) {
+        achd_log( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
+    }
+}
+
 #define REGEX_WORD "([^:=\n]*)"
 #define REGEX_SPACE "[[:blank:]\n\r]*"
 
@@ -669,8 +728,9 @@ int achd_parse_boolean( const char *value ) {
         if( 0 == strcasecmp(*s, value) ) return 1;
     for( s = no; *s; s++ )
         if( 0 == strcasecmp(*s, value) ) return 0;
-    fprintf(stderr, "Invalid boolean: %s\n", value);
+    achd_log(LOG_ERR, "Invalid boolean: %s\n", value);
     exit(EXIT_FAILURE);
+    /* TODO: should handle this more gracefully */
 }
 
 void achd_set_header (const char *key, const char *val, struct achd_headers *headers) {
@@ -830,7 +890,7 @@ void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel )
         if( 16 != s ) break;
         if( memcmp("achpipe", cx.frame->magic, 8) ) break;
         uint64_t cnt = ach_pipe_get_size( cx.frame );
-        /* FIXME: sanity check that cnt is not something outrageous */
+        /* TODO: sanity check that cnt is not something outrageous */
         /* make sure buf can hold it */
         if( (size_t)cnt > cx.frame_max ) {
             cx.frame_max = cnt;
@@ -1010,7 +1070,7 @@ pid_t achd_client_wait( pid_t pid ) {
 }
 
 void achd_client_retry() {
-    /* FIXME: When we refork the child, we "forget" our position in
+    /* TODO: When we refork the child, we "forget" our position in
      * the channel.  This means some frames may be missed or resent.
      * It would be better to have the child attempt to reconnect if
      * the connection gets broken.
