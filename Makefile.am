@@ -44,7 +44,10 @@ if HAVE_RT
 achcat_SOURCES = src/achcat.c src/achutil.c
 achcat_LDADD = libach.la
 
-achd_SOURCES = src/achd.c src/achutil.c
+achd_SOURCES = src/achutil.c     \
+               src/achd/achd.c   \
+               src/achd/client.c \
+               src/achd/transport.c
 achd_LDADD = libach.la
 
 ach_example_SOURCES = src/ach-example.c

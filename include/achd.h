@@ -49,6 +49,7 @@
 
 #define ACHD_RECONNECT_NS (250 * 1000 * 1000)
 
+
 /* Prototypes */
 enum achd_direction {
     ACHD_DIRECTION_VOID = 0,
@@ -119,5 +120,22 @@ void achd_pull_udp( struct achd_conn *);
 achd_io_handler_t achd_get_handler
 (const char *transport, enum achd_direction direction);
 
+
+struct achd_cx {
+    struct achd_headers cl_opts; /** Options from command line */
+    int mode;
+    int verbosity;
+    int daemonize;
+    int port;
+    int reconnect;
+    const char *pidfile;
+    sig_atomic_t sig_received;
+    void (*error)(int code, const char fmt[], ...);
+    ach_pipe_frame_t *frame;
+    size_t frame_max;
+} ;
+
+extern struct achd_cx cx;
+void sighandler_install();
 
 #endif //ACHD_H
