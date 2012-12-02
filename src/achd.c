@@ -62,79 +62,10 @@
 
 #include "ach.h"
 #include "achutil.h"
-
-#define ACHD_PORT 8076
-#define INIT_BUF_SIZE 512
+#include "achd.h"
 
 
-/* Prototypes */
-enum achd_direction {
-    ACHD_DIRECTION_VOID = 0,
-    ACHD_DIRECTION_PUSH,
-    ACHD_DIRECTION_PULL
-};
-
-enum achd_mode {
-    ACHD_MODE_VOID = 0,
-    ACHD_MODE_SERVE,
-    ACHD_MODE_PUSH,
-    ACHD_MODE_PULL
-};
-
-struct achd_headers {
-    const char *chan_name;
-    const char *remote_chan_name;
-    int frame_count;
-    int frame_size;
-    int local_port;
-    int remote_port;
-    int tcp_nodelay;
-    int retry;
-    int get_last;
-    int retry_delay_us;
-    int64_t period_ns;
-    const char *remote_host;
-    const char *transport;
-    enum achd_direction direction;
-    int status;
-    const char *message;
-};
-typedef void (*achd_io_handler_t)(const struct achd_headers *headers, ach_channel_t *channel );
-
-void achd_posarg(int i, const char *arg);
-
-void achd_make_realtime();
-void achd_daemonize();
-void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
-void achd_set_header (const char *key, const char *val, struct achd_headers *headers);
-void achd_write_pid();
-void achd_set_int(int *pint, const char *name, const char *val);
-
-void achd_serve();
-void achd_client();
-void achd_client_retry();
-void achd_client_cycle( ach_channel_t *chan, const struct achd_headers *req_headers, achd_io_handler_t handler);
-int achd_connect();
-
-void achd_log( int level, const char fmt[], ...);
-
-/* signal handlers */
-static void sighandler(int sig, siginfo_t *siginfo, void *context);
-static void sighandler_install();
-
-/* error handlers */
-/* TODO: merge these two and check isatty(stderr) for whether to print or syslog*/
-void achd_error_header( int code, const char fmt[], ... );
-void achd_error_log( int code, const char fmt[], ... );
-//void achd_error_interactive( int code, const char fmt[], ... );
-//void achd_error_syslog( int code, const char fmt[],  ...);
-
-/* i/o handlers */
-void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel );
-void achd_pull_tcp( const struct achd_headers *headers, ach_channel_t *channel );
-void achd_push_udp( const struct achd_headers *headers, ach_channel_t *channel );
-void achd_pull_udp( const struct achd_headers *headers, ach_channel_t *channel );
-achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction direction );
+static void sleep_till( const struct timespec *t);
 
 /* global data */
 static struct {
@@ -161,6 +92,9 @@ struct achd_handler {
     achd_io_handler_t handler;
 };
 
+
+/* TODO: client-connect */
+/* TODO: client-reconnect */
 static const struct achd_handler handlers[] = {
     {.transport = "tcp",
      .direction = ACHD_DIRECTION_PUSH,
@@ -1050,6 +984,27 @@ dolog:
         vsyslog(level, fmt, argp);
         va_end( argp );
     }
+}
+
+static void sleep_till( const struct timespec *t ) {
+    while(1) {
+        struct timespec remain;
+        int r = clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME,
+                             t, &remain );
+        if (r && !cx.sig_received && EINTR == errno ) {
+            /* signalled */
+            continue;
+        } else if (!r) {
+            /* time elapsed */
+            break;
+        } else {
+            /* weird error */
+            achd_log( LOG_ERR, "clock_nanosleep failed: %s\n", strerror(errno) );
+            break;
+        }
+        assert(0);
+    }
+
 }
 
 /* Wait till child returns or signal received */
