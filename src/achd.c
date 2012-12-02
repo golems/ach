@@ -123,9 +123,11 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context);
 static void sighandler_install();
 
 /* error handlers */
-void achd_error_interactive( int code, const char fmt[], ... );
+/* TODO: merge these two and check isatty(stderr) for whether to print or syslog*/
 void achd_error_header( int code, const char fmt[], ... );
-void achd_error_syslog( int code, const char fmt[],  ...);
+void achd_error_log( int code, const char fmt[], ... );
+//void achd_error_interactive( int code, const char fmt[], ... );
+//void achd_error_syslog( int code, const char fmt[],  ...);
 
 /* i/o handlers */
 void achd_push_tcp( const struct achd_headers *headers, ach_channel_t *channel );
@@ -186,7 +188,7 @@ int main(int argc, char **argv) {
     cx.cl_opts.transport = "tcp";
     cx.cl_opts.frame_size = ACH_DEFAULT_FRAME_SIZE;
     cx.cl_opts.frame_count = ACH_DEFAULT_FRAME_COUNT;
-    cx.error = achd_error_interactive;
+    cx.error = achd_error_log;
     cx.in = STDIN_FILENO;
     cx.in = STDOUT_FILENO;
     cx.fin = stdin;
@@ -401,17 +403,17 @@ void achd_serve() {
             ach_flush(&channel);
         }
     } else {
-        cx.error( ACH_BAD_HEADER, "No channel name header");
+        cx.error( ACH_BAD_HEADER, "No channel name header\n");
         assert(0);
     }
 
     /* check transport headers */
     if( ! srv_headers.transport ) {
-        cx.error( ACH_BAD_HEADER, "No transport header");
+        cx.error( ACH_BAD_HEADER, "No transport header\n");
         assert(0);
     }
     if( ! srv_headers.direction ) {
-        cx.error( ACH_BAD_HEADER, "No direction header");
+        cx.error( ACH_BAD_HEADER, "No direction header\n");
         assert(0);
     }
 
@@ -430,8 +432,12 @@ void achd_serve() {
             ACH_OK, ach_result_to_string(ACH_OK)
         );
     fflush(cx.fout);
-    syslog( LOG_NOTICE, "Serving channel %s via %s\n", srv_headers.chan_name, srv_headers.transport );
+
+    /* Set error handler */
+    cx.error = achd_error_log;
     /* start i/o */
+    syslog( LOG_NOTICE, "Serving channel %s via %s\n",
+            srv_headers.chan_name, srv_headers.transport );
     return handler( &srv_headers, &channel );
 }
 
@@ -728,9 +734,7 @@ int achd_parse_boolean( const char *value ) {
         if( 0 == strcasecmp(*s, value) ) return 1;
     for( s = no; *s; s++ )
         if( 0 == strcasecmp(*s, value) ) return 0;
-    achd_log(LOG_ERR, "Invalid boolean: %s\n", value);
-    exit(EXIT_FAILURE);
-    /* TODO: should handle this more gracefully */
+    cx.error(ACH_BAD_HEADER, "Invalid boolean: %s\n", value);
 }
 
 void achd_set_header (const char *key, const char *val, struct achd_headers *headers) {
@@ -927,18 +931,20 @@ void achd_exit_failure( int code ) {
     exit( code ? code : EXIT_FAILURE );
 }
 
-void achd_error_interactive( int code, const char fmt[], ... ) {
-    if( cx.verbosity >= 0 ) {
-        va_list argp;
-        va_start( argp, fmt );
-        if( ACH_OK != code ) {
-            fprintf(stderr, "status: %s\n", ach_result_to_string(code));
-        }
-        vfprintf( stderr, fmt, argp );
-        va_end( argp );
-    }
-    achd_exit_failure(code);
-}
+/* void achd_error_interactive( int code, const char fmt[], ... ) { */
+/*     if( cx.verbosity >= 0 ) { */
+/*         va_list argp; */
+/*         va_start( argp, fmt ); */
+/*         if( ACH_OK != code ) { */
+/*             fprintf(stderr, "status: %s\n", ach_result_to_string(code)); */
+/*         } */
+/*         vfprintf( stderr, fmt, argp ); */
+/*         va_end( argp ); */
+/*     } */
+/*     achd_exit_failure(code); */
+/* } */
+
+
 
 void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
     if( ACH_OK != code ) {
@@ -974,17 +980,35 @@ void achd_error_header( int code, const char fmt[], ... ) {
     achd_exit_failure(code);
 }
 
-void achd_error_syslog( int code, const char fmt[],  ...) {
-    va_list argp;
-    va_start( argp, fmt );
-    achd_error_vsyslog( code, fmt, argp );
-    va_end( argp );
-    achd_exit_failure(code);
+/* void achd_error_syslog( int code, const char fmt[],  ...) { */
+/*     va_list argp; */
+/*     va_start( argp, fmt ); */
+/*     achd_error_vsyslog( code, fmt, argp ); */
+/*     va_end( argp ); */
+/*     achd_exit_failure(code); */
+/* } */
+
+void achd_error_log( int code, const char fmt[],  ...) {
+    int tty = isatty(STDERR_FILENO);
+    if( tty && cx.verbosity >= -1) {
+        if( ACH_OK != code ) {
+            fprintf(stderr, "status: %s\n", ach_result_to_string(code));
+        }
+        va_list argp;
+        va_start( argp, fmt );
+        vfprintf(stderr, fmt, argp );
+        fflush(stderr);
+        va_end( argp );
+    }
+    if( !tty || ACHD_MODE_SERVE == cx.mode || 1 == getppid() ) {
+        va_list argp;
+        va_start( argp, fmt );
+        achd_error_vsyslog( code, fmt, argp );
+        va_end( argp );
+    }
 }
 
-
 void achd_log( int level, const char fmt[], ...) {
-    va_list argp;
 
     switch( level ) {
     case LOG_EMERG:
@@ -1010,16 +1034,22 @@ void achd_log( int level, const char fmt[], ...) {
     default: assert(0);
     }
 
+    int tty;
 dolog:
-    va_start( argp, fmt );
-
-    if( isatty(STDERR_FILENO) ) {
+    tty = isatty(STDERR_FILENO);
+    if( tty ) {
+        va_list argp;
+        va_start( argp, fmt );
         vfprintf(stderr, fmt, argp );
         fflush(stderr);
-    } else {
-        vsyslog(level, fmt, argp);
+        va_end( argp );
     }
-    va_end( argp );
+    if( !tty || ACHD_MODE_SERVE == cx.mode || 1 == getppid() ) {
+        va_list argp;
+        va_start( argp, fmt );
+        vsyslog(level, fmt, argp);
+        va_end( argp );
+    }
 }
 
 /* Wait till child returns or signal received */
