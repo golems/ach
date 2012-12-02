@@ -82,48 +82,39 @@ struct achd_headers {
     const char *message;
 };
 
-typedef void (*achd_io_handler_t)
-(const struct achd_headers *headers, ach_channel_t *channel);
+struct achd_conn;
+
+typedef void (*achd_io_handler_t) (struct achd_conn*);
+
+struct achd_conn {
+    enum achd_mode mode;
+    struct achd_headers request;
+    struct achd_headers response;
+    ach_channel_t channel;
+    FILE *fin;
+    FILE *fout;
+    achd_io_handler_t handler;
+    void *cx;
+};
+
+void achd_conn_connect( struct achd_conn *conn );
 
 
-void achd_posarg(int i, const char *arg);
-
-void achd_make_realtime();
-void achd_daemonize();
 void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
-void achd_set_header
-(const char *key, const char *val, struct achd_headers *headers);
-void achd_write_pid();
-void achd_set_int(int *pint, const char *name, const char *val);
 
 void achd_serve();
 void achd_client();
-void achd_client_retry();
-void achd_client_cycle( ach_channel_t *chan, const struct achd_headers *req_headers, achd_io_handler_t handler);
-int achd_connect();
 
+/* logging and error handlers */
 void achd_log( int level, const char fmt[], ...);
-
-/* signal handlers */
-static void sighandler(int sig, siginfo_t *siginfo, void *context);
-static void sighandler_install();
-
-/* error handlers */
 void achd_error_header( int code, const char fmt[], ... );
 void achd_error_log( int code, const char fmt[], ... );
 
 /* i/o handlers */
-void achd_push_tcp
-(const struct achd_headers *headers, ach_channel_t *channel);
-
-void achd_pull_tcp
-(const struct achd_headers *headers, ach_channel_t *channel);
-
-void achd_push_udp
-(const struct achd_headers *headers, ach_channel_t *channel);
-
-void achd_pull_udp
-(const struct achd_headers *headers, ach_channel_t *channel);
+void achd_push_tcp( struct achd_conn *);
+void achd_pull_tcp( struct achd_conn *);
+void achd_push_udp( struct achd_conn *);
+void achd_pull_udp( struct achd_conn *);
 
 achd_io_handler_t achd_get_handler
 (const char *transport, enum achd_direction direction);
