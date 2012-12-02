@@ -15,7 +15,7 @@ achcat.1: $(top_srcdir)/src/achcat.c $(top_srcdir)/configure.ac
 achpipe.bin.1: $(top_srcdir)/src/achpipe-bin.c $(top_srcdir)/configure.ac achpipe.bin.inc
 	$(HELP2MAN) -h -h -v -V --no-info -i achpipe.bin.inc -n "send ach messages over streams" $(top_builddir)/achpipe.bin$(EXEEXT) -o $@
 
-achd.1: $(top_srcdir)/src/achd.c $(top_srcdir)/configure.ac achd.inc
+achd.1: $(top_srcdir)/src/achd/achd.c $(top_srcdir)/configure.ac achd.inc
 	$(HELP2MAN) -h -\? -v -V -i achd.inc --no-info -n "send ach messages over streams" $(top_builddir)/achd$(EXEEXT) -o $@
 
 achpipe.1: $(top_srcdir)/achpipe

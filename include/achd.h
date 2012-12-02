@@ -89,6 +89,7 @@ typedef void (*achd_io_handler_t) (struct achd_conn*);
 
 struct achd_conn {
     enum achd_mode mode;
+    struct timespec t0;
     struct achd_headers request;
     struct achd_headers response;
     ach_channel_t channel;
@@ -98,13 +99,13 @@ struct achd_conn {
     void *cx;
 };
 
-void achd_conn_connect( struct achd_conn *conn );
+int achd_reconnect( struct achd_conn *conn );
 
 
 void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
 
-void achd_serve();
-void achd_client();
+void achd_serve(void);
+void achd_client(void);
 
 /* logging and error handlers */
 void achd_log( int level, const char fmt[], ...);
@@ -136,6 +137,6 @@ struct achd_cx {
 } ;
 
 extern struct achd_cx cx;
-void sighandler_install();
+void sighandler_install(void);
 
 #endif //ACHD_H

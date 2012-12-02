@@ -68,10 +68,10 @@
 * Client *
 *********/
 
-static void client_retry();
-static void client_cycle( struct achd_conn *conn );
-static int achd_connect();
-static void daemonize();
+static void client_retry(void);
+static int socket_connect(void);
+static int server_connect( struct achd_conn*);
+static void daemonize(void);
 static void sleep_till( const struct timespec *t0, int32_t ns );
 static pid_t wait_for_child( pid_t pid );
 
@@ -122,6 +122,10 @@ void achd_client() {
 
     /* Finally, start the show, possibly in a child process */
 
+    /* Open initial connection */
+    int fd = server_connect( &conn );
+    if( fd < 0 ) fd = achd_reconnect( &conn );
+
     /* TODO: If we lose and then re-establish a connections, frames
      * may be missed or duplicated.
      *
@@ -135,40 +139,56 @@ void achd_client() {
      * after lost connection.  That seems harder to implement.
      */
 
-    do {
-        struct timespec t;
-        clock_gettime( CLOCK_MONOTONIC, &t );
-        client_cycle( &conn );
-        sleep_till(&t, ACHD_RECONNECT_NS);
-    } while( cx.reconnect && !cx.sig_received );
+    /* Start running */
+    if ( fd >= 0 && !cx.sig_received ) {
+        achd_log(LOG_INFO, "Client running\n");
+        conn.handler( &conn );
+        achd_log(LOG_INFO, "Client done\n");
+    }
 }
 
-static void client_cycle( struct achd_conn *conn) {
+static int server_connect( struct achd_conn *conn) {
     achd_log( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
-    /* Connect to server */
-    int in,out;
-    in = out = achd_connect();
-    assert( in >= 0 && out >= 0 && in == out );
 
-    conn->fin = fdopen( in, "r" );
-    conn->fout = fdopen( in, "w" );
+    /* Note the time */
+    clock_gettime( CLOCK_MONOTONIC, &conn->t0 );
+
+    /* Connect to server */
+    int fd = socket_connect();
+    if (fd < 0) {
+        return fd;
+    } else {
+        achd_log( LOG_DEBUG, "Socket connected\n");
+    }
+
+    conn->fin = fdopen( fd, "r" );
+    conn->fout = fdopen( fd, "w" );
     if( NULL == conn->fin || NULL == conn->fout ) {
         cx.error( ACH_FAILED_SYSCALL, "Couldn't fdopen sock: %s\n", strerror(errno) );
         assert(0);
     }
 
     /* Write request */
-    fprintf(conn->fout,
-            "channel-name: %s\n"
-            "transport: %s\n"
-            "direction: %s\n"
-            ".\n",
-            conn->request.chan_name,
-            conn->request.transport,
-            ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
-              "push" : "pull" ) /* remote end does the opposite */
-        );
-    fflush(conn->fout);
+    if( (0 > fprintf(conn->fout,
+                    "channel-name: %s\n"
+                    "transport: %s\n"
+                    "direction: %s\n"
+                    ".\n",
+                    conn->request.chan_name,
+                    conn->request.transport,
+                    ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
+                      "push" : "pull" ) /* remote end does the opposite */
+             )) ||
+        fflush(conn->fout) )
+    {
+        achd_log(LOG_DEBUG, "couldn't send headers\n");
+        fclose(conn->fin);
+        fclose(conn->fout);
+        close(fd);
+        return -1;
+    } else {
+        achd_log(LOG_DEBUG, "headers sent\n");
+    }
 
     /* Get Response */
     conn->response.status = ACH_BUG;
@@ -183,6 +203,7 @@ static void client_cycle( struct achd_conn *conn) {
         }
 
     }
+    achd_log(LOG_DEBUG, "Server response received\n");
 
     /* Try to create channel if needed */
     if( ! conn->channel.shm ) {
@@ -195,28 +216,35 @@ static void client_cycle( struct achd_conn *conn) {
         if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
     }
 
-    /* Start running */
-    achd_log(LOG_INFO, "Client running\n");
-    conn->handler( conn );
-
-    achd_log(LOG_NOTICE, "connection closed\n");
+    return fd;
 }
 
+int achd_reconnect( struct achd_conn *conn) {
+    int fd = -1;
+    while( cx.reconnect && fd < 0 && !cx.sig_received ) {
+        achd_log(LOG_DEBUG, "Reconnect attempt\n");
+        sleep_till( &conn->t0, ACHD_RECONNECT_NS );
+        fd = server_connect( conn );
+    }
 
-static int achd_connect() {
+    return fd;
+}
+
+static int socket_connect() {
     /* Make socket */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        cx.error(ACH_FAILED_SYSCALL, "Couldn't open socket: %s\n", strerror(errno));
-        assert(0);
+        achd_log(LOG_ERR, "Couldn't create socket: %s\n", strerror(errno));
+        return sockfd;
     }
 
     /* Lookup Host */
     assert( cx.cl_opts.remote_host );
     struct hostent *server = gethostbyname( cx.cl_opts.remote_host );
     if( NULL == server ) {
-        cx.error(ACH_FAILED_SYSCALL, "Host '%s' not found\n", cx.cl_opts.remote_host);
-        assert(0);
+        achd_log(LOG_ERR, "Host '%s' not found\n", cx.cl_opts.remote_host);
+        close(sockfd);
+        return -1;
     }
 
     /* Make socket address */
@@ -230,8 +258,9 @@ static int achd_connect() {
 
     /* Connect */
     if( connect(sockfd,  (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
-        cx.error(ACH_FAILED_SYSCALL, "Couldn't connect: %s\n", strerror(errno));
-        assert(0);
+        achd_log(LOG_ERR, "Couldn't connect: %s\n", strerror(errno));
+        close(sockfd);
+        return -1;
     }
 
     return sockfd;

@@ -66,6 +66,7 @@
 
 
 static void achd_posarg(int i, const char *arg);
+static void achd_write_pid();
 
 void achd_make_realtime();
 
@@ -370,7 +371,6 @@ void achd_serve() {
 **********/
 static void achd_set_header
 (const char *key, const char *val, struct achd_headers *headers);
-static void achd_write_pid();
 static void achd_set_int(int *pint, const char *name, const char *val);
 
 #define REGEX_WORD "([^:=\n]*)"
