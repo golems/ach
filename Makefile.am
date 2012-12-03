@@ -47,6 +47,7 @@ achcat_LDADD = libach.la
 achd_SOURCES = src/achutil.c     \
                src/achd/achd.c   \
                src/achd/client.c \
+               src/achd/io.c \
                src/achd/transport.c
 achd_LDADD = libach.la
 

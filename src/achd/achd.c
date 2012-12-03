@@ -207,7 +207,6 @@ int main(int argc, char **argv) {
     /* dispatch based on mode */
     /* serve */
     if ( ACHD_MODE_SERVE == cx.mode ) {
-        fflush(stdout);
         if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
             achd_log(LOG_ERR, "We don't serve TTYs here!\n");
             exit(EXIT_FAILURE);
@@ -299,17 +298,20 @@ void achd_posarg(int i, const char *arg) {
 *********/
 
 void achd_serve() {
-    fclose(stderr);
-    fflush(stdout);
     sighandler_install();
     achd_log( LOG_INFO, "Server started\n");
 
     struct achd_conn conn;
     memset( &conn, 0, sizeof(conn) );
-    conn.fin = stdin;
-    conn.fout = stdout;
+    conn.in = STDIN_FILENO;
+    conn.out = STDOUT_FILENO;
     conn.mode = ACHD_MODE_SERVE;
-    achd_parse_headers( conn.fin, &conn.request );
+    {
+        enum ach_status r = achd_parse_headers( conn.in, &conn.request );
+        if( ACH_OK != r ) {
+            cx.error(r, "Bad headers\n");
+        }
+    }
 
     /* open channel */
     if( !conn.request.chan_name ) conn.request.chan_name = conn.request.remote_chan_name;
@@ -342,16 +344,15 @@ void achd_serve() {
     assert( conn.handler );
 
     /* print headers */
-    fprintf(conn.fout,
-            "frame-count: %" PRIuPTR "\n"
-            "frame-size: %" PRIuPTR "\n"
-            "status: %d # %s\n"
-            ".\n",
-            conn.channel.shm->index_cnt,
-            conn.channel.shm->data_size / conn.channel.shm->index_cnt,
-            ACH_OK, ach_result_to_string(ACH_OK)
+    achd_printf(conn.out,
+                "frame-count: %" PRIuPTR "\n"
+                "frame-size: %" PRIuPTR "\n"
+                "status: %d # %s\n"
+                ".\n",
+                conn.channel.shm->index_cnt,
+                conn.channel.shm->data_size / conn.channel.shm->index_cnt,
+                ACH_OK, ach_result_to_string(ACH_OK)
         );
-    fflush(conn.fout);
 
     /* Set error handler */
     cx.error = achd_error_log;
@@ -372,7 +373,7 @@ static void achd_set_int(int *pint, const char *name, const char *val);
 #define REGEX_WORD "([^:=\n]*)"
 #define REGEX_SPACE "[[:blank:]\n\r]*"
 
-void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
+enum ach_status achd_parse_headers(int fd, struct achd_headers *headers) {
     regex_t line_regex, dot_regex;
     regmatch_t match[3];
     if (regcomp(&line_regex,
@@ -397,14 +398,14 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
     }
 
     int line = 0;
-    size_t n = 1024;
-    char *lineptr = (char*)malloc(n);
+    size_t n = ACHD_LINE_LENGTH;
+    char lineptr[n];
     ssize_t r;
-    while( (r = getline(&lineptr, &n, fptr)) > 0 ) {
+    while( ACH_OK == (r = achd_readline(fd, lineptr, n)) ) {
         line++;
         /* Break on ".\n" */
         if (! regexec(&dot_regex, lineptr, 0, NULL, 0)) break;
-        achd_log(LOG_DEBUG, "header line %d: %s", line, lineptr);
+        achd_log(LOG_DEBUG, "header line %d: %s\n", line, lineptr);
         /* kill comments and translate */
         char *cmt = strchr(lineptr, '#');
         if( cmt ) *cmt = '\0';
@@ -427,7 +428,7 @@ void achd_parse_headers(FILE *fptr, struct achd_headers *headers) {
     }
     regfree(&line_regex);
     regfree(&dot_regex);
-    free(lineptr);
+    return r;
 }
 
 void achd_set_int(int *pint, const char *name, const char *val) {

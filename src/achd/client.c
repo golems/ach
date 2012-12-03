@@ -149,6 +149,7 @@ void achd_client() {
 
 static int server_connect( struct achd_conn *conn) {
     achd_log( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
+    conn->in = conn->out = -1;
 
     /* Note the time */
     clock_gettime( CLOCK_MONOTONIC, &conn->t0 );
@@ -161,38 +162,38 @@ static int server_connect( struct achd_conn *conn) {
         achd_log( LOG_DEBUG, "Socket connected\n");
     }
 
-    conn->fin = fdopen( fd, "r" );
-    conn->fout = fdopen( fd, "w" );
-    if( NULL == conn->fin || NULL == conn->fout ) {
-        cx.error( ACH_FAILED_SYSCALL, "Couldn't fdopen sock: %s\n", strerror(errno) );
-        assert(0);
-    }
-
     /* Write request */
-    if( (0 > fprintf(conn->fout,
-                    "channel-name: %s\n"
-                    "transport: %s\n"
-                    "direction: %s\n"
-                    ".\n",
-                    conn->request.chan_name,
-                    conn->request.transport,
-                    ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
-                      "push" : "pull" ) /* remote end does the opposite */
-             )) ||
-        fflush(conn->fout) )
     {
-        achd_log(LOG_DEBUG, "couldn't send headers\n");
-        fclose(conn->fin);
-        fclose(conn->fout);
-        close(fd);
-        return -1;
-    } else {
-        achd_log(LOG_DEBUG, "headers sent\n");
+        enum ach_status r =
+            achd_printf(fd,
+                        "channel-name: %s\n"
+                        "transport: %s\n"
+                        "direction: %s\n"
+                        ".\n",
+                        conn->request.chan_name,
+                        conn->request.transport,
+                        ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
+                          "push" : "pull" )
+                        /* remote end does the opposite */ );
+        if( ACH_OK != r ) {
+            achd_log(LOG_DEBUG, "couldn't send headers\n");
+            close(fd);
+            return -1;
+        } else {
+            achd_log(LOG_DEBUG, "headers sent\n");
+        }
     }
 
     /* Get Response */
     conn->response.status = ACH_BUG;
-    achd_parse_headers( conn->fin, &conn->response );
+    {
+        int r = achd_parse_headers( fd, &conn->response );
+        if( ACH_OK != r ) {
+            achd_log(LOG_CRIT, "Bad response from server: %s\n", strerror(errno));
+            close(fd);
+            return -1;
+        }
+    }
     if( ACH_OK != conn->response.status ) {
         if( conn->response.message ) {
             cx.error( conn->response.status, "Server error: %s\n", conn->response.message );
@@ -216,7 +217,7 @@ static int server_connect( struct achd_conn *conn) {
         if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
     }
 
-    return fd;
+    return conn->in = conn->out = fd;
 }
 
 int achd_reconnect( struct achd_conn *conn) {

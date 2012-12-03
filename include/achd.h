@@ -49,6 +49,8 @@
 
 #define ACHD_RECONNECT_NS (250 * 1000 * 1000)
 
+#define ACHD_LINE_LENGTH 1024
+
 
 /* Prototypes */
 enum achd_direction {
@@ -93,8 +95,8 @@ struct achd_conn {
     struct achd_headers request;
     struct achd_headers response;
     ach_channel_t channel;
-    FILE *fin;
-    FILE *fout;
+    int in;
+    int out;
     achd_io_handler_t handler;
     void *cx;
 };
@@ -102,7 +104,7 @@ struct achd_conn {
 int achd_reconnect( struct achd_conn *conn );
 
 
-void achd_parse_headers(FILE *fptr, struct achd_headers *headers);
+enum ach_status achd_parse_headers(int fd, struct achd_headers *headers);
 
 void achd_serve(void);
 void achd_client(void);
@@ -111,6 +113,13 @@ void achd_client(void);
 void achd_log( int level, const char fmt[], ...);
 void achd_error_header( int code, const char fmt[], ... );
 void achd_error_log( int code, const char fmt[], ... );
+
+
+/* basic i/o */
+ssize_t achd_read(int fd, void *buf, size_t cnt );
+ssize_t achd_write(int fd, const void *buf, size_t cnt );
+enum ach_status achd_readline(int fd, char *buf, size_t n );
+enum ach_status achd_printf(int fd, const char fmt[], ...);
 
 /* i/o handlers */
 void achd_push_tcp( struct achd_conn *);
