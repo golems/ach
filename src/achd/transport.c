@@ -67,6 +67,10 @@
 #include "achd.h"
 
 void achd_push_tcp( struct achd_conn *conn ) {
+    size_t pipeframe_size =
+        conn->channel.shm->data_size / conn->channel.shm->index_cnt;
+    ach_pipe_frame_t *pipeframe = ach_pipe_alloc( pipeframe_size );
+
     /* Subscribe and Write */
 
     /* struct timespec period = {0,0}; */
@@ -111,7 +115,7 @@ void achd_push_tcp( struct achd_conn *conn ) {
                 /* } */
             } else {
                 /* push the data */
-                r = ach_get( &conn->channel, cx.frame->data, cx.frame_max, &frame_size,  NULL,
+                r = ach_get( &conn->channel, pipeframe->data, pipeframe_size, &frame_size,  NULL,
                              ( (conn->request.get_last /*|| is_freq*/) ?
                                (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
             }
@@ -119,13 +123,13 @@ void achd_push_tcp( struct achd_conn *conn ) {
             if( ACH_OVERFLOW == r ) {
                 achd_log( LOG_NOTICE, "buffer too small, resizing to %d\n", frame_size);
                 /* enlarge buffer and retry on overflow */
-                assert(frame_size > cx.frame_max );
-                cx.frame_max = frame_size;
-                free(cx.frame);
-                cx.frame = ach_pipe_alloc( cx.frame_max );
+                assert(frame_size > pipeframe_size );
+                pipeframe_size = frame_size;
+                free(pipeframe);
+                pipeframe = ach_pipe_alloc( pipeframe_size );
             } else if (ACH_OK == r || ACH_MISSED_FRAME == r ) {
                 got_frame = 1;
-                ach_pipe_set_size( cx.frame, frame_size );
+                ach_pipe_set_size( pipeframe, frame_size );
             }else {
                 /* abort on other errors */
                 /* hard_assert( 0, "sub: ach_error: %s\n", */
@@ -139,8 +143,8 @@ void achd_push_tcp( struct achd_conn *conn ) {
         /* stream send */
         int sent_frame = 0;
         do {
-            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(cx.frame);
-            size_t r = fwrite( cx.frame, 1, size, conn->fout );
+            size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(pipeframe);
+            size_t r = fwrite( pipeframe, 1, size, conn->fout );
             if( r != size ) {
                 achd_log( LOG_ERR, "Couldn't write frame\n");
                 achd_reconnect(conn);
@@ -168,6 +172,9 @@ void achd_push_tcp( struct achd_conn *conn ) {
 }
 
 void achd_pull_tcp( struct achd_conn *conn ) {
+    size_t pipeframe_size =
+        conn->channel.shm->data_size / conn->channel.shm->index_cnt;
+    ach_pipe_frame_t *pipeframe = ach_pipe_alloc( pipeframe_size );
     /* Read and Publish Loop */
     while( !cx.sig_received &&
            !feof(conn->fin) && !feof(conn->fout) &&
@@ -177,27 +184,27 @@ void achd_pull_tcp( struct achd_conn *conn ) {
         uint64_t cnt = 0;
         do {
             /* get size */
-            size_t s = fread( cx.frame, 1, 16, conn->fin );
+            size_t s = fread( pipeframe, 1, 16, conn->fin );
             if( 0 == s ) {
                 achd_log(LOG_DEBUG, "Empty read\n");
                 achd_reconnect(conn);
             } else if( 16 != s ) {
                 achd_log(LOG_ERR, "Incomplete frame header\n");
                 achd_reconnect(conn);
-            } else if( memcmp("achpipe", cx.frame->magic, 8) ) {
+            } else if( memcmp("achpipe", pipeframe->magic, 8) ) {
                 achd_log(LOG_ERR, "Invalid frame header\n");
                 achd_reconnect(conn);
             } else {
-                cnt = ach_pipe_get_size( cx.frame );
+                cnt = ach_pipe_get_size( pipeframe );
                 /* TODO: sanity check that cnt is not something outrageous */
                 /* make sure buf can hold it */
-                if( (size_t)cnt > cx.frame_max ) {
-                    cx.frame_max = cnt;
-                    free( cx.frame );
-                    cx.frame = ach_pipe_alloc( cx.frame_max );
+                if( (size_t)cnt > pipeframe_size ) {
+                    pipeframe_size = cnt;
+                    free( pipeframe );
+                    pipeframe = ach_pipe_alloc( pipeframe_size );
                 }
                 /* get data */
-                s = fread( cx.frame->data, 1, (size_t)cnt, conn->fin );
+                s = fread( pipeframe->data, 1, (size_t)cnt, conn->fin );
                 if( cnt != s ) {
                     achd_log(LOG_ERR, "Incomplete frame data\n");
                     achd_reconnect(conn);
@@ -209,7 +216,7 @@ void achd_pull_tcp( struct achd_conn *conn ) {
 
         /* put data */
         if( !cx.sig_received ) {
-            ach_status_t r = ach_put( &conn->channel, cx.frame->data, cnt );
+            ach_status_t r = ach_put( &conn->channel, pipeframe->data, cnt );
             if( ACH_OK != r ) {
                 cx.error( r, "Couldn't put frames\n" );
             }

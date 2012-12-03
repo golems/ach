@@ -204,10 +204,6 @@ int main(int argc, char **argv) {
         cx.cl_opts.remote_chan_name  = cx.cl_opts.chan_name;
     }
 
-    /*TODO: use size from channel */
-    cx.frame_max = INIT_BUF_SIZE;
-    cx.frame = ach_pipe_alloc( cx.frame_max );
-
     /* dispatch based on mode */
     /* serve */
     if ( ACHD_MODE_SERVE == cx.mode ) {
@@ -360,7 +356,7 @@ void achd_serve() {
     /* Set error handler */
     cx.error = achd_error_log;
     /* start i/o */
-    syslog( LOG_NOTICE, "Serving channel %s via %s\n",
+    achd_log( LOG_NOTICE, "Serving channel %s via %s\n",
             conn.request.chan_name, conn.request.transport );
     return conn.handler( &conn );
 }

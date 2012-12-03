@@ -132,9 +132,7 @@ struct achd_cx {
     const char *pidfile;
     sig_atomic_t sig_received;
     void (*error)(int code, const char fmt[], ...);
-    ach_pipe_frame_t *frame;
-    size_t frame_max;
-} ;
+};
 
 extern struct achd_cx cx;
 void sighandler_install(void);
