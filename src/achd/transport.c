@@ -141,7 +141,7 @@ void achd_push_tcp( struct achd_conn *conn ) {
         int sent_frame = 0;
         do {
             size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(pipeframe);
-            achd_log( LOG_ERR, "Writing frame, %d bytes total\n", size);
+            achd_log( LOG_DEBUG, "Writing frame, %d bytes total\n", size);
             ssize_t r = achd_write( conn->out, pipeframe, size );
             if( r < 0 || (size_t)r != size ) {
                 achd_log( LOG_ERR, "Couldn't write frame\n");
