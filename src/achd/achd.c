@@ -564,7 +564,7 @@ void achd_error_header( int code, const char fmt[], ... ) {
             code, ach_result_to_string(code));
     va_start( argp, fmt );
     vfprintf( stdout, fmt, argp );
-    fprintf(stdout,"\n");
+    fprintf(stdout,"\n.\n");
     fflush( stdout );
     va_end( argp );
 

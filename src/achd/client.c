@@ -189,20 +189,21 @@ static int server_connect( struct achd_conn *conn) {
     {
         int r = achd_parse_headers( fd, &conn->response );
         if( ACH_OK != r ) {
-            achd_log(LOG_CRIT, "Bad response from server: %s\n", strerror(errno));
-            close(fd);
-            return -1;
-        }
-    }
-    if( ACH_OK != conn->response.status ) {
-        if( conn->response.message ) {
-            cx.error( conn->response.status, "Server error: %s\n", conn->response.message );
+            if( errno ) {
+                cx.error( r, "Bad response from server: %s\n", strerror(errno) );
+            } else {
+                cx.error( r, "Bad response from server\n");
+            }
             assert(0);
-        } else {
-            cx.error( conn->response.status, "Bad response from server\n" );
-            assert(0);
+        } else if ( ACH_OK != conn->response.status ) {
+            if( conn->response.message ) {
+                cx.error( conn->response.status, "Server error: %s\n", conn->response.message );
+                assert(0);
+            } else {
+                cx.error( conn->response.status, "Bad response from server\n" );
+                assert(0);
+            }
         }
-
     }
     achd_log(LOG_DEBUG, "Server response received\n");
 
