@@ -58,6 +58,7 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "ach.h"
@@ -299,7 +300,15 @@ void achd_posarg(int i, const char *arg) {
 
 void achd_serve() {
     sighandler_install();
-    achd_log( LOG_INFO, "Server started\n");
+
+    /* Get peer */
+    struct sockaddr_in addr;
+    {
+        socklen_t len = sizeof(addr);
+        if( getpeername( STDIN_FILENO, (struct sockaddr *) &addr, &len ) ) {
+            cx.error( ACH_FAILED_SYSCALL, "Server couldn't determine name of peer: %s\n", strerror(errno));
+        }
+    }
 
     struct achd_conn conn;
     memset( &conn, 0, sizeof(conn) );
@@ -313,9 +322,26 @@ void achd_serve() {
         }
     }
 
-    /* open channel */
+    /* check transport headers */
     if( !conn.request.chan_name ) conn.request.chan_name = conn.request.remote_chan_name;
-    if( conn.request.chan_name ) {
+
+    if( !conn.request.chan_name ) {
+        cx.error( ACH_BAD_HEADER, "%s:%d no channel header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
+    } else if( ! conn.request.transport ) {
+        cx.error( ACH_BAD_HEADER, "%s:%d no transport header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
+    } else if( !((ACHD_DIRECTION_PULL == conn.request.direction) ||
+                 (ACHD_DIRECTION_PUSH == conn.request.direction)) )
+    {
+        cx.error( ACH_BAD_HEADER, "%s:%d no direction header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
+    } else {
+        achd_log( LOG_NOTICE, "serving %s:%d channel %s via %s %s\n",
+                  inet_ntoa(addr.sin_addr), addr.sin_port, conn.request.chan_name,
+                  conn.request.transport,
+                  (ACHD_DIRECTION_PUSH == conn.request.direction) ? "push" : "pull" );
+    }
+
+    /* open channel */
+    {
         int r = ach_open( &conn.channel, conn.request.chan_name, NULL );
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't open channel %s - %s\n", conn.request.chan_name, strerror(errno) );
@@ -323,19 +349,6 @@ void achd_serve() {
         } else {
             ach_flush(&conn.channel);
         }
-    } else {
-        cx.error( ACH_BAD_HEADER, "No channel name header\n");
-        assert(0);
-    }
-
-    /* check transport headers */
-    if( ! conn.request.transport ) {
-        cx.error( ACH_BAD_HEADER, "No transport header\n");
-        assert(0);
-    }
-    if( ! conn.request.direction ) {
-        cx.error( ACH_BAD_HEADER, "No direction header\n");
-        assert(0);
     }
 
     /* dispatch to the requested mode */
@@ -356,10 +369,11 @@ void achd_serve() {
 
     /* Set error handler */
     cx.error = achd_error_log;
+
     /* start i/o */
-    achd_log( LOG_NOTICE, "Serving channel %s via %s\n",
-            conn.request.chan_name, conn.request.transport );
-    return conn.handler( &conn );
+    conn.handler( &conn );
+    achd_log( LOG_INFO, "Finished serving %s:%d\n", inet_ntoa(addr.sin_addr), addr.sin_port );
+    return;
 }
 
 
@@ -495,17 +509,17 @@ achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction d
     if( ! transport ) {
         cx.error( ACH_BAD_HEADER, "No transport header");
         assert(0);
-    }
-    if( ! direction ) {
+    } else if( ! direction ) {
         cx.error( ACH_BAD_HEADER, "No direction header");
         assert(0);
-    }
-    int i = 0;
-    for( i = 0; handlers[i].transport; i ++ ) {
-        if( direction ==  handlers[i].direction &&
-            0 == strcasecmp( handlers[i].transport, transport ) )
-        {
-            return handlers[i].handler;
+    } else {
+        int i = 0;
+        for( i = 0; handlers[i].transport; i ++ ) {
+            if( direction ==  handlers[i].direction &&
+                0 == strcasecmp( handlers[i].transport, transport ) )
+            {
+                return handlers[i].handler;
+            }
         }
     }
     /* Couldn't find handler */
