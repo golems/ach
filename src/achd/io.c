@@ -71,7 +71,7 @@ ssize_t achd_read(int fd, void *buf, size_t cnt ) {
     size_t n = 0;
     while( !cx.sig_received && n < cnt ) {
         errno = 0;
-        ssize_t r = read( fd, buf+n, cnt-n );
+        ssize_t r = read( fd, (uint8_t*)buf+n, cnt-n );
         if( r > 0 ) n += (size_t)r;
         else if (r < 0 && EINTR == errno && !cx.sig_received) continue;
         else break;
@@ -82,7 +82,7 @@ ssize_t achd_read(int fd, void *buf, size_t cnt ) {
 ssize_t achd_write(int fd, const void *buf, size_t cnt ) {
     size_t n = 0;
     while( !cx.sig_received && n < cnt ) {
-        ssize_t r = write( fd, buf+n, cnt-n );
+        ssize_t r = write( fd, (uint8_t*)buf+n, cnt-n );
         if( r > 0 ) n += (size_t)r;
         else if (EINTR == errno && !cx.sig_received) continue;
         else return r;

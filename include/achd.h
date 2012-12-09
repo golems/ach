@@ -51,6 +51,12 @@
 
 #define ACHD_LINE_LENGTH 1024
 
+#ifdef __GNUC__
+#define ACHD_ATTR_PRINTF(m,n) __attribute__((format(printf, m, n)))
+#else
+#define ACHD_ATTR_PRINTF(m,n)
+#endif
+
 
 /* Prototypes */
 enum achd_direction {
@@ -88,16 +94,33 @@ struct achd_headers {
 struct achd_conn;
 
 typedef void (*achd_io_handler_t) (struct achd_conn*);
+typedef int (*achd_io_connect_t) (struct achd_conn*);
+
+
+
+struct achd_conn_vtab {
+    const char *transport;
+    enum achd_direction direction;
+    achd_io_connect_t connect;
+    achd_io_handler_t handler;
+};
+
+const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_direction direction );
 
 struct achd_conn {
     enum achd_mode mode;
     struct timespec t0;
-    struct achd_headers request;
-    struct achd_headers response;
+    struct achd_headers send_hdr;
+    struct achd_headers recv_hdr;
     ach_channel_t channel;
     int in;
     int out;
-    achd_io_handler_t handler;
+
+    size_t pipeframe_size;
+    ach_pipe_frame_t *pipeframe;
+
+    const struct achd_conn_vtab *vtab;
+
     void *cx;
 };
 
@@ -110,25 +133,27 @@ void achd_serve(void);
 void achd_client(void);
 
 /* logging and error handlers */
-void achd_log( int level, const char fmt[], ...);
-void achd_error_header( int code, const char fmt[], ... );
-void achd_error_log( int code, const char fmt[], ... );
+void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);
+void achd_error_header( int code, const char fmt[], ... ) ACHD_ATTR_PRINTF(2,3);
+void achd_error_log( int code, const char fmt[], ... )    ACHD_ATTR_PRINTF(2,3);
 
 
 /* basic i/o */
 ssize_t achd_read(int fd, void *buf, size_t cnt );
 ssize_t achd_write(int fd, const void *buf, size_t cnt );
 enum ach_status achd_readline(int fd, char *buf, size_t n );
-enum ach_status achd_printf(int fd, const char fmt[], ...);
+enum ach_status achd_printf(int fd, const char fmt[], ...) ACHD_ATTR_PRINTF(2,3);
 
 /* i/o handlers */
+
+int achd_connect_nop( struct achd_conn *conn );
+int achd_udp_sender( struct achd_conn *conn );
+int achd_udp_receiver( struct achd_conn *conn );
+
 void achd_push_tcp( struct achd_conn *);
 void achd_pull_tcp( struct achd_conn *);
 void achd_push_udp( struct achd_conn *);
 void achd_pull_udp( struct achd_conn *);
-
-achd_io_handler_t achd_get_handler
-(const char *transport, enum achd_direction direction);
 
 
 struct achd_cx {

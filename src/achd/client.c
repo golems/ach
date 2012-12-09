@@ -68,7 +68,7 @@
 * Client *
 *********/
 
-static void client_retry(void);
+static void client_refork(void);
 static int socket_connect(void);
 static int server_connect( struct achd_conn*);
 static void daemonize(void);
@@ -81,11 +81,11 @@ void achd_client() {
     memset(&conn, 0, sizeof(conn));
 
     /* Create request headers */
-    conn.handler = achd_get_handler( cx.cl_opts.transport, cx.cl_opts.direction );
-    assert( conn.handler );
+    conn.vtab = achd_get_vtab( cx.cl_opts.transport, cx.cl_opts.direction );
+    assert( conn.vtab && conn.vtab->handler );
 
     if( cx.cl_opts.remote_chan_name ) {
-        conn.request.chan_name = cx.cl_opts.remote_chan_name;
+        conn.send_hdr.chan_name = cx.cl_opts.remote_chan_name;
     } else {
         cx.error( ACH_BAD_HEADER, "No channel name given\n");
         assert(0);
@@ -94,7 +94,7 @@ void achd_client() {
     assert( cx.cl_opts.transport );
     assert( cx.cl_opts.direction == ACHD_DIRECTION_PUSH ||
             cx.cl_opts.direction == ACHD_DIRECTION_PULL );
-    conn.request.transport = cx.cl_opts.transport;
+    conn.send_hdr.transport = cx.cl_opts.transport;
 
     /* Check the channel */
     {
@@ -118,13 +118,18 @@ void achd_client() {
     }
 
     /* fork a worker if we are to retry connectons */
-    client_retry();
+    client_refork();
 
     /* Finally, start the show, possibly in a child process */
 
     /* Open initial connection */
     int fd = server_connect( &conn );
     if( fd < 0 ) fd = achd_reconnect( &conn );
+
+    /* Allocate buffers */
+    conn.pipeframe_size =
+        conn.channel.shm->data_size / conn.channel.shm->index_cnt;
+    conn.pipeframe = ach_pipe_alloc( conn.pipeframe_size );
 
     /* TODO: If we lose and then re-establish a connections, frames
      * may be missed or duplicated.
@@ -142,7 +147,7 @@ void achd_client() {
     /* Start running */
     if ( fd >= 0 && !cx.sig_received ) {
         achd_log(LOG_INFO, "Client running\n");
-        conn.handler( &conn );
+        conn.vtab->handler( &conn );
         achd_log(LOG_INFO, "Client done\n");
     }
 }
@@ -164,14 +169,17 @@ static int server_connect( struct achd_conn *conn) {
 
     /* Write request */
     {
+        conn->in = conn->out = fd;
+        if( conn->vtab->connect ) conn->vtab->connect(conn);
+        conn->in = conn->out = -1;
         enum ach_status r =
             achd_printf(fd,
                         "channel-name: %s\n"
                         "transport: %s\n"
                         "direction: %s\n"
                         ".\n",
-                        conn->request.chan_name,
-                        conn->request.transport,
+                        conn->send_hdr.chan_name,
+                        conn->send_hdr.transport,
                         ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
                           "push" : "pull" )
                         /* remote end does the opposite */ );
@@ -185,9 +193,9 @@ static int server_connect( struct achd_conn *conn) {
     }
 
     /* Get Response */
-    conn->response.status = ACH_BUG;
+    conn->recv_hdr.status = ACH_BUG;
     {
-        int r = achd_parse_headers( fd, &conn->response );
+        int r = achd_parse_headers( fd, &conn->recv_hdr );
         if( ACH_OK != r ) {
             if( errno ) {
                 cx.error( r, "Bad response from server: %s\n", strerror(errno) );
@@ -195,12 +203,12 @@ static int server_connect( struct achd_conn *conn) {
                 cx.error( r, "Bad response from server\n");
             }
             assert(0);
-        } else if ( ACH_OK != conn->response.status ) {
-            if( conn->response.message ) {
-                cx.error( conn->response.status, "Server error: %s\n", conn->response.message );
+        } else if ( ACH_OK != conn->recv_hdr.status ) {
+            if( conn->recv_hdr.message ) {
+                cx.error( conn->recv_hdr.status, "Server error: %s\n", conn->recv_hdr.message );
                 assert(0);
             } else {
-                cx.error( conn->response.status, "Bad response from server\n" );
+                cx.error( conn->recv_hdr.status, "Bad response from server\n" );
                 assert(0);
             }
         }
@@ -209,8 +217,8 @@ static int server_connect( struct achd_conn *conn) {
 
     /* Try to create channel if needed */
     if( ! conn->channel.shm ) {
-        int frame_size = conn->response.frame_size ? conn->response.frame_size : ACH_DEFAULT_FRAME_SIZE;
-        int frame_count = conn->response.frame_count ? conn->response.frame_count : ACH_DEFAULT_FRAME_COUNT;
+        int frame_size = conn->recv_hdr.frame_size ? conn->recv_hdr.frame_size : ACH_DEFAULT_FRAME_SIZE;
+        int frame_count = conn->recv_hdr.frame_count ? conn->recv_hdr.frame_count : ACH_DEFAULT_FRAME_COUNT;
         /* Fixme: should sanity check these counts */
         int r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
         if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
@@ -320,13 +328,13 @@ static pid_t wait_for_child( pid_t pid ) {
         } else if ( wpid < 0 ) {
             /* Wait failed */
             if (cx.sig_received ) {
-                achd_log(LOG_DEBUG, "signal during wait\n", status);
+                achd_log(LOG_DEBUG, "signal during wait\n");
                 return pid; /* process still running */
             } else if( EINTR == errno ) {
-                achd_log(LOG_DEBUG, "wait interrupted\n", status);
+                achd_log(LOG_DEBUG, "wait interrupted\n");
                 continue; /* interrupted */
             } else if (ECHILD == errno) {
-                achd_log(LOG_WARNING, "unexpected ECHILD\n", status);
+                achd_log(LOG_WARNING, "unexpected ECHILD\n");
                 return 0; /* child somehow died */
             } else { /* something bad */
                 cx.error(ACH_FAILED_SYSCALL, "Couldn't wait for child\n", strerror(errno));
@@ -339,7 +347,7 @@ static pid_t wait_for_child( pid_t pid ) {
     }
 }
 
-static void client_retry() {
+static void client_refork() {
     /* TODO: When we refork the child, we "forget" our position in
      * the channel.  This means some frames may be missed or resent.
      * It would be better to have the child attempt to reconnect if

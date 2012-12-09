@@ -77,25 +77,26 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context);
 /* global data */
 struct achd_cx cx;
 
-static const struct {
-    const char *transport;
-    enum achd_direction direction;
-    achd_io_handler_t handler;
-} handlers[] = {
+static const struct achd_conn_vtab handlers[] = {
     {.transport = "tcp",
      .direction = ACHD_DIRECTION_PUSH,
+     .connect = achd_connect_nop,
      .handler = achd_push_tcp },
     {.transport = "tcp",
      .direction = ACHD_DIRECTION_PULL,
+     .connect = achd_connect_nop,
      .handler = achd_pull_tcp },
     {.transport = "udp",
      .direction = ACHD_DIRECTION_PUSH,
+     .connect = achd_udp_sender,
      .handler = achd_push_udp },
     {.transport = "udp",
      .direction = ACHD_DIRECTION_PULL,
+     .connect = achd_udp_receiver,
      .handler = achd_pull_udp },
     {.transport = NULL,
      .direction = 0,
+     .connect = NULL,
      .handler = NULL }
 };
 
@@ -155,7 +156,7 @@ int main(int argc, char **argv) {
                       "  -d,                          daemonize (client-mode only)\n"
                       "  -p PORT,                     port\n"
                       "  -f FILE,                     TODO: lock FILE and write pid\n"
-                      "  -t (tcp|udp),                TODO: transport (default tcp)\n"
+                      "  -t (tcp|udp),                transport (default tcp)\n"
                       "  -z CHANNEL_NAME,             remote channel name\n"
                       "  -r,                          reconnect if connection is lost\n"
                       "  -q,                          be quiet\n"
@@ -303,6 +304,7 @@ void achd_serve() {
 
     /* Get peer */
     struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr) );
     {
         socklen_t len = sizeof(addr);
         if( getpeername( STDIN_FILENO, (struct sockaddr *) &addr, &len ) ) {
@@ -316,35 +318,35 @@ void achd_serve() {
     conn.out = STDOUT_FILENO;
     conn.mode = ACHD_MODE_SERVE;
     {
-        enum ach_status r = achd_parse_headers( conn.in, &conn.request );
+        enum ach_status r = achd_parse_headers( conn.in, &conn.recv_hdr );
         if( ACH_OK != r ) {
             cx.error(r, "Bad headers\n");
         }
     }
 
     /* check transport headers */
-    if( !conn.request.chan_name ) conn.request.chan_name = conn.request.remote_chan_name;
+    if( !conn.recv_hdr.chan_name ) conn.recv_hdr.chan_name = conn.recv_hdr.remote_chan_name;
 
-    if( !conn.request.chan_name ) {
+    if( !conn.recv_hdr.chan_name ) {
         cx.error( ACH_BAD_HEADER, "%s:%d no channel header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
-    } else if( ! conn.request.transport ) {
+    } else if( ! conn.recv_hdr.transport ) {
         cx.error( ACH_BAD_HEADER, "%s:%d no transport header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
-    } else if( !((ACHD_DIRECTION_PULL == conn.request.direction) ||
-                 (ACHD_DIRECTION_PUSH == conn.request.direction)) )
+    } else if( !((ACHD_DIRECTION_PULL == conn.recv_hdr.direction) ||
+                 (ACHD_DIRECTION_PUSH == conn.recv_hdr.direction)) )
     {
         cx.error( ACH_BAD_HEADER, "%s:%d no direction header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
     } else {
         achd_log( LOG_NOTICE, "serving %s:%d channel %s via %s %s\n",
-                  inet_ntoa(addr.sin_addr), addr.sin_port, conn.request.chan_name,
-                  conn.request.transport,
-                  (ACHD_DIRECTION_PUSH == conn.request.direction) ? "push" : "pull" );
+                  inet_ntoa(addr.sin_addr), addr.sin_port, conn.recv_hdr.chan_name,
+                  conn.recv_hdr.transport,
+                  (ACHD_DIRECTION_PUSH == conn.recv_hdr.direction) ? "push" : "pull" );
     }
 
     /* open channel */
     {
-        int r = ach_open( &conn.channel, conn.request.chan_name, NULL );
+        int r = ach_open( &conn.channel, conn.recv_hdr.chan_name, NULL );
         if( ACH_OK != r ) {
-            cx.error( r, "Couldn't open channel %s - %s\n", conn.request.chan_name, strerror(errno) );
+            cx.error( r, "Couldn't open channel %s - %s\n", conn.recv_hdr.chan_name, strerror(errno) );
             assert(0);
         } else {
             ach_flush(&conn.channel);
@@ -352,11 +354,12 @@ void achd_serve() {
     }
 
     /* dispatch to the requested mode */
-    conn.handler = achd_get_handler( conn.request.transport,
-                                     conn.request.direction );
-    assert( conn.handler );
+    conn.vtab = achd_get_vtab( conn.recv_hdr.transport,
+                                                       conn.recv_hdr.direction );
+    assert( conn.vtab && conn.vtab->handler );
 
     /* print headers */
+    if( conn.vtab->connect ) conn.vtab->connect( &conn );
     achd_printf(conn.out,
                 "frame-count: %" PRIuPTR "\n"
                 "frame-size: %" PRIuPTR "\n"
@@ -370,8 +373,14 @@ void achd_serve() {
     /* Set error handler */
     cx.error = achd_error_log;
 
+
+    /* Allocate buffers */
+    conn.pipeframe_size =
+        conn.channel.shm->data_size / conn.channel.shm->index_cnt;
+    conn.pipeframe = ach_pipe_alloc( conn.pipeframe_size );
+
     /* start i/o */
-    conn.handler( &conn );
+    conn.vtab->handler( &conn );
     achd_log( LOG_INFO, "Finished serving %s:%d\n", inet_ntoa(addr.sin_addr), addr.sin_port );
     return;
 }
@@ -504,7 +513,7 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
 
 
 /* handler definitions */
-achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction direction ) {
+const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_direction direction ) {
     /* check transport headers */
     if( ! transport ) {
         cx.error( ACH_BAD_HEADER, "No transport header");
@@ -518,7 +527,7 @@ achd_io_handler_t achd_get_handler( const char *transport, enum achd_direction d
             if( direction ==  handlers[i].direction &&
                 0 == strcasecmp( handlers[i].transport, transport ) )
             {
-                return handlers[i].handler;
+                return & handlers[i];
             }
         }
     }
