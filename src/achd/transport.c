@@ -67,10 +67,11 @@
 #include "achutil.h"
 #include "achd.h"
 
-/* TODO: add SCTP, RDS Support */
+/* TODO: add SCTP, RDS, DCCP Support */
 
 struct udp_cx {
     int sock;
+    struct sockaddr_in addr;
 };
 
 static void get_frame( struct achd_conn *conn );
@@ -143,7 +144,8 @@ int achd_connect_nop( struct achd_conn *conn ) {
     return 0;
 }
 
-int achd_udp_sender( struct achd_conn *conn ) {
+
+int achd_udp_sock( struct achd_conn *conn ) {
     struct udp_cx *ucx;
     if( conn->cx ) {
         ucx = (struct udp_cx*)conn->cx;
@@ -151,21 +153,11 @@ int achd_udp_sender( struct achd_conn *conn ) {
         conn->cx = ucx = (struct udp_cx*)calloc(1, sizeof(struct udp_cx));
     }
 
+    /* Create socket */
     ucx->sock = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
     if( ucx->sock < 0 ) {
         cx.error(ACH_FAILED_SYSCALL, "Couldn't create UDP socket: %s\n", strerror(errno) );
     }
-
-    return 0;
-}
-
-
-int achd_udp_receiver( struct achd_conn *conn ) {
-
-    /* Create socket */
-    achd_udp_sender(conn);
-    struct udp_cx *ucx = (struct udp_cx*)conn->cx;
-    assert(ucx);
 
     /* Bind */
     struct sockaddr_in addr;
@@ -177,22 +169,22 @@ int achd_udp_receiver( struct achd_conn *conn ) {
         cx.error( ACH_FAILED_SYSCALL, "Could not bind udp socket: %s\n", strerror(errno) );
     }
 
-    /* Tell peer the port */
-    struct sockaddr_in real_addr;
-    memset(&real_addr, 0, sizeof(real_addr));
-    socklen_t real_len = sizeof(real_addr);
-    if( getsockname( ucx->sock, (struct sockaddr*)&real_addr, &real_len ) ) {
-        cx.error( ACH_FAILED_SYSCALL, "Could find socket port: %s\n", strerror(errno) );
+    /* Get Address */
+    socklen_t len = sizeof(ucx->addr);
+    if( getsockname( ucx->sock, (struct sockaddr *) &(ucx->addr), &len ) ) {
+        cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of UDP receiver: %s\n", strerror(errno));
     } else {
-        if( ACH_OK != achd_printf( conn->out, "remote-port: %d\n", ntohs(real_addr.sin_port) ) ) {
-            cx.error(ACH_FAILED_SYSCALL, "Couldn't write remote-port: %s\n", strerror(errno) );
-        }
+        achd_log( LOG_DEBUG, "Local UDP socket %s:%d\n",
+                  inet_ntoa(ucx->addr.sin_addr), ntohs( ucx->addr.sin_port) );
     }
 
+    /* Tell peer the port */
+    if( ACH_OK != achd_printf( conn->out, "remote-port: %d\n", ntohs(ucx->addr.sin_port) ) ) {
+        cx.error(ACH_FAILED_SYSCALL, "Couldn't write remote-port: %s\n", strerror(errno) );
+    }
 
     return 0;
 }
-
 
 void achd_push_tcp( struct achd_conn *conn ) {
     /* Subscribe and Write */
@@ -205,6 +197,7 @@ void achd_push_tcp( struct achd_conn *conn ) {
     /*     period.tv_nsec = (long) ((p - (double)period.tv_sec)*1e9); */
     /*     is_freq = 1; */
     /* } */
+
 
     /* read loop */
     while( !cx.sig_received ) {
@@ -299,27 +292,30 @@ void achd_pull_tcp( struct achd_conn *conn ) {
  * end we're still alive
  */
 
+static void udp_peer( struct achd_conn *conn, struct sockaddr_in *addr_peer ) {
+    memset( addr_peer, 0, sizeof(*addr_peer) );
+    struct sockaddr_in addr_tcp;
+    socklen_t len = sizeof(addr_tcp);
+    if( getpeername( conn->in, (struct sockaddr *) &addr_tcp, &len ) ) {
+        cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of peer: %s\n", strerror(errno));
+    } else {
+        addr_peer->sin_addr = addr_tcp.sin_addr;
+        addr_peer->sin_port = htons((in_port_t)conn->recv_hdr.remote_port);
+        achd_log( LOG_DEBUG, "UDP peer %s:%d\n",
+                  inet_ntoa(addr_peer->sin_addr), ntohs(addr_peer->sin_port) );
+    }
+}
+
 void achd_push_udp( struct achd_conn *conn ) {
     struct udp_cx *ucx = (struct udp_cx*)conn->cx;
     assert(ucx);
-
 
     int warned_mtu_eth = 0;
     int warned_mtu_udp = 0;
 
     /* Find remote address */
     struct sockaddr_in addr_udp;
-    memset( &addr_udp, 0, sizeof(addr_udp) );
-    {
-        struct sockaddr_in addr_tcp;
-        socklen_t len = sizeof(addr_tcp);
-        if( getpeername( conn->in, (struct sockaddr *) &addr_tcp, &len ) ) {
-            cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of peer: %s\n", strerror(errno));
-        } else {
-            addr_udp.sin_addr = addr_tcp.sin_addr;
-            addr_udp.sin_port = htons((in_port_t)conn->recv_hdr.remote_port);
-        }
-    }
+    udp_peer( conn, &addr_udp );
 
     achd_log( LOG_INFO, "sending UDP to %s:%d\n",
               inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
@@ -365,23 +361,9 @@ void achd_pull_udp( struct achd_conn *conn ) {
     assert(ucx);
 
     /* Find peer address */
-    /* Only should accept data from the peer */
-    struct sockaddr_in addr_tcp;
-    {
-        socklen_t len = sizeof(addr_tcp);
-        if( getpeername( conn->in, (struct sockaddr *) &addr_tcp, &len ) ) {
-            cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of peer: %s\n", strerror(errno));
-        }
-
-        struct sockaddr_in addr_udp;
-        len = sizeof(addr_udp);
-        if( getsockname( ucx->sock, (struct sockaddr *) &addr_udp, &len ) ) {
-            cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of UDP receiver: %s\n", strerror(errno));
-        } else {
-            achd_log( LOG_INFO, "receiving UDP from %s on local port %d\n",
-                      inet_ntoa(addr_tcp.sin_addr), ntohs( addr_udp.sin_port ) );
-        }
-    }
+    struct sockaddr_in addr_peer;
+    memset( &addr_peer, 0, sizeof(addr_peer) );
+    udp_peer( conn, &addr_peer );
 
     /* Get the packets */
     while( !cx.sig_received ) {
@@ -398,8 +380,19 @@ void achd_pull_udp( struct achd_conn *conn ) {
 
         if( cx.sig_received ) break;
 
-        achd_log( LOG_DEBUG, "Received %" PRIdPTR " UDP bytes from %s\n",
-                  r, inet_ntoa(addr_udp.sin_addr) );
+        /* Check that peer matches */
+        if( 0 != memcmp( &(addr_udp.sin_addr), &(addr_peer.sin_addr),
+                         sizeof(addr_udp.sin_addr) ) ||
+            addr_udp.sin_port != addr_peer.sin_port )
+        {
+            achd_log( LOG_WARNING, "Stray packet from %s:%d, wanted %s:%d\n",
+                      inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port),
+                      inet_ntoa(addr_peer.sin_addr), ntohs(addr_peer.sin_port) );
+            continue;
+        }
+
+        achd_log( LOG_DEBUG, "Received %" PRIdPTR " UDP bytes from %s:%d\n",
+                  r, inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
 
         /* Put the frame */
         ach_pipe_set_size( conn->pipeframe, (size_t)r );

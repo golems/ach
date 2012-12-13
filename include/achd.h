@@ -147,8 +147,7 @@ enum ach_status achd_printf(int fd, const char fmt[], ...) ACHD_ATTR_PRINTF(2,3)
 /* i/o handlers */
 
 int achd_connect_nop( struct achd_conn *conn );
-int achd_udp_sender( struct achd_conn *conn );
-int achd_udp_receiver( struct achd_conn *conn );
+int achd_udp_sock( struct achd_conn *conn );
 
 void achd_push_tcp( struct achd_conn *);
 void achd_pull_tcp( struct achd_conn *);
