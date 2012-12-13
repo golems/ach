@@ -62,6 +62,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <poll.h>
 
 #include "ach.h"
 #include "achutil.h"
@@ -306,6 +307,35 @@ static void udp_peer( struct achd_conn *conn, struct sockaddr_in *addr_peer ) {
     }
 }
 
+/* Check if TCP control channel is still open */
+static int udp_poll( struct pollfd pfd[2] ) {
+    int r;
+    do {
+        errno = 0;
+        r = poll( pfd, 2, -1 );
+    } while ( r < 0 && ( EAGAIN == errno ||
+                         (EINTR == errno && !cx.sig_received) ) );
+    if( cx.sig_received ) {
+        return 0;
+    } else if( r <= 0 && errno ) {
+        cx.error(ACH_FAILED_SYSCALL, "Couldn't poll : %s\n", strerror(errno) );
+    } else if( pfd[1].revents & POLLHUP ||
+               pfd[1].revents & POLLERR ||
+               pfd[1].revents & POLLNVAL ) {
+        /* Seems these don't actually do what we expect, and POLLIN is
+         * set instead */
+        achd_log(LOG_DEBUG, "TCP closed\n");
+        return -1;
+    }  else if ( (pfd[1].revents & POLLIN) ) {
+        /* TODO: perhaps should recv() instead of assuming this means a closed socket */
+        /* but, since we don't expect data here anyway, maybe best to
+         * return */
+        achd_log(LOG_DEBUG, "TCP closed\n");
+        return -1;
+    }
+    return 0;
+}
+
 void achd_push_udp( struct achd_conn *conn ) {
     struct udp_cx *ucx = (struct udp_cx*)conn->cx;
     assert(ucx);
@@ -320,13 +350,18 @@ void achd_push_udp( struct achd_conn *conn ) {
     achd_log( LOG_INFO, "sending UDP to %s:%d\n",
               inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
 
+    struct pollfd pfd[] = {{ .fd = ucx->sock,
+                             .events = POLLOUT},
+                           { .fd = conn->in,
+                             .events = POLLIN } };
     while( !cx.sig_received ) {
         /* read the data */
         get_frame(conn);
 
-        size_t cnt = ach_pipe_get_size( conn->pipeframe );
+        if( cx.sig_received ) break;
 
         /* Check size */
+        size_t cnt = ach_pipe_get_size( conn->pipeframe );
         if( cnt > MTU_UDP ) {
             if( ! warned_mtu_udp ) {
                 achd_log( LOG_ERR, "Cannot send %" PRIuPTR " bytes via UDP\n", cnt );
@@ -340,8 +375,22 @@ void achd_push_udp( struct achd_conn *conn ) {
             warned_mtu_eth = 1;
         }
 
-        /* UDP Send */
+        /* Poll fds */
         /* TODO: does O_NONBLOCK make sense? */
+        pfd[0].revents = 0;
+        while( ! (pfd[0].revents & POLLOUT) ) {
+            int r = udp_poll( pfd );
+            if( r < 0 ) {
+                return;
+            } else if( cx.sig_received ) {
+                return;
+            } else if ( ! (pfd[0].revents & POLLOUT) ) {
+                achd_log(LOG_ERR, "No output possible after poll\n");
+            }
+        }
+
+
+        /* UDP Send */
         ssize_t r = -1;
         achd_log( LOG_DEBUG, "Sending %"PRIuPTR" UDP bytes\n", cnt );
         do {
@@ -365,8 +414,27 @@ void achd_pull_udp( struct achd_conn *conn ) {
     memset( &addr_peer, 0, sizeof(addr_peer) );
     udp_peer( conn, &addr_peer );
 
+    /* setup for poll */
+    struct pollfd pfd[] = {{ .fd = ucx->sock,
+                             .events = POLLIN},
+                           { .fd = conn->in,
+                             .events = POLLIN } };
+
     /* Get the packets */
     while( !cx.sig_received ) {
+        /* Poll FDs */
+        {
+            int r = udp_poll( pfd );
+            if( cx.sig_received ) {
+                break;
+            } else if( r < 0 ) {
+                break;
+            } else if ( ! (pfd[0].revents & POLLIN) ) {
+                achd_log(LOG_ERR, "No input avaiable after poll\n");
+                continue;
+            }
+        }
+
         /* Read packet */
         struct sockaddr_in addr_udp;
         memset( &addr_udp, 0, sizeof(addr_udp) );
