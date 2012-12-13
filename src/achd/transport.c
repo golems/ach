@@ -77,6 +77,11 @@ static void get_frame( struct achd_conn *conn );
 static void put_frame( struct achd_conn *conn );
 
 
+#define HEADER_BYTES_IPV4 20
+#define HEADER_BYTES_UDP 8
+#define MTU_UDP (0xFFFF)
+#define MTU_ETH 1500
+
 
 static void get_frame( struct achd_conn *conn ) {
     do {
@@ -298,6 +303,10 @@ void achd_push_udp( struct achd_conn *conn ) {
     struct udp_cx *ucx = (struct udp_cx*)conn->cx;
     assert(ucx);
 
+
+    int warned_mtu_eth = 0;
+    int warned_mtu_udp = 0;
+
     /* Find remote address */
     struct sockaddr_in addr_udp;
     memset( &addr_udp, 0, sizeof(addr_udp) );
@@ -319,11 +328,24 @@ void achd_push_udp( struct achd_conn *conn ) {
         /* read the data */
         get_frame(conn);
 
-        /* Send UDP packet */
-        /* TODO: does O_NONBLOCK make sense? */
-        /* TODO: handle exceeding of UDP MTU */
-        /* TODO: warn on exceeding of ethernet MTU */
         size_t cnt = ach_pipe_get_size( conn->pipeframe );
+
+        /* Check size */
+        if( cnt > MTU_UDP ) {
+            if( ! warned_mtu_udp ) {
+                achd_log( LOG_ERR, "Cannot send %" PRIuPTR " bytes via UDP\n", cnt );
+                warned_mtu_udp = 1;
+            }
+            continue;
+        } else if ( cnt + HEADER_BYTES_UDP + HEADER_BYTES_IPV4 > MTU_ETH &&
+                    ! warned_mtu_eth ) {
+            achd_log( LOG_WARNING, "Size %" PRIuPTR " exceeds typical ethernet MTU\n",
+                      cnt + HEADER_BYTES_UDP + HEADER_BYTES_IPV4 );
+            warned_mtu_eth = 1;
+        }
+
+        /* UDP Send */
+        /* TODO: does O_NONBLOCK make sense? */
         ssize_t r = -1;
         achd_log( LOG_DEBUG, "Sending %"PRIuPTR" UDP bytes\n", cnt );
         do {
