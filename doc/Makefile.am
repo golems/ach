@@ -1,8 +1,7 @@
-dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1 achd.1
-dist_doc_DATA = ach.html achbench.html achcat.html achpipe.bin.html achpipe.html achlog.html achd.html
 EXTRA_DIST = achpipe.bin.inc achd.inc
 
 if HAVE_HELP2MAN
+dist_man_MANS = ach.1 achbench.1 achcat.1 achpipe.bin.1 achpipe.1 achlog.1 achd.1
 ach.1: $(top_srcdir)/src/achtool.c $(top_srcdir)/configure.ac
 	$(HELP2MAN) -h -h -v -V --no-info -n "manipulate ach channels" $(top_builddir)/ach$(EXEEXT) -o $@
 
@@ -25,11 +24,22 @@ achlog.1: $(top_srcdir)/achlog
 	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
 
 if HAVE_MAN2HTML
+MAN_HTML = ach.html achbench.html achcat.html achpipe.bin.html achpipe.html achlog.html achd.html
 .1.html:
 	$(MAN2HTML) -r $< | sed -e '1d;2d;8d;s/@\|&amp;/{at}/g' > $@
 endif
 
 endif
+
+
+if HAVE_DB2HTML
+DOCBOOK_HTML =  ach-manual.html
+ach-manual.html: ach-manual.xml
+	db2html -u -o . $<
+endif
+
+
+dist_doc_DATA = $(DOCBOOK_HTML) $(MAN_HTML)
 
 
 maintainer-clean-local:

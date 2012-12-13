@@ -1,0 +1,354 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://docbook.org/xml/4.5/docbookx.dtd">
+
+<article>
+
+  <articleinfo>
+    <title>Ach IPC User Manual</title>
+    <author>
+       <firstname>Neil</firstname>
+       <surname>Dantam</surname>
+       <othername role='mi'>T</othername>
+       <affiliation>
+          <!-- Valid email...spamblock/scramble if so desired -->
+          <address><email>ntd at gatech dot edu</email></address>
+       </affiliation>
+     </author>
+
+     <!-- All dates specified in ISO "YYYY-MM-DD" format -->
+     <pubdate>2012-12-13</pubdate>
+
+     <!-- Most recent revision goes at the top; list in descending order -->
+     <revhistory>
+       <revision>
+          <revnumber>0.1</revnumber>
+          <date>2012-12-13</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>initial draft</revremark>
+       </revision>
+     </revhistory>
+
+     <abstract>
+        <para>
+          This is the manual for the Ach IPC library.
+        </para>
+
+         <para>
+           Ach is an Inter-Process Communication (IPC) mechanism and
+           library, intended for communication in real-time systems
+           that sample data from physical processes. Ach eliminates
+           the Head-of-Line Blocking problem for applications that
+           always require access to the newest message. Source code is
+           provided under an the 2-clause BSD license.
+         </para>
+     </abstract>
+
+  </articleinfo>
+
+  <sect1>
+    <title>
+      Introduction
+    </title>
+
+    <para>
+      Ach provides a message bus or publish-subscribe style of
+      communication between multiple writers and multiple readers.  A
+      real-time system will generally have multiple Ach channels
+      across which individual data samples are published.  The
+      messages sent on a channel are simple byte arrays, so arbitrary
+      data may be transmitted such as text, images, and binary control
+      messages.  Each channel is implemented as two circular buffers,
+      (1) a data buffer with variable sized entries and (2) an index
+      buffer with fixed-size elements indicating the offsets into the
+      data buffer. These two circular buffers are written in a
+      channel-specific POSIX shared memory file. This frees users from
+      managing synchronization, which is contained within the Ach
+      library.
+    </para>
+
+    <para>The Ach interface consists of the following procedures:</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><code>ach_create</code></term>
+        <listitem>
+          <para>Create the shared memory region and initialize its data structures</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><code>ach_open</code></term>
+        <listitem>
+          <para>Open the shared memory file and initialize process local channel counters</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><code>ach_put</code></term>
+        <listitem><para>Insert a new message into the channel</para></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><code>ach_get</code></term>
+        <listitem><para>Receive a message from the channel</para></listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><code>ach_close</code></term>
+        <listitem><para>Close the shared memory file</para></listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>
+      Channels must be created before they can be opened. Creation may
+      be done directly by either the reading or writing process, or it
+      may be done via the shell command, <code>ach -C
+      channel_name</code>, before the reader or writer start. After
+      the channel is created, each reader or writer must open the
+      channel before it can individually get or put messages.
+    </para>
+  </sect1>
+
+
+  <sect1>
+    <title>
+      Libach API
+    </title>
+
+
+    <sect2><title>Status Codes</title>
+    <para>The Ach API functions use return status codes to indicate either
+    successful completetion or an error condition.  The following codes are defined:</para>
+    <variablelist>
+      <varlistentry><term>ACH_OK</term>
+      <listitem><para>Operation completed successfully.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_OVERFLOW</term>
+      <listitem><para>Channel or buffer was too small.  Either the
+      channel is too small to hold the message you attempted to send,
+      or the buffer you passed to receive the message was too small to
+      hold the result.  If the channel is too small, you should
+      specify a larger nominal message size when creating the channel.
+      If the buffer is to small, pass in a bigger
+      buffer.</para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_INVALID_NAME</term>
+      <listitem><para>An invalid channel name.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_BAD_SHM_FILE</term>
+      <listitem><para>An invalid channel file.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_FAILED_SYSCALL</term>
+      <listitem><para>A system call was unsuccessful.  Check the
+      <code>errno</code> to determine what went wrong.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_STALE_FRAMES</term>
+      <listitem><para>No new data has be published to channel.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_MISSED_FRAME</term>
+      <listitem><para>The reciever has skipped over some frames (which
+      may no longer be stored in the channel).  You will still get
+      either the latest or the oldest frame, depending on which you
+      reqeusted.  </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_TIMEOUT</term>
+      <listitem><para>Timeout occurred.  No data received.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_EEXIST</term>
+      <listitem><para>Channel already exists.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_ENOENT</term>
+      <listitem><para>Channel does not exist.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_EACCES</term>
+      <listitem><para>No permission to access the channel file.  You
+      will want to either run as the appropriate user or set the
+      channel permissions appropriately.  </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_EINVAL</term>
+      <listitem><para>An invalid parameter was passed.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_CORRUPT</term>
+      <listitem><para>Corruption of the channel file detected.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_BAD_HEADER</term>
+      <listitem><para>Invalid header line in the network protocol.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term>ACH_BUG</term>
+      <listitem><para>An unexpected or inconsistent condition has
+      occurred.  If the software is correct, you should never see this
+      code.  If you do see this code, please contact the authors.
+      </para></listitem>
+      </varlistentry>
+    </variablelist>
+    </sect2>
+
+    <sect2><title>Creating a channel</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Opening a channel</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Sending Data</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Receiving Data</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Closing a channel</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Deleting a channel</title>
+    <para>TODO</para>
+    </sect2>
+
+    <sect2><title>Channel Permissions</title>
+    <para>TODO</para>
+    </sect2>
+
+  </sect1>
+
+  <sect1>
+    <title>
+      ach shell tool
+    </title>
+    <para> TODO </para>
+  </sect1>
+
+  <sect1>
+    <title>
+      achd Network Daemon
+    </title>
+    <para> While the primary design goal of Ach is low-latency, single
+    host IPC, the <code>achd</code> daemon additionally provides a way
+    to relay messages over the network. </para>
+  </sect1>
+
+  <sect1>
+    <title>
+      Performance Tuning
+    </title>
+    <para> TODO </para>
+  </sect1>
+
+  <sect1>
+    <title>
+      Theory of Operation
+    </title>
+
+    <sect2><title>Data Structure</title>
+    <para>
+      The core data structure of an Ach channel is a pair of circular
+      arrays located in the POSIX shared memory file.  The data array
+      contains variable sized elements which store the actual message
+      frames sent through the Ach channel.  The index array contains
+      fixed size elements where each element contains both an offset
+      into the data array and the length of that element.  A head
+      offset into each array indicates both the place to insert the
+      next data and the location of the most recent message frame.
+      This pair of circular arrays allows us to find the variable
+      sized message frames by first looking at a known offset in the
+      fixed-sized index array.
+    </para>
+
+    <para>
+      Access to the channel is synchronized using a mutex and
+      condition variable.  This allows readers to either periodically
+      poll the channel for new data or to wait on the condition
+      variable until a writer has posted a new message.  Using a
+      read/write lock instead would have allowed only polling.
+      Additionally, synchronization using a mutex prevents starvation
+      and enables proper priority inheritance between processes,
+      important to maintaining real-time performance.
+    </para>
+    </sect2>
+
+    <sect2><title>Core Procedures</title>
+    <para>
+      Two procedures compose the core of ach: <code>ach_put</code>
+      and <code>ach_get</code>.
+    </para>
+
+    <sect3><title>ach_put</title>
+    <para>
+      The procedure <code>ach_put</code> inserts new messages into
+      the channel.  Its function is analogous to <code>write</code>,
+      <code>sendmsg</code>, and <code>mq_send</code>.  The procedure
+      is given a pointer to the shared memory region for the channel
+      and a byte array containing the message to post.  There are
+      four broad steps to the procedure:
+    </para>
+    <orderedlist>
+      <listitem><para> Get an index entry. If there is at least one
+      free index entry, use it.  Otherwise, clear the oldest index
+      entry and its corresponding message in the data array.
+      </para></listitem>
+      <listitem><para> Make room in the data array.  If there is
+      enough room already, continue.  Otherwise, repeatedly free the
+      oldest message until there is enough room.  </para></listitem>
+      <listitem><para>Copy the message into data array.</para>
+      </listitem>
+      <listitem><para>Update the offset and free counts in the channel structure.
+      </para></listitem>
+    </orderedlist>
+    </sect3>
+
+    <sect3><title>ach_get</title>
+    <para>
+      The procedure <code>ach_get</code> receives a message from the
+      channel.  Its function is analogous to <code>read</code>,
+      <code>recvmsg</code>, and <code>mq_receive</code>.  The procedure
+      takes a pointer to the shared memory region, a storage buffer to
+      copy the message to, the last message sequence number received,
+      the next index offset to check for a message, and option flags
+      indicating whether to block waiting for a new message and whether
+      to return the newest message bypassing any older unseen messages.
+    </para>
+
+    <orderedlist>
+      <listitem><para> If we are to wait for a new message and there
+      is no new message, then wait.  Otherwise, if there are no new
+      messages, return a status code indicating this
+      fact.</para></listitem>
+      <listitem><para> Find the index entry to use.  If we are to
+      return the newest message, use that entry.  Otherwise, if the
+      next entry we expected to use contains the next sequence number
+      we expect to see, use that entry.  Otherwise, use the oldest
+      entry.</para></listitem>
+      <listitem><para> According to the offset and size from the
+      selected index entry, copy the message from the data array into
+      the provided storage buffer.</para></listitem>
+      <listitem><para> Update the sequence number count and next index
+      entry offset for this receiver.</para></listitem>
+    </orderedlist>
+    </sect3>
+
+    </sect2>
+
+    <sect2><title>Serialization</title>
+    <para>
+      Ach is orthogoninal to the issue of serialization: it only
+      handles raw byte arrays.  Thus, you can choose whatever type of
+      serialization is most appropriate for you application.  For
+      maximum performance, it may be appropriate to define message
+      types as simple C structures.  If more flexibility is required,
+      there are a variety of other options to choose from: XDR, ASN.1,
+      Protocol Buffers, etc.
+    </para>
+    </sect2>
+
+  </sect1>
+
+</article>
