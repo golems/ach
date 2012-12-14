@@ -1,0 +1,1840 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN""http://www.w3.org/TR/html4/loose.dtd">
+<HTML
+><HEAD
+><TITLE
+>Ach IPC User Manual</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.79"></HEAD
+><BODY
+CLASS="article"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="ARTICLE"
+><DIV
+CLASS="TITLEPAGE"
+><H1
+CLASS="title"
+><A
+NAME="AEN2"
+>Ach IPC User Manual</A
+></H1
+><H3
+CLASS="author"
+><A
+NAME="AEN4"
+>Neil T Dantam</A
+></H3
+><DIV
+CLASS="affiliation"
+><DIV
+CLASS="address"
+><P
+CLASS="address"
+><CODE
+CLASS="email"
+>&#60;<A
+HREF="mailto:ntd at gatech dot edu"
+>ntd at gatech dot edu</A
+>&#62;</CODE
+></P
+></DIV
+></DIV
+><P
+CLASS="pubdate"
+>2012-12-13<BR></P
+><DIV
+CLASS="revhistory"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="TOP"
+COLSPAN="3"
+><B
+>Revision History</B
+></TH
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+>Revision 0.1</TD
+><TD
+ALIGN="LEFT"
+>2012-12-13</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>initial draft</TD
+></TR
+></TABLE
+></DIV
+><DIV
+><DIV
+CLASS="abstract"
+><P
+></P
+><A
+NAME="AEN18"
+></A
+><P
+>&#13;          This is the manual for the Ach IPC library.
+        </P
+><P
+>&#13;           Ach is an Inter-Process Communication (IPC) mechanism and
+           library, intended for communication in real-time systems
+           that sample data from physical processes. Ach eliminates
+           the Head-of-Line Blocking problem for applications that
+           always require access to the newest message. Source code is
+           provided under an the 2-clause BSD license.
+         </P
+><P
+></P
+></DIV
+></DIV
+><HR></DIV
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>1. <A
+HREF="#AEN21"
+>Introduction</A
+></DT
+><DT
+>2. <A
+HREF="#AEN53"
+>Libach API</A
+></DT
+><DD
+><DL
+><DT
+>2.1. <A
+HREF="#AEN55"
+>Status Codes</A
+></DT
+><DT
+>2.2. <A
+HREF="#AEN135"
+>Creating a channel</A
+></DT
+><DT
+>2.3. <A
+HREF="#AEN157"
+>Opening a channel</A
+></DT
+><DT
+>2.4. <A
+HREF="#AEN173"
+>Sending Data</A
+></DT
+><DT
+>2.5. <A
+HREF="#AEN190"
+>Receiving Data</A
+></DT
+><DT
+>2.6. <A
+HREF="#AEN250"
+>Closing a channel</A
+></DT
+><DT
+>2.7. <A
+HREF="#AEN258"
+>Deleting a channel</A
+></DT
+><DT
+>2.8. <A
+HREF="#AEN266"
+>Channel Permissions</A
+></DT
+><DT
+>2.9. <A
+HREF="#AEN283"
+>Ignore old messages</A
+></DT
+></DL
+></DD
+><DT
+>3. <A
+HREF="#AEN292"
+>ach Shell Tool</A
+></DT
+><DT
+>4. <A
+HREF="#AEN356"
+>achd Network Daemon</A
+></DT
+><DD
+><DL
+><DT
+>4.1. <A
+HREF="#AEN360"
+>Server</A
+></DT
+><DT
+>4.2. <A
+HREF="#AEN395"
+>Client</A
+></DT
+></DL
+></DD
+><DT
+>5. <A
+HREF="#AEN456"
+>Performance Tuning</A
+></DT
+><DD
+><DL
+><DT
+>5.1. <A
+HREF="#AEN459"
+>Disable CPU frequency scaling</A
+></DT
+><DT
+>5.2. <A
+HREF="#AEN462"
+>Use a Real-Time Operating System</A
+></DT
+></DL
+></DD
+><DT
+>6. <A
+HREF="#AEN466"
+>Theory of Operation</A
+></DT
+><DD
+><DL
+><DT
+>6.1. <A
+HREF="#AEN468"
+>Data Structure</A
+></DT
+><DT
+>6.2. <A
+HREF="#AEN472"
+>Core Procedures</A
+></DT
+><DD
+><DL
+><DT
+>6.2.1. <A
+HREF="#AEN477"
+>ach_put</A
+></DT
+><DT
+>6.2.2. <A
+HREF="#AEN493"
+>ach_get</A
+></DT
+></DL
+></DD
+><DT
+>6.3. <A
+HREF="#AEN509"
+>Serialization</A
+></DT
+></DL
+></DD
+><DT
+><A
+HREF="#AEN512"
+>Colophon</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="sect1"
+><H2
+CLASS="sect1"
+><A
+NAME="AEN21"
+>1. Introduction</A
+></H2
+><P
+>&#13;      Ach provides a message bus or publish-subscribe style of
+      communication between multiple writers and multiple readers.  A
+      real-time system will generally have multiple Ach channels
+      across which individual data samples are published.  The
+      messages sent on a channel are simple byte arrays, so arbitrary
+      data may be transmitted such as text, images, and binary control
+      messages.  Each channel is implemented as two circular buffers,
+      (1) a data buffer with variable sized entries and (2) an index
+      buffer with fixed-size elements indicating the offsets into the
+      data buffer. These two circular buffers are written in a
+      channel-specific POSIX shared memory file. This frees users from
+      managing synchronization, which is contained within the Ach
+      library.
+    </P
+><P
+>The Ach interface consists of the following procedures:</P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
+><DT
+><CODE
+CLASS="function"
+>ach_create</CODE
+></DT
+><DD
+><P
+>Create the shared memory region and initialize its data structures</P
+></DD
+><DT
+><CODE
+CLASS="function"
+>ach_open</CODE
+></DT
+><DD
+><P
+>Open the shared memory file and initialize process local channel counters</P
+></DD
+><DT
+><CODE
+CLASS="function"
+>ach_put</CODE
+></DT
+><DD
+><P
+>Insert a new message into the channel</P
+></DD
+><DT
+><CODE
+CLASS="function"
+>ach_get</CODE
+></DT
+><DD
+><P
+>Receive a message from the channel</P
+></DD
+><DT
+><CODE
+CLASS="function"
+>ach_close</CODE
+></DT
+><DD
+><P
+>Close the shared memory file</P
+></DD
+></DL
+></DIV
+><P
+>&#13;      Channels must be created before they can be opened. Creation may
+      be done directly by either the reading or writing process, or it
+      may be done via the shell command, <B
+CLASS="command"
+>ach -C
+      channel_name</B
+>, before the reader or writer start. After
+      the channel is created, each reader or writer must open the
+      channel before it can individually get or put messages.
+    </P
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN53"
+>2. Libach API</A
+></H2
+><DIV
+CLASS="sect2"
+><H3
+CLASS="sect2"
+><A
+NAME="AEN55"
+>2.1. Status Codes</A
+></H3
+><P
+>The Ach API functions use return status codes to indicate either
+    successful completion or an error condition.  The following codes are defined:</P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
+><DT
+><CODE
+CLASS="constant"
+>ACH_OK</CODE
+></DT
+><DD
+><P
+>Operation completed successfully.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_OVERFLOW</CODE
+></DT
+><DD
+><P
+>Channel or buffer was too small.  Either the
+      channel is too small to hold the message you attempted to send,
+      or the buffer you passed to receive the message was too small to
+      hold the result.  If the channel is too small, you should
+      specify a larger nominal message size when creating the channel.
+      If the buffer is to small, pass in a bigger
+      buffer.</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_INVALID_NAME</CODE
+></DT
+><DD
+><P
+>An invalid channel name.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_BAD_SHM_FILE</CODE
+></DT
+><DD
+><P
+>An invalid channel file.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_FAILED_SYSCALL</CODE
+></DT
+><DD
+><P
+>A system call was unsuccessful.  Check the
+      <CODE
+CLASS="varname"
+>errno</CODE
+> to determine what went wrong.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_STALE_FRAMES</CODE
+></DT
+><DD
+><P
+>No new data has be published to channel.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_MISSED_FRAME</CODE
+></DT
+><DD
+><P
+>The receiver has skipped over some frames (which
+      may no longer be stored in the channel).  You will still get
+      either the latest or the oldest frame, depending on which you
+      requested.  </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_TIMEOUT</CODE
+></DT
+><DD
+><P
+>Timeout occurred.  No data received.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_EEXIST</CODE
+></DT
+><DD
+><P
+>Channel already exists.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_ENOENT</CODE
+></DT
+><DD
+><P
+>Channel does not exist.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_EACCES</CODE
+></DT
+><DD
+><P
+>No permission to access the channel file.  You
+      will want to either run as the appropriate user or set the
+      channel permissions appropriately.  </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_EINVAL</CODE
+></DT
+><DD
+><P
+>An invalid parameter was passed.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_CORRUPT</CODE
+></DT
+><DD
+><P
+>Corruption of the channel file detected.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_BAD_HEADER</CODE
+></DT
+><DD
+><P
+>Invalid header line in the network protocol.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_BUG</CODE
+></DT
+><DD
+><P
+>An unexpected or inconsistent condition has
+      occurred.  If the software is correct, you should never see this
+      code.  If you do see this code, please contact the authors.
+      </P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN135"
+>2.2. Creating a channel</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN137"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_create</CODE
+>(const char *channel_name, size_t frame_cnt, size_t frame_size, ach_create_attr_t *attr);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>&#13;      Channels are created using the <CODE
+CLASS="function"
+>ach_create</CODE
+>
+      function.  A channel must be created before it can be opened.
+      This function will create and initialize a POSIX shared memory
+      file for the channel.  The channel can then be opened by passing
+      the same <CODE
+CLASS="varname"
+>channel_name</CODE
+> to
+      <CODE
+CLASS="function"
+>ach_open</CODE
+>.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN153"
+></A
+><P
+><B
+>Example 1. Creating a Channel</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;enum ach_status r = ach_create( "my_channel", 10, 512, NULL );
+if( ACH_OK != r ) {
+    fprintf( stderr, "Could not create channel: %s\n", ach_result_to_string(r) );
+    exit(EXIT_FAILURE);
+}
+      </PRE
+></DIV
+><P
+>Note that the message size given here is not a strict
+      constraint.  Individual messages are allowed to be smaller or
+      larger than this value.  The only hard constraint is that a
+      total of frame_cnt*frame_size is allocated for all message data
+      in the channel.  Thus, the total data required by all buffered
+      messages cannot exceed this value (older messages are
+      overwritten), and no individual message may be larger than this
+      value. </P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN157"
+>2.3. Opening a channel</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN159"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_open</CODE
+>(ach_channel_t *channel, const char *channel_name, ach__attr_t *attr);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>Opens a channel for use within this process.  The channel
+    must be opened before messages can be sent or received</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN170"
+></A
+><P
+><B
+>Example 2. Opening a Channel</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;ach_channel_t channel;
+enum ach_status r = ach_open( &#38;channel, "my_channel", NULL );
+if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Could not open channel: %s\n", ach_result_to_string(r) );
+    exit(EXIT_FAILURE);
+}
+      </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN173"
+>2.4. Sending Data</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN175"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_put</CODE
+>(ach_channel_t *channel, const void *buf, size_t cnt);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>The <CODE
+CLASS="function"
+>ach_put</CODE
+> function writes a new
+    message to the channel.  This will go in the next open space in
+    the circular array.  If there is insufficient unused space in the
+    circular array, then the oldest entry or entries will be
+    overwritten.</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN187"
+></A
+><P
+><B
+>Example 3. Opening a Channel</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;struct my_msg_type my_msg;
+/* Fill in my_msg with useful data */
+enum ach_status r = ach_put( &#38;channel, &#38;my_msg, sizeof(my_msg) );
+if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Could not put data: %s\n", ach_result_to_string(r) );
+}
+      </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN190"
+>2.5. Receiving Data</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN192"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_get</CODE
+>(ach_channel_t *channel, void *buf, size_t buf_size, size_t *frame_size, const struct timespec * restrict abstime, int options);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>The <CODE
+CLASS="function"
+>ach_get</CODE
+> is used to received data
+    from a channel.  The <CODE
+CLASS="varname"
+>options</CODE
+> parameter controls
+    the behavior of this function and is the bitwise or of the
+    following values.</P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_WAIT</CODE
+></DT
+><DD
+><P
+>Wait until a new message is posted. Default
+      behavior is to return immediately.</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_LAST</CODE
+></DT
+><DD
+><P
+>Return the newest message.  Default behavior is
+      to return the oldest unseen message.</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_COPY</CODE
+></DT
+><DD
+><P
+>Copy the message to the buffer, even if we have
+      already seen it.  Only valid when
+      <CODE
+CLASS="constant"
+>ACH_O_WAIT</CODE
+> is not give.  Default behavior
+      is to return <CODE
+CLASS="constant"
+>ACH_STALE_FRAMES</CODE
+> when there
+      are no new messages.</P
+></DD
+></DL
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN229"
+></A
+><P
+><B
+>Example 4. Poll for oldest message</B
+></P
+><P
+>This will get the next unseen message from the channel.</P
+><PRE
+CLASS="programlisting"
+>&#13;size_t frame_size;
+enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, NULL, 0 );
+if( ACH_MISSED_FRAME == r ) {
+    fprintf(stdout, "Missed a/some messages(s)\n");
+} else if( ACH_STALE_FRAMES == r ) {
+    fprintf( stdout, "No new data\n" );
+} else if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Unable to get a message: %s\n", ach_result_to_string(r) );
+} else if( frame_size != sizeof(my_msg) ) {
+    syslog( LOG_WARNING, "Unexpected message size %" PRIuPTR ", expecting %" PRIuPTR "\n",
+            frame_size, sizeof(my_msg) );
+}
+      </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN233"
+></A
+><P
+><B
+>Example 5. Wait for newest message</B
+></P
+><P
+>This will get the newest message from the channel.  If no
+      unseen messages are in the channel, it will wait forever until
+      one is posted. </P
+><PRE
+CLASS="programlisting"
+>&#13;enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, ACH_O_WAIT | ACH_O_LAST, 0 );
+      </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN237"
+></A
+><P
+><B
+>Example 6. Timed wait for newest message</B
+></P
+><P
+>This will get the newest message from the channel.  If no
+      unseen messages are in the channel, it will up to one second until
+      one is posted. </P
+><PRE
+CLASS="programlisting"
+>&#13;struct timespec t;
+clock_gettime( ACH_DEFAULT_CLOCK, &#38;t );
+t.tv_sec += 1;
+enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, ACH_O_WAIT | ACH_O_LAST, &#38;t );
+if( ACH_TIMEOUT == r ) {
+  fprintf(stdout, "call to ach_get timed out\n");
+}
+      </PRE
+></DIV
+><DIV
+CLASS="note"
+><P
+></P
+><TABLE
+CLASS="note"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TH
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+><B
+>Does anybody know what time it is?</B
+></TH
+></TR
+><TR
+><TD
+>&nbsp;</TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>While ach channels default to using
+      <CODE
+CLASS="constant"
+>CLOCK_MONOTONIC</CODE
+> for timed waits, the issue
+      of determining the correct time is fraught with complications.
+      Traditionally, unix time -- seconds since January 1, 1970 -- has
+      been defined based on UTC.  This is given to nanosecond
+      precision with <CODE
+CLASS="constant"
+>CLOCK_REALTIME</CODE
+> (nothing to
+      do with real-time-as-in-low-latency-or-motion-control).
+      However, <CODE
+CLASS="constant"
+>CLOCK_REALTIME</CODE
+> is discontinuous.
+      It may be reset by the operator, by the NTP daemon, and it is
+      <SPAN
+CLASS="emphasis"
+><I
+CLASS="emphasis"
+>defined</I
+></SPAN
+> as discontinous when leap seconds
+      occur.  This is bad when one wants to use the clock for periodic
+      events as is likely for motion control.
+      <CODE
+CLASS="constant"
+>CLOCK_MONTONIC</CODE
+> is not discontinous, but
+      even it has issues.  The NTP daemon may slew this clock,
+      speeding it up or slowing it down on linux by 0.5ms per second.
+      Linux does provide the <CODE
+CLASS="constant"
+>CLOCK_MONOTONIC_RAW</CODE
+>
+      which is not slewed, but is also not portable.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN250"
+>2.6. Closing a channel</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN252"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_close</CODE
+>(ach_channel_t *channel);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN258"
+>2.7. Deleting a channel</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN260"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_unlink</CODE
+>(const char *name);</CODE
+></P
+><P
+></P
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN266"
+>2.8. Channel Permissions</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN268"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_chmod</CODE
+>(ach_channel_t *channel, mode_t mode);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>Set the POSIX permission bits of the channel to
+    <CODE
+CLASS="varname"
+>mode</CODE
+>.  Note that any channel access requires
+    both the read (4) and write (2) bits to be set, because we must
+    write in order to hold the mutex.  The executable bit (1) is
+    irrelevant.</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN278"
+></A
+><P
+><B
+>Example 7. Make channel user and group accessible</B
+></P
+><P
+>It is best to specify <CODE
+CLASS="varname"
+>mode</CODE
+> as an octal
+    number.  A value of 0660 will give the owning user and group
+    access, and deny access to all others.</P
+><PRE
+CLASS="programlisting"
+>&#13;      enum ach_status r = ach_get( &#38;channel, 0660 );
+    </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN283"
+>2.9. Ignore old messages</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN285"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_flush</CODE
+>(ach_channel_t *channel);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>Updates channel counters to ignore all previously published
+    messages.</P
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN292"
+>3. ach Shell Tool</A
+></H2
+><P
+>The <B
+CLASS="command"
+>ach</B
+> command allows creation and
+      deletion of channels from the shell.
+      </P
+><P
+><B
+CLASS="command"
+>ach</B
+>  [-C <TT
+CLASS="replaceable"
+><I
+>chanel_name</I
+></TT
+>] [-m <TT
+CLASS="replaceable"
+><I
+>frame_count</I
+></TT
+>] [-n <TT
+CLASS="replaceable"
+><I
+>frame_size</I
+></TT
+>] [-U <TT
+CLASS="replaceable"
+><I
+>chanel_name</I
+></TT
+>] [-o <TT
+CLASS="replaceable"
+><I
+>octal_mode</I
+></TT
+>] [-1] [-t] [-v] [-V] [-?]</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN313"
+></A
+><P
+><B
+>Example 8. Create a channel</B
+></P
+><P
+>Create channel named "my_channel" with slots for 10
+      messages which have a nominal size of 64 bytes.</P
+><P
+><B
+CLASS="command"
+>ach</B
+>   -C <TT
+CLASS="replaceable"
+><I
+>my_channel</I
+></TT
+>   -m <TT
+CLASS="replaceable"
+><I
+>10</I
+></TT
+>   -n <TT
+CLASS="replaceable"
+><I
+>64</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN324"
+></A
+><P
+><B
+>Example 9. Delete a channel</B
+></P
+><P
+>Delete channel named "my_channel".</P
+><P
+><B
+CLASS="command"
+>ach</B
+>   -U <TT
+CLASS="replaceable"
+><I
+>my_channel</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN331"
+></A
+><P
+><B
+>Example 10. Create a world-accessible channel</B
+></P
+><P
+>Create channel named "my_channel" which is
+      world-accessible (permisions 666).
+      </P
+><P
+><B
+CLASS="command"
+>ach</B
+>   -C <TT
+CLASS="replaceable"
+><I
+>my_channel</I
+></TT
+>   -m <TT
+CLASS="replaceable"
+><I
+>10</I
+></TT
+>   -n <TT
+CLASS="replaceable"
+><I
+>64</I
+></TT
+>   -o <TT
+CLASS="replaceable"
+><I
+>666</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN344"
+></A
+><P
+><B
+>Example 11. Create a channel unless it already exists</B
+></P
+><P
+>Create channel named "my_channel" unless it already
+      exists, in which case do nothing.
+      </P
+><P
+><B
+CLASS="command"
+>ach</B
+>   -C <TT
+CLASS="replaceable"
+><I
+>my_channel</I
+></TT
+>   -m <TT
+CLASS="replaceable"
+><I
+>10</I
+></TT
+>   -n <TT
+CLASS="replaceable"
+><I
+>64</I
+></TT
+>   -1 </P
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN356"
+>4. achd Network Daemon</A
+></H2
+><P
+> While the primary design goal of Ach is low-latency, single
+    host IPC, the <B
+CLASS="command"
+>achd</B
+> daemon additionally provides a way
+    to relay messages over the network. </P
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN360"
+>4.1. Server</A
+></H3
+><P
+>The achd server should be setup to run from the inetd
+    super-server. You should add the following line to
+    <TT
+CLASS="filename"
+>/etc/inetd.conf</TT
+>, assuming you have installed
+    ach under <TT
+CLASS="filename"
+>/usr/local/</TT
+>:</P
+><PRE
+CLASS="screen"
+>8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</PRE
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>On Debian-based systems (including Ubuntu and Mint), you
+      can use the <KBD
+CLASS="userinput"
+>openbsd-inetd</KBD
+> package,
+      installed with <KBD
+CLASS="userinput"
+>apt-get install openbsd-inetd</KBD
+>.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Some GNU/Linux systems use <B
+CLASS="command"
+>xinetd</B
+>, the
+      eXtended inetd.  It provides more features than the traditional
+      inetd, and has a different, per-service configuration file
+      format. </P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+>&#13;      You will probably need to restart inetd after this happens.  How
+      to do this may vary depending on the init system used by your
+      operating system and the particular inetd you are using.  Here
+      are some options which may work:
+    </P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
+><DT
+>SysV Init (general GNU/Linux)</DT
+><DD
+><P
+><KBD
+CLASS="userinput"
+>/etc/init.d/inetd
+      restart</KBD
+></P
+></DD
+><DT
+>Debian (Ubuntu/Mint) with openbsd-inetd</DT
+><DD
+><P
+><KBD
+CLASS="userinput"
+>service openbsd-inetd
+      restart</KBD
+></P
+></DD
+><DT
+>Redhat with xinetd</DT
+><DD
+><P
+><KBD
+CLASS="userinput"
+>service xinetd reload</KBD
+></P
+></DD
+></DL
+></DIV
+><P
+>Now, you can test this setup by telnetting to port 8076 on
+    the server: <KBD
+CLASS="userinput"
+>telnet SERVER 8076</KBD
+>.  If you
+    type in some gibberish (e.g. <KBD
+CLASS="userinput"
+>asdf</KBD
+>) followed
+    by a newline, then you should see something like this:
+    </P
+><PRE
+CLASS="screen"
+>&#13;Escape character is '^]'.
+asdf
+status: 14 # ACH_BAD_HEADER
+message: malformed header
+
+.
+Connection closed by foreign host.
+    </PRE
+><P
+>Which will mean that achd is properly setup.</P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN395"
+>4.2. Client</A
+></H3
+><P
+>From the client machine, you can run achd to push or pull
+    message to or from the server.</P
+><P
+><B
+CLASS="command"
+>achd</B
+>  {push | pull} {<TT
+CLASS="replaceable"
+><I
+>hostname</I
+></TT
+>} {<TT
+CLASS="replaceable"
+><I
+>chanel_name</I
+></TT
+>} [-t <TT
+CLASS="replaceable"
+><I
+>tcp|udp</I
+></TT
+>] [-p <TT
+CLASS="replaceable"
+><I
+>port</I
+></TT
+>] [-z <TT
+CLASS="replaceable"
+><I
+>remote_channel_name</I
+></TT
+>] [-d] [-r] [-q] [-v] [-V] [-?]</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN417"
+></A
+><P
+><B
+>Example 12. Pull channel from server</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   pull   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN426"
+></A
+><P
+><B
+>Example 13. Push channel to server and retry dropped connections</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   -r   pull   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN436"
+></A
+><P
+><B
+>Example 14. Pull channel from server via UDP</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   -t udp   pull   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN446"
+></A
+><P
+><B
+>Example 15. Push channel to server, running the the background</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   -d   push   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN456"
+>5. Performance Tuning</A
+></H2
+><P
+>The performance of your real-time application will be highly
+    dependent on your underlying hardware and operating system.  It is
+    quite likely than any off-the-shelf hardware or operating system
+    you use will be tuned for something other than low-latency
+    real-time operation, e.g. maximum thoughput or minimum power
+    consumption.  However, there are several paremeters to adjust to
+    improve your performance.</P
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN459"
+>5.1. Disable CPU frequency scaling</A
+></H3
+><P
+>&#13;      Many current CPUs will lower their frequency when idle in order
+      to reduce consumption.  This is great for extending your
+      laptop's battery life but poor for minimizing latency.  On an
+      x86/amd64 PC, you can likely disable frequency scaling from the
+      BIOS, which will reduce your system's latency.  In the author's
+      experience, simply changing to a "performance" CPU governer from
+      within the operating system did NOT provide the same latency
+      reduction; you need to disable freqency scaling from the BIOS.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN462"
+>5.2. Use a Real-Time Operating System</A
+></H3
+><P
+>&#13;      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
+      designed to maximize througput and perhaps to reduce latency to
+      "human-tolerable" (0.1s) levels.  The worst-case performance may
+      be sacrificed in order to improve average-case performance.  For
+      a real-time application, it is generally worst-case performance
+      that matters rather than average case, and latency is more
+      important that througput.
+    </P
+><P
+>If using a Linux kernel, you can apply the PREEMPT_RT patch
+    to allow a fully-preemptible kernel.  Without this, a low priority
+    task in the middle of a system call may block a high priority task
+    from running until the system call completes.  With a
+    fully-preemptible kernel, the high priority task gets to run
+    immediately.
+    </P
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN466"
+>6. Theory of Operation</A
+></H2
+><DIV
+CLASS="sect2"
+><H3
+CLASS="sect2"
+><A
+NAME="AEN468"
+>6.1. Data Structure</A
+></H3
+><P
+>&#13;      The core data structure of an Ach channel is a pair of circular
+      arrays located in the POSIX shared memory file.  There is a data
+      array and an index array.  The data array contains variable
+      sized entries which store the actual message frames sent through
+      the Ach channel.  The index array contains fixed size entries
+      where each entry has both an offset into the data array and the
+      length of that data entry.  A head offset into each array
+      indicates both the place to insert the next data and the
+      location of the most recent message frame.  This pair of
+      circular arrays allows us to find the variable sized message
+      frames by first looking at a known offset in the fixed-sized
+      index array.
+    </P
+><P
+>&#13;      Access to the channel is synchronized using a mutex and
+      condition variable.  This allows readers to either periodically
+      poll the channel for new data or to wait on the condition
+      variable until a writer has posted a new message.  Using a
+      read/write lock instead would have allowed only polling.
+      Additionally, synchronization using a mutex prevents starvation
+      and enables proper priority inheritance between processes,
+      important to maintaining real-time performance.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN472"
+>6.2. Core Procedures</A
+></H3
+><P
+>&#13;      Two procedures compose the core of ach:
+      <CODE
+CLASS="function"
+>ach_put</CODE
+> and <CODE
+CLASS="function"
+>ach_get</CODE
+>.
+    </P
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN477"
+>6.2.1. ach_put</A
+></H4
+><P
+>&#13;      The procedure <CODE
+CLASS="function"
+>ach_put</CODE
+> inserts new messages
+      into the channel.  Its function is analogous to
+      <CODE
+CLASS="function"
+>write</CODE
+>, <CODE
+CLASS="function"
+>sendmsg</CODE
+>, and
+      <CODE
+CLASS="function"
+>mq_send</CODE
+>.  The procedure is given a pointer
+      to the shared memory region for the channel and a byte array
+      containing the message to post.  There are four broad steps to
+      the procedure:
+    </P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+> Get an index entry. If there is at least one
+      free index entry, use it.  Otherwise, clear the oldest index
+      entry and its corresponding message in the data array.
+      </P
+></LI
+><LI
+><P
+> Make room in the data array.  If there is
+      enough room already, continue.  Otherwise, repeatedly free the
+      oldest message until there is enough room.  </P
+></LI
+><LI
+><P
+>Copy the message into data array.</P
+></LI
+><LI
+><P
+>Update the offset and free counts in the channel structure.
+      </P
+></LI
+></OL
+></DIV
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN493"
+>6.2.2. ach_get</A
+></H4
+><P
+>&#13;      The procedure <CODE
+CLASS="function"
+>ach_get</CODE
+> receives a message
+      from the channel.  Its function is analogous to
+      <CODE
+CLASS="function"
+>read</CODE
+>, <CODE
+CLASS="function"
+>recvmsg</CODE
+>, and
+      <CODE
+CLASS="function"
+>mq_receive</CODE
+>.  The procedure takes a pointer
+      to the shared memory region, a storage buffer to copy the
+      message to, the last message sequence number received, the next
+      index offset to check for a message, and option flags indicating
+      whether to block waiting for a new message and whether to return
+      the newest message bypassing any older unseen messages.
+    </P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+> If we are to wait for a new message and there
+      is no new message, then wait.  Otherwise, if there are no new
+      messages, return a status code indicating this
+      fact.</P
+></LI
+><LI
+><P
+> Find the index entry to use.  If we are to
+      return the newest message, use that entry.  Otherwise, if the
+      next entry we expected to use contains the next sequence number
+      we expect to see, use that entry.  Otherwise, use the oldest
+      entry.</P
+></LI
+><LI
+><P
+> According to the offset and size from the
+      selected index entry, copy the message from the data array into
+      the provided storage buffer.</P
+></LI
+><LI
+><P
+> Update the sequence number count and next index
+      entry offset for this receiver.</P
+></LI
+></OL
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN509"
+>6.3. Serialization</A
+></H3
+><P
+>&#13;      Ach is orthogonal to the issue of serialization: it only
+      handles raw byte arrays.  Thus, you can choose whatever type of
+      serialization is most appropriate for you application.  For
+      maximum performance, it may be appropriate to define message
+      types as simple C structures.  If more flexibility is required,
+      there are a variety of other options to choose from: XDR, ASN.1,
+      Protocol Buffers, etc.
+    </P
+></DIV
+></DIV
+><DIV
+CLASS="colophon"
+><HR><H1
+><A
+NAME="AEN512"
+></A
+>Colophon</H1
+><P
+>This manual is written in Docbook
+  XML.</P
+></DIV
+></DIV
+></BODY
+></HTML
+>
