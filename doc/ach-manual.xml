@@ -70,27 +70,27 @@
 
     <variablelist>
       <varlistentry>
-        <term><code>ach_create</code></term>
+        <term><function>ach_create</function></term>
         <listitem>
           <para>Create the shared memory region and initialize its data structures</para>
         </listitem>
       </varlistentry>
       <varlistentry>
-        <term><code>ach_open</code></term>
+        <term><function>ach_open</function></term>
         <listitem>
           <para>Open the shared memory file and initialize process local channel counters</para>
         </listitem>
       </varlistentry>
       <varlistentry>
-        <term><code>ach_put</code></term>
+        <term><function>ach_put</function></term>
         <listitem><para>Insert a new message into the channel</para></listitem>
       </varlistentry>
       <varlistentry>
-        <term><code>ach_get</code></term>
+        <term><function>ach_get</function></term>
         <listitem><para>Receive a message from the channel</para></listitem>
       </varlistentry>
       <varlistentry>
-        <term><code>ach_close</code></term>
+        <term><function>ach_close</function></term>
         <listitem><para>Close the shared memory file</para></listitem>
       </varlistentry>
     </variablelist>
@@ -98,8 +98,8 @@
     <para>
       Channels must be created before they can be opened. Creation may
       be done directly by either the reading or writing process, or it
-      may be done via the shell command, <code>ach -C
-      channel_name</code>, before the reader or writer start. After
+      may be done via the shell command, <command>ach -C
+      channel_name</command>, before the reader or writer start. After
       the channel is created, each reader or writer must open the
       channel before it can individually get or put messages.
     </para>
@@ -114,13 +114,13 @@
 
     <sect2><title>Status Codes</title>
     <para>The Ach API functions use return status codes to indicate either
-    successful completetion or an error condition.  The following codes are defined:</para>
+    successful completion or an error condition.  The following codes are defined:</para>
     <variablelist>
-      <varlistentry><term>ACH_OK</term>
+      <varlistentry><term><constant>ACH_OK</constant></term>
       <listitem><para>Operation completed successfully.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_OVERFLOW</term>
+      <varlistentry><term><constant>ACH_OVERFLOW</constant></term>
       <listitem><para>Channel or buffer was too small.  Either the
       channel is too small to hold the message you attempted to send,
       or the buffer you passed to receive the message was too small to
@@ -129,59 +129,59 @@
       If the buffer is to small, pass in a bigger
       buffer.</para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_INVALID_NAME</term>
+      <varlistentry><term><constant>ACH_INVALID_NAME</constant></term>
       <listitem><para>An invalid channel name.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_BAD_SHM_FILE</term>
+      <varlistentry><term><constant>ACH_BAD_SHM_FILE</constant></term>
       <listitem><para>An invalid channel file.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_FAILED_SYSCALL</term>
+      <varlistentry><term><constant>ACH_FAILED_SYSCALL</constant></term>
       <listitem><para>A system call was unsuccessful.  Check the
-      <code>errno</code> to determine what went wrong.
+      <varname>errno</varname> to determine what went wrong.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_STALE_FRAMES</term>
+      <varlistentry><term><constant>ACH_STALE_FRAMES</constant></term>
       <listitem><para>No new data has be published to channel.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_MISSED_FRAME</term>
-      <listitem><para>The reciever has skipped over some frames (which
+      <varlistentry><term><constant>ACH_MISSED_FRAME</constant></term>
+      <listitem><para>The receiver has skipped over some frames (which
       may no longer be stored in the channel).  You will still get
       either the latest or the oldest frame, depending on which you
-      reqeusted.  </para></listitem>
+      requested.  </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_TIMEOUT</term>
+      <varlistentry><term><constant>ACH_TIMEOUT</constant></term>
       <listitem><para>Timeout occurred.  No data received.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_EEXIST</term>
+      <varlistentry><term><constant>ACH_EEXIST</constant></term>
       <listitem><para>Channel already exists.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_ENOENT</term>
+      <varlistentry><term><constant>ACH_ENOENT</constant></term>
       <listitem><para>Channel does not exist.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_EACCES</term>
+      <varlistentry><term><constant>ACH_EACCES</constant></term>
       <listitem><para>No permission to access the channel file.  You
       will want to either run as the appropriate user or set the
       channel permissions appropriately.  </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_EINVAL</term>
+      <varlistentry><term><constant>ACH_EINVAL</constant></term>
       <listitem><para>An invalid parameter was passed.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_CORRUPT</term>
+      <varlistentry><term><constant>ACH_CORRUPT</constant></term>
       <listitem><para>Corruption of the channel file detected.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_BAD_HEADER</term>
+      <varlistentry><term><constant>ACH_BAD_HEADER</constant></term>
       <listitem><para>Invalid header line in the network protocol.
       </para></listitem>
       </varlistentry>
-      <varlistentry><term>ACH_BUG</term>
+      <varlistentry><term><constant>ACH_BUG</constant></term>
       <listitem><para>An unexpected or inconsistent condition has
       occurred.  If the software is correct, you should never see this
       code.  If you do see this code, please contact the authors.
@@ -191,40 +191,321 @@
     </sect2>
 
     <sect2><title>Creating a channel</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_create</function></funcdef>
+        <paramdef>const char *<parameter>channel_name</parameter></paramdef>
+        <paramdef>size_t <parameter>frame_cnt</parameter></paramdef>
+        <paramdef>size_t <parameter>frame_size</parameter></paramdef>
+        <paramdef>ach_create_attr_t *<parameter>attr</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>
+      Channels are created using the <function>ach_create</function>
+      function.  A channel must be created before it can be opened.
+      This function will create and initialize a POSIX shared memory
+      file for the channel.  The channel can then be opened by passing
+      the same <varname>channel_name</varname> to
+      <function>ach_open</function>.
+    </para>
+
+      <example><title>Creating a Channel</title>
+      <programlisting language="C">
+enum ach_status r = ach_create( "my_channel", 10, 512, NULL );
+if( ACH_OK != r ) {
+    fprintf( stderr, "Could not create channel: %s\n", ach_result_to_string(r) );
+    exit(EXIT_FAILURE);
+}
+      </programlisting>
+      </example>
+
+      <para>Note that the message size given here is not a strict
+      constraint.  Individual messages are allowed to be smaller or
+      larger than this value.  The only hard constraint is that a
+      total of frame_cnt*frame_size is allocated for all message data
+      in the channel.  Thus, the total data required by all buffered
+      messages cannot exceed this value (older messages are
+      overwritten), and no individual message may be larger than this
+      value. </para>
     </sect2>
 
     <sect2><title>Opening a channel</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_open</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+        <paramdef>const char *<parameter>channel_name</parameter></paramdef>
+        <paramdef>ach__attr_t *<parameter>attr</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>Opens a channel for use within this process.  The channel
+    must be opened before messages can be sent or received</para>
+
+      <example><title>Opening a Channel</title>
+
+      <programlisting language="C">
+ach_channel_t channel;
+enum ach_status r = ach_open( &amp;channel, "my_channel", NULL );
+if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Could not open channel: %s\n", ach_result_to_string(r) );
+    exit(EXIT_FAILURE);
+}
+      </programlisting>
+
+      </example>
     </sect2>
 
     <sect2><title>Sending Data</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_put</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+        <paramdef>const void *<parameter>buf</parameter></paramdef>
+        <paramdef>size_t <parameter>cnt</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>The <function>ach_put</function> function writes a new
+    message to the channel.  This will go in the next open space in
+    the circular array.  If there is insufficient unused space in the
+    circular array, then the oldest entry or entries will be
+    overwritten.</para>
+
+      <example><title>Opening a Channel</title>
+
+      <programlisting language="C">
+struct my_msg_type my_msg;
+/* Fill in my_msg with useful data */
+enum ach_status r = ach_put( &amp;channel, &amp;my_msg, sizeof(my_msg) );
+if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Could not put data: %s\n", ach_result_to_string(r) );
+}
+      </programlisting>
+
+      </example>
+
     </sect2>
 
     <sect2><title>Receiving Data</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_get</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+        <paramdef>void *<parameter>buf</parameter></paramdef>
+        <paramdef>size_t <parameter>buf_size</parameter></paramdef>
+        <paramdef>size_t *<parameter>frame_size</parameter></paramdef>
+        <paramdef>const struct timespec * restrict <parameter>abstime</parameter></paramdef>
+        <paramdef>int <parameter>options</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>The <function>ach_get</function> is used to received data
+    from a channel.  The <varname>options</varname> parameter controls
+    the behavior of this function and is the bitwise or of the
+    following values.</para>
+
+    <variablelist>
+      <varlistentry><term><constant>ACH_O_WAIT</constant></term>
+      <listitem><para>Wait until a new message is posted. Default
+      behavior is to return immediately.</para></listitem>
+      </varlistentry>
+      <varlistentry><term><constant>ACH_O_LAST</constant></term>
+      <listitem><para>Return the newest message.  Default behavior is
+      to return the oldest unseen message.</para></listitem>
+      </varlistentry>
+      <varlistentry><term><constant>ACH_O_COPY</constant></term>
+      <listitem><para>Copy the message to the buffer, even if we have
+      already seen it.  Only valid when
+      <constant>ACH_O_WAIT</constant> is not give.  Default behavior
+      is to return <constant>ACH_STALE_FRAMES</constant> when there
+      are no new messages.</para></listitem>
+      </varlistentry>
+    </variablelist>
+
+      <example><title>Poll for oldest message</title>
+      <para>This will get the next unseen message from the channel.</para>
+      <programlisting language="C">
+size_t frame_size;
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, NULL, 0 );
+if( ACH_MISSED_FRAME == r ) {
+    fprintf(stdout, "Missed a/some messages(s)\n");
+} else if( ACH_STALE_FRAMES == r ) {
+    fprintf( stdout, "No new data\n" );
+} else if( ACH_OK != r ) {
+    syslog( LOG_ERR, "Unable to get a message: %s\n", ach_result_to_string(r) );
+} else if( frame_size != sizeof(my_msg) ) {
+    syslog( LOG_WARNING, "Unexpected message size %" PRIuPTR ", expecting %" PRIuPTR "\n",
+            frame_size, sizeof(my_msg) );
+}
+      </programlisting>
+      </example>
+
+      <example><title>Wait for newest message</title>
+      <para>This will get the newest message from the channel.  If no
+      unseen messages are in the channel, it will wait forever until
+      one is posted. </para>
+      <programlisting language="C">
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, ACH_O_WAIT | ACH_O_LAST, 0 );
+      </programlisting>
+      </example>
+
+      <example><title>Timed wait for newest message</title>
+      <para>This will get the newest message from the channel.  If no
+      unseen messages are in the channel, it will up to one second until
+      one is posted. </para>
+      <programlisting language="C">
+struct timespec t;
+clock_gettime( ACH_DEFAULT_CLOCK, &amp;t );
+t.tv_sec += 1;
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, ACH_O_WAIT | ACH_O_LAST, &amp;t );
+if( ACH_TIMEOUT == r ) {
+  fprintf(stdout, "call to ach_get timed out\n");
+}
+      </programlisting>
+      </example>
+
+      <note><title>Does anybody know what time it is?</title>
+      <para>While ach channels default to using
+      <constant>CLOCK_MONOTONIC</constant> for timed waits, the issue
+      of determining the correct time is fraught with complications.
+      Traditionally, unix time -- seconds since January 1, 1970 -- has
+      been defined based on UTC.  This is given to nanosecond
+      precision with <constant>CLOCK_REALTIME</constant> (nothing to
+      do with real-time-as-in-low-latency-or-motion-control).
+      However, <constant>CLOCK_REALTIME</constant> is discontinuous.
+      It may be reset by the operator, by the NTP daemon, and it is
+      <emphasis>defined</emphasis> as discontinous when leap seconds
+      occur.  This is bad when one wants to use the clock for periodic
+      events as is likely for motion control.
+      <constant>CLOCK_MONTONIC</constant> is not discontinous, but
+      even it has issues.  The NTP daemon may slew this clock,
+      speeding it up or slowing it down on linux by 0.5ms per second.
+      Linux does provide the <constant>CLOCK_MONOTONIC_RAW</constant>
+      which is not slewed, but is also not portable.
+      </para>
+      </note>
+
     </sect2>
 
     <sect2><title>Closing a channel</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_close</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
     </sect2>
 
     <sect2><title>Deleting a channel</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_unlink</function></funcdef>
+        <paramdef>const char *<parameter>name</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
     </sect2>
 
     <sect2><title>Channel Permissions</title>
-    <para>TODO</para>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_chmod</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+        <paramdef>mode_t <parameter>mode</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>Set the POSIX permission bits of the channel to
+    <varname>mode</varname>.  Note that any channel access requires
+    both the read (4) and write (2) bits to be set, because we must
+    write in order to hold the mutex.  The executable bit (1) is
+    irrelevant.</para>
+
+    <example><title>Make channel user and group accessible</title>
+    <para>It is best to specify <varname>mode</varname> as an octal
+    number.  A value of 0660 will give the owning user and group
+    access, and deny access to all others.</para>
+    <programlisting language="C">
+      enum ach_status r = ach_get( &amp;channel, 0660 );
+    </programlisting>
+    </example>
+    </sect2>
+
+    <sect2><title>Ignore old messages</title>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_flush</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+    <para>Updates channel counters to ignore all previously published
+    messages.</para>
     </sect2>
 
   </sect1>
 
   <sect1>
-    <title>
-      ach shell tool
-    </title>
-    <para> TODO </para>
+    <title>ach Shell Tool</title>
+      <para>The <command>ach</command> command allows creation and
+      deletion of channels from the shell.
+      </para>
+
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg>-C <replaceable>chanel_name</replaceable></arg>
+         <arg>-m <replaceable>frame_count</replaceable></arg>
+         <arg>-n <replaceable>frame_size</replaceable></arg>
+         <arg>-U <replaceable>chanel_name</replaceable></arg>
+         <arg>-o <replaceable>octal_mode</replaceable></arg>
+         <arg>-1</arg>
+         <arg>-t</arg>
+         <arg>-v</arg>
+         <arg>-V</arg>
+         <arg>-?</arg>
+      </cmdsynopsis>
+
+
+      <example><title>Create a channel</title>
+      <para>Create channel named "my_channel" with slots for 10
+      messages which have a nominal size of 64 bytes.</para>
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">-m <replaceable>10</replaceable></arg>
+         <arg choice="plain">-n <replaceable>64</replaceable></arg>
+      </cmdsynopsis>
+      </example>
+
+      <example><title>Delete a channel</title>
+     <para>Delete channel named "my_channel".</para>
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg choice="plain">-U <replaceable>my_channel</replaceable></arg>
+      </cmdsynopsis>
+      </example>
+
+      <example><title>Create a world-accessible channel</title>
+      <para>Create channel named "my_channel" which is
+      world-accessible (permisions 666).
+      </para>
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">-m <replaceable>10</replaceable></arg>
+         <arg choice="plain">-n <replaceable>64</replaceable></arg>
+         <arg choice="plain">-o <replaceable>666</replaceable></arg>
+      </cmdsynopsis>
+      </example>
+
+      <example><title>Create a channel unless it already exists</title>
+      <para>Create channel named "my_channel" unless it already
+      exists, in which case do nothing.
+      </para>
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">-m <replaceable>10</replaceable></arg>
+         <arg choice="plain">-n <replaceable>64</replaceable></arg>
+         <arg choice="plain">-1</arg>
+      </cmdsynopsis>
+      </example>
+
   </sect1>
 
   <sect1>
@@ -232,15 +513,179 @@
       achd Network Daemon
     </title>
     <para> While the primary design goal of Ach is low-latency, single
-    host IPC, the <code>achd</code> daemon additionally provides a way
+    host IPC, the <command>achd</command> daemon additionally provides a way
     to relay messages over the network. </para>
+
+    <sect2><title>Server</title>
+
+    <para>The achd server should be setup to run from the inetd
+    super-server. You should add the following line to
+    <filename>/etc/inetd.conf</filename>, assuming you have installed
+    ach under <filename>/usr/local/</filename>:</para>
+
+    <screen>8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</screen>
+
+
+    <tip>
+      <para>On Debian-based systems (including Ubuntu and Mint), you
+      can use the <userinput>openbsd-inetd</userinput> package,
+      installed with <userinput>apt-get install openbsd-inetd</userinput>.
+      </para>
+    </tip>
+
+    <tip>
+      <para>Some GNU/Linux systems use <command>xinetd</command>, the
+      eXtended inetd.  It provides more features than the traditional
+      inetd, and has a different, per-service configuration file
+      format. </para>
+    </tip>
+
+    <para>
+      You will probably need to restart inetd after this happens.  How
+      to do this may vary depending on the init system used by your
+      operating system and the particular inetd you are using.  Here
+      are some options which may work:
+    </para>
+    <variablelist>
+      <varlistentry><term>SysV Init (general GNU/Linux)</term>
+      <listitem><para><userinput>/etc/init.d/inetd
+      restart</userinput></para></listitem>
+      </varlistentry>
+      <varlistentry><term>Debian (Ubuntu/Mint) with openbsd-inetd</term>
+      <listitem><para><userinput>service openbsd-inetd
+      restart</userinput></para></listitem>
+      </varlistentry>
+      <varlistentry><term>Redhat with xinetd</term>
+      <listitem><para><userinput>service xinetd reload</userinput></para></listitem>
+      </varlistentry>
+    </variablelist>
+
+    <para>Now, you can test this setup by telnetting to port 8076 on
+    the server: <userinput>telnet SERVER 8076</userinput>.  If you
+    type in some gibberish (e.g. <userinput>asdf</userinput>) followed
+    by a newline, then you should see something like this:
+    </para>
+    <screen>
+Escape character is '^]'.
+asdf
+status: 14 # ACH_BAD_HEADER
+message: malformed header
+
+.
+Connection closed by foreign host.
+    </screen>
+
+    <para>Which will mean that achd is properly setup.</para>
+
+    </sect2>
+
+    <sect2><title>Client</title>
+    <para>From the client machine, you can run achd to push or pull
+    message to or from the server.</para>
+
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="req">push | pull</arg>
+      <arg choice="req"><replaceable>hostname</replaceable></arg>
+      <arg choice="req"><replaceable>chanel_name</replaceable></arg>
+      <arg>-t <replaceable>tcp|udp</replaceable></arg>
+      <arg>-p <replaceable>port</replaceable></arg>
+      <arg>-z <replaceable>remote_channel_name</replaceable></arg>
+      <arg>-d</arg>
+      <arg>-r</arg>
+      <arg>-q</arg>
+      <arg>-v</arg>
+      <arg>-V</arg>
+      <arg>-?</arg>
+    </cmdsynopsis>
+
+
+    <example><title>Pull channel from server</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Push channel to server and retry dropped connections</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">-r</arg>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Pull channel from server via UDP</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">-t udp</arg>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Push channel to server, running the the background</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">-d</arg>
+      <arg choice="plain">push</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    </sect2>
+
   </sect1>
 
   <sect1>
     <title>
       Performance Tuning
     </title>
-    <para> TODO </para>
+    <para>The performance of your real-time application will be highly
+    dependent on your underlying hardware and operating system.  It is
+    quite likely than any off-the-shelf hardware or operating system
+    you use will be tuned for something other than low-latency
+    real-time operation, e.g. maximum thoughput or minimum power
+    consumption.  However, there are several paremeters to adjust to
+    improve your performance.</para>
+
+    <sect2><title>Disable CPU frequency scaling</title>
+    <para>
+      Many current CPUs will lower their frequency when idle in order
+      to reduce consumption.  This is great for extending your
+      laptop's battery life but poor for minimizing latency.  On an
+      x86/amd64 PC, you can likely disable frequency scaling from the
+      BIOS, which will reduce your system's latency.  In the author's
+      experience, simply changing to a "performance" CPU governer from
+      within the operating system did NOT provide the same latency
+      reduction; you need to disable freqency scaling from the BIOS.
+    </para>
+    </sect2>
+
+    <sect2><title>Use a Real-Time Operating System</title>
+    <para>
+      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
+      designed to maximize througput and perhaps to reduce latency to
+      "human-tolerable" (0.1s) levels.  The worst-case performance may
+      be sacrificed in order to improve average-case performance.  For
+      a real-time application, it is generally worst-case performance
+      that matters rather than average case, and latency is more
+      important that througput.
+    </para>
+    <para>If using a Linux kernel, you can apply the PREEMPT_RT patch
+    to allow a fully-preemptible kernel.  Without this, a low priority
+    task in the middle of a system call may block a high priority task
+    from running until the system call completes.  With a
+    fully-preemptible kernel, the high priority task gets to run
+    immediately.
+    </para>
+    </sect2>
   </sect1>
 
   <sect1>
@@ -251,16 +696,17 @@
     <sect2><title>Data Structure</title>
     <para>
       The core data structure of an Ach channel is a pair of circular
-      arrays located in the POSIX shared memory file.  The data array
-      contains variable sized elements which store the actual message
-      frames sent through the Ach channel.  The index array contains
-      fixed size elements where each element contains both an offset
-      into the data array and the length of that element.  A head
-      offset into each array indicates both the place to insert the
-      next data and the location of the most recent message frame.
-      This pair of circular arrays allows us to find the variable
-      sized message frames by first looking at a known offset in the
-      fixed-sized index array.
+      arrays located in the POSIX shared memory file.  There is a data
+      array and an index array.  The data array contains variable
+      sized entries which store the actual message frames sent through
+      the Ach channel.  The index array contains fixed size entries
+      where each entry has both an offset into the data array and the
+      length of that data entry.  A head offset into each array
+      indicates both the place to insert the next data and the
+      location of the most recent message frame.  This pair of
+      circular arrays allows us to find the variable sized message
+      frames by first looking at a known offset in the fixed-sized
+      index array.
     </para>
 
     <para>
@@ -277,18 +723,19 @@
 
     <sect2><title>Core Procedures</title>
     <para>
-      Two procedures compose the core of ach: <code>ach_put</code>
-      and <code>ach_get</code>.
+      Two procedures compose the core of ach:
+      <function>ach_put</function> and <function>ach_get</function>.
     </para>
 
     <sect3><title>ach_put</title>
     <para>
-      The procedure <code>ach_put</code> inserts new messages into
-      the channel.  Its function is analogous to <code>write</code>,
-      <code>sendmsg</code>, and <code>mq_send</code>.  The procedure
-      is given a pointer to the shared memory region for the channel
-      and a byte array containing the message to post.  There are
-      four broad steps to the procedure:
+      The procedure <function>ach_put</function> inserts new messages
+      into the channel.  Its function is analogous to
+      <function>write</function>, <function>sendmsg</function>, and
+      <function>mq_send</function>.  The procedure is given a pointer
+      to the shared memory region for the channel and a byte array
+      containing the message to post.  There are four broad steps to
+      the procedure:
     </para>
     <orderedlist>
       <listitem><para> Get an index entry. If there is at least one
@@ -307,14 +754,15 @@
 
     <sect3><title>ach_get</title>
     <para>
-      The procedure <code>ach_get</code> receives a message from the
-      channel.  Its function is analogous to <code>read</code>,
-      <code>recvmsg</code>, and <code>mq_receive</code>.  The procedure
-      takes a pointer to the shared memory region, a storage buffer to
-      copy the message to, the last message sequence number received,
-      the next index offset to check for a message, and option flags
-      indicating whether to block waiting for a new message and whether
-      to return the newest message bypassing any older unseen messages.
+      The procedure <function>ach_get</function> receives a message
+      from the channel.  Its function is analogous to
+      <function>read</function>, <function>recvmsg</function>, and
+      <function>mq_receive</function>.  The procedure takes a pointer
+      to the shared memory region, a storage buffer to copy the
+      message to, the last message sequence number received, the next
+      index offset to check for a message, and option flags indicating
+      whether to block waiting for a new message and whether to return
+      the newest message bypassing any older unseen messages.
     </para>
 
     <orderedlist>
@@ -339,7 +787,7 @@
 
     <sect2><title>Serialization</title>
     <para>
-      Ach is orthogoninal to the issue of serialization: it only
+      Ach is orthogonal to the issue of serialization: it only
       handles raw byte arrays.  Thus, you can choose whatever type of
       serialization is most appropriate for you application.  For
       maximum performance, it may be appropriate to define message
@@ -351,4 +799,6 @@
 
   </sect1>
 
+  <colophon><para>This manual is written in Docbook
+  XML.</para></colophon>
 </article>
