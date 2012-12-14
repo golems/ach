@@ -25,3 +25,4 @@ ach
 achd
 *.1
 *.so*
+/man/ach-manual.html

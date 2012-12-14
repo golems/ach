@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Man page of ACHD</TITLE>
 </HEAD><BODY>
 <H1>ACHD</H1>
-Section: User Commands (1)<BR>Updated: November 2012<BR><A HREF="#index">Index</A>
+Section: User Commands (1)<BR>Updated: December 2012<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
@@ -13,24 +13,29 @@ achd - send ach messages over streams
 
 <B>achd</B>
 
-[<I>OPTIONS</I>...] <I>CHANNEL-NAME</I>
+[<I>OPTIONS</I>...] [<I>serve|push|pull</I>] [<I>HOST  CHANNEL</I>]
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
 Daemon process to forward ach channels over network and dump to files
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
 <DL COMPACT>
-<DT><B>-S</B> HOST,<DD>
-push messages to HOST
-<DT><B>-P</B> HOST,<DD>
-pull messages from HOST
 <DT><B>-d</B>,<DD>
 daemonize (client-mode only)
 <DT><B>-p</B> PORT,<DD>
-TCP port
-<DT><B>-u</B> PORT,<DD>
-UDP transport on PORT
+port
 <DT><B>-f</B> FILE,<DD>
-lock FILE and write pid
+TODO: lock FILE and write pid
+<DT><B>-t</B> (tcp|udp),<DD>
+transport (default tcp)
+<DT><B>-z</B> CHANNEL_NAME,<DD>
+remote channel name
+<DT><B>-o</B> OPT=VAL,...<DD>
+TODO: set options, comma separated list  <B>-r</B>,                          reconnect if connection is lost
+<DT><B>-q</B>,<DD>
+be quiet
 <DT><B>-v</B>,<DD>
 be verbose
 <DT><B>-V</B>,<DD>
@@ -38,32 +43,50 @@ version
 <DT>-?,<DD>
 show help
 </DL>
-<A NAME="lbAE">&nbsp;</A>
+<A NAME="lbAF">&nbsp;</A>
+<H2>FILES</H2>
+
+<DL COMPACT>
+<DT>/etc/inetd.conf<DD>
+Use to enable network serving of ach channels.
+Use a line like this:
+'8076  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd serve'
+</DL>
+<A NAME="lbAG">&nbsp;</A>
 <H2>EXAMPLES</H2>
 
 <DL COMPACT>
-<DT>achd<DD>
+<DT>achd serve<DD>
 Server process reading from stdin/stdout.
-This can be run from inetd
-<DT>achd <B>-S</B> golem cmd-chan<DD>
-Forward frames via TCP from local channel
-'cmd-chan' to remote channel on host 'golem'.
-An achd server must be listening the remote host.
-<DT>achd <B>-P</B> golem state-chan<DD>
+This can be run from inetd.
+<DT>achd pull golem state-chan<DD>
 Forward frames via TCP from remote channel
-'state-chan' on host golem to local channel 'cmd'.
+'state-chan' on host 'golem' to local channel
+(a pull from the remote server).
 An achd server must be listening on the remote
 host.
+<DT>achd <B>-r</B> push golem cmd-chan<DD>
+Forward frames via TCP from local channel
+'cmd-chan' to remote channel on host 'golem'
+(a push to the remote server).
+Retry dropped connections.
+An achd server must be listening the remote host.
 </DL>
-<A NAME="lbAF">&nbsp;</A>
+<A NAME="lbAH">&nbsp;</A>
+<H2>BUGS</H2>
+
+<P>
+If a connection is lost and reestablished (-r option), some frames may
+be missed.
+<A NAME="lbAI">&nbsp;</A>
 <H2>AUTHOR</H2>
 
 Written by Neil T. Dantam
-<A NAME="lbAG">&nbsp;</A>
+<A NAME="lbAJ">&nbsp;</A>
 <H2>REPORTING BUGS</H2>
 
 Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
-<A NAME="lbAH">&nbsp;</A>
+<A NAME="lbAK">&nbsp;</A>
 <H2>COPYRIGHT</H2>
 
 Copyright &#169; 2008-2012, Georgia Tech Research Corporation
@@ -79,15 +102,18 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 <DT><A HREF="#lbAB">NAME</A><DD>
 <DT><A HREF="#lbAC">SYNOPSIS</A><DD>
 <DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">EXAMPLES</A><DD>
-<DT><A HREF="#lbAF">AUTHOR</A><DD>
-<DT><A HREF="#lbAG">REPORTING BUGS</A><DD>
-<DT><A HREF="#lbAH">COPYRIGHT</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">FILES</A><DD>
+<DT><A HREF="#lbAG">EXAMPLES</A><DD>
+<DT><A HREF="#lbAH">BUGS</A><DD>
+<DT><A HREF="#lbAI">AUTHOR</A><DD>
+<DT><A HREF="#lbAJ">REPORTING BUGS</A><DD>
+<DT><A HREF="#lbAK">COPYRIGHT</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 22:59:02 GMT, November 17, 2012
+Time: 21:46:06 GMT, December 13, 2012
 </BODY>
 </HTML>
