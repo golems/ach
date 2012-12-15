@@ -28,40 +28,18 @@ Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT
 
 3. `sudo dpkg-reconfigure ach-utils`
 
-Example and Usage
-=================
+DOCUMENTATION
+=============
+* Manual: `./doc/manual/ach-manual.html` and
+          http://golems.github.com/ach/manual
+* API docs: http://golems.github.com/ach/api
+* Man Pages: `./doc/man` and
+             http://code.golems.org/pkg/ach/man
 * Example Code: `./src/ach-example.c`
-* Shell Tool `ach`: can be used to create channels:
-  * Create a channel `ach -C CHANNEL_NAME`
-  * Delete a channel `ach -U CHANNEL_NAME`
-  * Display channel stats `ach -D CHANNEL_NAME`
-  * View options `ach -H`
+* Tech Report: http://www.golems.org/node/1526
 
-Formal Model
+FORMAL MODEL
 ============
 Ach has been formally verified using the SPIN model checker.  This
 formal model is included in the source distribution under the `./spin/`
 directory.
-
-Performance/Benchmarks
-======================
-To evaluate the performance of ach on your machine, you can use the
-included `achbench` program to test messaging latency.  See the shell
-script `src/run-benchmarks` which runs the benchmark with a variety of
-options.
-
-Improving Real-Time on Linux and i386/amd64
--------------------------------------------
-* Disable CPU power-saving from BIOS
-* Use the PREEMPT_RT kernel patch
-* Disable USB and use a PS/2 keyboard
-* Give the 'quiet' flag on the kernel command line
-* Try disabling hyperthreading (may not help much)
-
-Further Details
-===============
-* A technical report describing design and rationale behind Ach is
-  available at: http://www.golems.org/node/1526
-* API documentation is available at http://code.golems.org/pkg/ach/.
-* User commands are described in the Unix man pages and browseable at
-  http://code.golems.org/pkg/ach/man/.
