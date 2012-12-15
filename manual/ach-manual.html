@@ -45,6 +45,9 @@ HREF="mailto:ntd at gatech dot edu"
 ></DIV
 ></DIV
 ><P
+CLASS="copyright"
+>Copyright &copy; 2012 Georgia Tech Research Corporation</P
+><P
 CLASS="pubdate"
 >2012-12-13<BR></P
 ><DIV
@@ -86,7 +89,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN18"
+NAME="AEN21"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -97,7 +100,7 @@ NAME="AEN18"
            that sample data from physical processes. Ach eliminates
            the Head-of-Line Blocking problem for applications that
            always require access to the newest message. Source code is
-           provided under an the 2-clause BSD license.
+           provided under the 2-clause BSD license.
          </P
 ><P
 ></P
@@ -113,147 +116,152 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN21"
+HREF="#AEN24"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN53"
+HREF="#AEN56"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN55"
+HREF="#AEN58"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN135"
+HREF="#AEN138"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN157"
+HREF="#AEN160"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN173"
+HREF="#AEN176"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN190"
+HREF="#AEN195"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN250"
+HREF="#AEN255"
 >Closing a channel</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN258"
+HREF="#AEN263"
 >Deleting a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN266"
+HREF="#AEN271"
 >Channel Permissions</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN283"
+HREF="#AEN288"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN292"
+HREF="#AEN297"
 >ach Shell Tool</A
 ></DT
 ><DT
 >4. <A
-HREF="#AEN356"
+HREF="#AEN361"
 >achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
 >4.1. <A
-HREF="#AEN360"
+HREF="#AEN365"
 >Server</A
 ></DT
 ><DT
 >4.2. <A
-HREF="#AEN395"
+HREF="#AEN408"
 >Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >5. <A
-HREF="#AEN456"
+HREF="#AEN471"
 >Performance Tuning</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN459"
+HREF="#AEN474"
 >Disable CPU frequency scaling</A
 ></DT
 ><DT
 >5.2. <A
-HREF="#AEN462"
+HREF="#AEN477"
 >Use a Real-Time Operating System</A
+></DT
+><DT
+>5.3. <A
+HREF="#AEN481"
+>Benchmark your system</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN466"
+HREF="#AEN499"
 >Theory of Operation</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN468"
+HREF="#AEN502"
 >Data Structure</A
 ></DT
 ><DT
 >6.2. <A
-HREF="#AEN472"
+HREF="#AEN506"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.2.1. <A
-HREF="#AEN477"
+HREF="#AEN511"
 >ach_put</A
 ></DT
 ><DT
 >6.2.2. <A
-HREF="#AEN493"
+HREF="#AEN527"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6.3. <A
-HREF="#AEN509"
+HREF="#AEN543"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN512"
+HREF="#AEN546"
 >Colophon</A
 ></DT
 ></DL
@@ -263,7 +271,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN21"
+NAME="AEN24"
 >1. Introduction</A
 ></H2
 ><P
@@ -352,7 +360,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN53"
+NAME="AEN56"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -360,7 +368,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN55"
+NAME="AEN58"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -543,7 +551,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN135"
+NAME="AEN138"
 >2.2. Creating a channel</A
 ></H3
 ><DIV
@@ -551,7 +559,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN137"
+NAME="AEN140"
 ></A
 ><P
 ><CODE
@@ -583,7 +591,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN153"
+NAME="AEN156"
 ></A
 ><P
 ><B
@@ -613,7 +621,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN157"
+NAME="AEN160"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -621,7 +629,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN159"
+NAME="AEN162"
 ></A
 ><P
 ><CODE
@@ -639,7 +647,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN170"
+NAME="AEN173"
 ></A
 ><P
 ><B
@@ -661,7 +669,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN173"
+NAME="AEN176"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -669,7 +677,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN175"
+NAME="AEN178"
 ></A
 ><P
 ><CODE
@@ -685,15 +693,16 @@ CLASS="FUNCDEF"
 >The <CODE
 CLASS="function"
 >ach_put</CODE
-> function writes a new
-    message to the channel.  This will go in the next open space in
-    the circular array.  If there is insufficient unused space in the
-    circular array, then the oldest entry or entries will be
+>
+     function writes
+    a new message to the channel.  This will go in the next open space
+    in the circular array.  If there is insufficient unused space in
+    the circular array, then the oldest entry or entries will be
     overwritten.</P
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN187"
+NAME="AEN192"
 ></A
 ><P
 ><B
@@ -715,7 +724,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN190"
+NAME="AEN195"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -723,7 +732,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN192"
+NAME="AEN197"
 ></A
 ><P
 ><CODE
@@ -795,7 +804,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN229"
+NAME="AEN234"
 ></A
 ><P
 ><B
@@ -822,7 +831,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN233"
+NAME="AEN238"
 ></A
 ><P
 ><B
@@ -840,7 +849,7 @@ CLASS="programlisting"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN237"
+NAME="AEN242"
 ></A
 ><P
 ><B
@@ -905,11 +914,12 @@ CLASS="constant"
 >CLOCK_REALTIME</CODE
 > (nothing to
       do with real-time-as-in-low-latency-or-motion-control).
-      However, <CODE
+      However, UTC and thus typically
+      <CODE
 CLASS="constant"
 >CLOCK_REALTIME</CODE
-> is discontinuous.
-      It may be reset by the operator, by the NTP daemon, and it is
+> is discontinuous.  It may be
+      reset by the operator, by the NTP daemon, and it is
       <SPAN
 CLASS="emphasis"
 ><I
@@ -924,7 +934,7 @@ CLASS="constant"
 >CLOCK_MONTONIC</CODE
 > is not discontinous, but
       even it has issues.  The NTP daemon may slew this clock,
-      speeding it up or slowing it down on linux by 0.5ms per second.
+      speeding it up or slowing it down on Linux by 0.5ms per second.
       Linux does provide the <CODE
 CLASS="constant"
 >CLOCK_MONOTONIC_RAW</CODE
@@ -941,7 +951,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN250"
+NAME="AEN255"
 >2.6. Closing a channel</A
 ></H3
 ><DIV
@@ -949,7 +959,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN252"
+NAME="AEN257"
 ></A
 ><P
 ><CODE
@@ -967,7 +977,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN258"
+NAME="AEN263"
 >2.7. Deleting a channel</A
 ></H3
 ><DIV
@@ -975,7 +985,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN260"
+NAME="AEN265"
 ></A
 ><P
 ><CODE
@@ -993,7 +1003,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN266"
+NAME="AEN271"
 >2.8. Channel Permissions</A
 ></H3
 ><DIV
@@ -1001,7 +1011,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN268"
+NAME="AEN273"
 ></A
 ><P
 ><CODE
@@ -1025,7 +1035,7 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN278"
+NAME="AEN283"
 ></A
 ><P
 ><B
@@ -1049,7 +1059,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN283"
+NAME="AEN288"
 >2.9. Ignore old messages</A
 ></H3
 ><DIV
@@ -1057,7 +1067,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN285"
+NAME="AEN290"
 ></A
 ><P
 ><CODE
@@ -1079,7 +1089,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN292"
+NAME="AEN297"
 >3. ach Shell Tool</A
 ></H2
 ><P
@@ -1122,7 +1132,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN313"
+NAME="AEN318"
 ></A
 ><P
 ><B
@@ -1155,7 +1165,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN324"
+NAME="AEN329"
 ></A
 ><P
 ><B
@@ -1177,7 +1187,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN331"
+NAME="AEN336"
 ></A
 ><P
 ><B
@@ -1216,7 +1226,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN344"
+NAME="AEN349"
 ></A
 ><P
 ><B
@@ -1253,7 +1263,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN356"
+NAME="AEN361"
 >4. achd Network Daemon</A
 ></H2
 ><P
@@ -1268,23 +1278,64 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN360"
+NAME="AEN365"
 >4.1. Server</A
 ></H3
 ><P
->The achd server should be setup to run from the inetd
-    super-server. You should add the following line to
-    <TT
+><B
+CLASS="command"
+>achd</B
+>   serve </P
+><P
+>The achd server should be setup to run from the
+    <B
+CLASS="command"
+>inetd</B
+> super-server. You should add the
+    following line to <TT
 CLASS="filename"
 >/etc/inetd.conf</TT
->, assuming you have installed
-    ach under <TT
+>, assuming
+    you have installed ach under
+    <TT
 CLASS="filename"
 >/usr/local/</TT
 >:</P
 ><PRE
 CLASS="screen"
 >8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</PRE
+><DIV
+CLASS="note"
+><P
+></P
+><TABLE
+CLASS="note"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        Inetd works by listening for incoming connections on all the
+        ports specified in its configuration file.  When inetd
+        recieves a new connection, it forks off the process as given
+        in the configuration file, (in this case achd), and hooks the
+        standard input and output of that process to the socket
+        connection.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
 ><DIV
 CLASS="tip"
 ><P
@@ -1353,10 +1404,10 @@ CLASS="command"
 ></TABLE
 ></DIV
 ><P
->&#13;      You will probably need to restart inetd after this happens.  How
-      to do this may vary depending on the init system used by your
-      operating system and the particular inetd you are using.  Here
-      are some options which may work:
+>&#13;      You will probably need to restart inetd after editing the
+      configuration file.  How to do this may vary depending on the
+      init system used by your operating system and the particular
+      inetd you are using.  Here are some options which may work:
     </P
 ><P
 ></P
@@ -1418,13 +1469,44 @@ Connection closed by foreign host.
     </PRE
 ><P
 >Which will mean that achd is properly setup.</P
+><DIV
+CLASS="warning"
+><P
+></P
+><TABLE
+CLASS="warning"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        Currently, achd performs no authentication, access currently,
+        or encryption (this may be added in the future).  If security
+        is a concern in your application, it must currently be
+        addressed at the network level, e.g. by physical isolation,
+        firewalling, a VPN such as IPSec, and/or SSH tunnelling.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ><DIV
 CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN395"
+NAME="AEN408"
 >4.2. Client</A
 ></H3
 ><P
@@ -1463,7 +1545,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN417"
+NAME="AEN432"
 ></A
 ><P
 ><B
@@ -1488,7 +1570,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN426"
+NAME="AEN441"
 ></A
 ><P
 ><B
@@ -1513,7 +1595,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN436"
+NAME="AEN451"
 ></A
 ><P
 ><B
@@ -1538,7 +1620,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN446"
+NAME="AEN461"
 ></A
 ><P
 ><B
@@ -1567,7 +1649,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN456"
+NAME="AEN471"
 >5. Performance Tuning</A
 ></H2
 ><P
@@ -1583,7 +1665,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN459"
+NAME="AEN474"
 >5.1. Disable CPU frequency scaling</A
 ></H3
 ><P
@@ -1602,12 +1684,12 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN462"
+NAME="AEN477"
 >5.2. Use a Real-Time Operating System</A
 ></H3
 ><P
 >&#13;      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
-      designed to maximize througput and perhaps to reduce latency to
+      designed to maximize throughput and perhaps to reduce latency to
       "human-tolerable" (0.1s) levels.  The worst-case performance may
       be sacrificed in order to improve average-case performance.  For
       a real-time application, it is generally worst-case performance
@@ -1615,13 +1697,72 @@ NAME="AEN462"
       important that througput.
     </P
 ><P
->If using a Linux kernel, you can apply the PREEMPT_RT patch
-    to allow a fully-preemptible kernel.  Without this, a low priority
-    task in the middle of a system call may block a high priority task
-    from running until the system call completes.  With a
-    fully-preemptible kernel, the high priority task gets to run
-    immediately.
+>&#13;      If using a Linux kernel, you can apply the PREEMPT_RT patch to
+      allow a fully-preemptible kernel.  Without this, a low priority
+      task in the middle of a system call may block a high priority
+      task from running until the system call completes.  With a
+      fully-preemptible kernel, the high priority task gets to run
+      immediately.
     </P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN481"
+>5.3. Benchmark your system</A
+></H3
+><P
+>&#13;      You can use the included <B
+CLASS="command"
+>achbench</B
+> command to
+      test performance on your system while you try different
+      configurations.  This program will <CODE
+CLASS="function"
+>fork</CODE
+> a
+      specified number of publishers and subscribers and measure the
+      latency of message passing.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN486"
+></A
+><P
+><B
+>Example 16. Benchmarking Latency</B
+></P
+><P
+>Measure latency with one publisher and two subscribers over ten seconds</P
+><P
+><B
+CLASS="command"
+>achbench</B
+>  [-p <TT
+CLASS="replaceable"
+><I
+>1</I
+></TT
+>] [-r <TT
+CLASS="replaceable"
+><I
+>2</I
+></TT
+>] [-s <TT
+CLASS="replaceable"
+><I
+>10</I
+></TT
+>]   &#62; <TT
+CLASS="replaceable"
+><I
+>output_file</I
+></TT
+> </P
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -1629,15 +1770,31 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN466"
+NAME="AEN499"
 >6. Theory of Operation</A
 ></H2
+><P
+>&#13;      POSIX provides a rich variety of IPC mechanisms, but none of
+      them are ideal for real-time control.  The fundamental
+      difference is that as soon as a new sample of the signal (in the
+      oscilloscope sense, not a POSIX signal) is produced, nearly
+      everything no longer cares about older samples.  Thus, we want
+      to always favor new data over old data whereas general-purpose
+      POSIX IPC favors the old data. This problem is typically
+      referred to as Head of Line (HOL) Blocking.  The exception to
+      this is POSIX shared memory. However, synchronization of shared
+      memory is a difficult programming problem, making the typical
+      and direct use of POSIX shared memory unfavorable for developing
+      robust systems.  Furthermore, some parts of the system, such as
+      logging, may need to access older samples, so this also should
+      be permitted at least on a best-effort basis.
+    </P
 ><DIV
 CLASS="sect2"
-><H3
+><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN468"
+NAME="AEN502"
 >6.1. Data Structure</A
 ></H3
 ><P
@@ -1670,7 +1827,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN472"
+NAME="AEN506"
 >6.2. Core Procedures</A
 ></H3
 ><P
@@ -1688,7 +1845,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN477"
+NAME="AEN511"
 >6.2.1. ach_put</A
 ></H4
 ><P
@@ -1745,7 +1902,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN493"
+NAME="AEN527"
 >6.2.2. ach_get</A
 ></H4
 ><P
@@ -1809,7 +1966,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN509"
+NAME="AEN543"
 >6.3. Serialization</A
 ></H3
 ><P
@@ -1827,12 +1984,55 @@ NAME="AEN509"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN512"
+NAME="AEN546"
 ></A
 >Colophon</H1
 ><P
->This manual is written in Docbook
-  XML.</P
+>This manual is written in Docbook XML.</P
+><P
+>&#13;         Redistribution and use in source (XML DocBook) and 'compiled' forms
+         (SGML, HTML, PDF, PostScript, RTF and so forth) with or without
+         modification, are permitted provided that the following conditions are
+         met:
+       </P
+><P
+></P
+><OL
+TYPE="1"
+><LI
+><P
+>&#13;           Redistributions of source code (XML DocBook) must retain the
+           above copyright notice, this list of conditions and the
+           following disclaimer as the first lines of this file
+           unmodified.
+         </P
+></LI
+><LI
+><P
+>&#13;           Redistributions in compiled form (transformed to other DTDs,
+           converted to PDF, PostScript, RTF and other formats) must
+           reproduce the above copyright notice, this list of conditions
+           and the following disclaimer in the documentation and/or other
+           materials provided with the distribution.
+         </P
+></LI
+></OL
+><P
+>&#13;         THIS DOCUMENTATION IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+         CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+         INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+         MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+         DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+         CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+         SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+         NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+         LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+         HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+         CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+         OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+         DOCUMENTATION, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+         DAMAGE.
+       </P
 ></DIV
 ></DIV
 ></BODY

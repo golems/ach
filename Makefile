@@ -1,6 +1,8 @@
 cp:
-	cp doc/html/* .
-	cp doc/*.html man
+	cp doc/html/* api
+	cp doc/man/*.html man
+	cp doc/manual/*.html manual
+	cp -r doc/images .
 
 
 sync:
