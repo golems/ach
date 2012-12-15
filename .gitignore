@@ -66,3 +66,5 @@ Makefile.in
 /debian/ach-utils
 /achd
 /debian/libach1
+/doc/man/*.html
+/doc/manual/*.html

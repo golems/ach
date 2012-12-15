@@ -120,14 +120,24 @@ m4_ifdef([DX_INIT_DOXYGEN],
           AM_CONDITIONAL([DX_COND_man],   false)
          ])
 
+# Check for programs to make documentation
 AC_CHECK_PROGS([HELP2MAN], [help2man])
-AM_CONDITIONAL([HAVE_HELP2MAN], [test x$HELP2MAN != x])
-
 AC_CHECK_PROGS([MAN2HTML], [man2html])
-AM_CONDITIONAL([HAVE_MAN2HTML], [test x$MAN2HTML != x])
-
 AC_CHECK_PROGS([DB2HTML], [db2html])
-AM_CONDITIONAL([HAVE_DB2HTML], [test x$DB2HTML != x])
+AM_CONDITIONAL([HAVE_HELP2MAN], [test x$HELP2MAN != x])
+AM_CONDITIONAL([HAVE_MAN2HTML], [test x$MAN2HTML != x])
+AM_CONDITIONAL([HAVE_DB2HTML],  [test x$DB2HTML != x])
+
+# Check if we already have docs (from tarball)
+AC_CHECK_FILE( [$srcdir/doc/man/ach.1],           [FOUND_MANPAGES=yes])
+AC_CHECK_FILE( [$srcdir/doc/man/ach.html],        [FOUND_MANHTML=yes])
+AC_CHECK_FILE( [$srcdir/doc/man/ach-manual.html], [FOUND_MANUAL=yes])
+
+# If we can make the docs or already have them, then we can install them
+AM_CONDITIONAL([HAVE_MANPAGES], [test x$HELP2MAN != x -o x$FOUND_MANUAL = yes])
+AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')' -o x$FOUND_MAN2HTML = yes])
+AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = yes])
 
 AC_CONFIG_FILES([Makefile doc/Makefile])
+
 AC_OUTPUT

@@ -18,6 +18,11 @@
      <!-- All dates specified in ISO "YYYY-MM-DD" format -->
      <pubdate>2012-12-13</pubdate>
 
+     <copyright>
+       <year>2012</year>
+       <holder>Georgia Tech Research Corporation</holder>
+     </copyright>
+
      <!-- Most recent revision goes at the top; list in descending order -->
      <revhistory>
        <revision>
@@ -39,10 +44,10 @@
            that sample data from physical processes. Ach eliminates
            the Head-of-Line Blocking problem for applications that
            always require access to the newest message. Source code is
-           provided under an the 2-clause BSD license.
+           provided under the 2-clause BSD license.
          </para>
-     </abstract>
 
+     </abstract>
   </articleinfo>
 
   <sect1>
@@ -264,10 +269,11 @@ if( ACH_OK != r ) {
         <paramdef>size_t <parameter>cnt</parameter></paramdef>
       </funcprototype>
     </funcsynopsis>
-    <para>The <function>ach_put</function> function writes a new
-    message to the channel.  This will go in the next open space in
-    the circular array.  If there is insufficient unused space in the
-    circular array, then the oldest entry or entries will be
+    <para>The <function>ach_put</function>
+    <indexterm><primary>ach_put</primary></indexterm> function writes
+    a new message to the channel.  This will go in the next open space
+    in the circular array.  If there is insufficient unused space in
+    the circular array, then the oldest entry or entries will be
     overwritten.</para>
 
       <example><title>Opening a Channel</title>
@@ -370,14 +376,15 @@ if( ACH_TIMEOUT == r ) {
       been defined based on UTC.  This is given to nanosecond
       precision with <constant>CLOCK_REALTIME</constant> (nothing to
       do with real-time-as-in-low-latency-or-motion-control).
-      However, <constant>CLOCK_REALTIME</constant> is discontinuous.
-      It may be reset by the operator, by the NTP daemon, and it is
+      However, UTC and thus typically
+      <constant>CLOCK_REALTIME</constant> is discontinuous.  It may be
+      reset by the operator, by the NTP daemon, and it is
       <emphasis>defined</emphasis> as discontinous when leap seconds
       occur.  This is bad when one wants to use the clock for periodic
       events as is likely for motion control.
       <constant>CLOCK_MONTONIC</constant> is not discontinous, but
       even it has issues.  The NTP daemon may slew this clock,
-      speeding it up or slowing it down on linux by 0.5ms per second.
+      speeding it up or slowing it down on Linux by 0.5ms per second.
       Linux does provide the <constant>CLOCK_MONOTONIC_RAW</constant>
       which is not slewed, but is also not portable.
       </para>
@@ -518,13 +525,29 @@ if( ACH_TIMEOUT == r ) {
 
     <sect2><title>Server</title>
 
-    <para>The achd server should be setup to run from the inetd
-    super-server. You should add the following line to
-    <filename>/etc/inetd.conf</filename>, assuming you have installed
-    ach under <filename>/usr/local/</filename>:</para>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">serve</arg>
+    </cmdsynopsis>
+
+    <para>The achd server should be setup to run from the
+    <command>inetd</command> super-server. You should add the
+    following line to <filename>/etc/inetd.conf</filename>, assuming
+    you have installed ach under
+    <filename>/usr/local/</filename>:</para>
 
     <screen>8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</screen>
 
+    <note>
+      <para>
+        Inetd works by listening for incoming connections on all the
+        ports specified in its configuration file.  When inetd
+        recieves a new connection, it forks off the process as given
+        in the configuration file, (in this case achd), and hooks the
+        standard input and output of that process to the socket
+        connection.
+      </para>
+    </note>
 
     <tip>
       <para>On Debian-based systems (including Ubuntu and Mint), you
@@ -541,10 +564,10 @@ if( ACH_TIMEOUT == r ) {
     </tip>
 
     <para>
-      You will probably need to restart inetd after this happens.  How
-      to do this may vary depending on the init system used by your
-      operating system and the particular inetd you are using.  Here
-      are some options which may work:
+      You will probably need to restart inetd after editing the
+      configuration file.  How to do this may vary depending on the
+      init system used by your operating system and the particular
+      inetd you are using.  Here are some options which may work:
     </para>
     <variablelist>
       <varlistentry><term>SysV Init (general GNU/Linux)</term>
@@ -577,6 +600,15 @@ Connection closed by foreign host.
 
     <para>Which will mean that achd is properly setup.</para>
 
+    <warning>
+      <para>
+        Currently, achd performs no authentication, access currently,
+        or encryption (this may be added in the future).  If security
+        is a concern in your application, it must currently be
+        addressed at the network level, e.g. by physical isolation,
+        firewalling, a VPN such as IPSec, and/or SSH tunnelling.
+      </para>
+    </warning>
     </sect2>
 
     <sect2><title>Client</title>
@@ -585,7 +617,10 @@ Connection closed by foreign host.
 
     <cmdsynopsis>
       <command>achd</command>
-      <arg choice="req">push | pull</arg>
+      <group choice="req">
+        <arg choice="req">push</arg>
+        <arg choice="req">pull</arg>
+      </group>
       <arg choice="req"><replaceable>hostname</replaceable></arg>
       <arg choice="req"><replaceable>chanel_name</replaceable></arg>
       <arg>-t <replaceable>tcp|udp</replaceable></arg>
@@ -671,27 +706,69 @@ Connection closed by foreign host.
     <sect2><title>Use a Real-Time Operating System</title>
     <para>
       General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
-      designed to maximize througput and perhaps to reduce latency to
+      designed to maximize throughput and perhaps to reduce latency to
       "human-tolerable" (0.1s) levels.  The worst-case performance may
       be sacrificed in order to improve average-case performance.  For
       a real-time application, it is generally worst-case performance
       that matters rather than average case, and latency is more
       important that througput.
     </para>
-    <para>If using a Linux kernel, you can apply the PREEMPT_RT patch
-    to allow a fully-preemptible kernel.  Without this, a low priority
-    task in the middle of a system call may block a high priority task
-    from running until the system call completes.  With a
-    fully-preemptible kernel, the high priority task gets to run
-    immediately.
+    <para>
+      If using a Linux kernel, you can apply the PREEMPT_RT patch to
+      allow a fully-preemptible kernel.  Without this, a low priority
+      task in the middle of a system call may block a high priority
+      task from running until the system call completes.  With a
+      fully-preemptible kernel, the high priority task gets to run
+      immediately.
     </para>
     </sect2>
+
+
+    <sect2><title>Benchmark your system</title>
+    <para>
+      You can use the included <command>achbench</command> command to
+      test performance on your system while you try different
+      configurations.  This program will <function>fork</function> a
+      specified number of publishers and subscribers and measure the
+      latency of message passing.
+    </para>
+
+    <example><title>Benchmarking Latency</title>
+    <para>Measure latency with one publisher and two subscribers over ten seconds</para>
+
+      <cmdsynopsis>
+        <command>achbench</command>
+         <arg>-p <replaceable>1</replaceable></arg>
+         <arg>-r <replaceable>2</replaceable></arg>
+         <arg>-s <replaceable>10</replaceable></arg>
+         <arg choice="plain"> &gt; <replaceable>output_file</replaceable></arg>
+      </cmdsynopsis>
+    </example>
+    </sect2>
+
   </sect1>
 
   <sect1>
     <title>
       Theory of Operation
     </title>
+
+    <para>
+      POSIX provides a rich variety of IPC mechanisms, but none of
+      them are ideal for real-time control.  The fundamental
+      difference is that as soon as a new sample of the signal (in the
+      oscilloscope sense, not a POSIX signal) is produced, nearly
+      everything no longer cares about older samples.  Thus, we want
+      to always favor new data over old data whereas general-purpose
+      POSIX IPC favors the old data. This problem is typically
+      referred to as Head of Line (HOL) Blocking.  The exception to
+      this is POSIX shared memory. However, synchronization of shared
+      memory is a difficult programming problem, making the typical
+      and direct use of POSIX shared memory unfavorable for developing
+      robust systems.  Furthermore, some parts of the system, such as
+      logging, may need to access older samples, so this also should
+      be permitted at least on a best-effort basis.
+    </para>
 
     <sect2><title>Data Structure</title>
     <para>
@@ -799,6 +876,50 @@ Connection closed by foreign host.
 
   </sect1>
 
-  <colophon><para>This manual is written in Docbook
-  XML.</para></colophon>
+  <colophon>
+    <para>This manual is written in Docbook XML.</para>
+
+
+     <!--<legalnotice>-->
+       <para>
+         Redistribution and use in source (XML DocBook) and 'compiled' forms
+         (SGML, HTML, PDF, PostScript, RTF and so forth) with or without
+         modification, are permitted provided that the following conditions are
+         met:
+       </para>
+       <orderedlist>
+         <listitem><para>
+           Redistributions of source code (XML DocBook) must retain the
+           above copyright notice, this list of conditions and the
+           following disclaimer as the first lines of this file
+           unmodified.
+         </para></listitem>
+         <listitem><para>
+           Redistributions in compiled form (transformed to other DTDs,
+           converted to PDF, PostScript, RTF and other formats) must
+           reproduce the above copyright notice, this list of conditions
+           and the following disclaimer in the documentation and/or other
+           materials provided with the distribution.
+         </para></listitem>
+       </orderedlist>
+       <para>
+         THIS DOCUMENTATION IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+         CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+         INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+         MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+         DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+         CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+         SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+         NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+         LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+         HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+         CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+         OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+         DOCUMENTATION, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+         DAMAGE.
+       </para>
+     <!-- </legalnotice> -->
+  </colophon>
+
+
 </article>
