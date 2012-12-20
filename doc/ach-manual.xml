@@ -455,25 +455,31 @@ if( ACH_TIMEOUT == r ) {
 
       <cmdsynopsis>
         <command>ach</command>
-         <arg>-C <replaceable>chanel_name</replaceable></arg>
-         <arg>-m <replaceable>frame_count</replaceable></arg>
-         <arg>-n <replaceable>frame_size</replaceable></arg>
-         <arg>-U <replaceable>chanel_name</replaceable></arg>
-         <arg>-o <replaceable>octal_mode</replaceable></arg>
-         <arg>-1</arg>
-         <arg>-t</arg>
-         <arg>-v</arg>
-         <arg>-V</arg>
-         <arg>-?</arg>
+        <group choice="req">
+          <arg choice="req">mk</arg>
+          <arg choice="req">rm</arg>
+          <arg choice="req">chmod</arg>
+          <arg choice="req">dump</arg>
+          <arg choice="req">file</arg>
+        </group>
+        <arg><replaceable>octal_mode</replaceable></arg>
+        <arg choice="req"><replaceable>chanel_name</replaceable></arg>
+        <arg>-o <replaceable>octal_mode</replaceable></arg>
+        <arg>-m <replaceable>frame_count</replaceable></arg>
+        <arg>-n <replaceable>frame_size</replaceable></arg>
+        <arg>-t</arg>
+        <arg>-v</arg>
+        <arg>-V</arg>
+        <arg>-?</arg>
       </cmdsynopsis>
-
 
       <example><title>Create a channel</title>
       <para>Create channel named "my_channel" with slots for 10
       messages which have a nominal size of 64 bytes.</para>
       <cmdsynopsis>
         <command>ach</command>
-         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">mk</arg>
+         <arg choice="plain"><replaceable>my_channel</replaceable></arg>
          <arg choice="plain">-m <replaceable>10</replaceable></arg>
          <arg choice="plain">-n <replaceable>64</replaceable></arg>
       </cmdsynopsis>
@@ -483,7 +489,8 @@ if( ACH_TIMEOUT == r ) {
      <para>Delete channel named "my_channel".</para>
       <cmdsynopsis>
         <command>ach</command>
-         <arg choice="plain">-U <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">rm</arg>
+         <arg choice="plain"><replaceable>my_channel</replaceable></arg>
       </cmdsynopsis>
       </example>
 
@@ -493,7 +500,8 @@ if( ACH_TIMEOUT == r ) {
       </para>
       <cmdsynopsis>
         <command>ach</command>
-         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain">mk</arg>
+         <arg choice="plain"><replaceable>my_channel</replaceable></arg>
          <arg choice="plain">-m <replaceable>10</replaceable></arg>
          <arg choice="plain">-n <replaceable>64</replaceable></arg>
          <arg choice="plain">-o <replaceable>666</replaceable></arg>
@@ -506,10 +514,21 @@ if( ACH_TIMEOUT == r ) {
       </para>
       <cmdsynopsis>
         <command>ach</command>
+         <arg choice="plain">mk</arg>
          <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
          <arg choice="plain">-m <replaceable>10</replaceable></arg>
          <arg choice="plain">-n <replaceable>64</replaceable></arg>
          <arg choice="plain">-1</arg>
+      </cmdsynopsis>
+      </example>
+
+      <example><title>Set channel permissions</title>
+      <para>Make channel accessible only by user and group.</para>
+      <cmdsynopsis>
+        <command>ach</command>
+         <arg choice="plain">chmod</arg>
+         <arg choice="plain"><replaceable>660</replaceable></arg>
+         <arg choice="plain"><replaceable>my_channel</replaceable></arg>
       </cmdsynopsis>
       </example>
 
@@ -552,15 +571,11 @@ if( ACH_TIMEOUT == r ) {
     <tip>
       <para>On Debian-based systems (including Ubuntu and Mint), you
       can use the <userinput>openbsd-inetd</userinput> package,
-      installed with <userinput>apt-get install openbsd-inetd</userinput>.
-      </para>
-    </tip>
-
-    <tip>
-      <para>Some GNU/Linux systems use <command>xinetd</command>, the
-      eXtended inetd.  It provides more features than the traditional
-      inetd, and has a different, per-service configuration file
-      format. </para>
+      installed with <userinput>apt-get install
+      openbsd-inetd</userinput>.  Some GNU/Linux systems use
+      <command>xinetd</command>, the eXtended inetd.  It provides more
+      features than the traditional inetd, and has a different,
+      per-service configuration file format. </para>
     </tip>
 
     <para>
@@ -600,6 +615,18 @@ Connection closed by foreign host.
 
     <para>Which will mean that achd is properly setup.</para>
 
+    <tip>
+      <para>
+        For the achd server to access any channel, it must be readable
+        and writable by the user under which achd runs ("nobody" in
+        the above example line for inetd.conf).  If you trust all
+        users on the local machine, you can set the channel
+        permissions to "666", but please note that this is not a
+        secure configuration.  An alternative is to create a separate
+        user account for achd and ensure that channels are readable
+        and writable by that account or one of its groups.
+      </para>
+    </tip>
     <warning>
       <para>
         Currently, achd performs no authentication, access currently,
@@ -738,9 +765,9 @@ Connection closed by foreign host.
 
       <cmdsynopsis>
         <command>achbench</command>
-         <arg>-p <replaceable>1</replaceable></arg>
-         <arg>-r <replaceable>2</replaceable></arg>
-         <arg>-s <replaceable>10</replaceable></arg>
+         <arg choice="plain">-p <replaceable>1</replaceable></arg>
+         <arg choice="plain">-r <replaceable>2</replaceable></arg>
+         <arg choice="plain">-s <replaceable>10</replaceable></arg>
          <arg choice="plain"> &gt; <replaceable>output_file</replaceable></arg>
       </cmdsynopsis>
     </example>

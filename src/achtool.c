@@ -56,8 +56,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <signal.h>
+#include <stdarg.h>
 #include "ach.h"
 #include "achutil.h"
+#include "achd.h"
 
 size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
@@ -68,24 +71,85 @@ int opt_1 = 0;
 int opt_mode = -1;
 int (*opt_command)(void) = NULL;
 
+
+static void check_status(ach_status_t r, const char fmt[], ...);
+static void parse_cmd( int (*cmd_fun)(void), char *arg );
+static void set_cmd( int (*cmd_fun)(void) );
+
+static int parse_mode( const char *arg ) {
+    errno = 0;
+    long i = strtol( arg, NULL, 8 );
+    if( errno ) {
+        fprintf( stderr, "Invalid mode %s: (%d) %s\n",
+                 arg, errno, strerror(errno) );
+        exit(EXIT_FAILURE);
+    }
+    return (int) i;
+}
+
 /* Commands */
 int cmd_file(void);
 int cmd_dump(void);
 int cmd_unlink(void);
 int cmd_create(void);
-
-void cmd_help(void);
+int cmd_chmod(void);
 
 void cleanup() {
     if(opt_chan_name) free(opt_chan_name);
     opt_chan_name = NULL;
 }
 
+static void posarg(int i, const char *arg) {
+    (void)i;
+    switch(i) {
+    case 0:
+        if( opt_verbosity ) {
+            fprintf( stderr, "Setting command: %s\n", arg );
+        }
+        if( 0 == strcasecmp(arg, "chmod") ) {
+            set_cmd( cmd_chmod );
+        } else if( 0 == strcasecmp(arg, "create")   ||
+                   0 == strcasecmp(arg, "mk")       ||
+                   0 == strcasecmp(arg, "make") )
+        {
+            set_cmd( cmd_create );
+        } else if( 0 == strcasecmp(arg, "unlink")   ||
+                   0 == strcasecmp(arg, "rm")       ||
+                   0 == strcasecmp(arg, "remove") )
+        {
+            set_cmd( cmd_unlink );
+        } else if( 0 == strcasecmp(arg, "dump") ) {
+            set_cmd( cmd_dump );
+        } else if( 0 == strcasecmp(arg, "file") ) {
+            set_cmd( cmd_file );
+        } else {
+            goto INVALID;
+        }
+        break;
+    case 1:
+        if( cmd_chmod == opt_command ) {
+            opt_mode = parse_mode( arg );
+        } else {
+            opt_chan_name = strdup( arg );
+        }
+        break;
+    case 2:
+        if( cmd_chmod == opt_command ) {
+            opt_chan_name = strdup( arg );
+        } else {
+            goto INVALID;
+        }
+        break;
+    default:
+    INVALID:
+        fprintf( stderr, "Invalid argument: %s\n", arg );
+        exit(EXIT_FAILURE);
+    }
+}
 
-static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
+static void set_cmd( int (*cmd_fun)(void) ) {
     if( NULL == opt_command ) {
         opt_command = cmd_fun;
-        opt_chan_name = strdup( arg );
     }else {
         fprintf(stderr, "Can only specify one command\n");
         cleanup();
@@ -93,9 +157,14 @@ static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
     }
 }
 
+static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
+    set_cmd( cmd_fun );
+    opt_chan_name = strdup( arg );
+}
+
 int main( int argc, char **argv ) {
     /* Parse Options */
-    int c;
+    int c, i = 0;
     opterr = 0;
     while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1thH?V")) != -1 ) {
         switch(c) {
@@ -118,7 +187,7 @@ int main( int argc, char **argv ) {
             opt_msg_cnt = (size_t)atoi( optarg );
             break;
         case 'o':   /* mode     */
-            opt_mode = (int)strtol( optarg, NULL, 8 );
+            opt_mode = parse_mode( optarg );
             break;
         case 't':   /* truncate */
             opt_truncate++;
@@ -135,44 +204,50 @@ int main( int argc, char **argv ) {
         case '?':   /* help     */
         case 'h':
         case 'H':
-            puts( "Usage: ach [OPTION...]\n"
+            puts( "Usage: ach [OPTION...] [mk|rm|chmod|dump|file] [mode] [channel-name]\n"
                   "General tool to interact with ach channels\n"
                   "\n"
                   "Options:\n"
-                  "  -C CHANNEL-NAME,          Create a new channel\n"
-                  "  -U CHANNEL-NAME,          Unlink (delete) a channel\n"
-                  "  -D CHANNEL-NAME,          Dump info about channel\n"
+                  /* "  -C CHANNEL-NAME,          Create a new channel\n" */
+                  /* "  -U CHANNEL-NAME,          Unlink (delete) a channel\n" */
+                  /* "  -D CHANNEL-NAME,          Dump info about channel\n" */
                   "  -1,                       With -C, accept an already created channel\n"
-                  "  -F CHANNEL-NAME,          Print filename for channel (Linux-only)\n"
+                  /* "  -F CHANNEL-NAME,          Print filename for channel (Linux-only)\n" */
                   "  -m MSG-COUNT,             Number of messages to buffer\n"
                   "  -n MSG-SIZE,              Nominal size of a message\n"
                   "  -o OCTAL,                 Mode for created channel\n"
-                  "  -t,                       Truncate and reinit newly create channel (use only\n"
-                  "                            with -C).  WARNING: this will clobber processes\n"
+                  "  -t,                       Truncate and reinit newly create channel.\n"
+                  "                            WARNING: this will clobber processes\n"
                   "                            Currently using the channel.\n"
                   "  -v,                       Make output more verbose\n"
-                  "  -?,                       Give this help list\n"
+                  "  -?,                       Give program help list\n"
                   "  -V,                       Print program version\n"
                   "\n"
                   "Examples:\n"
-                  "  ach -C foo                Create channel 'foo' with default buffer sizes.\n"
-                  "  ach -C foo -m 10 -n 1024  Create channel 'foo' which can buffer up to 10\n"
-                  "                            messages of nominal size 1024 bytes. Bigger/smaller\n"
-                  "                            messages are OK, up to 10*1024 bytes max (only one\n"
-                  "                            message of that size can be buffered at a time).\n"
-                  "  ach -U foo                Remove channel 'foo'\n"
-                  "  ach -1C foo               Create channel 'foo' unless it already exists,\n"
+                  "  ach mk foo                Create channel 'foo' with default buffer sizes.\n"
+                  "  ach mk foo -m 10 -n 256   Create channel 'foo' which can buffer up to 10\n"
+                  "                            messages of nominal size 256 bytes.\n"
+                  "                            Bigger/smaller messages are OK, up to 10*256\n"
+                  "                            bytes max (only one message of that size can be\n"
+                  "                            buffered at a time).\n"
+                  "  ach rm foo                Remove channel 'foo'\n"
+                  "  ach mk -1 foo             Create channel 'foo' unless it already exists,\n"
                   "                            in which case leave it alone.\n"
-                  "  ach -C foo -o 600         Create channel 'foo' with octal permissions '600'.\n"
-                  "                            Note that r/w (6) permission necessary for channel\n"
-                  "                            access in order to properly synchronize.\n"
+                  "  ach mk foo -o 600         Create channel 'foo' with octal permissions\n"
+                  "                            '600'. Note that r/w (6) permission necessary\n"
+                  "                            for channel access in order to properly\n"
+                  "                            synchronize.\n"
+                  "  ach chmod 666 foo         Set permissions of channel 'foo' to '666'\n"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
             exit(EXIT_SUCCESS);
         default:
-            printf("unknown: %c\n", c);
+            posarg(i++, optarg);
         }
+    }
+    while( optind < argc ) {
+        posarg(i++, argv[optind++]);
     }
 
     /* Be Verbose */
@@ -184,11 +259,14 @@ int main( int argc, char **argv ) {
     }
     /* Do Something */
     int r;
+    errno = 0;
     if( opt_command ) {
         r = opt_command();
-    }else{
+    } else if ( opt_chan_name && opt_mode >= 0 ) {
+        r = cmd_chmod();
+    } else{
         fprintf(stderr, "Must specify a command. Say `ach -H' for help.\n");
-        r = 1;
+        r = EXIT_FAILURE;
     }
     cleanup();
     return r;
@@ -213,30 +291,15 @@ int cmd_create(void) {
         if( opt_truncate ) attr.truncate = 1;
         i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
     }
-    if( i != ACH_OK && !opt_1 ) {
-        fprintf(stderr, "Error creating channel %s: %s\n",
-                opt_chan_name, ach_result_to_string(i) );
-        return -1;
+
+    if( ! (opt_1 && i == ACH_EEXIST) ) {
+        check_status( i, "Error creating channel '%s'", opt_chan_name );
     } else i = ACH_OK;
+
     if( opt_mode > 0 ) {
-        ach_channel_t chan;
-        if( ACH_OK != (i=ach_open(&chan, opt_chan_name, NULL)) ) {
-            fprintf(stderr, "Couldn't open channel for chmod: %s\n", ach_result_to_string(i));
-            return -1;
-        }
-        if( ACH_OK != (i=ach_chmod(&chan, (mode_t)opt_mode)) ) {
-            fprintf(stderr, "Couldn't chmod: %s", ach_result_to_string(i));
-            if( ACH_FAILED_SYSCALL == i ) {
-                fprintf(stderr, ", %s\n",strerror(errno));
-            } else {
-                fprintf(stderr, "\n");
-            }
-        }
-        if( ACH_OK != (i= ach_close(&chan)) ) {
-            fprintf(stderr, "Couldn't close channel after chmod: %s\n", ach_result_to_string(i));
-            return -1;
-        }
+        i = cmd_chmod();
     }
+
     return i;
 }
 int cmd_unlink(void) {
@@ -246,11 +309,7 @@ int cmd_unlink(void) {
 
     int r = ach_unlink(opt_chan_name);
 
-    if( ACH_OK != r ) {
-        fprintf(stderr, "Failed to remove channel `%s': %s (%s)\n",
-                opt_chan_name, strerror(errno), ach_result_to_string(r));
-        exit(-1);
-    }
+    check_status( r, "Failed to remove channel '%s'", opt_chan_name );
 
     return 0;
 }
@@ -261,16 +320,13 @@ int cmd_dump(void) {
     }
     ach_channel_t chan;
     ach_status_t r = ach_open( &chan, opt_chan_name, NULL );
-    if( ACH_OK == r ) {
-        ach_dump( chan.shm );
-    } else {
-        fprintf(stderr, "Error opening ach channel: %s\n", ach_result_to_string( r ));
-        return r;
-    }
+    check_status( r, "Error opening ach channel '%s'", opt_chan_name );
+
+    ach_dump( chan.shm );
+
     r = ach_close( &chan );
-    if( ACH_OK != r ) {
-        fprintf(stderr, "Error closing ach channel: %s\n", ach_result_to_string( r ));
-    }
+    check_status( r, "Error closing ach channel '%s'", opt_chan_name );
+
     return r;
 }
 
@@ -281,4 +337,45 @@ int cmd_file(void) {
     }
     printf("/dev/shm/" ACH_CHAN_NAME_PREFIX "%s\n", opt_chan_name );
     return 0;
+}
+
+int cmd_chmod(void) {
+    assert(opt_mode >=0 );
+    if( opt_verbosity > 0 ) {
+        fprintf( stderr, "Changing mode of %s to %o\n",
+                 opt_chan_name, (unsigned)opt_mode );
+    }
+
+    /* open */
+    ach_channel_t chan;
+    errno = 0;
+    ach_status_t r = ach_open( &chan, opt_chan_name, NULL );
+    check_status( r, "Error opening channel '%s'", opt_chan_name );
+
+    /* chmod */
+    r = ach_chmod( &chan, (mode_t)opt_mode );
+    check_status( r, "Error chmodding channel '%s'", opt_chan_name );
+
+    /* close */
+    r = ach_close( &chan );
+    check_status( r, "Error closing channel '%s'", opt_chan_name );
+
+    return r;
+}
+
+static void check_status(ach_status_t r, const char fmt[], ...) {
+    if( ACH_OK != r ) {
+        va_list ap;
+        va_start(ap, fmt);
+        vfprintf(stderr, fmt, ap);
+        va_end( ap );
+
+        if( errno ) {
+            fprintf( stderr, ": %s, errno (%d) %s\n",
+                     ach_result_to_string(r), errno, strerror(errno) );
+        } else {
+            fprintf( stderr, ": %s\n", ach_result_to_string(r) );
+        }
+        exit( EXIT_FAILURE );
+    }
 }
