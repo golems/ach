@@ -31,6 +31,12 @@
           <authorinitials>NTD</authorinitials>
           <revremark>initial draft</revremark>
        </revision>
+       <revision>
+          <revnumber>0.1.1</revnumber>
+          <date>2013-01-21</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>xinetd configuration</revremark>
+       </revision>
      </revhistory>
 
      <abstract>
@@ -550,17 +556,14 @@ if( ACH_TIMEOUT == r ) {
     </cmdsynopsis>
 
     <para>The achd server should be setup to run from the
-    <command>inetd</command> super-server. You should add the
-    following line to <filename>/etc/inetd.conf</filename>, assuming
-    you have installed ach under
-    <filename>/usr/local/</filename>:</para>
-
-    <screen>8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</screen>
+    <command>inetd</command> super-server. Some distributions use the
+    alternative <command>xinetd</command>, which is configured
+    differently.</para>
 
     <note>
       <para>
-        Inetd works by listening for incoming connections on all the
-        ports specified in its configuration file.  When inetd
+        Inetd and xinetd work by listening for incoming connections on
+        all the ports specified in their configuration.  When (x)inetd
         recieves a new connection, it forks off the process as given
         in the configuration file, (in this case achd), and hooks the
         standard input and output of that process to the socket
@@ -572,11 +575,20 @@ if( ACH_TIMEOUT == r ) {
       <para>On Debian-based systems (including Ubuntu and Mint), you
       can use the <userinput>openbsd-inetd</userinput> package,
       installed with <userinput>apt-get install
-      openbsd-inetd</userinput>.  Some GNU/Linux systems use
-      <command>xinetd</command>, the eXtended inetd.  It provides more
-      features than the traditional inetd, and has a different,
-      per-service configuration file format. </para>
+      openbsd-inetd</userinput>.  Alternatively, you can install
+      xinetd with with <userinput>apt-get install xinetd</userinput>
+      </para>
     </tip>
+
+    <sect3><title>Traditional Inetd Configuration</title>
+    <para>You should add the following line to
+    <filename>/etc/inetd.conf</filename>, assuming you have installed
+    ach under <filename>/usr/local/</filename>:</para>
+
+    <screen>
+#/etc/inetd.conf
+8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
+</screen>
 
     <para>
       You will probably need to restart inetd after editing the
@@ -593,10 +605,61 @@ if( ACH_TIMEOUT == r ) {
       <listitem><para><userinput>service openbsd-inetd
       restart</userinput></para></listitem>
       </varlistentry>
-      <varlistentry><term>Redhat with xinetd</term>
+    </variablelist>
+    </sect3>
+
+    <sect3><title>Xinetd Configuration</title>
+    <para>If xinetd is run with the with the inetd_compat flag, then
+    you can use the a similar configuration as with the traditional inetd.
+    </para>
+
+    <screen>
+#/etc/inetd.conf
+achd  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
+</screen>
+
+    <para>
+    Otherwise, you can add the following stanza to you xinetd
+    configuration.  Typically, this would go in the per-service file
+    <filename>/etc/xinetd.d/achd</filename>.
+    </para>
+    <screen>
+#/etc/xinetd.d/achd
+service achd
+{
+	flags           = REUSE
+	socket_type     = stream
+	protocol        = tcp
+	port            = 8076
+	wait            = no
+	user            = nobody
+	server          = /usr/local/bin/achd
+	server_args     = serve
+	disable         = no
+}
+    </screen>
+
+    <para>In addition, you will need to list the service in
+    <filename>/etc/services</filename>.
+    </para>
+    <screen>
+#/etc/services
+achd           8076/tcp
+    </screen>
+
+<para>Then, tell xinetd to reload its configuration</para>
+
+    <variablelist>
+      <varlistentry><term>SysV Init (general GNU/Linux)</term>
+      <listitem><para><userinput>/etc/init.d/xinetd
+      restart</userinput></para></listitem>
+      </varlistentry>
+      <varlistentry><term>Redhat/Debian/Ubuntu with xinetd</term>
       <listitem><para><userinput>service xinetd reload</userinput></para></listitem>
       </varlistentry>
     </variablelist>
+    </sect3>
+    <sect3><title>Testing Server Configuration</title>
 
     <para>Now, you can test this setup by telnetting to port 8076 on
     the server: <userinput>telnet SERVER 8076</userinput>.  If you
@@ -636,6 +699,7 @@ Connection closed by foreign host.
         firewalling, a VPN such as IPSec, and/or SSH tunnelling.
       </para>
     </warning>
+    </sect3>
     </sect2>
 
     <sect2><title>Client</title>
