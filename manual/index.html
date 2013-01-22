@@ -81,6 +81,23 @@ ALIGN="LEFT"
 COLSPAN="3"
 >initial draft</TD
 ></TR
+><TR
+><TD
+ALIGN="LEFT"
+>Revision 0.1.1</TD
+><TD
+ALIGN="LEFT"
+>2013-01-21</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>xinetd configuration</TD
+></TR
 ></TABLE
 ></DIV
 ><DIV
@@ -89,7 +106,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN21"
+NAME="AEN26"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -116,152 +133,171 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN24"
+HREF="#AEN29"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN56"
+HREF="#AEN61"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN58"
+HREF="#AEN63"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN138"
+HREF="#AEN143"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN160"
+HREF="#AEN165"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN176"
+HREF="#AEN181"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN195"
+HREF="#AEN200"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN255"
+HREF="#AEN260"
 >Closing a channel</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN263"
+HREF="#AEN268"
 >Deleting a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN271"
+HREF="#AEN276"
 >Channel Permissions</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN288"
+HREF="#AEN293"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN297"
+HREF="#AEN302"
 >ach Shell Tool</A
 ></DT
 ><DT
 >4. <A
-HREF="#AEN361"
+HREF="#AEN385"
 >achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
 >4.1. <A
-HREF="#AEN365"
+HREF="#AEN389"
 >Server</A
 ></DT
+><DD
+><DL
+><DT
+>4.1.1. <A
+HREF="#AEN404"
+>Traditional Inetd Configuration</A
+></DT
+><DT
+>4.1.2. <A
+HREF="#AEN422"
+>Xinetd Configuration</A
+></DT
+><DT
+>4.1.3. <A
+HREF="#AEN444"
+>Testing Server Configuration</A
+></DT
+></DL
+></DD
 ><DT
 >4.2. <A
-HREF="#AEN408"
+HREF="#AEN455"
 >Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >5. <A
-HREF="#AEN471"
+HREF="#AEN518"
 >Performance Tuning</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN474"
+HREF="#AEN521"
 >Disable CPU frequency scaling</A
 ></DT
 ><DT
 >5.2. <A
-HREF="#AEN477"
+HREF="#AEN524"
 >Use a Real-Time Operating System</A
 ></DT
 ><DT
 >5.3. <A
-HREF="#AEN481"
+HREF="#AEN528"
 >Benchmark your system</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN499"
+HREF="#AEN546"
 >Theory of Operation</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN502"
+HREF="#AEN549"
 >Data Structure</A
 ></DT
 ><DT
 >6.2. <A
-HREF="#AEN506"
+HREF="#AEN553"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.2.1. <A
-HREF="#AEN511"
+HREF="#AEN558"
 >ach_put</A
 ></DT
 ><DT
 >6.2.2. <A
-HREF="#AEN527"
+HREF="#AEN574"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6.3. <A
-HREF="#AEN543"
+HREF="#AEN590"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN546"
+HREF="#AEN593"
 >Colophon</A
 ></DT
 ></DL
@@ -271,7 +307,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN24"
+NAME="AEN29"
 >1. Introduction</A
 ></H2
 ><P
@@ -360,7 +396,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN56"
+NAME="AEN61"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -368,7 +404,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN58"
+NAME="AEN63"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -551,7 +587,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN138"
+NAME="AEN143"
 >2.2. Creating a channel</A
 ></H3
 ><DIV
@@ -559,7 +595,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN140"
+NAME="AEN145"
 ></A
 ><P
 ><CODE
@@ -591,7 +627,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN156"
+NAME="AEN161"
 ></A
 ><P
 ><B
@@ -621,7 +657,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN160"
+NAME="AEN165"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -629,7 +665,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN162"
+NAME="AEN167"
 ></A
 ><P
 ><CODE
@@ -647,7 +683,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN173"
+NAME="AEN178"
 ></A
 ><P
 ><B
@@ -669,7 +705,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN176"
+NAME="AEN181"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -677,7 +713,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN178"
+NAME="AEN183"
 ></A
 ><P
 ><CODE
@@ -702,7 +738,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN192"
+NAME="AEN197"
 ></A
 ><P
 ><B
@@ -724,7 +760,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN195"
+NAME="AEN200"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -732,7 +768,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN197"
+NAME="AEN202"
 ></A
 ><P
 ><CODE
@@ -804,7 +840,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN234"
+NAME="AEN239"
 ></A
 ><P
 ><B
@@ -831,7 +867,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN238"
+NAME="AEN243"
 ></A
 ><P
 ><B
@@ -849,7 +885,7 @@ CLASS="programlisting"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN242"
+NAME="AEN247"
 ></A
 ><P
 ><B
@@ -951,7 +987,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN255"
+NAME="AEN260"
 >2.6. Closing a channel</A
 ></H3
 ><DIV
@@ -959,7 +995,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN257"
+NAME="AEN262"
 ></A
 ><P
 ><CODE
@@ -977,7 +1013,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN263"
+NAME="AEN268"
 >2.7. Deleting a channel</A
 ></H3
 ><DIV
@@ -985,7 +1021,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN265"
+NAME="AEN270"
 ></A
 ><P
 ><CODE
@@ -1003,7 +1039,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN271"
+NAME="AEN276"
 >2.8. Channel Permissions</A
 ></H3
 ><DIV
@@ -1011,7 +1047,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN273"
+NAME="AEN278"
 ></A
 ><P
 ><CODE
@@ -1035,7 +1071,7 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN283"
+NAME="AEN288"
 ></A
 ><P
 ><B
@@ -1059,7 +1095,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN288"
+NAME="AEN293"
 >2.9. Ignore old messages</A
 ></H3
 ><DIV
@@ -1067,7 +1103,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN290"
+NAME="AEN295"
 ></A
 ><P
 ><CODE
@@ -1089,7 +1125,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN297"
+NAME="AEN302"
 >3. ach Shell Tool</A
 ></H2
 ><P
@@ -1103,10 +1139,20 @@ CLASS="command"
 ><B
 CLASS="command"
 >ach</B
->  [-C <TT
+>  {mk | rm | chmod | dump | file} [<TT
+CLASS="replaceable"
+><I
+>octal_mode</I
+></TT
+>] {<TT
 CLASS="replaceable"
 ><I
 >chanel_name</I
+></TT
+>} [-o <TT
+CLASS="replaceable"
+><I
+>octal_mode</I
 ></TT
 >] [-m <TT
 CLASS="replaceable"
@@ -1118,21 +1164,11 @@ CLASS="replaceable"
 ><I
 >frame_size</I
 ></TT
->] [-U <TT
-CLASS="replaceable"
-><I
->chanel_name</I
-></TT
->] [-o <TT
-CLASS="replaceable"
-><I
->octal_mode</I
-></TT
->] [-1] [-t] [-v] [-V] [-?]</P
+>] [-t] [-v] [-V] [-?]</P
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN318"
+NAME="AEN328"
 ></A
 ><P
 ><B
@@ -1145,7 +1181,7 @@ NAME="AEN318"
 ><B
 CLASS="command"
 >ach</B
->   -C <TT
+>   mk   <TT
 CLASS="replaceable"
 ><I
 >my_channel</I
@@ -1165,7 +1201,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN329"
+NAME="AEN340"
 ></A
 ><P
 ><B
@@ -1177,7 +1213,7 @@ NAME="AEN329"
 ><B
 CLASS="command"
 >ach</B
->   -U <TT
+>   rm   <TT
 CLASS="replaceable"
 ><I
 >my_channel</I
@@ -1187,7 +1223,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN336"
+NAME="AEN348"
 ></A
 ><P
 ><B
@@ -1201,7 +1237,7 @@ NAME="AEN336"
 ><B
 CLASS="command"
 >ach</B
->   -C <TT
+>   mk   <TT
 CLASS="replaceable"
 ><I
 >my_channel</I
@@ -1226,7 +1262,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN349"
+NAME="AEN362"
 ></A
 ><P
 ><B
@@ -1240,7 +1276,7 @@ NAME="AEN349"
 ><B
 CLASS="command"
 >ach</B
->   -C <TT
+>   mk   -C <TT
 CLASS="replaceable"
 ><I
 >my_channel</I
@@ -1257,13 +1293,40 @@ CLASS="replaceable"
 ></TT
 >   -1 </P
 ></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN375"
+></A
+><P
+><B
+>Example 12. Set channel permissions</B
+></P
+><P
+>Make channel accessible only by user and group.</P
+><P
+><B
+CLASS="command"
+>ach</B
+>   chmod   <TT
+CLASS="replaceable"
+><I
+>660</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>my_channel</I
+></TT
+> </P
+></DIV
 ></DIV
 ><DIV
 CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN361"
+NAME="AEN385"
 >4. achd Network Daemon</A
 ></H2
 ><P
@@ -1278,7 +1341,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN365"
+NAME="AEN389"
 >4.1. Server</A
 ></H3
 ><P
@@ -1291,19 +1354,12 @@ CLASS="command"
     <B
 CLASS="command"
 >inetd</B
-> super-server. You should add the
-    following line to <TT
-CLASS="filename"
->/etc/inetd.conf</TT
->, assuming
-    you have installed ach under
-    <TT
-CLASS="filename"
->/usr/local/</TT
->:</P
-><PRE
-CLASS="screen"
->8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve</PRE
+> super-server. Some distributions use the
+    alternative <B
+CLASS="command"
+>xinetd</B
+>, which is configured
+    differently.</P
 ><DIV
 CLASS="note"
 ><P
@@ -1325,8 +1381,8 @@ ALT="Note"></TD
 ALIGN="LEFT"
 VALIGN="TOP"
 ><P
->&#13;        Inetd works by listening for incoming connections on all the
-        ports specified in its configuration file.  When inetd
+>&#13;        Inetd and xinetd work by listening for incoming connections on
+        all the ports specified in their configuration.  When (x)inetd
         recieves a new connection, it forks off the process as given
         in the configuration file, (in this case achd), and hooks the
         standard input and output of that process to the socket
@@ -1364,45 +1420,41 @@ CLASS="userinput"
 > package,
       installed with <KBD
 CLASS="userinput"
->apt-get install openbsd-inetd</KBD
->.
+>apt-get install
+      openbsd-inetd</KBD
+>.  Alternatively, you can install
+      xinetd with with <KBD
+CLASS="userinput"
+>apt-get install xinetd</KBD
+>
       </P
 ></TD
 ></TR
 ></TABLE
 ></DIV
 ><DIV
-CLASS="tip"
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN404"
+>4.1.1. Traditional Inetd Configuration</A
+></H4
 ><P
-></P
-><TABLE
-CLASS="tip"
-WIDTH="100%"
-BORDER="0"
-><TR
-><TD
-WIDTH="25"
-ALIGN="CENTER"
-VALIGN="TOP"
-><IMG
-SRC="../images/tip.gif"
-HSPACE="5"
-ALT="Tip"></TD
-><TD
-ALIGN="LEFT"
-VALIGN="TOP"
-><P
->Some GNU/Linux systems use <B
-CLASS="command"
->xinetd</B
->, the
-      eXtended inetd.  It provides more features than the traditional
-      inetd, and has a different, per-service configuration file
-      format. </P
-></TD
-></TR
-></TABLE
-></DIV
+>You should add the following line to
+    <TT
+CLASS="filename"
+>/etc/inetd.conf</TT
+>, assuming you have installed
+    ach under <TT
+CLASS="filename"
+>/usr/local/</TT
+>:</P
+><PRE
+CLASS="screen"
+>&#13;#/etc/inetd.conf
+8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
+</PRE
 ><P
 >&#13;      You will probably need to restart inetd after editing the
       configuration file.  How to do this may vary depending on the
@@ -1434,8 +1486,81 @@ CLASS="userinput"
       restart</KBD
 ></P
 ></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN422"
+>4.1.2. Xinetd Configuration</A
+></H4
+><P
+>If xinetd is run with the with the inetd_compat flag, then
+    you can use the a similar configuration as with the traditional inetd.
+    </P
+><PRE
+CLASS="screen"
+>&#13;#/etc/inetd.conf
+achd  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
+</PRE
+><P
+>&#13;    Otherwise, you can add the following stanza to you xinetd
+    configuration.  Typically, this would go in the per-service file
+    <TT
+CLASS="filename"
+>/etc/xinetd.d/achd</TT
+>.
+    </P
+><PRE
+CLASS="screen"
+>&#13;#/etc/xinetd.d/achd
+service achd
+{
+	flags           = REUSE
+	socket_type     = stream
+	protocol        = tcp
+	port            = 8076
+	wait            = no
+	user            = nobody
+	server          = /usr/local/bin/achd
+	server_args     = serve
+	disable         = no
+}
+    </PRE
+><P
+>In addition, you will need to list the service in
+    <TT
+CLASS="filename"
+>/etc/services</TT
+>.
+    </P
+><PRE
+CLASS="screen"
+>&#13;#/etc/services
+achd           8076/tcp
+    </PRE
+><P
+>Then, tell xinetd to reload its configuration</P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
 ><DT
->Redhat with xinetd</DT
+>SysV Init (general GNU/Linux)</DT
+><DD
+><P
+><KBD
+CLASS="userinput"
+>/etc/init.d/xinetd
+      restart</KBD
+></P
+></DD
+><DT
+>Redhat/Debian/Ubuntu with xinetd</DT
 ><DD
 ><P
 ><KBD
@@ -1445,6 +1570,15 @@ CLASS="userinput"
 ></DD
 ></DL
 ></DIV
+></DIV
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN444"
+>4.1.3. Testing Server Configuration</A
+></H4
 ><P
 >Now, you can test this setup by telnetting to port 8076 on
     the server: <KBD
@@ -1469,6 +1603,40 @@ Connection closed by foreign host.
     </PRE
 ><P
 >Which will mean that achd is properly setup.</P
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        For the achd server to access any channel, it must be readable
+        and writable by the user under which achd runs ("nobody" in
+        the above example line for inetd.conf).  If you trust all
+        users on the local machine, you can set the channel
+        permissions to "666", but please note that this is not a
+        secure configuration.  An alternative is to create a separate
+        user account for achd and ensure that channels are readable
+        and writable by that account or one of its groups.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
 ><DIV
 CLASS="warning"
 ><P
@@ -1501,12 +1669,13 @@ VALIGN="TOP"
 ></TABLE
 ></DIV
 ></DIV
+></DIV
 ><DIV
 CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN408"
+NAME="AEN455"
 >4.2. Client</A
 ></H3
 ><P
@@ -1545,11 +1714,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN432"
+NAME="AEN479"
 ></A
 ><P
 ><B
->Example 12. Pull channel from server</B
+>Example 13. Pull channel from server</B
 ></P
 ><P
 ><B
@@ -1570,11 +1739,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN441"
+NAME="AEN488"
 ></A
 ><P
 ><B
->Example 13. Push channel to server and retry dropped connections</B
+>Example 14. Push channel to server and retry dropped connections</B
 ></P
 ><P
 ><B
@@ -1595,11 +1764,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN451"
+NAME="AEN498"
 ></A
 ><P
 ><B
->Example 14. Pull channel from server via UDP</B
+>Example 15. Pull channel from server via UDP</B
 ></P
 ><P
 ><B
@@ -1620,11 +1789,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN461"
+NAME="AEN508"
 ></A
 ><P
 ><B
->Example 15. Push channel to server, running the the background</B
+>Example 16. Push channel to server, running the the background</B
 ></P
 ><P
 ><B
@@ -1649,7 +1818,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN471"
+NAME="AEN518"
 >5. Performance Tuning</A
 ></H2
 ><P
@@ -1665,7 +1834,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN474"
+NAME="AEN521"
 >5.1. Disable CPU frequency scaling</A
 ></H3
 ><P
@@ -1684,7 +1853,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN477"
+NAME="AEN524"
 >5.2. Use a Real-Time Operating System</A
 ></H3
 ><P
@@ -1710,7 +1879,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN481"
+NAME="AEN528"
 >5.3. Benchmark your system</A
 ></H3
 ><P
@@ -1729,11 +1898,11 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN486"
+NAME="AEN533"
 ></A
 ><P
 ><B
->Example 16. Benchmarking Latency</B
+>Example 17. Benchmarking Latency</B
 ></P
 ><P
 >Measure latency with one publisher and two subscribers over ten seconds</P
@@ -1741,22 +1910,22 @@ NAME="AEN486"
 ><B
 CLASS="command"
 >achbench</B
->  [-p <TT
+>   -p <TT
 CLASS="replaceable"
 ><I
 >1</I
 ></TT
->] [-r <TT
+>   -r <TT
 CLASS="replaceable"
 ><I
 >2</I
 ></TT
->] [-s <TT
+>   -s <TT
 CLASS="replaceable"
 ><I
 >10</I
 ></TT
->]   &#62; <TT
+>    &#62; <TT
 CLASS="replaceable"
 ><I
 >output_file</I
@@ -1770,7 +1939,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN499"
+NAME="AEN546"
 >6. Theory of Operation</A
 ></H2
 ><P
@@ -1794,7 +1963,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN502"
+NAME="AEN549"
 >6.1. Data Structure</A
 ></H3
 ><P
@@ -1827,7 +1996,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN506"
+NAME="AEN553"
 >6.2. Core Procedures</A
 ></H3
 ><P
@@ -1845,7 +2014,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN511"
+NAME="AEN558"
 >6.2.1. ach_put</A
 ></H4
 ><P
@@ -1902,7 +2071,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN527"
+NAME="AEN574"
 >6.2.2. ach_get</A
 ></H4
 ><P
@@ -1966,7 +2135,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN543"
+NAME="AEN590"
 >6.3. Serialization</A
 ></H3
 ><P
@@ -1984,7 +2153,7 @@ NAME="AEN543"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN546"
+NAME="AEN593"
 ></A
 >Colophon</H1
 ><P
