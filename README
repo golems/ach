@@ -19,7 +19,7 @@ Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT
 
 1. Add the following to /etc/apt/sources:
 
-    http://code.golems.org/debian squeeze golems.org
+    deb http://code.golems.org/debian squeeze golems.org
 
   (substitute the codename for your distribution in place of squeeze,
   e.g. wheezy, precise)
