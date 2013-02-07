@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 TESTS = achtest achtooltest
 
 include_HEADERS = include/ach.h
-noinst_HEADERS = include/achutil.h include/achd.h
+noinst_HEADERS = include/achutil.h include/achd.h include/libach_private.h
 
 lib_LTLIBRARIES = libach.la
 
@@ -22,7 +22,7 @@ bin_PROGRAMS = ach achpipe.bin
 noinst_PROGRAMS = achtest
 endif
 
-libach_la_SOURCES = src/ach.c src/pipe.c
+libach_la_SOURCES = src/ach.c src/pipe.c src/libach_private.c
 
 # This is a libtool version -- CURRENT:REVSION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
