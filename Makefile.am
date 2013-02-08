@@ -10,7 +10,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 TESTS = achtest achtooltest
 
 include_HEADERS = include/ach.h
-noinst_HEADERS = include/achutil.h include/achd.h include/libach_private.h
+noinst_HEADERS = include/achutil.h include/achd.h
 
 lib_LTLIBRARIES = libach.la
 
@@ -22,7 +22,7 @@ bin_PROGRAMS = ach achpipe.bin
 noinst_PROGRAMS = achtest
 endif
 
-libach_la_SOURCES = src/ach.c src/pipe.c src/libach_private.c
+libach_la_SOURCES = src/ach.c src/pipe.c
 
 # This is a libtool version -- CURRENT:REVSION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
@@ -58,6 +58,18 @@ achbench_SOURCES = src/ach-bench.c src/achutil.c
 achbench_LDADD = libach.la
 
 endif
+
+if HAVE_PYTHON
+
+python_PYTHON = python/ach.py
+pyexec_LTLIBRARIES = ach_py.la
+ach_py_la_SOURCES = python/ach_py.c
+ach_py_la_LDFLAGS = -avoid-version -module -lach
+ach_py_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
+
+endif
+
+
 clean-local:
 	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.*
 
@@ -66,5 +78,7 @@ distclean-local:
 
 maintainer-clean-local:
 	-rm -rf  *.tar.gz
+
+
 
 include doxygen.am

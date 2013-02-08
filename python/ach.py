@@ -35,68 +35,66 @@
 ## FILE: ach.py
 ## DESC: python module to access ach
 
-from ctypes import *
+import ach_py
 
-libach = CDLL("libach.so")
+from ach_py import \
+    ACH_OK,\
+    ACH_OVERFLOW,\
+    ACH_INVALID_NAME,\
+    ACH_BAD_SHM_FILE,\
+    ACH_FAILED_SYSCALL,\
+    ACH_STALE_FRAMES,\
+    ACH_MISSED_FRAME,\
+    ACH_TIMEOUT,\
+    ACH_EEXIST,\
+    ACH_ENOENT,\
+    ACH_CLOSED,\
+    ACH_BUG,\
+    ACH_EINVAL,\
+    ACH_CORRUPT,\
+    ACH_BAD_HEADER,\
+    ACH_EACCES,\
+    ACH_O_WAIT,\
+    ACH_O_LAST
 
 
-libach.ach_channel_alloc.argtypes = []
-libach.restype = c_void_p
-
-libach.ach_channel_free.argtypes = [c_void_p]
-libach.ach_channel_free.restype = None
-
-libach.ach_result_to_string.argtypes = [c_int]
-libach.ach_result_to_string.restype = c_char_p
-
-libach.ach_open.argtypes = [c_void_p, c_char_p, c_void_p]
-libach.ach_open.restype = c_int
-
-libach.ach_close.argtypes = [c_void_p]
-libach.ach_close.restype = c_int
-
-libach.ach_put.argtypes = [c_void_p, c_void_p, c_size_t]
-libach.ach_put.restype = c_int
-
-
-class ach_error(Exception):
-    def __init__(self,value):
-        self.value=value
-    def __str__(self):
-        return libach.ach_result_to_string(self.value)
-
-def _ach_try(r):
-    if 0 != r:
-        raise ach_error(r)
-
+## Channel Object ##
 class channel:
     ''' An Ach channel'''
     def __init__(self):
-        self.pointer = libach.ach_channel_alloc()
-        self.is_open = False
+        '''Create an uninitialized channel.'''
+        self.pointer = None
 
     def __del__(self):
-        # libach becomes undefined when python is exiting
-        if libach:
-            if( self.is_open ):
-                self.close()
-            libach.ach_channel_free( self.pointer )
+        '''Close the channel.'''
+        if ach_py and self.pointer:
+            self.close()
 
     def open(self, name):
-        assert( not self.is_open )
-        print "opening"
-        _ach_try( libach.ach_open( self.pointer, name, None ) )
-        self.is_open = True
+        '''Open channel with the given name.'''
+        assert( not self.pointer )
+        self.pointer = ach_py.open_channel(name)
 
     def close(self):
-        assert(self.is_open)
-        print "closing"
-        _ach_try( libach.ach_close( self.pointer ) )
-        self.is_open = False
+        '''Close the channel.'''
+        assert(self.pointer)
+        ach_py.close_channel(self.pointer)
+        self.pointer = None
 
-    def put_buffer(self, buf, size):
-        assert(self.is_open)
-        _ach_try( libach.ach_put( self.pointer, buf, size ) )
+    def put(self, buf):
+        '''Put a buffer into the channel.
 
-    def put_string(self, string):
-        self.put_buffer( c_char_p(string), len(string) )
+        buf -- an object providing the buffer interface.'''
+        assert(self.pointer)
+        ach_py.put_buf( self.pointer, buf )
+
+    def get(self, buf, wait=False, last=False):
+        '''Get a message from channel and write to buffer.
+
+        buf -- an object providing the buffer interface.
+        wait -- wait until new message posts
+        last -- get most recent message
+
+        returns a tuple of (ach_status, frame_size)'''
+        assert(self.pointer)
+        return ach_py.get_buf( self.pointer, buf, wait, last )

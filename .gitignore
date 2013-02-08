@@ -68,3 +68,5 @@ Makefile.in
 /debian/libach1
 /doc/man/*.html
 /doc/manual/*.html
+/python/ach.pyc
+/py-compile

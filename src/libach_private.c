@@ -66,11 +66,29 @@
 #include "libach_private.h"
 
 ach_channel_t *ach_channel_alloc(void) {
-    printf("mallocing\n");
     return (ach_channel_t*)malloc(sizeof(ach_channel_t));
 }
 
 void ach_channel_free( ach_channel_t *chan) {
-    printf("freeing\n");
     free(chan);
 }
+
+const int ach_ok             = ACH_OK;
+const int ach_overflow       = ACH_OVERFLOW;
+const int ach_invalid_name   = ACH_INVALID_NAME;
+const int ach_bad_shm_file   = ACH_BAD_SHM_FILE;
+const int ach_failed_syscall = ACH_FAILED_SYSCALL;
+const int ach_stale_frames   = ACH_STALE_FRAMES;
+const int ach_missed_frame   = ACH_MISSED_FRAME;
+const int ach_timeout        = ACH_TIMEOUT;
+const int ach_eexist         = ACH_EEXIST;
+const int ach_enoent         = ACH_ENOENT;
+const int ach_closed         = ACH_CLOSED;
+const int ach_bug            = ACH_BUG;
+const int ach_einval         = ACH_EINVAL;
+const int ach_corrupt        = ACH_CORRUPT;
+const int ach_bad_header     = ACH_BAD_HEADER;
+const int ach_eacces         = ACH_EACCES;
+
+const int ach_o_wait         = ACH_O_WAIT;
+const int ach_o_last         = ACH_O_LAST;

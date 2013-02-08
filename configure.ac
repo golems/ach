@@ -138,6 +138,11 @@ AM_CONDITIONAL([HAVE_MANPAGES], [test x$HELP2MAN != x -o x$FOUND_MANUAL = yes])
 AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')' -o x$FOUND_MAN2HTML = yes])
 AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = yes])
 
+# Python
+AM_PATH_PYTHON
+AX_PYTHON_DEVEL([>='2.7'])
+AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$HAVE_PYTHON])
+
 AC_CONFIG_FILES([Makefile doc/Makefile])
 
 AC_OUTPUT
