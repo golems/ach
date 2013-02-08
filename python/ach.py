@@ -59,7 +59,7 @@ from ach_py import \
 
 
 ## Channel Object ##
-class channel:
+class Channel:
     ''' An Ach channel'''
     def __init__(self):
         '''Create an uninitialized channel.'''
