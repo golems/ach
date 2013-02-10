@@ -143,6 +143,6 @@ AM_PATH_PYTHON
 AX_PYTHON_DEVEL([>='2.7'])
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$HAVE_PYTHON])
 
-AC_CONFIG_FILES([Makefile doc/Makefile])
+AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py])
 
 AC_OUTPUT

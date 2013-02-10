@@ -70,3 +70,6 @@ Makefile.in
 /doc/manual/*.html
 /python/ach.pyc
 /py-compile
+/python/MANIFEST
+/python/dist/
+/python/setup.py
