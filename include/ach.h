@@ -42,19 +42,20 @@
 
 /** \file ach.h
  *  \author Neil T. Dantam
- *
- *  Moral Support:
- *    Jon Scholz,
- *    Pushkar Kolhe,
- *    Jon Olson,
- *    Venkata Subramania Mahalingam
  */
 
 
-/** \mainpage
+/** \mainpage ACH IPC Library
  *
- * \brief Ach is a library that provides a publish-subscribe or
- * message-bus form of IPC based on POSIX shared memory.
+ * Ach is a library that provides a publish-subscribe or message-bus
+ * form of IPC.
+ *
+ * -----------------------------------------------------
+ *
+ * A tutorial-style manual is available at
+ * http://golems.github.com/ach/manual
+ *
+ * -----------------------------------------------------
  *
  * Ach differs from other message passing transports with regard to
  * head of line blocking.  In ach, newer messages always supersede old
@@ -71,13 +72,11 @@
  * organization (records, dictionaries, etc) must be handled in the
  * client application.
  *
- * \todo better networking
- *
- * \author Neil T. Dantam, MacOSX porting: Jon Olson
+ * \author Neil T. Dantam
  * \author Developed at the Georgia Tech Humanoid Robotics Lab
  * \author Under Direction of Professor Mike Stilman
  *
- * Copyright (c) 2008-2012, Georgia Tech Research Corporation.
+ * Copyright (c) 2008-2013, Georgia Tech Research Corporation.
  * All rights reserved.
  *
  *   Redistribution and use in source and binary forms, with or
@@ -108,42 +107,6 @@
  *
  */
 
-
-/** \page Howto
- *
- * \section create Create a channel
- *
- * - \code $ ach -C CHANNEL_NAME -n NOMINAL_MESSAGE_SIZE -m MESSAGE_COUNT \endcode
-
- * \section delete Remove a channel
- *
- * - \code $ ach -U CHANNEL_NAME \endcode
- *
- * \section log Logging Channel Data
- *
- * - \code $ achlog -d OUTPUT_DIRECTORY CHANNEL-1 CHANNEL-2 ... CHANNEL-N \endcode
- *
- * Log files use the ach \ref pipe "Pipe Protocol".
- *
- * \section remote Remote Channels
- *
- * -# Ensure the the remote host has inetd running
- * -# Ensure the the remote host's /etc/inetd.conf contains the line
- * \code  8075                stream     tcp     nowait     nobody     /usr/bin/achpipe   /usr/bin/achpipe -R \endcode
- * -# Ensure any channels exist on both the remote and local host
- * -# Ensure that the remote channel is chmodded to 666
- *    (or better yet, set up an ach user in inted.conf)
- *   \code $ chmod /dev/shm/achshm-CHANNEL_NAME 666 \endcode
- *
- * \subsection pull Pull a Channel from a Remote Host
- *
- * - \code $ achpipe -Wp CHANNEL_NAME -H REMOTE_HOST \endcode
- *
- * \subsection push Push a Channel to a Remote Host
- *
- * - \code $ achpipe -Ws CHANNEL_NAME -H REMOTE_HOST \endcode
- *
- */
 
 
 /*

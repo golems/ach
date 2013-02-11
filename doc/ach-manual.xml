@@ -16,26 +16,32 @@
      </author>
 
      <!-- All dates specified in ISO "YYYY-MM-DD" format -->
-     <pubdate>2012-12-13</pubdate>
+     <pubdate>2013-01-21</pubdate>
 
      <copyright>
-       <year>2012</year>
+       <year>2012-2013</year>
        <holder>Georgia Tech Research Corporation</holder>
      </copyright>
 
      <!-- Most recent revision goes at the top; list in descending order -->
      <revhistory>
        <revision>
-          <revnumber>0.1</revnumber>
-          <date>2012-12-13</date>
+          <revnumber>0.1.2</revnumber>
+          <date>2013-02-10</date>
           <authorinitials>NTD</authorinitials>
-          <revremark>initial draft</revremark>
+          <revremark>Python Bindings</revremark>
        </revision>
        <revision>
           <revnumber>0.1.1</revnumber>
           <date>2013-01-21</date>
           <authorinitials>NTD</authorinitials>
           <revremark>xinetd configuration</revremark>
+       </revision>
+       <revision>
+          <revnumber>0.1</revnumber>
+          <date>2012-12-13</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>initial draft</revremark>
        </revision>
      </revhistory>
 
@@ -454,6 +460,57 @@ if( ACH_TIMEOUT == r ) {
   </sect1>
 
   <sect1>
+    <title>Language Bindings</title>
+
+    <sect2><title>Common Lisp</title>
+    <para>
+      Ach includes bindings for Common Lisp using CFFI.  They can be loaded via ASDF.
+    </para>
+    </sect2>
+
+    <sect2><title>Python</title>
+    <para>
+      Ach includes bindings for Python using a C extension module and
+      wrapper class.
+    </para>
+
+    <para>
+      The module uses Python's <emphasis>Buffer Protocol</emphasis> to
+      obtain a serialized representation for Python objects.  This
+      will work with <classname>string</classname>,
+      <classname>bytearray</classname>,
+      <classname>ctypes.Structure</classname> and other types which
+      implement the Buffer Protocol.
+    </para>
+
+    <example><title>Python Put</title>
+    <programlisting language="python">
+#!/usr/bin/env python
+import ach
+c = ach.Channel('foo')
+c.put('bar')
+c.close()
+    </programlisting>
+    </example>
+
+    <example><title>Python Get</title>
+    <programlisting language="python">
+#!/usr/bin/env python
+import ach
+c = ach.Channel('foo')
+b = bytearray(10)
+[status, framesize] = c.get( b, wait=True, last=False )
+if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME:
+    print b
+else:
+    raise Exception("Couldn't get the next frame")
+c.close()
+    </programlisting>
+</example>
+    </sect2>
+  </sect1>
+
+  <sect1>
     <title>ach Shell Tool</title>
       <para>The <command>ach</command> command allows creation and
       deletion of channels from the shell.
@@ -610,7 +667,7 @@ if( ACH_TIMEOUT == r ) {
 
     <sect3><title>Xinetd Configuration</title>
     <para>If xinetd is run with the with the inetd_compat flag, then
-    you can use the a similar configuration as with the traditional inetd.
+    you can use a similar configuration to the traditional inetd.
     </para>
 
     <screen>
@@ -619,7 +676,7 @@ achd  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
 </screen>
 
     <para>
-    Otherwise, you can add the following stanza to you xinetd
+    Otherwise, you can add the following stanza to your xinetd
     configuration.  Typically, this would go in the per-service file
     <filename>/etc/xinetd.d/achd</filename>.
     </para>
@@ -692,11 +749,11 @@ Connection closed by foreign host.
     </tip>
     <warning>
       <para>
-        Currently, achd performs no authentication, access currently,
-        or encryption (this may be added in the future).  If security
-        is a concern in your application, it must currently be
-        addressed at the network level, e.g. by physical isolation,
-        firewalling, a VPN such as IPSec, and/or SSH tunnelling.
+        Currently, achd performs no authentication, access control, or
+        encryption (this may be added in the future).  If security is
+        a concern in your application, it must currently be addressed
+        at the network level, e.g. by physical isolation, firewalling,
+        a VPN such as IPSec, and/or SSH tunnelling.
       </para>
     </warning>
     </sect3>

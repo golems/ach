@@ -57,13 +57,17 @@ from ach_py import \
     ACH_O_WAIT,\
     ACH_O_LAST
 
-
-## Channel Object ##
 class Channel:
-    ''' An Ach channel'''
-    def __init__(self):
-        '''Create an uninitialized channel.'''
+    """ An Ach channel."""
+
+    def __init__(self, name = None):
+        '''Create a channel.
+
+        name -- if provided, the name of the channel to open
+        '''
         self.pointer = None
+        if name:
+            self.open(name)
 
     def __del__(self):
         '''Close the channel.'''
@@ -84,14 +88,14 @@ class Channel:
     def put(self, buf):
         '''Put a buffer into the channel.
 
-        buf -- an object providing the buffer interface.'''
+        buf -- an object providing the buffer interface'''
         assert(self.pointer)
         ach_py.put_buf( self.pointer, buf )
 
     def get(self, buf, wait=False, last=False):
         '''Get a message from channel and write to buffer.
 
-        buf -- an object providing the buffer interface.
+        buf -- an object providing the buffer interface
         wait -- wait until new message posts
         last -- get most recent message
 
