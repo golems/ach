@@ -40,6 +40,7 @@
 from distutils.core import setup, Extension
 
 module_ach_py = Extension( 'ach_py',
+                           libraries = ['ach'],
                            sources = ['ach_py.c'] )
 
 setup( name='py_ach',
