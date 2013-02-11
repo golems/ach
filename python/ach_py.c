@@ -138,6 +138,16 @@ close_channel( PyObject *self, PyObject *args ) {
 }
 
 static PyObject *
+result_string( PyObject *self, PyObject *args ) {
+    (void)self;
+    int r;
+    if( !PyArg_ParseTuple(args, "i", &r ) ) {
+        return NULL;
+    }
+    return PyString_FromString( ach_result_to_string(r) );
+}
+
+static PyObject *
 put_buf( PyObject *self, PyObject *args ) {
     (void)self;
 
@@ -255,6 +265,7 @@ static PyMethodDef module_methods[] = {
    { "put_buf", (PyCFunction)put_buf, METH_VARARGS, NULL },
    { "get_buf", (PyCFunction)get_buf, METH_VARARGS, NULL },
    { "ach_error", (PyCFunction)ach_error, METH_VARARGS, NULL },
+   { "result_string", (PyCFunction)result_string, METH_VARARGS, NULL },
    { NULL, NULL, 0, NULL }
 };
 
@@ -269,10 +280,10 @@ PyMODINIT_FUNC initach_py() {
     }
 
     // error object
-    static char errname[] =  "ach_py.error";
+    static char errname[] =  "ach_py.AchException";
     ach_py_error = PyErr_NewException( errname, NULL, NULL);
     Py_INCREF( ach_py_error ); // Reference counts?  Get with the program python!
-    PyModule_AddObject(m, "error", ach_py_error);
+    PyModule_AddObject(m, "AchException", ach_py_error);
 
     // keyword/const objects
     PyModule_AddObject( m, "ACH_OK",               PyInt_FromLong( ACH_OK ) );

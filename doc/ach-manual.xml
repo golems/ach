@@ -503,7 +503,7 @@ b = bytearray(10)
 if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME:
     print b
 else:
-    raise Exception("Couldn't get the next frame")
+    raise ach.AchException( c.result_string(status) )
 c.close()
     </programlisting>
 </example>

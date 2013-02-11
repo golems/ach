@@ -55,7 +55,8 @@ from ach_py import \
     ACH_BAD_HEADER,\
     ACH_EACCES,\
     ACH_O_WAIT,\
-    ACH_O_LAST
+    ACH_O_LAST, \
+    AchException
 
 class Channel:
     """ An Ach channel."""
@@ -102,3 +103,6 @@ class Channel:
         returns a tuple of (ach_status, frame_size)'''
         assert(self.pointer)
         return ach_py.get_buf( self.pointer, buf, wait, last )
+
+    def result_string( self, status ):
+        return ach_py.result_string(status)
