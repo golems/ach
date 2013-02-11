@@ -1,65 +1,67 @@
 INSTALLATION INSTRUCTIONS FOR ACH
 
-************
-* Overview *
-************
+CONTENTS
+========
 
-You have two options to build and install ach.
+I.   Autotools Installion Summary
+II.  Alternative CMake Installation Summary
+III. Cross Compiling
+IV.  Language Bindings
+    3.1 Common Lisp
+    3.2 Python
+V.   Generic Autotools Instructions
 
-1) the GNU Autotools
-2) CMake
+I. AUTOTOOLS INSTALLATION SUMMARY
+=================================
 
-***********************
-* OPTION 1: Autotools *
-***********************
-
-0) If you have obtained ach from the git repo, you need to initialize
+0 If you have obtained ach from the git repo, you need to initialize
 the autotools build scripts.  This requires the autotools and the
 autoconf macro archive. To install these on Debian or Ubuntu
 GNU/Linux, you can do
 
-`$ sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html'
+    sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html
 
 Then, initialize autotools with
 
-`$ autoreconf -i'
+    autoreconf -i
 
 This whole step is not necessary when you have obtained a distribution
 tarball which already contains the autoconf-generated configure script.
 
-1) Configure for your system:
+1. Configure for your system:
 
-`$ ./configure'
+    ./configure
 
-2) Build:
+2. Build:
 
-`$ ./make'
+    ./make
 
-3) Install:
+3. Install:
 
-`$ sudo ./make install'
+    sudo ./make install
 
-*******************
-* OPTION 2: CMake *
-*******************
+II. CMAKE INSTALLATION SUMMARY
+==============================
 
-1) Configure for your system.
+Autotools is the preferred build system, but CMake is potential
+alternative.
 
-`$ cmake .'
+1. Configure for your system.
 
-2) Build:
+    cmake .
 
-`$ make'
+2. Build:
+
+    make
 
 
-*******************
-* Cross Compiling *
-*******************
+III. Cross Compiling
+====================
 
 Build an i386 (x86) on AMD64
 ----------------------------
 
-1) Give configure the right option:
+1. Give configure the right option:
 
     ./configure CC="gcc -m32"
 
@@ -68,13 +70,13 @@ Build an i386 (x86) on AMD64
 
     sudo apt-get install ia32-libs ia32-libs-dev libc6-dev-i386
 
-2) Build and Install:
+2. Build and Install:
 
      make
 
-3) Install.  You probably want to give the DESTDIR option to say where
- to put the files.  For example, if you have the host's root
- filesystem mounted at /mnt/HOST-ROOT:
+3. Install.  You probably want to give the DESTDIR option to say where
+   to put the files.  For example, if you have the host's root
+   filesystem mounted at /mnt/HOST-ROOT:
 
     make install DESTDIR=/mnt/HOST-ROOT/usr/local
 
@@ -84,23 +86,23 @@ Build an i386 (x86) on AMD64
 General Cross Compilation
 -------------------------
 
-0) Install a cross compiler.  For Debian/Ubuntu see:
+0. Install a cross compiler.  For Debian/Ubuntu see:
 
 * http://wiki.debian.org/BuildingCrossCompilers
 * https://wiki.ubuntu.com/MultiarchCross
 
-1) Tell configure the --build and --host.  The --build is what machine
- the compiler runs on.  The --host is what machine the the compiled
- output runs on.  For example, to compile on x86_64 GNU/Linux and run
- on ARM GNU/Linux:
+1. Tell configure the --build and --host.  The --build is what machine
+   the compiler runs on.  The --host is what machine the the compiled
+   output runs on.  For example, to compile on x86_64 GNU/Linux and
+   run on ARM GNU/Linux:
 
     ./configure --host=arm-linux-gnueabi --build=x86_64-linux-gnu
 
-2) Build:
+2. Build:
 
     make
 
-3) Install as in the previous i386->AMD64 case:
+3. Install as in the previous i386->AMD64 case:
 
     make install DESTDIR=/mnt/HOST-ROOT/usr/local
 
@@ -117,14 +119,37 @@ make dist`.  Alternatively, running `./configure && make && make
 clean` will build the manpages and clean out the binaries.  Then, you
 can re- `./configure ...` for your cross-compile setup.
 
+IV. Language Bindings
+=====================
 
-**************************************
-* GNU Autotools Standard Instructions *
-***************************************
+Common Lisp
+-----------
+
+Common Lisp bindings are provided in the ./lisp directory.  They can
+be loaded via ASDF using the ./lisp/ach.asd file.
+
+Python
+------
+
+Python bindings are provided in the ./python directory.  You can
+install them via autotools `make install` or via Python's distutils or
+pip.
+
+* To install via distutils from the source tree:
+
+    cd ./python && sudo python setup.py install
+
+* To install via pip from the web:
+
+    sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
+
+* To install via autotools:
+
+    ./configure --with-python && make && sudo make install
 
 
-Installation Instructions
-*************************
+V. GNU Autotools Generic Instructions
+=====================================
 
 Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005,
 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
@@ -135,7 +160,7 @@ notice and this notice are preserved.  This file is offered as-is,
 without warranty of any kind.
 
 Basic Installation
-==================
+------------------
 
    Briefly, the shell commands `./configure; make; make install' should
 configure, build, and install this package.  The following
@@ -219,7 +244,7 @@ of `autoconf'.
      This target is generally not run by end users.
 
 Compilers and Options
-=====================
+---------------------
 
    Some systems require unusual options for compilation or linking that
 the `configure' script does not know about.  Run `./configure --help'
@@ -234,7 +259,7 @@ is an example:
    *Note Defining Variables::, for more details.
 
 Compiling For Multiple Architectures
-====================================
+------------------------------------
 
    You can compile the package for more than one kind of computer at the
 same time, by placing the object files for each architecture in their
@@ -264,7 +289,7 @@ may have to build one architecture at a time and combine the results
 using the `lipo' tool if you have problems.
 
 Installation Names
-==================
+------------------
 
    By default, `make install' installs the package's commands under
 `/usr/local/bin', include files under `/usr/local/include', etc.  You
@@ -315,7 +340,7 @@ when some directory options were not specified in terms of `${prefix}'
 at `configure' time.
 
 Optional Features
-=================
+-----------------
 
    If the package supports it, you can cause programs to be installed
 with an extra prefix or suffix on their names by giving `configure' the
@@ -341,7 +366,7 @@ overridden with `make V=1'; while running `./configure
 overridden with `make V=0'.
 
 Particular systems
-==================
+------------------
 
    On HP-UX, the default C compiler is not ANSI C compatible.  If GNU
 CC is not installed, it is recommended to use the following options in
@@ -373,7 +398,7 @@ not `/usr/local'.  It is recommended to use the following options:
      ./configure --prefix=/boot/common
 
 Specifying the System Type
-==========================
+--------------------------
 
    There may be some features `configure' cannot figure out
 automatically, but needs to determine by the type of machine the package
@@ -404,7 +429,7 @@ platform different from the build platform, you should specify the
 eventually be run) with `--host=TYPE'.
 
 Sharing Defaults
-================
+----------------
 
    If you want to set default values for `configure' scripts to share,
 you can create a site shell script called `config.site' that gives
@@ -415,7 +440,7 @@ default values for variables like `CC', `cache_file', and `prefix'.
 A warning: not all `configure' scripts look for a site script.
 
 Defining Variables
-==================
+------------------
 
    Variables not defined in a site shell script can be set in the
 environment passed to `configure'.  However, some packages may run
@@ -434,7 +459,7 @@ an Autoconf bug.  Until the bug is fixed you can use this workaround:
      CONFIG_SHELL=/bin/bash /bin/bash ./configure CONFIG_SHELL=/bin/bash
 
 `configure' Invocation
-======================
+----------------------
 
    `configure' recognizes the following options to control how it
 operates.

@@ -139,10 +139,23 @@ AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')'
 AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = yes])
 
 # Python
-AM_PATH_PYTHON
-AX_PYTHON_DEVEL([>='2.7'])
-AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$HAVE_PYTHON])
+AC_ARG_WITH([python],
+        AS_HELP_STRING([--with-python], [Enable python support]))
 
+AS_IF([test "x$with_python" = "xyes"],[
+    AM_PATH_PYTHON( [2.6],
+                    [AX_PYTHON_DEVEL],
+                    [PYTHON_VERSION=none] )
+    ],
+    [PYTHON_VERSION=none])
+
+AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
 AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py])
 
 AC_OUTPUT
+
+AC_MSG_NOTICE([])
+AC_MSG_NOTICE([CONFIGURATION SUMMARY])
+AC_MSG_NOTICE([=====================])
+AC_MSG_NOTICE([PREFIX:          $prefix])
+AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])

@@ -38,6 +38,20 @@ DOCUMENTATION
 * Example Code: `./src/ach-example.c`
 * Tech Report: http://www.golems.org/node/1526
 
+
+LANGUAGE BINDINGS
+=================
+Language bindings are included for Common Lisp and Python.
+
+* Common Lisp bindings use CFFI and can be loaded with ASDF.
+
+* Python bindings are a C extension modules and a Python module 'ach'.
+  This can be installed either via `make install` for via Python's
+  distutils/pip.
+
+See the INSTALL file for details.
+
+
 FORMAL MODEL
 ============
 Ach has been formally verified using the SPIN model checker.  This
