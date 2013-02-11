@@ -498,6 +498,7 @@ c.close()
 #!/usr/bin/env python
 import ach
 c = ach.Channel('foo')
+c.flush()
 b = bytearray(10)
 [status, framesize] = c.get( b, wait=True, last=False )
 if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME:

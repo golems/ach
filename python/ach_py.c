@@ -255,9 +255,39 @@ get_buf( PyObject *self, PyObject *args ) {
         return raise_error(r);
     }
 
-    assert(0);
+    return NULL;
 
 }
+
+static PyObject *
+flush_channel( PyObject *self, PyObject *args ) {
+    (void)self;
+
+    PyObject *py_chan;
+    // get arg objects
+    if( !PyArg_ParseTuple(args, "O", &py_chan) ) {
+        return NULL;
+    }
+
+    // parse channel
+    ach_channel_t *c = parse_channel_pointer(py_chan);
+    if( NULL == c ) {
+        return NULL;
+    }
+
+    // make the damn call
+    ach_status_t r = ach_flush( c );
+
+    // check the result
+    if( ACH_OK != r ) {
+        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        return NULL;
+    }
+
+    // cleanup
+    Py_RETURN_NONE;
+}
+
 
 static PyMethodDef module_methods[] = {
    { "open_channel", (PyCFunction)open_channel, METH_VARARGS, NULL },
@@ -266,6 +296,7 @@ static PyMethodDef module_methods[] = {
    { "get_buf", (PyCFunction)get_buf, METH_VARARGS, NULL },
    { "ach_error", (PyCFunction)ach_error, METH_VARARGS, NULL },
    { "result_string", (PyCFunction)result_string, METH_VARARGS, NULL },
+   { "flush_channel", (PyCFunction)flush_channel, METH_VARARGS, NULL },
    { NULL, NULL, 0, NULL }
 };
 

@@ -105,4 +105,11 @@ class Channel:
         return ach_py.get_buf( self.pointer, buf, wait, last )
 
     def result_string( self, status ):
+        '''Get a string description of integer code status.'''
         return ach_py.result_string(status)
+
+    def flush( self ):
+        '''Flush unseen messages from the channel.'''
+        assert(self.pointer)
+        ach_py.flush_channel(self.pointer)
+
