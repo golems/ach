@@ -46,10 +46,10 @@ HREF="mailto:ntd at gatech dot edu"
 ></DIV
 ><P
 CLASS="copyright"
->Copyright &copy; 2012 Georgia Tech Research Corporation</P
+>Copyright &copy; 2012-2013 Georgia Tech Research Corporation</P
 ><P
 CLASS="pubdate"
->2012-12-13<BR></P
+>2013-01-21<BR></P
 ><DIV
 CLASS="revhistory"
 ><TABLE
@@ -67,10 +67,10 @@ COLSPAN="3"
 ><TR
 ><TD
 ALIGN="LEFT"
->Revision 0.1</TD
+>Revision 0.1.2</TD
 ><TD
 ALIGN="LEFT"
->2012-12-13</TD
+>2013-02-10</TD
 ><TD
 ALIGN="LEFT"
 >Revised by: NTD</TD
@@ -79,7 +79,7 @@ ALIGN="LEFT"
 ><TD
 ALIGN="LEFT"
 COLSPAN="3"
->initial draft</TD
+>Python Bindings</TD
 ></TR
 ><TR
 ><TD
@@ -98,6 +98,23 @@ ALIGN="LEFT"
 COLSPAN="3"
 >xinetd configuration</TD
 ></TR
+><TR
+><TD
+ALIGN="LEFT"
+>Revision 0.1</TD
+><TD
+ALIGN="LEFT"
+>2012-12-13</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>initial draft</TD
+></TR
 ></TABLE
 ></DIV
 ><DIV
@@ -106,7 +123,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN26"
+NAME="AEN31"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -133,171 +150,190 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN29"
+HREF="#AEN34"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN61"
+HREF="#AEN66"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN63"
+HREF="#AEN68"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN143"
+HREF="#AEN148"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN165"
+HREF="#AEN170"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN181"
+HREF="#AEN186"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN200"
+HREF="#AEN205"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN260"
+HREF="#AEN265"
 >Closing a channel</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN268"
+HREF="#AEN273"
 >Deleting a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN276"
+HREF="#AEN281"
 >Channel Permissions</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN293"
+HREF="#AEN298"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN302"
+HREF="#AEN307"
+>Language Bindings</A
+></DT
+><DD
+><DL
+><DT
+>3.1. <A
+HREF="#AEN309"
+>Common Lisp</A
+></DT
+><DT
+>3.2. <A
+HREF="#AEN312"
+>Python</A
+></DT
+></DL
+></DD
+><DT
+>4. <A
+HREF="#AEN326"
 >ach Shell Tool</A
 ></DT
 ><DT
->4. <A
-HREF="#AEN385"
+>5. <A
+HREF="#AEN409"
 >achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.1. <A
-HREF="#AEN389"
+>5.1. <A
+HREF="#AEN413"
 >Server</A
 ></DT
 ><DD
 ><DL
 ><DT
->4.1.1. <A
-HREF="#AEN404"
+>5.1.1. <A
+HREF="#AEN428"
 >Traditional Inetd Configuration</A
 ></DT
 ><DT
->4.1.2. <A
-HREF="#AEN422"
+>5.1.2. <A
+HREF="#AEN446"
 >Xinetd Configuration</A
 ></DT
 ><DT
->4.1.3. <A
-HREF="#AEN444"
+>5.1.3. <A
+HREF="#AEN468"
 >Testing Server Configuration</A
 ></DT
 ></DL
 ></DD
 ><DT
->4.2. <A
-HREF="#AEN455"
+>5.2. <A
+HREF="#AEN479"
 >Client</A
 ></DT
 ></DL
 ></DD
 ><DT
->5. <A
-HREF="#AEN518"
+>6. <A
+HREF="#AEN542"
 >Performance Tuning</A
 ></DT
 ><DD
 ><DL
 ><DT
->5.1. <A
-HREF="#AEN521"
+>6.1. <A
+HREF="#AEN545"
 >Disable CPU frequency scaling</A
 ></DT
 ><DT
->5.2. <A
-HREF="#AEN524"
+>6.2. <A
+HREF="#AEN548"
 >Use a Real-Time Operating System</A
 ></DT
 ><DT
->5.3. <A
-HREF="#AEN528"
+>6.3. <A
+HREF="#AEN552"
 >Benchmark your system</A
 ></DT
 ></DL
 ></DD
 ><DT
->6. <A
-HREF="#AEN546"
+>7. <A
+HREF="#AEN570"
 >Theory of Operation</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.1. <A
-HREF="#AEN549"
+>7.1. <A
+HREF="#AEN573"
 >Data Structure</A
 ></DT
 ><DT
->6.2. <A
-HREF="#AEN553"
+>7.2. <A
+HREF="#AEN577"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.2.1. <A
-HREF="#AEN558"
+>7.2.1. <A
+HREF="#AEN582"
 >ach_put</A
 ></DT
 ><DT
->6.2.2. <A
-HREF="#AEN574"
+>7.2.2. <A
+HREF="#AEN598"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
->6.3. <A
-HREF="#AEN590"
+>7.3. <A
+HREF="#AEN614"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN593"
+HREF="#AEN617"
 >Colophon</A
 ></DT
 ></DL
@@ -307,7 +343,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN29"
+NAME="AEN34"
 >1. Introduction</A
 ></H2
 ><P
@@ -396,7 +432,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN61"
+NAME="AEN66"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -404,7 +440,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN63"
+NAME="AEN68"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -587,7 +623,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN143"
+NAME="AEN148"
 >2.2. Creating a channel</A
 ></H3
 ><DIV
@@ -595,7 +631,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN145"
+NAME="AEN150"
 ></A
 ><P
 ><CODE
@@ -627,7 +663,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN161"
+NAME="AEN166"
 ></A
 ><P
 ><B
@@ -657,7 +693,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN165"
+NAME="AEN170"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -665,7 +701,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN167"
+NAME="AEN172"
 ></A
 ><P
 ><CODE
@@ -683,7 +719,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN178"
+NAME="AEN183"
 ></A
 ><P
 ><B
@@ -705,7 +741,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN181"
+NAME="AEN186"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -713,7 +749,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN183"
+NAME="AEN188"
 ></A
 ><P
 ><CODE
@@ -738,7 +774,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN197"
+NAME="AEN202"
 ></A
 ><P
 ><B
@@ -760,7 +796,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN200"
+NAME="AEN205"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -768,7 +804,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN202"
+NAME="AEN207"
 ></A
 ><P
 ><CODE
@@ -840,7 +876,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN239"
+NAME="AEN244"
 ></A
 ><P
 ><B
@@ -867,7 +903,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN243"
+NAME="AEN248"
 ></A
 ><P
 ><B
@@ -885,7 +921,7 @@ CLASS="programlisting"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN247"
+NAME="AEN252"
 ></A
 ><P
 ><B
@@ -987,7 +1023,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN260"
+NAME="AEN265"
 >2.6. Closing a channel</A
 ></H3
 ><DIV
@@ -995,7 +1031,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN262"
+NAME="AEN267"
 ></A
 ><P
 ><CODE
@@ -1013,7 +1049,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN268"
+NAME="AEN273"
 >2.7. Deleting a channel</A
 ></H3
 ><DIV
@@ -1021,7 +1057,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN270"
+NAME="AEN275"
 ></A
 ><P
 ><CODE
@@ -1039,7 +1075,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN276"
+NAME="AEN281"
 >2.8. Channel Permissions</A
 ></H3
 ><DIV
@@ -1047,7 +1083,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN278"
+NAME="AEN283"
 ></A
 ><P
 ><CODE
@@ -1071,7 +1107,7 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN288"
+NAME="AEN293"
 ></A
 ><P
 ><B
@@ -1095,7 +1131,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN293"
+NAME="AEN298"
 >2.9. Ignore old messages</A
 ></H3
 ><DIV
@@ -1103,7 +1139,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN295"
+NAME="AEN300"
 ></A
 ><P
 ><CODE
@@ -1125,8 +1161,107 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN302"
->3. ach Shell Tool</A
+NAME="AEN307"
+>3. Language Bindings</A
+></H2
+><DIV
+CLASS="sect2"
+><H3
+CLASS="sect2"
+><A
+NAME="AEN309"
+>3.1. Common Lisp</A
+></H3
+><P
+>&#13;      Ach includes bindings for Common Lisp using CFFI.  They can be loaded via ASDF.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN312"
+>3.2. Python</A
+></H3
+><P
+>&#13;      Ach includes bindings for Python using a C extension module and
+      wrapper class.
+    </P
+><P
+>&#13;      The module uses Python's <SPAN
+CLASS="emphasis"
+><I
+CLASS="emphasis"
+>Buffer Protocol</I
+></SPAN
+> to
+      obtain a serialized representation for Python objects.  This
+      will work with <CODE
+CLASS="classname"
+>string</CODE
+>,
+      <CODE
+CLASS="classname"
+>bytearray</CODE
+>,
+      <CODE
+CLASS="classname"
+>ctypes.Structure</CODE
+> and other types which
+      implement the Buffer Protocol.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN320"
+></A
+><P
+><B
+>Example 8. Python Put</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;#!/usr/bin/env python
+import ach
+c = ach.Channel('foo')
+c.put('bar')
+c.close()
+    </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN323"
+></A
+><P
+><B
+>Example 9. Python Get</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;#!/usr/bin/env python
+import ach
+c = ach.Channel('foo')
+c.flush()
+b = bytearray(10)
+[status, framesize] = c.get( b, wait=True, last=False )
+if status == ach.ACH_OK or status == ach.ACH_MISSED_FRAME:
+    print b
+else:
+    raise ach.AchException( c.result_string(status) )
+c.close()
+    </PRE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN326"
+>4. ach Shell Tool</A
 ></H2
 ><P
 >The <B
@@ -1168,11 +1303,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN328"
+NAME="AEN352"
 ></A
 ><P
 ><B
->Example 8. Create a channel</B
+>Example 10. Create a channel</B
 ></P
 ><P
 >Create channel named "my_channel" with slots for 10
@@ -1201,11 +1336,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN340"
+NAME="AEN364"
 ></A
 ><P
 ><B
->Example 9. Delete a channel</B
+>Example 11. Delete a channel</B
 ></P
 ><P
 >Delete channel named "my_channel".</P
@@ -1223,11 +1358,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN348"
+NAME="AEN372"
 ></A
 ><P
 ><B
->Example 10. Create a world-accessible channel</B
+>Example 12. Create a world-accessible channel</B
 ></P
 ><P
 >Create channel named "my_channel" which is
@@ -1262,11 +1397,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN362"
+NAME="AEN386"
 ></A
 ><P
 ><B
->Example 11. Create a channel unless it already exists</B
+>Example 13. Create a channel unless it already exists</B
 ></P
 ><P
 >Create channel named "my_channel" unless it already
@@ -1296,11 +1431,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN375"
+NAME="AEN399"
 ></A
 ><P
 ><B
->Example 12. Set channel permissions</B
+>Example 14. Set channel permissions</B
 ></P
 ><P
 >Make channel accessible only by user and group.</P
@@ -1326,8 +1461,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN385"
->4. achd Network Daemon</A
+NAME="AEN409"
+>5. achd Network Daemon</A
 ></H2
 ><P
 > While the primary design goal of Ach is low-latency, single
@@ -1341,8 +1476,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN389"
->4.1. Server</A
+NAME="AEN413"
+>5.1. Server</A
 ></H3
 ><P
 ><B
@@ -1437,8 +1572,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN404"
->4.1.1. Traditional Inetd Configuration</A
+NAME="AEN428"
+>5.1.1. Traditional Inetd Configuration</A
 ></H4
 ><P
 >You should add the following line to
@@ -1494,12 +1629,12 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN422"
->4.1.2. Xinetd Configuration</A
+NAME="AEN446"
+>5.1.2. Xinetd Configuration</A
 ></H4
 ><P
 >If xinetd is run with the with the inetd_compat flag, then
-    you can use the a similar configuration as with the traditional inetd.
+    you can use a similar configuration to the traditional inetd.
     </P
 ><PRE
 CLASS="screen"
@@ -1507,7 +1642,7 @@ CLASS="screen"
 achd  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
 </PRE
 ><P
->&#13;    Otherwise, you can add the following stanza to you xinetd
+>&#13;    Otherwise, you can add the following stanza to your xinetd
     configuration.  Typically, this would go in the per-service file
     <TT
 CLASS="filename"
@@ -1576,8 +1711,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN444"
->4.1.3. Testing Server Configuration</A
+NAME="AEN468"
+>5.1.3. Testing Server Configuration</A
 ></H4
 ><P
 >Now, you can test this setup by telnetting to port 8076 on
@@ -1658,11 +1793,11 @@ ALT="Warning"></TD
 ALIGN="LEFT"
 VALIGN="TOP"
 ><P
->&#13;        Currently, achd performs no authentication, access currently,
-        or encryption (this may be added in the future).  If security
-        is a concern in your application, it must currently be
-        addressed at the network level, e.g. by physical isolation,
-        firewalling, a VPN such as IPSec, and/or SSH tunnelling.
+>&#13;        Currently, achd performs no authentication, access control, or
+        encryption (this may be added in the future).  If security is
+        a concern in your application, it must currently be addressed
+        at the network level, e.g. by physical isolation, firewalling,
+        a VPN such as IPSec, and/or SSH tunnelling.
       </P
 ></TD
 ></TR
@@ -1675,8 +1810,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN455"
->4.2. Client</A
+NAME="AEN479"
+>5.2. Client</A
 ></H3
 ><P
 >From the client machine, you can run achd to push or pull
@@ -1714,11 +1849,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN479"
+NAME="AEN503"
 ></A
 ><P
 ><B
->Example 13. Pull channel from server</B
+>Example 15. Pull channel from server</B
 ></P
 ><P
 ><B
@@ -1739,11 +1874,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN488"
+NAME="AEN512"
 ></A
 ><P
 ><B
->Example 14. Push channel to server and retry dropped connections</B
+>Example 16. Push channel to server and retry dropped connections</B
 ></P
 ><P
 ><B
@@ -1764,11 +1899,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN498"
+NAME="AEN522"
 ></A
 ><P
 ><B
->Example 15. Pull channel from server via UDP</B
+>Example 17. Pull channel from server via UDP</B
 ></P
 ><P
 ><B
@@ -1789,11 +1924,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN508"
+NAME="AEN532"
 ></A
 ><P
 ><B
->Example 16. Push channel to server, running the the background</B
+>Example 18. Push channel to server, running the the background</B
 ></P
 ><P
 ><B
@@ -1818,8 +1953,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN518"
->5. Performance Tuning</A
+NAME="AEN542"
+>6. Performance Tuning</A
 ></H2
 ><P
 >The performance of your real-time application will be highly
@@ -1834,8 +1969,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN521"
->5.1. Disable CPU frequency scaling</A
+NAME="AEN545"
+>6.1. Disable CPU frequency scaling</A
 ></H3
 ><P
 >&#13;      Many current CPUs will lower their frequency when idle in order
@@ -1853,8 +1988,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN524"
->5.2. Use a Real-Time Operating System</A
+NAME="AEN548"
+>6.2. Use a Real-Time Operating System</A
 ></H3
 ><P
 >&#13;      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
@@ -1879,8 +2014,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN528"
->5.3. Benchmark your system</A
+NAME="AEN552"
+>6.3. Benchmark your system</A
 ></H3
 ><P
 >&#13;      You can use the included <B
@@ -1898,11 +2033,11 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN533"
+NAME="AEN557"
 ></A
 ><P
 ><B
->Example 17. Benchmarking Latency</B
+>Example 19. Benchmarking Latency</B
 ></P
 ><P
 >Measure latency with one publisher and two subscribers over ten seconds</P
@@ -1939,8 +2074,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN546"
->6. Theory of Operation</A
+NAME="AEN570"
+>7. Theory of Operation</A
 ></H2
 ><P
 >&#13;      POSIX provides a rich variety of IPC mechanisms, but none of
@@ -1963,8 +2098,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN549"
->6.1. Data Structure</A
+NAME="AEN573"
+>7.1. Data Structure</A
 ></H3
 ><P
 >&#13;      The core data structure of an Ach channel is a pair of circular
@@ -1996,8 +2131,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN553"
->6.2. Core Procedures</A
+NAME="AEN577"
+>7.2. Core Procedures</A
 ></H3
 ><P
 >&#13;      Two procedures compose the core of ach:
@@ -2014,8 +2149,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN558"
->6.2.1. ach_put</A
+NAME="AEN582"
+>7.2.1. ach_put</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -2071,8 +2206,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN574"
->6.2.2. ach_get</A
+NAME="AEN598"
+>7.2.2. ach_get</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -2135,8 +2270,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN590"
->6.3. Serialization</A
+NAME="AEN614"
+>7.3. Serialization</A
 ></H3
 ><P
 >&#13;      Ach is orthogonal to the issue of serialization: it only
@@ -2153,7 +2288,7 @@ NAME="AEN590"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN593"
+NAME="AEN617"
 ></A
 >Colophon</H1
 ><P

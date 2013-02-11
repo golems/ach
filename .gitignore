@@ -26,3 +26,11 @@ achd
 *.1
 *.so*
 /man/ach-manual.html
+/py-compile
+*.pyc
+/python/build
+/python/dist
+/python/MANIFEST
+/python/setup.py
+/debian/ach-utils
+

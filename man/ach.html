@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Man page of ACH</TITLE>
 </HEAD><BODY>
 <H1>ACH</H1>
-Section: User Commands (1)<BR>Updated: December 2012<BR><A HREF="#index">Index</A>
+Section: User Commands (1)<BR>Updated: February 2013<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
@@ -13,7 +13,7 @@ ach - manipulate ach channels
 
 <B>ach</B>
 
-[<I>OPTION</I>...]
+[<I>OPTION</I>...] [<I>mk|rm|chmod|dump|file</I>] [<I>mode</I>] [<I>channel-name</I>]
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
@@ -22,16 +22,8 @@ General tool to interact with ach channels
 <H2>OPTIONS</H2>
 
 <DL COMPACT>
-<DT><B>-C</B> CHANNEL-NAME,<DD>
-Create a new channel
-<DT><B>-U</B> CHANNEL-NAME,<DD>
-Unlink (delete) a channel
-<DT><B>-D</B> CHANNEL-NAME,<DD>
-Dump info about channel
 <DT><B>-1</B>,<DD>
 With <B>-C</B>, accept an already created channel
-<DT><B>-F</B> CHANNEL-NAME,<DD>
-Print filename for channel (Linux-only)
 <DT><B>-m</B> MSG-COUNT,<DD>
 Number of messages to buffer
 <DT><B>-n</B> MSG-SIZE,<DD>
@@ -39,13 +31,13 @@ Nominal size of a message
 <DT><B>-o</B> OCTAL,<DD>
 Mode for created channel
 <DT><B>-t</B>,<DD>
-Truncate and reinit newly create channel (use only
-with <B>-C</B>).  WARNING: this will clobber processes
+Truncate and reinit newly create channel.
+WARNING: this will clobber processes
 Currently using the channel.
 <DT><B>-v</B>,<DD>
 Make output more verbose
 <DT>-?,<DD>
-Give this help list
+Give program help list
 <DT><B>-V</B>,<DD>
 Print program version
 </DL>
@@ -53,22 +45,26 @@ Print program version
 <H2>EXAMPLES</H2>
 
 <DL COMPACT>
-<DT>ach <B>-C</B> foo<DD>
+<DT>ach mk foo<DD>
 Create channel 'foo' with default buffer sizes.
-<DT>ach <B>-C</B> foo <B>-m</B> 10 <B>-n</B> 1024<DD>
+<DT>ach mk foo <B>-m</B> 10 <B>-n</B> 256<DD>
 Create channel 'foo' which can buffer up to 10
-messages of nominal size 1024 bytes. Bigger/smaller
-messages are OK, up to 10*1024 bytes max (only one
-message of that size can be buffered at a time).
-<DT>ach <B>-U</B> foo<DD>
+messages of nominal size 256 bytes.
+Bigger/smaller messages are OK, up to 10*256
+bytes max (only one message of that size can be
+buffered at a time).
+<DT>ach rm foo<DD>
 Remove channel 'foo'
-<DT>ach <B>-1C</B> foo<DD>
+<DT>ach mk <B>-1</B> foo<DD>
 Create channel 'foo' unless it already exists,
 in which case leave it alone.
-<DT>ach <B>-C</B> foo <B>-o</B> 600<DD>
-Create channel 'foo' with octal permissions '600'.
-Note that r/w (6) permission necessary for channel
-access in order to properly synchronize.
+<DT>ach mk foo <B>-o</B> 600<DD>
+Create channel 'foo' with octal permissions
+'600'. Note that r/w (6) permission necessary
+for channel access in order to properly
+synchronize.
+<DT>ach chmod 666 foo<DD>
+Set permissions of channel 'foo' to '666'
 </DL>
 <A NAME="lbAG">&nbsp;</A>
 <H2>AUTHOR</H2>
@@ -104,6 +100,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 01:40:13 GMT, December 15, 2012
+Time: 02:27:55 GMT, February 11, 2013
 </BODY>
 </HTML>
