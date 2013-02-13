@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2008-2011, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -72,7 +72,7 @@
 void ach_print_version( const char *name ) {
     printf( "%s " PACKAGE_VERSION "\n"
             "\n"
-            "Copyright (c) 2008-2012, Georgia Tech Research Corporation\n"
+            "Copyright (c) 2008-2013, Georgia Tech Research Corporation\n"
             "This is free software; see the source for copying conditions.  There is NO\n"
             "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
             "\n"

@@ -46,7 +46,7 @@ Language bindings are included for Common Lisp and Python.
 * Common Lisp bindings use CFFI and can be loaded with ASDF.
 
 * Python bindings are a C extension modules and a Python module 'ach'.
-  This can be installed either via `make install` for via Python's
+  This can be installed either via `make install` or via Python's
   distutils/pip.
 
 See the INSTALL file for details.

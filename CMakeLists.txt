@@ -18,7 +18,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 1.0.2~GIT)
+set(VERSION 1.1.0)
 
 add_definitions(-DPACKAGE_VERSION=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 #add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
@@ -37,7 +37,7 @@ target_link_libraries(ach pthread ${LIBRT})
 # Does not correspond to the package version
 SET_TARGET_PROPERTIES( ach PROPERTIES
                        SOVERSION 1     # Major version
-                       VERSION 1.0.0 ) # Major.minor.patch
+                       VERSION 1.1.0 ) # Major.minor.patch
 
 add_executable(achtool src/achtool.c src/achutil.c)
 target_link_libraries(achtool ach pthread ${LIBRT})

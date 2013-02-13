@@ -1,3 +1,10 @@
+Ach 1.1.0
+=========
+
+* New network daemon, `achd`, supporting TCP and UDP transports
+* New Python bindings, installable with pip
+* Deprecate achpipe and achlog. Please switch to `achd`.
+
 Ach 1.0.1
 =========
 

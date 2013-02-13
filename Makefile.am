@@ -24,11 +24,11 @@ endif
 
 libach_la_SOURCES = src/ach.c src/pipe.c
 
-# This is a libtool version -- CURRENT:REVSION:AGE
+# This is a libtool version -- CURRENT:REVISION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
 # Does not correspond to the package version
 # The cmake versioning needs to be updated when this line changes
-libach_la_LDFLAGS = -version-info 1:0:0
+libach_la_LDFLAGS = -version-info 2:0:1
 
 ach_SOURCES = src/achtool.c src/achutil.c
 ach_LDADD = libach.la
