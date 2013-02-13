@@ -131,12 +131,12 @@ AM_CONDITIONAL([HAVE_DB2HTML],  [test x$DB2HTML != x])
 # Check if we already have docs (from tarball)
 AC_CHECK_FILE( [$srcdir/doc/man/ach.1],           [FOUND_MANPAGES=yes])
 AC_CHECK_FILE( [$srcdir/doc/man/ach.html],        [FOUND_MANHTML=yes])
-AC_CHECK_FILE( [$srcdir/doc/man/ach-manual.html], [FOUND_MANUAL=yes])
+AC_CHECK_FILE( [$srcdir/doc/manual/ach-manual.html], [FOUND_MANUAL=yes])
 
 # If we can make the docs or already have them, then we can install them
-AM_CONDITIONAL([HAVE_MANPAGES], [test x$HELP2MAN != x -o x$FOUND_MANUAL = yes])
-AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')' -o x$FOUND_MAN2HTML = yes])
-AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = yes])
+AM_CONDITIONAL([HAVE_MANPAGES], [test x$HELP2MAN != x -o x$FOUND_MANPAGES = xyes])
+AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')' -o x$FOUND_MANHTML = xyes])
+AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = xyes])
 
 # Python
 AC_ARG_WITH([python],
