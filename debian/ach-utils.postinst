@@ -4,12 +4,15 @@
 . /usr/share/debconf/confmodule
 
 update-inetd --add '8075\t\tstream\t\ttcp\tnowait\tnobody\t/usr/bin/achpipe\t/usr/bin/achpipe -R'
+update-inetd --add '8076\t\tstream\t\ttcp\tnowait\tnobody\t/usr/bin/achd\t/usr/bin/achd serve'
 
 db_get ach-utils/enable-remote
 if [ "$RET" = "false" ]; then
     update-inetd --disable 8075
+    update-inetd --disable 8076
 else
     update-inetd --enable 8075
+    update-inetd --enable 8076
 fi
 
 #DEBHELPER#
