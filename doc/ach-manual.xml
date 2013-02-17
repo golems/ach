@@ -311,18 +311,21 @@ if( ACH_OK != r ) {
     <variablelist>
       <varlistentry><term><constant>ACH_O_WAIT</constant></term>
       <listitem><para>Wait until a new message is posted. Default
-      behavior is to return immediately.</para></listitem>
+      behavior without this flag is to return
+      immediately.</para></listitem>
       </varlistentry>
       <varlistentry><term><constant>ACH_O_LAST</constant></term>
-      <listitem><para>Return the newest message.  Default behavior is
-      to return the oldest unseen message.</para></listitem>
+      <listitem><para>Return the newest message.  Default behavior
+      without this flag is to return the oldest unseen
+      message.</para></listitem>
       </varlistentry>
       <varlistentry><term><constant>ACH_O_COPY</constant></term>
       <listitem><para>Copy the message to the buffer, even if we have
       already seen it.  Only valid when
-      <constant>ACH_O_WAIT</constant> is not give.  Default behavior
-      is to return <constant>ACH_STALE_FRAMES</constant> when there
-      are no new messages.</para></listitem>
+      <constant>ACH_O_WAIT</constant> is not given.  Default behavior
+      without this flag is to return
+      <constant>ACH_STALE_FRAMES</constant> when there are no new
+      messages.</para></listitem>
       </varlistentry>
     </variablelist>
 
