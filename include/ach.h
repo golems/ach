@@ -388,6 +388,12 @@ extern "C" {
 #define ACH_DEFAULT_FRAME_SIZE 512
 
     /** Opens a handle to channel.
+
+        \post A file descriptor for the named channel is opened, and
+        chan is initialized.
+
+        \return ACH_OK on success.  Otherwise, return an error code
+        indicating the particular error.
      */
     enum ach_status
     ach_open( ach_channel_t *chan, const char *channel_name,

@@ -138,6 +138,19 @@ check_errno() {
     }
 }
 
+static enum ach_status
+check_guards( ach_header_t *shm ) {
+    if( ACH_SHM_MAGIC_NUM != shm->magic ||
+        ACH_SHM_GUARD_HEADER_NUM != *ACH_SHM_GUARD_HEADER(shm) ||
+        ACH_SHM_GUARD_INDEX_NUM != *ACH_SHM_GUARD_INDEX(shm) ||
+        ACH_SHM_GUARD_DATA_NUM != *ACH_SHM_GUARD_DATA(shm)  )
+    {
+        return ACH_CORRUPT;
+    } else {
+        return ACH_OK;
+    }
+}
+
 
 /* returns 0 if channel name is bad */
 static int channel_name_ok( const char *name ) {
@@ -502,18 +515,19 @@ ach_open( ach_channel_t *chan, const char *channel_name,
 
         /* remap */
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
-            return ACH_FAILED_SYSCALL;
+            return check_errno();
 
         if( (shm = (ach_header_t*) mmap( NULL, len, PROT_READ|PROT_WRITE,
                                          MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
-            return ACH_FAILED_SYSCALL;
+            return check_errno();
     }
-    assert( ACH_SHM_MAGIC_NUM == shm->magic );
-    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm) );
-    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm) );
-    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm) );
 
+    /* Check guard bytes */
+    {
+        enum ach_status r = check_guards(shm);
+        if( ACH_OK != r ) return r;
+    }
 
     /* initialize struct */
     chan->fd = fd;
@@ -583,12 +597,13 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
          int options ) {
     ach_header_t *shm = chan->shm;
     ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
-          (ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm)) &&
-          (ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm)) &&
-          (ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm)) ) ) {
-        return ACH_CORRUPT;
+
+    /* Check guard bytes */
+    {
+        enum ach_status r = check_guards(shm);
+        if( ACH_OK != r ) return r;
     }
+
     const bool o_wait = options & ACH_O_WAIT;
     const bool o_last = options & ACH_O_LAST;
     const bool o_copy = options & ACH_O_COPY;
@@ -681,11 +696,10 @@ ach_put( ach_channel_t *chan, void *buf, size_t len ) {
 
     ach_header_t *shm = chan->shm;
 
-    if(!( (ACH_SHM_MAGIC_NUM == shm->magic) &&
-          (ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(shm)) &&
-          (ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(shm)) &&
-          (ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(shm)) ) ) {
-        return ACH_CORRUPT;
+    /* Check guard bytes */
+    {
+        enum ach_status r = check_guards(shm);
+        if( ACH_OK != r ) return r;
     }
 
     if( shm->data_size < len ) {
@@ -754,13 +768,12 @@ ach_put( ach_channel_t *chan, void *buf, size_t len ) {
 enum ach_status
 ach_close( ach_channel_t *chan ) {
 
+    /* Check guard bytes */
+    {
+        enum ach_status r = check_guards(chan->shm);
+        if( ACH_OK != r ) return r;
+    }
 
-    assert( ACH_SHM_MAGIC_NUM == chan->shm->magic );
-    assert( ACH_SHM_GUARD_HEADER_NUM == *ACH_SHM_GUARD_HEADER(chan->shm) );
-    assert( ACH_SHM_GUARD_INDEX_NUM == *ACH_SHM_GUARD_INDEX(chan->shm) );
-    assert( ACH_SHM_GUARD_DATA_NUM == *ACH_SHM_GUARD_DATA(chan->shm) );
-
-    int r;
     /* fprintf(stderr, "Closing\n"); */
     /* note the close in the channel */
     if( chan->attr.map_anon ) {
@@ -768,7 +781,7 @@ ach_close( ach_channel_t *chan ) {
         ;
     } else {
         /* remove mapping */
-        r = munmap(chan->shm, chan->len);
+        int r = munmap(chan->shm, chan->len);
         if( 0 != r ){
             DEBUGF("Failed to munmap channel\n");
             return ACH_FAILED_SYSCALL;
