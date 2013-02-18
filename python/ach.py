@@ -56,35 +56,41 @@ from ach_py import \
     ACH_EACCES,\
     ACH_O_WAIT,\
     ACH_O_LAST, \
-    AchException
+    AchException, \
+    ACH_DEFAULT_FRAME_COUNT, \
+    ACH_DEFAULT_FRAME_SIZE
 
 class Channel:
     """ An Ach channel."""
 
-    def __init__(self, name = None):
-        '''Create a channel.
+    def __init__(self, name=None, frame_count=ACH_DEFAULT_FRAME_COUNT, frame_size=ACH_DEFAULT_FRAME_SIZE):
+        '''Construct a channel object.
 
-        name -- if provided, the name of the channel to open
+        name -- if provided, the name of the channel to open or create
         '''
         self.pointer = None
+        self.name = None
         if name:
-            self.open(name)
+            self.open(name, frame_count, frame_size)
 
     def __del__(self):
         '''Close the channel.'''
         if ach_py and self.pointer:
             self.close()
 
-    def open(self, name):
-        '''Open channel with the given name.'''
+    def open(self, name, frame_count=ACH_DEFAULT_FRAME_COUNT, frame_size=ACH_DEFAULT_FRAME_SIZE):
+        '''Open channel with the given name.
+        If channel does not exist, create it.'''
         assert( not self.pointer )
-        self.pointer = ach_py.open_channel(name)
+        self.pointer = ach_py.open_channel(name, frame_count, frame_size)
+        self.name = name
 
     def close(self):
         '''Close the channel.'''
         assert(self.pointer)
         ach_py.close_channel(self.pointer)
         self.pointer = None
+        self.name = None
 
     def put(self, buf):
         '''Put a buffer into the channel.
@@ -113,3 +119,13 @@ class Channel:
         assert(self.pointer)
         ach_py.flush_channel(self.pointer)
 
+    def chmod( self, mode ):
+        '''Set channel permissions to mode.'''
+        assert(self.pointer)
+        ach_py.chmod_channel(self.pointer, mode)
+
+    def unlink( self ):
+        '''Unlink (delete) the channel's underlying file.
+        Note: this does not close the channel in this or any other process.'''
+        assert(self.pointer)
+        ach_py.unlink_channel(self.name)

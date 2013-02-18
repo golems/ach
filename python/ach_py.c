@@ -99,13 +99,26 @@ ach_error( PyObject *self, PyObject *args ) {
 static PyObject *
 open_channel( PyObject *self, PyObject *args ) {
     (void)self;
-    const char *name;
-    if( !PyArg_ParseTuple(args, "s", &name ) ) {
+    const char *name = NULL;
+    long frame_count = ACH_DEFAULT_FRAME_COUNT, frame_size = ACH_DEFAULT_FRAME_SIZE;
+    if( !PyArg_ParseTuple(args, "sll", &name, &frame_count, &frame_size ) ) {
         return NULL;
     }
+    /* Alloc struct */
     ach_channel_t *c = (ach_channel_t*)malloc(sizeof(ach_channel_t));
+
+    /* Open it */
     ach_status_t r = ach_open(c, name, NULL);
 
+    /* Create channel if necessary */
+    if( ACH_ENOENT == r ) {
+        r = ach_create( name, (size_t)frame_count, (size_t)frame_size, NULL );
+        if( ACH_OK == r || ACH_EEXIST == r ) {
+            r = ach_open(c, name, NULL);
+        }
+    }
+
+    /* Check result */
     if( ACH_OK != r ) {
         return raise_error(r);
     }
@@ -144,7 +157,7 @@ result_string( PyObject *self, PyObject *args ) {
     if( !PyArg_ParseTuple(args, "i", &r ) ) {
         return NULL;
     }
-    return PyString_FromString( ach_result_to_string(r) );
+    return PyString_FromString( ach_result_to_string((enum ach_status)r) );
 }
 
 static PyObject *
@@ -288,6 +301,59 @@ flush_channel( PyObject *self, PyObject *args ) {
     Py_RETURN_NONE;
 }
 
+static PyObject *
+chmod_channel( PyObject *self, PyObject *args ) {
+    (void)self;
+
+    PyObject *py_chan;
+    int mode;
+    // get arg objects
+    if( !PyArg_ParseTuple(args, "Oi", &py_chan, &mode) ) {
+        return NULL;
+    }
+
+    // parse channel
+    ach_channel_t *c = parse_channel_pointer(py_chan);
+    if( NULL == c ) {
+        return NULL;
+    }
+
+    // make the damn call
+    ach_status_t r = ach_chmod( c, (mode_t)mode );
+
+    // check the result
+    if( ACH_OK != r ) {
+        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        return NULL;
+    }
+
+    // cleanup
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+unlink_channel( PyObject *self, PyObject *args ) {
+    (void)self;
+
+    const char *name;
+    // get arg objects
+    if( !PyArg_ParseTuple(args, "s", &name) )  {
+        return NULL;
+    }
+
+    // make the damn call
+    ach_status_t r = ach_unlink( name );
+
+    // check the result
+    if( ACH_OK != r ) {
+        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        return NULL;
+    }
+
+    // cleanup
+    Py_RETURN_NONE;
+}
+
 
 static PyMethodDef module_methods[] = {
    { "open_channel", (PyCFunction)open_channel, METH_VARARGS, NULL },
@@ -297,6 +363,8 @@ static PyMethodDef module_methods[] = {
    { "ach_error", (PyCFunction)ach_error, METH_VARARGS, NULL },
    { "result_string", (PyCFunction)result_string, METH_VARARGS, NULL },
    { "flush_channel", (PyCFunction)flush_channel, METH_VARARGS, NULL },
+   { "chmod_channel", (PyCFunction)chmod_channel, METH_VARARGS, NULL },
+   { "unlink_channel", (PyCFunction)unlink_channel, METH_VARARGS, NULL },
    { NULL, NULL, 0, NULL }
 };
 
@@ -335,4 +403,6 @@ PyMODINIT_FUNC initach_py() {
     PyModule_AddObject( m, "ACH_EACCES",           PyInt_FromLong( ACH_EACCES ) );
     PyModule_AddObject( m, "ACH_O_WAIT",           PyInt_FromLong( ACH_O_WAIT ) );
     PyModule_AddObject( m, "ACH_O_LAST",           PyInt_FromLong( ACH_O_LAST ) );
+    PyModule_AddObject( m, "ACH_DEFAULT_FRAME_SIZE",   PyInt_FromLong( ACH_DEFAULT_FRAME_SIZE ) );
+    PyModule_AddObject( m, "ACH_DEFAULT_FRAME_COUNT",  PyInt_FromLong( ACH_DEFAULT_FRAME_COUNT ) );
 }
