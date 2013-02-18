@@ -98,7 +98,7 @@ void achd_client() {
 
     /* Check the channel */
     {
-        int r = ach_open(&conn.channel, cx.cl_opts.chan_name, NULL );
+        enum ach_status r = ach_open(&conn.channel, cx.cl_opts.chan_name, NULL );
         if( ACH_ENOENT == r ) {
             achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
         } else if (ACH_OK != r) {
@@ -195,7 +195,7 @@ static int server_connect( struct achd_conn *conn) {
     /* Get Response */
     conn->recv_hdr.status = ACH_BUG;
     {
-        int r = achd_parse_headers( fd, &conn->recv_hdr );
+        enum ach_status r = achd_parse_headers( fd, &conn->recv_hdr );
         if( ACH_OK != r ) {
             if( errno ) {
                 cx.error( r, "Bad response from server: %s\n", strerror(errno) );
@@ -220,7 +220,7 @@ static int server_connect( struct achd_conn *conn) {
         int frame_size = conn->recv_hdr.frame_size ? conn->recv_hdr.frame_size : ACH_DEFAULT_FRAME_SIZE;
         int frame_count = conn->recv_hdr.frame_count ? conn->recv_hdr.frame_count : ACH_DEFAULT_FRAME_COUNT;
         /* Fixme: should sanity check these counts */
-        int r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
+        enum ach_status r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
         if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
         r = ach_open(&conn->channel, cx.cl_opts.chan_name, NULL );
         if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");

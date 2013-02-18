@@ -307,7 +307,7 @@ int cmd_unlink(void) {
         fprintf(stderr, "Unlinking Channel %s\n", opt_chan_name);
     }
 
-    int r = ach_unlink(opt_chan_name);
+    enum ach_status r = ach_unlink(opt_chan_name);
 
     check_status( r, "Failed to remove channel '%s'", opt_chan_name );
 

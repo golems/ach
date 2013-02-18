@@ -87,7 +87,7 @@ struct achd_headers {
     const char *remote_host;
     const char *transport;
     enum achd_direction direction;
-    int status;
+    enum ach_status status;
     const char *message;
 };
 
@@ -134,8 +134,8 @@ void achd_client(void);
 
 /* logging and error handlers */
 void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);
-void achd_error_header( int code, const char fmt[], ... ) ACHD_ATTR_PRINTF(2,3);
-void achd_error_log( int code, const char fmt[], ... )    ACHD_ATTR_PRINTF(2,3);
+void achd_error_header( enum ach_status code, const char fmt[], ... ) ACHD_ATTR_PRINTF(2,3);
+void achd_error_log( enum ach_status code, const char fmt[], ... )    ACHD_ATTR_PRINTF(2,3);
 
 
 /* basic i/o */
@@ -164,7 +164,7 @@ struct achd_cx {
     int reconnect;
     const char *pidfile;
     sig_atomic_t sig_received;
-    void (*error)(int code, const char fmt[], ...);
+    void (*error)(enum ach_status code, const char fmt[], ...);
 };
 
 extern struct achd_cx cx;

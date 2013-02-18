@@ -67,7 +67,7 @@
 
 
 static void achd_posarg(int i, const char *arg);
-static void achd_write_pid();
+/*static void achd_write_pid();*/
 
 void achd_make_realtime();
 
@@ -95,7 +95,7 @@ static const struct achd_conn_vtab handlers[] = {
      .connect = achd_udp_sock,
      .handler = achd_pull_udp },
     {.transport = NULL,
-     .direction = 0,
+     .direction = ACHD_DIRECTION_VOID,
      .connect = NULL,
      .handler = NULL }
 };
@@ -344,7 +344,7 @@ void achd_serve() {
 
     /* open channel */
     {
-        int r = ach_open( &conn.channel, conn.recv_hdr.chan_name, NULL );
+        enum ach_status r = ach_open( &conn.channel, conn.recv_hdr.chan_name, NULL );
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't open channel %s - %s\n", conn.recv_hdr.chan_name, strerror(errno) );
             assert(0);
@@ -392,6 +392,7 @@ void achd_serve() {
 static void achd_set_header
 (const char *key, const char *val, struct achd_headers *headers);
 static void achd_set_int(int *pint, const char *name, const char *val);
+static void achd_set_status(enum ach_status *pint, const char *name, const char *val);
 
 #define REGEX_WORD "([^:=\n]*)"
 #define REGEX_SPACE "[[:blank:]\n\r]*"
@@ -423,7 +424,7 @@ enum ach_status achd_parse_headers(int fd, struct achd_headers *headers) {
     int line = 0;
     size_t n = ACHD_LINE_LENGTH;
     char lineptr[n];
-    ssize_t r;
+    enum ach_status r;
     while( ACH_OK == (r = achd_readline(fd, lineptr, n)) ) {
         line++;
         /* Break on ".\n" */
@@ -464,6 +465,17 @@ void achd_set_int(int *pint, const char *name, const char *val) {
     *pint = (int) i;
 }
 
+void achd_set_status(enum ach_status *pint, const char *name, const char *val) {
+    errno = 0;
+    long i = strtol( val, NULL, 10 );
+    if( errno ) {
+        cx.error( ACH_BAD_HEADER, "Invalid %s %s: %s\n", name, val, strerror(errno) );
+        assert(0);
+    }
+    *pint = (enum ach_status) i;
+}
+
+
 int achd_parse_boolean( const char *value ) {
     const char *yes[] = {"yes", "true", "1", "t", "y", "+", "aye", NULL};
     const char *no[] = {"no", "false", "0", "f", "n", "-", "nay", NULL};
@@ -503,7 +515,7 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
             assert(0);
         }
     } else if ( 0 == strcasecmp(key, "status") ) {
-        achd_set_int( &headers->status, "status", val );
+        achd_set_status( &headers->status, "status", val );
     } else if ( 0 == strcasecmp(key, "message") ) {
         headers->message = strdup(val);
     } else {
@@ -559,7 +571,7 @@ void achd_exit_failure( int code ) {
 
 
 
-void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
+void achd_error_vsyslog( enum ach_status code, const char fmt[], va_list argp ) {
     if( ACH_OK != code ) {
         const char *scode = ach_result_to_string(code);
         char fmt_buf[ strlen(scode) + 3 + strlen(fmt) + 1 ];
@@ -572,7 +584,7 @@ void achd_error_vsyslog( int code, const char fmt[], va_list argp ) {
     }
 }
 
-void achd_error_header( int code, const char fmt[], ... ) {
+void achd_error_header( enum ach_status code, const char fmt[], ... ) {
     va_list argp;
     /* Log */
     va_start( argp, fmt );
@@ -602,7 +614,7 @@ void achd_error_header( int code, const char fmt[], ... ) {
 /*     achd_exit_failure(code); */
 /* } */
 
-void achd_error_log( int code, const char fmt[],  ...) {
+void achd_error_log( enum ach_status code, const char fmt[],  ...) {
     int tty = isatty(STDERR_FILENO);
     if( tty && cx.verbosity >= -1) {
         if( ACH_OK != code ) {
