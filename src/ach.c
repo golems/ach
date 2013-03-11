@@ -689,7 +689,7 @@ static void free_index(ach_header_t *shm, size_t i ) {
 }
 
 enum ach_status
-ach_put( ach_channel_t *chan, void *buf, size_t len ) {
+ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
     if( 0 == len || NULL == buf || NULL == chan->shm ) {
         return ACH_EINVAL;
     }

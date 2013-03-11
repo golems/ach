@@ -437,7 +437,7 @@ extern "C" {
         \return ACH_OK on success.
     */
     enum ach_status
-    ach_put( ach_channel_t *chan, void *buf, size_t len );
+    ach_put( ach_channel_t *chan, const void *buf, size_t len );
 
 
     /** Discards all previously received messages for this handle.  Does
