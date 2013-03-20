@@ -851,8 +851,10 @@ Connection closed by foreign host.
       be sacrificed in order to improve average-case performance.  For
       a real-time application, it is generally worst-case performance
       that matters rather than average case, and latency is more
-      important that througput.
+      important than throughput.
     </para>
+
+    <sect3><title>Linux PREEMPT_RT</title>
     <para>
       If using a Linux kernel, you can apply the PREEMPT_RT patch to
       allow a fully-preemptible kernel.  Without this, a low priority
@@ -861,6 +863,48 @@ Connection closed by foreign host.
       fully-preemptible kernel, the high priority task gets to run
       immediately.
     </para>
+    </sect3>
+
+    <sect3><title>Linux / Xenomai</title>
+    <para>
+      Xenomai is a dual-kernel real-time operating system.  A hard
+      real-time kernel, Adeos, handles interrupts and a full Linux
+      kernel runs along-side, permitting normal Linux processes to run
+      directly.  Real-time processes must use a specific Xenomai API
+      <emphasis>skin</emphasis>.  One of these skins is POSIX, and
+      this POSIX interface is sufficient to use Ach for real-time
+      Xenomai processes.
+    </para>
+
+    <warning>
+      <para>
+        There is one important caveat when using Ach on Xenomai.
+        Because of the dual-kernel approach, Xenomai scheduling
+        primitives -- mutexes and condition variables -- are different
+        from the Linux primitives; a Linux process and a Xenomai
+        process cannot synchronize on the same condition variable.
+        Therefore, Ach compiled for Xenomai cannot directly share
+        channels with Ach compiled for Linux.  If you want a Linux
+        process and a Xenomai process on the same machine to
+        communicate via Ach, you can use <command>achd</command> to
+        forward the messages between the two sides.  This issue does
+        not affect messages forwarded between different machines.
+      </para>
+    </warning>
+
+    </sect3>
+
+    <sect3><title>Other Real-Time Operating Systems</title>
+    <para>
+      While Ach development has focused on Linux, it should be
+      portable to other operating systems which provide the POSIX
+      real-time extensions.  In particular, Ach depends on POSIX
+      shared memory and process-shared mutexes and condition
+      variables.  Contributions to increase portability are extremely
+      welcome.
+    </para>
+    </sect3>
+
     </sect2>
 
 

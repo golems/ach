@@ -58,6 +58,35 @@ alternative.
 III. Cross Compiling
 ====================
 
+Build For Xenomai
+-----------------
+
+1. Give configure the right flags.  If your Xenomai system is
+   different from the system you are building on, you may also need to
+   specify --build and --host as discussed below.
+
+    ./configure CFLAGS="`xeno-config --skin posix --cflags`"   \
+                LDFLAGS="`xeno-config --skin posix --ldflags`" \
+                CC="`xeno-config --skin posix --cc`"
+2. Build.
+
+    make
+
+
+Alternatively, you can try the build with CMake.
+
+1. Configure cmake.
+
+    CFLAGS="`xeno-config --skin posix --cflags`"     \
+    LDFLAGS="`xeno-config --skin posix --ldflags`"   \
+    CC="`xeno-config --skin posix --cc`"             \
+    cmake .
+
+2. Build.
+
+    make
+
+
 Build an i386 (x86) on AMD64
 ----------------------------
 
@@ -70,7 +99,7 @@ Build an i386 (x86) on AMD64
 
     sudo apt-get install ia32-libs ia32-libs-dev libc6-dev-i386
 
-2. Build and Install:
+2. Build.
 
      make
 
