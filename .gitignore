@@ -74,3 +74,4 @@ Makefile.in
 /python/dist/
 /python/setup.py
 /python/build/
+/spin/pan*
