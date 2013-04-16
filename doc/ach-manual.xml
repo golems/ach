@@ -333,7 +333,7 @@ if( ACH_OK != r ) {
       <para>This will get the next unseen message from the channel.</para>
       <programlisting language="C">
 size_t frame_size;
-enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, NULL, 0 );
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, NULL, 0 );
 if( ACH_MISSED_FRAME == r ) {
     fprintf(stdout, "Missed a/some messages(s)\n");
 } else if( ACH_STALE_FRAMES == r ) {
@@ -352,7 +352,7 @@ if( ACH_MISSED_FRAME == r ) {
       unseen messages are in the channel, it will wait forever until
       one is posted. </para>
       <programlisting language="C">
-enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, ACH_O_WAIT | ACH_O_LAST, 0 );
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, NULL, ACH_O_WAIT | ACH_O_LAST );
       </programlisting>
       </example>
 
@@ -364,7 +364,7 @@ enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, ACH_O_W
 struct timespec t;
 clock_gettime( ACH_DEFAULT_CLOCK, &amp;t );
 t.tv_sec += 1;
-enum ach_status r = ach_get( &amp;channel, &amp;my_msg, &amp;frame_size, ACH_O_WAIT | ACH_O_LAST, &amp;t );
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, &amp;t, ACH_O_WAIT | ACH_O_LAST );
 if( ACH_TIMEOUT == r ) {
   fprintf(stdout, "call to ach_get timed out\n");
 }
