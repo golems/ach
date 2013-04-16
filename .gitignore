@@ -33,4 +33,12 @@ achd
 /python/MANIFEST
 /python/setup.py
 /debian/ach-utils
-
+/spin/pan
+/spin/pan.b
+/spin/pan.c
+/spin/pan.h
+/spin/pan.m
+/spin/pan.p
+/spin/pan.t
+/spin/panbs
+/spin/panhc

@@ -67,6 +67,23 @@ COLSPAN="3"
 ><TR
 ><TD
 ALIGN="LEFT"
+>Revision 1.1.0-1</TD
+><TD
+ALIGN="LEFT"
+>2013-04-16</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>Few fixes and add Xenomai note</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
 >Revision 1.1.0</TD
 ><TD
 ALIGN="LEFT"
@@ -89,7 +106,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN21"
+NAME="AEN26"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -116,190 +133,209 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN24"
+HREF="#AEN29"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN56"
+HREF="#AEN61"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN58"
+HREF="#AEN63"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN138"
+HREF="#AEN143"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN160"
+HREF="#AEN165"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN176"
+HREF="#AEN181"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN195"
+HREF="#AEN200"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN255"
+HREF="#AEN260"
 >Closing a channel</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN263"
+HREF="#AEN268"
 >Deleting a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN271"
+HREF="#AEN276"
 >Channel Permissions</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN288"
+HREF="#AEN293"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN297"
+HREF="#AEN302"
 >Language Bindings</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN299"
+HREF="#AEN304"
 >Common Lisp</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN302"
+HREF="#AEN307"
 >Python</A
 ></DT
 ></DL
 ></DD
 ><DT
 >4. <A
-HREF="#AEN316"
+HREF="#AEN321"
 >ach Shell Tool</A
 ></DT
 ><DT
 >5. <A
-HREF="#AEN399"
+HREF="#AEN404"
 >achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN403"
+HREF="#AEN408"
 >Server</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1.1. <A
-HREF="#AEN418"
+HREF="#AEN423"
 >Traditional Inetd Configuration</A
 ></DT
 ><DT
 >5.1.2. <A
-HREF="#AEN436"
+HREF="#AEN441"
 >Xinetd Configuration</A
 ></DT
 ><DT
 >5.1.3. <A
-HREF="#AEN458"
+HREF="#AEN463"
 >Testing Server Configuration</A
 ></DT
 ></DL
 ></DD
 ><DT
 >5.2. <A
-HREF="#AEN469"
+HREF="#AEN474"
 >Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN532"
+HREF="#AEN537"
 >Performance Tuning</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN535"
+HREF="#AEN540"
 >Disable CPU frequency scaling</A
 ></DT
 ><DT
 >6.2. <A
-HREF="#AEN538"
+HREF="#AEN543"
 >Use a Real-Time Operating System</A
 ></DT
+><DD
+><DL
+><DT
+>6.2.1. <A
+HREF="#AEN546"
+>Linux PREEMPT_RT</A
+></DT
+><DT
+>6.2.2. <A
+HREF="#AEN549"
+>Linux / Xenomai</A
+></DT
+><DT
+>6.2.3. <A
+HREF="#AEN556"
+>Other Real-Time Operating Systems</A
+></DT
+></DL
+></DD
 ><DT
 >6.3. <A
-HREF="#AEN542"
+HREF="#AEN559"
 >Benchmark your system</A
 ></DT
 ></DL
 ></DD
 ><DT
 >7. <A
-HREF="#AEN560"
+HREF="#AEN577"
 >Theory of Operation</A
 ></DT
 ><DD
 ><DL
 ><DT
 >7.1. <A
-HREF="#AEN563"
+HREF="#AEN580"
 >Data Structure</A
 ></DT
 ><DT
 >7.2. <A
-HREF="#AEN567"
+HREF="#AEN584"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
 >7.2.1. <A
-HREF="#AEN572"
+HREF="#AEN589"
 >ach_put</A
 ></DT
 ><DT
 >7.2.2. <A
-HREF="#AEN588"
+HREF="#AEN605"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
 >7.3. <A
-HREF="#AEN604"
+HREF="#AEN621"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN607"
+HREF="#AEN624"
 >Colophon</A
 ></DT
 ></DL
@@ -309,7 +345,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN24"
+NAME="AEN29"
 >1. Introduction</A
 ></H2
 ><P
@@ -398,7 +434,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN56"
+NAME="AEN61"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -406,7 +442,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN58"
+NAME="AEN63"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -589,7 +625,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN138"
+NAME="AEN143"
 >2.2. Creating a channel</A
 ></H3
 ><DIV
@@ -597,7 +633,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN140"
+NAME="AEN145"
 ></A
 ><P
 ><CODE
@@ -629,7 +665,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN156"
+NAME="AEN161"
 ></A
 ><P
 ><B
@@ -659,7 +695,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN160"
+NAME="AEN165"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -667,7 +703,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN162"
+NAME="AEN167"
 ></A
 ><P
 ><CODE
@@ -685,7 +721,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN173"
+NAME="AEN178"
 ></A
 ><P
 ><B
@@ -707,7 +743,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN176"
+NAME="AEN181"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -715,7 +751,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN178"
+NAME="AEN183"
 ></A
 ><P
 ><CODE
@@ -740,7 +776,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN192"
+NAME="AEN197"
 ></A
 ><P
 ><B
@@ -762,7 +798,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN195"
+NAME="AEN200"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -770,7 +806,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN197"
+NAME="AEN202"
 ></A
 ><P
 ><CODE
@@ -806,7 +842,8 @@ CLASS="constant"
 ><DD
 ><P
 >Wait until a new message is posted. Default
-      behavior is to return immediately.</P
+      behavior without this flag is to return
+      immediately.</P
 ></DD
 ><DT
 ><CODE
@@ -815,8 +852,9 @@ CLASS="constant"
 ></DT
 ><DD
 ><P
->Return the newest message.  Default behavior is
-      to return the oldest unseen message.</P
+>Return the newest message.  Default behavior
+      without this flag is to return the oldest unseen
+      message.</P
 ></DD
 ><DT
 ><CODE
@@ -830,19 +868,20 @@ CLASS="constant"
       <CODE
 CLASS="constant"
 >ACH_O_WAIT</CODE
-> is not give.  Default behavior
-      is to return <CODE
+> is not given.  Default behavior
+      without this flag is to return
+      <CODE
 CLASS="constant"
 >ACH_STALE_FRAMES</CODE
-> when there
-      are no new messages.</P
+> when there are no new
+      messages.</P
 ></DD
 ></DL
 ></DIV
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN234"
+NAME="AEN239"
 ></A
 ><P
 ><B
@@ -853,7 +892,7 @@ NAME="AEN234"
 ><PRE
 CLASS="programlisting"
 >&#13;size_t frame_size;
-enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, NULL, 0 );
+enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, NULL, 0 );
 if( ACH_MISSED_FRAME == r ) {
     fprintf(stdout, "Missed a/some messages(s)\n");
 } else if( ACH_STALE_FRAMES == r ) {
@@ -869,7 +908,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN238"
+NAME="AEN243"
 ></A
 ><P
 ><B
@@ -881,13 +920,13 @@ NAME="AEN238"
       one is posted. </P
 ><PRE
 CLASS="programlisting"
->&#13;enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, ACH_O_WAIT | ACH_O_LAST, 0 );
+>&#13;enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, NULL, ACH_O_WAIT | ACH_O_LAST );
       </PRE
 ></DIV
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN242"
+NAME="AEN247"
 ></A
 ><P
 ><B
@@ -902,7 +941,7 @@ CLASS="programlisting"
 >&#13;struct timespec t;
 clock_gettime( ACH_DEFAULT_CLOCK, &#38;t );
 t.tv_sec += 1;
-enum ach_status r = ach_get( &#38;channel, &#38;my_msg, &#38;frame_size, ACH_O_WAIT | ACH_O_LAST, &#38;t );
+enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, &#38;t, ACH_O_WAIT | ACH_O_LAST );
 if( ACH_TIMEOUT == r ) {
   fprintf(stdout, "call to ach_get timed out\n");
 }
@@ -989,7 +1028,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN255"
+NAME="AEN260"
 >2.6. Closing a channel</A
 ></H3
 ><DIV
@@ -997,7 +1036,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN257"
+NAME="AEN262"
 ></A
 ><P
 ><CODE
@@ -1015,7 +1054,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN263"
+NAME="AEN268"
 >2.7. Deleting a channel</A
 ></H3
 ><DIV
@@ -1023,7 +1062,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN265"
+NAME="AEN270"
 ></A
 ><P
 ><CODE
@@ -1041,7 +1080,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN271"
+NAME="AEN276"
 >2.8. Channel Permissions</A
 ></H3
 ><DIV
@@ -1049,7 +1088,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN273"
+NAME="AEN278"
 ></A
 ><P
 ><CODE
@@ -1073,7 +1112,7 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN283"
+NAME="AEN288"
 ></A
 ><P
 ><B
@@ -1097,7 +1136,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN288"
+NAME="AEN293"
 >2.9. Ignore old messages</A
 ></H3
 ><DIV
@@ -1105,7 +1144,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN290"
+NAME="AEN295"
 ></A
 ><P
 ><CODE
@@ -1127,7 +1166,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN297"
+NAME="AEN302"
 >3. Language Bindings</A
 ></H2
 ><DIV
@@ -1135,7 +1174,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN299"
+NAME="AEN304"
 >3.1. Common Lisp</A
 ></H3
 ><P
@@ -1147,7 +1186,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN302"
+NAME="AEN307"
 >3.2. Python</A
 ></H3
 ><P
@@ -1180,7 +1219,7 @@ CLASS="classname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN310"
+NAME="AEN315"
 ></A
 ><P
 ><B
@@ -1198,7 +1237,7 @@ c.close()
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN313"
+NAME="AEN318"
 ></A
 ><P
 ><B
@@ -1226,7 +1265,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN316"
+NAME="AEN321"
 >4. ach Shell Tool</A
 ></H2
 ><P
@@ -1269,7 +1308,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN342"
+NAME="AEN347"
 ></A
 ><P
 ><B
@@ -1302,7 +1341,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN354"
+NAME="AEN359"
 ></A
 ><P
 ><B
@@ -1324,7 +1363,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN362"
+NAME="AEN367"
 ></A
 ><P
 ><B
@@ -1363,7 +1402,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN376"
+NAME="AEN381"
 ></A
 ><P
 ><B
@@ -1397,7 +1436,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN389"
+NAME="AEN394"
 ></A
 ><P
 ><B
@@ -1427,7 +1466,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN399"
+NAME="AEN404"
 >5. achd Network Daemon</A
 ></H2
 ><P
@@ -1442,7 +1481,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN403"
+NAME="AEN408"
 >5.1. Server</A
 ></H3
 ><P
@@ -1538,7 +1577,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN418"
+NAME="AEN423"
 >5.1.1. Traditional Inetd Configuration</A
 ></H4
 ><P
@@ -1595,7 +1634,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN436"
+NAME="AEN441"
 >5.1.2. Xinetd Configuration</A
 ></H4
 ><P
@@ -1677,7 +1716,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN458"
+NAME="AEN463"
 >5.1.3. Testing Server Configuration</A
 ></H4
 ><P
@@ -1776,7 +1815,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN469"
+NAME="AEN474"
 >5.2. Client</A
 ></H3
 ><P
@@ -1815,7 +1854,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN493"
+NAME="AEN498"
 ></A
 ><P
 ><B
@@ -1840,7 +1879,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN502"
+NAME="AEN507"
 ></A
 ><P
 ><B
@@ -1865,7 +1904,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN512"
+NAME="AEN517"
 ></A
 ><P
 ><B
@@ -1890,7 +1929,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN522"
+NAME="AEN527"
 ></A
 ><P
 ><B
@@ -1919,7 +1958,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN532"
+NAME="AEN537"
 >6. Performance Tuning</A
 ></H2
 ><P
@@ -1935,7 +1974,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN535"
+NAME="AEN540"
 >6.1. Disable CPU frequency scaling</A
 ></H3
 ><P
@@ -1954,7 +1993,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN538"
+NAME="AEN543"
 >6.2. Use a Real-Time Operating System</A
 ></H3
 ><P
@@ -1964,8 +2003,16 @@ NAME="AEN538"
       be sacrificed in order to improve average-case performance.  For
       a real-time application, it is generally worst-case performance
       that matters rather than average case, and latency is more
-      important that througput.
+      important than throughput.
     </P
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN546"
+>6.2.1. Linux PREEMPT_RT</A
+></H4
 ><P
 >&#13;      If using a Linux kernel, you can apply the PREEMPT_RT patch to
       allow a fully-preemptible kernel.  Without this, a low priority
@@ -1976,11 +2023,93 @@ NAME="AEN538"
     </P
 ></DIV
 ><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN549"
+>6.2.2. Linux / Xenomai</A
+></H4
+><P
+>&#13;      Xenomai is a dual-kernel real-time operating system.  A hard
+      real-time kernel, Adeos, handles interrupts and a full Linux
+      kernel runs along-side, permitting normal Linux processes to run
+      directly.  Real-time processes must use a specific Xenomai API
+      <SPAN
+CLASS="emphasis"
+><I
+CLASS="emphasis"
+>skin</I
+></SPAN
+>.  One of these skins is POSIX, and
+      this POSIX interface is sufficient to use Ach for real-time
+      Xenomai processes.
+    </P
+><DIV
+CLASS="warning"
+><P
+></P
+><TABLE
+CLASS="warning"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/warning.gif"
+HSPACE="5"
+ALT="Warning"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        There is one important caveat when using Ach on Xenomai.
+        Because of the dual-kernel approach, Xenomai scheduling
+        primitives -- mutexes and condition variables -- are different
+        from the Linux primitives; a Linux process and a Xenomai
+        process cannot synchronize on the same condition variable.
+        Therefore, Ach compiled for Xenomai cannot directly share
+        channels with Ach compiled for Linux.  If you want a Linux
+        process and a Xenomai process on the same machine to
+        communicate via Ach, you can use <B
+CLASS="command"
+>achd</B
+> to
+        forward the messages between the two sides.  This issue does
+        not affect messages forwarded between different machines.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN556"
+>6.2.3. Other Real-Time Operating Systems</A
+></H4
+><P
+>&#13;      While Ach development has focused on Linux, it should be
+      portable to other operating systems which provide the POSIX
+      real-time extensions.  In particular, Ach depends on POSIX
+      shared memory and process-shared mutexes and condition
+      variables.  Contributions to increase portability are extremely
+      welcome.
+    </P
+></DIV
+></DIV
+><DIV
 CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN542"
+NAME="AEN559"
 >6.3. Benchmark your system</A
 ></H3
 ><P
@@ -1999,7 +2128,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN547"
+NAME="AEN564"
 ></A
 ><P
 ><B
@@ -2040,7 +2169,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN560"
+NAME="AEN577"
 >7. Theory of Operation</A
 ></H2
 ><P
@@ -2064,7 +2193,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN563"
+NAME="AEN580"
 >7.1. Data Structure</A
 ></H3
 ><P
@@ -2097,7 +2226,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN567"
+NAME="AEN584"
 >7.2. Core Procedures</A
 ></H3
 ><P
@@ -2115,7 +2244,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN572"
+NAME="AEN589"
 >7.2.1. ach_put</A
 ></H4
 ><P
@@ -2172,7 +2301,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN588"
+NAME="AEN605"
 >7.2.2. ach_get</A
 ></H4
 ><P
@@ -2236,7 +2365,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN604"
+NAME="AEN621"
 >7.3. Serialization</A
 ></H3
 ><P
@@ -2254,7 +2383,7 @@ NAME="AEN604"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN607"
+NAME="AEN624"
 ></A
 >Colophon</H1
 ><P
