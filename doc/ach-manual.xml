@@ -26,6 +26,12 @@
      <!-- Most recent revision goes at the top; list in descending order -->
      <revhistory>
        <revision>
+          <revnumber>1.1.0-1</revnumber>
+          <date>2013-04-16</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>Few fixes and add Xenomai note</revremark>
+       </revision>
+       <revision>
           <revnumber>1.1.0</revnumber>
           <date>2013-02-12</date>
           <authorinitials>NTD</authorinitials>
