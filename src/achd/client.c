@@ -98,15 +98,25 @@ void achd_client() {
 
     /* Check the channel */
     {
-        enum ach_status r = ach_open(&conn.channel, cx.cl_opts.chan_name, NULL );
-        if( ACH_ENOENT == r ) {
-            achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
-        } else if (ACH_OK != r) {
-            /* Something is wrong with the channel, probably permissions */
-            cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
-            assert(0);
-        } else {
-            ach_flush(&conn.channel);
+        ach_status_t r;
+        while( ACH_OK != (r = ach_open(&conn.channel, cx.cl_opts.chan_name, NULL)) ) {
+            if( ACH_ENOENT == r ) {
+                achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
+                r = ach_create( cx.cl_opts.chan_name, ACH_DEFAULT_FRAME_COUNT, ACH_DEFAULT_FRAME_SIZE, NULL );
+                if( ACH_OK != r ) {
+                    cx.error( r, "Couldn't create channel %s\n", cx.cl_opts.chan_name );
+                    assert(0);
+                }
+            } else if (ACH_OK != r) {
+                /* Something is wrong with the channel, probably permissions */
+                cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
+                assert(0);
+            }
+        }
+        r = ach_flush(&conn.channel);
+        if( ACH_OK != r ) {
+            achd_log(LOG_ERR, "Couldn't flush channel %s: %s \n",
+                     cx.cl_opts.chan_name, ach_result_to_string(r) );
         }
     }
 
