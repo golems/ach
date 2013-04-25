@@ -528,10 +528,10 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
 const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_direction direction ) {
     /* check transport headers */
     if( ! transport ) {
-        cx.error( ACH_BAD_HEADER, "No transport header");
+        cx.error( ACH_BAD_HEADER, "No transport header\n");
         assert(0);
     } else if( ! direction ) {
-        cx.error( ACH_BAD_HEADER, "No direction header");
+        cx.error( ACH_BAD_HEADER, "No direction header\n");
         assert(0);
     } else {
         int i = 0;
@@ -544,7 +544,7 @@ const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_dir
         }
     }
     /* Couldn't find handler */
-    cx.error( ACH_BAD_HEADER, "Requested transport or direction not found");
+    cx.error( ACH_BAD_HEADER, "Requested transport or direction not found\n");
     assert(0);
 }
 
