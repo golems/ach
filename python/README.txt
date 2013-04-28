@@ -8,7 +8,7 @@ You can use it via
   >>> import ach
 
 The canonical location for this package is
-http://code.golems.org/src/ach/ach_py-latest.tar.gz.
+http://code.golems.org/src/ach/py_ach-latest.tar.gz.
 
 You can install with
-  $ sudo pip install http://code.golems.org/src/ach/ach_py-latest.tar.gz
+  $ sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
