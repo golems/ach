@@ -211,7 +211,7 @@ int main( int argc, char **argv ) {
                   /* "  -C CHANNEL-NAME,          Create a new channel\n" */
                   /* "  -U CHANNEL-NAME,          Unlink (delete) a channel\n" */
                   /* "  -D CHANNEL-NAME,          Dump info about channel\n" */
-                  "  -1,                       With -C, accept an already created channel\n"
+                  "  -1,                       With 'mk', accept an already created channel\n"
                   /* "  -F CHANNEL-NAME,          Print filename for channel (Linux-only)\n" */
                   "  -m MSG-COUNT,             Number of messages to buffer\n"
                   "  -n MSG-SIZE,              Nominal size of a message\n"
