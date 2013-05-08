@@ -96,30 +96,6 @@ void achd_client() {
             cx.cl_opts.direction == ACHD_DIRECTION_PULL );
     conn.send_hdr.transport = cx.cl_opts.transport;
 
-    /* Check the channel */
-    {
-        ach_status_t r;
-        while( ACH_OK != (r = ach_open(&conn.channel, cx.cl_opts.chan_name, NULL)) ) {
-            if( ACH_ENOENT == r ) {
-                achd_log(LOG_INFO, "Local channel %s not found, creating\n", cx.cl_opts.chan_name);
-                r = ach_create( cx.cl_opts.chan_name, ACH_DEFAULT_FRAME_COUNT, ACH_DEFAULT_FRAME_SIZE, NULL );
-                if( ACH_OK != r ) {
-                    cx.error( r, "Couldn't create channel %s\n", cx.cl_opts.chan_name );
-                    assert(0);
-                }
-            } else if (ACH_OK != r) {
-                /* Something is wrong with the channel, probably permissions */
-                cx.error( r, "Couldn't open channel %s\n", cx.cl_opts.chan_name );
-                assert(0);
-            }
-        }
-        r = ach_flush(&conn.channel);
-        if( ACH_OK != r ) {
-            achd_log(LOG_ERR, "Couldn't flush channel %s: %s \n",
-                     cx.cl_opts.chan_name, ach_result_to_string(r) );
-        }
-    }
-
     sighandler_install();
 
     /* maybe daemonize */
@@ -227,17 +203,25 @@ static int server_connect( struct achd_conn *conn) {
 
     /* Try to create channel if needed */
     if( ! conn->channel.shm ) {
-        int frame_size = conn->recv_hdr.frame_size ? conn->recv_hdr.frame_size : ACH_DEFAULT_FRAME_SIZE;
-        int frame_count = conn->recv_hdr.frame_count ? conn->recv_hdr.frame_count : ACH_DEFAULT_FRAME_COUNT;
-        /* Fixme: should sanity check these counts */
-        enum ach_status r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
-        if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
-        r = ach_open(&conn->channel, cx.cl_opts.chan_name, NULL );
-        if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
+        ach_status_t r = ach_open(&conn->channel, cx.cl_opts.chan_name, NULL);
+        if( ACH_ENOENT == r) {
+            int frame_size = conn->recv_hdr.frame_size ? conn->recv_hdr.frame_size : ACH_DEFAULT_FRAME_SIZE;
+            int frame_count = conn->recv_hdr.frame_count ? conn->recv_hdr.frame_count : ACH_DEFAULT_FRAME_COUNT;
+            /* Fixme: should sanity check these counts */
+            r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
+            if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
+            r = ach_open( &conn->channel, cx.cl_opts.chan_name, NULL );
+            if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
+        } else if (ACH_OK != r ) {
+            cx.error( r, "Couldn't open channel\n");
+        }
+        r = ach_flush(&conn->channel );
+        if( ACH_OK != r )  cx.error( r, "Couldn't flush channel\n");
     }
 
     return conn->in = conn->out = fd;
 }
+
 
 int achd_reconnect( struct achd_conn *conn) {
     int fd = -1;
