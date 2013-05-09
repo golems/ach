@@ -14,6 +14,9 @@ noinst_HEADERS = include/achutil.h include/achd.h
 
 lib_LTLIBRARIES = libach.la
 
+noinst_LTLIBRARIES = libachutil.la
+libachutil_la_SOURCES = src/achutil.c include/achutil.h
+
 if HAVE_RT
 bin_PROGRAMS = ach achpipe.bin achcat achbench achd achcop
 noinst_PROGRAMS = achtest ach-example
@@ -30,35 +33,35 @@ libach_la_SOURCES = src/ach.c src/pipe.c
 # The cmake versioning needs to be updated when this line changes
 libach_la_LDFLAGS = -version-info 2:0:1
 
-ach_SOURCES = src/achtool.c src/achutil.c
-ach_LDADD = libach.la
+ach_SOURCES = src/achtool.c
+ach_LDADD = libach.la libachutil.la
 
 
-achcop_SOURCES = src/achcop.c src/achutil.c
+achcop_SOURCES = src/achcop.c
+achcop_LDADD = libachutil.la
 
-achpipe_bin_SOURCES = src/achpipe-bin.c src/achutil.c
-achpipe_bin_LDADD = libach.la
+achpipe_bin_SOURCES = src/achpipe-bin.c
+achpipe_bin_LDADD = libach.la libachutil.la
 
 achtest_SOURCES = src/achtest.c
 achtest_LDADD = libach.la
 
 if HAVE_RT
 
-achcat_SOURCES = src/achcat.c src/achutil.c
-achcat_LDADD = libach.la
+achcat_SOURCES = src/achcat.c
+achcat_LDADD = libach.la libachutil.la
 
-achd_SOURCES = src/achutil.c     \
-               src/achd/achd.c   \
+achd_SOURCES = src/achd/achd.c   \
                src/achd/client.c \
                src/achd/io.c \
                src/achd/transport.c
-achd_LDADD = libach.la
+achd_LDADD = libach.la libachutil.la
 
 ach_example_SOURCES = src/ach-example.c
 ach_example_LDADD = libach.la -lm
 
-achbench_SOURCES = src/ach-bench.c src/achutil.c
-achbench_LDADD = libach.la
+achbench_SOURCES = src/ach-bench.c
+achbench_LDADD = libach.la libachutil.la
 
 endif
 
