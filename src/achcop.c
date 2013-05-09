@@ -77,9 +77,9 @@
  *   Process Exits
  */
 
-/* Avoding signal races:
+/* Avoiding signal races:
  *
- * This programs needs to wait for SIGTERM and child termination.
+ * This program needs to wait for SIGTERM and child termination.
  * Waiting for children to terminate with wait() would create a race
  * condition on detection of SIGTERMs.  If SIGTERM is received after
  * we check the flag, but before we enter wait(), we would never
@@ -87,6 +87,16 @@
  * and sigsupend (unblocking the signals).
  */
 
+/* File locking note:
+ *
+ * PID files are locked with lockf().  These locks are released if the
+ * holding process exits.  When the parent process sticks around to
+ * monitor the child, the parent holds the lock.  When the parent
+ * directly exec's to the 'child' (parent and child are really the
+ * same process) the exec'ed program inherits the lock.  However, the
+ * lock will be lost if the file descriptor is closed.  Therefore,
+ * exec'ed programs must not close the lock file descriptor.
+ */
 
 /*
  * If child returns 0: exit normally
@@ -98,8 +108,11 @@
 
 /* CLI options */
 static void detach(void);
-static void redirect(int fd, const char *file);
-static void lock_pid(const char *name, int *fd, FILE **fp);
+static void redirect(const char *name, int oldfd, int newfd );
+static int open_file(const char *name, int options );
+static int open_out_file(const char *name );
+static void lock_pid(int fd, FILE **fp);
+
 static void write_pid(FILE *fp, pid_t pid);
 static void child_arg( const char ***args, const char *arg, size_t *n);
 static void run( FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
@@ -113,7 +126,7 @@ static int wait_for_signal(void);
 /* Check flags to see if signal received */
 static int check_signal(void);
 
-
+#define FILE_CLOSE_NAME "-"
 
 #ifdef __GNUC__
 #define ACHD_ATTR_PRINTF(m,n) __attribute__((format(printf, m, n)))
@@ -140,6 +153,8 @@ int main( int argc, char **argv ) {
     /* Global state */
     static struct {
         pid_t pid_child;
+        int fd_out;
+        int fd_err;
         int fd_cop_pid;
         int fd_child_pid;
         FILE *fp_cop_pid;
@@ -170,8 +185,8 @@ int main( int argc, char **argv ) {
                   "Options:\n"
                   "  -P pid-file,      File for pid of cop process (only valid with -r)\n"
                   "  -p pid-file,      File for pid of child process\n"
-                  "  -o out-file,      Redirect stdout to this file\n"
-                  "  -e out-file,      Redirect stderr to this file\n"
+                  "  -o out-file,      Redirect stdout to this file ("FILE_CLOSE_NAME" to close)\n"
+                  "  -e err-file,      Redirect stderr to this file ("FILE_CLOSE_NAME" to close)\n"
                   "  -d,               Detach and run in background\n"
                   "  -r,               Restart failed children\n"
                   //"  -s,             Wait for SIGUSR1 to redirect output and restart child\n"
@@ -198,28 +213,35 @@ int main( int argc, char **argv ) {
     }
     child_arg(&opt.child_args, NULL, &opt.n_child_args); /* Null-terminate child arg array */
 
+    /* open PID files */
+    /* do this before the detach(), which may chdir() */
+    cx.fd_cop_pid = open_file( opt.file_cop_pid, 0 );
+    cx.fd_child_pid = open_file( opt.file_child_pid, 0 );
+    cx.fd_out = open_out_file( opt.file_stdout );
+    cx.fd_err = open_out_file( opt.file_stderr );
+
     /* Detach */
     if( opt.detach ) detach();
 
     /* Open and Lock PID files */
     if( opt.restart ) {
         /* Lock both PID files */
-        lock_pid( opt.file_cop_pid, &cx.fd_cop_pid, &cx.fp_cop_pid );
-        lock_pid( opt.file_child_pid, &cx.fd_child_pid, &cx.fp_child_pid );
+        lock_pid( cx.fd_cop_pid, &cx.fp_cop_pid );
+        lock_pid( cx.fd_child_pid, &cx.fp_child_pid );
         /* Write parent pid */
         write_pid( cx.fp_cop_pid, getpid() );
     } else {
         /* Lock only 'child' PID file
          * Since we exec the 'child', it's really the same as the parent process
          */
-        lock_pid( opt.file_child_pid, &cx.fd_child_pid, &cx.fp_child_pid );
+        lock_pid( cx.fd_child_pid, &cx.fp_child_pid );
         /* Write self pid */
         write_pid( cx.fp_child_pid, getpid() );
     }
 
     /* Redirect */
-    redirect(STDOUT_FILENO, opt.file_stdout);
-    redirect(STDERR_FILENO, opt.file_stderr);
+    redirect(opt.file_stdout, cx.fd_out, STDOUT_FILENO );
+    redirect(opt.file_stderr, cx.fd_err, STDERR_FILENO );
 
     /* TODO: fork a second child to monitor an ach channel.  Restart
      * first child if second child signals or exits */
@@ -289,37 +311,59 @@ static void detach(void) {
     }
 }
 
-static void redirect(int fd, const char *name) {
+static void redirect(const char *name, int oldfd, int newfd ) {
+    /* check no-op */
     if( NULL == name ) return;
-    /* open */
-    int fd2 = open( name, O_RDWR|O_CREAT, 0664 );
-    if( fd2 < 0 ) {
-        ACH_LOG( LOG_ERR, "Could not open file %s: %s\n", name, strerror(errno) );
+
+    /* check close */
+    if( 0 == strcmp(name, FILE_CLOSE_NAME) ) {
+        if( close(newfd) ) {
+            ACH_LOG( LOG_ERR, "Couldn't close file descriptor: %s\n", strerror(errno) );
+        }
+        return;
     }
 
+    /* check no-op */
+    if( -1 == oldfd ) return;
+
     /* dup */
-    if( dup2(fd2, fd) ) {
-        ACH_LOG( LOG_ERR, "Could not dup output to %s: %s\n", name, strerror(errno) );
+    if( -1 == dup2(oldfd, newfd) ) {
+        ACH_LOG( LOG_ERR, "Could not dup output: %s\n", strerror(errno) );
+    }
+    if( close(oldfd) ) {
+        ACH_LOG( LOG_ERR, "Couldn't close dup'ed file descriptor: %s\n", strerror(errno) );
     }
 }
 
-static void lock_pid(const char *name, int *fd, FILE **fp) {
-    *fd = -1;
-    *fp = NULL;
-    if( NULL == name ) return;
-    /* open */
-    *fd = open( name, O_RDWR|O_CREAT, 0664 );
-    if( *fd < 0 ) {
-        ACH_DIE( "Could not open pid file %s: %s\n", name, strerror(errno) );
+static int open_out_file(const char *name ) {
+    if( NULL == name || 0 == strcmp(FILE_CLOSE_NAME, name) ) {
+        return -1;
     }
+    return open_file( name, O_APPEND );
+}
+static int open_file(const char *name, int opts) {
+    if( NULL == name ) {
+        return -1;
+    }
+    /* open */
+    int fd = open( name, O_RDWR|O_CREAT|opts, 0664 );
+    if( fd < 0 ) {
+        ACH_DIE( "Could not open file %s: %s\n", name, strerror(errno) );
+    }
+    return fd;
+}
+
+static void lock_pid( int fd, FILE **fp) {
+    *fp = NULL;
+    if( -1 == fd ) return;
     /* lock */
-    if( lockf(*fd, F_TLOCK, 0) ) {
-        ACH_DIE( "Could not lock pid file %s: %s\n", name, strerror(errno) );
+    if( lockf(fd, F_TLOCK, 0) ) {
+        ACH_DIE( "Could not lock pid file: %s\n", strerror(errno) );
     }
     /* lock FILE */
-    *fp = fdopen(*fd, "w");
+    *fp = fdopen(fd, "w");
     if( NULL == *fp ) {
-        ACH_DIE( "Could not open FILE pointer for %s: %s\n", name, strerror(errno) );
+        ACH_DIE( "Could not open FILE pointer for: %s\n", strerror(errno) );
     }
 }
 
