@@ -65,10 +65,10 @@ void ach_log( int level, const char fmt[], ...)          ACH_ATTR_PRINTF(2,3);
 
 #define ACH_DIE(...) {ACH_LOG(LOG_ERR,__VA_ARGS__); exit(EXIT_FAILURE); }
 
-extern sig_atomic_t ach_got_sigterm;
-extern sig_atomic_t ach_got_sigint;
-extern sig_atomic_t ach_got_sigchild;
+/* Block Signal, then install dummy signal handler. */
+void ach_sig_block_dummy( int sig );
 
-void ach_install_sigflag( int sig );
+/* Restore default handler and unblock the signal */
+void ach_sig_dfl_unblock( int sig );
 
 #endif //ACHUTIL_H

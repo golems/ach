@@ -83,8 +83,8 @@
  * Waiting for children to terminate with wait() would create a race
  * condition on detection of SIGTERMs.  If SIGTERM is received after
  * we check the flag, but before we enter wait(), we would never
- * realize it.  Instead, we block the signals, check the condition,
- * and sigsupend (unblocking the signals).
+ * realize it.  Instead, we block the signals, and sigwait() to
+ * synchronously recieve.
  */
 
 /* File locking note:
@@ -123,8 +123,6 @@ static void waitloop( pid_t pid, int *status, int *signalled );
 /* Wait for signal to be received, taking care to avoid races
  * Returns the received signal*/
 static int wait_for_signal(void);
-/* Check flags to see if signal received */
-static int check_signal(void);
 
 #define FILE_CLOSE_NAME "-"
 
@@ -245,11 +243,6 @@ int main( int argc, char **argv ) {
 
     /* TODO: fork a second child to monitor an ach channel.  Restart
      * first child if second child signals or exits */
-
-    /* Install signal handlers */
-    ach_install_sigflag( SIGTERM );
-    ach_install_sigflag( SIGINT );
-    ach_install_sigflag( SIGCHLD );
 
     /* Fork child */
     if( opt.restart ) {
@@ -390,6 +383,14 @@ static void write_pid( FILE *fp, pid_t pid ) {
 /* Now it gets hairy... */
 
 static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
+
+    /* Block Signals */
+    /* The signal mask is inherited through fork and exec, so we need
+     * to unblock these for the child later */
+    ach_sig_block_dummy( SIGTERM );
+    ach_sig_block_dummy( SIGINT );
+    ach_sig_block_dummy( SIGCHLD );
+
     while(1) {
         /* start */
         start_child(  fp_pid, pid_ptr, file, args );
@@ -428,6 +429,10 @@ static void start_child( FILE *fp_pid, pid_t *pid_ptr, const char *file, const c
     pid_t pid = fork();
 
     if( 0 == pid ) { /* child: exec */
+        /* Unblock signals for the child */
+        ach_sig_dfl_unblock(SIGTERM);
+        ach_sig_dfl_unblock(SIGINT);
+        ach_sig_dfl_unblock(SIGCHLD);
         execvp( file, (char *const*)args );
         ACH_DIE( "Could not exec: %s\n", strerror(errno) );
     } else if ( pid > 0 ) { /* parent: record child */
@@ -479,52 +484,19 @@ static void waitloop( pid_t pid, int *exit_status, int *signal ) {
 
 static int wait_for_signal() {
     ACH_LOG( LOG_DEBUG, "waiting for signal\n" );
-    /* block signals */
-    sigset_t oldmask, blockmask;
-    if( sigemptyset(&blockmask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
-    if( sigaddset(&blockmask, SIGCHLD) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
-    if( sigaddset(&blockmask, SIGTERM) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
-    if( sigaddset(&blockmask, SIGINT) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
 
-    if( sigprocmask(SIG_BLOCK, &blockmask, &oldmask) ) {
-        ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
+    sigset_t waitset;
+    if( sigemptyset(&waitset) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
+    if( sigaddset(&waitset, SIGCHLD) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
+    if( sigaddset(&waitset, SIGTERM) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
+    if( sigaddset(&waitset, SIGINT) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
+
+    int sig;
+    if( sigwait(&waitset, &sig) ) {
+        ACH_DIE("sigwait failed: %s\n", strerror(errno));
     }
 
-    /* check flags */
-    int r = check_signal();
-    if( 0 == r ) {
-        /* suspend */
-        ACH_LOG( LOG_DEBUG, "suspending\n" );
-        if( -1 != sigsuspend(&oldmask) ) {
-            ACH_DIE("sigsupend failed: %s\n", strerror(errno));
-        }
-        ACH_LOG( LOG_DEBUG, "suspend returned\n" );
-        /* check flags */
-        r = check_signal();
-    }
+    ACH_LOG( LOG_DEBUG, "Signalled: %d\n", sig );
 
-    /* restore sigmask */
-    if( sigprocmask(SIG_SETMASK, &oldmask, NULL) ) {
-        ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
-    }
-
-    ACH_LOG( LOG_DEBUG, "Signalled: %d\n", r );
-
-    assert( 0 != r ); /* We better have a signal now */
-
-    return r;
-}
-
-static int check_signal() {
-    if( ach_got_sigterm ) {
-        return SIGTERM;
-    } else if( ach_got_sigint ) {
-        return SIGINT;
-    } else if( ach_got_sigchild ) {
-        /* Signal is currently blocked */
-        ach_got_sigchild--;
-        return SIGCHLD;
-    } else {
-        return 0;
-    }
+    return sig;
 }

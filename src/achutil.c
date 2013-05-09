@@ -102,45 +102,41 @@ void ach_log( int level, const char fmt[], ...) {
     }
 }
 
-sig_atomic_t ach_got_sigterm;
-sig_atomic_t ach_got_sigint;
-sig_atomic_t ach_got_sigchild;
-
-static void ach_sigflag(int sig, siginfo_t *siginfo, void *context) {
-    (void)siginfo; (void)context;
-    //ACH_LOG( LOG_DEBUG, "Received signal: %d\n", sig );
-    switch(sig) {
-    case SIGTERM:
-        ach_got_sigterm = 1;
-        break;
-    case SIGINT:
-        ach_got_sigint = 1;
-        break;
-    case SIGCHLD:
-        ach_got_sigchild++;
-        break;
-    default:
-        /* This is unsafe, but maybe worth it to debug */
-        ACH_LOG( LOG_WARNING, "Received unexpected signal: %s (%d)\n",
-                 strsignal(sig), sig );
-    }
+static void ach_sigdummy(int sig) {
+    (void)sig;
 }
 
-void ach_install_sigflag( int sig ) {
+void ach_sig_block_dummy( int sig ) {
+    /* Block Signal */
+    sigset_t blockmask;
+    if( sigemptyset(&blockmask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
+    if( sigaddset(&blockmask, sig) ) ACH_DIE("sigaddset(%d) failed: %s\n", sig, strerror(errno));
+    if( sigprocmask(SIG_BLOCK, &blockmask, NULL) ) {
+        ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
+    }
+
+    /* Install Dummy Handler */
     struct sigaction act;
     memset( &act, 0, sizeof(act) );
 
-    act.sa_sigaction = &ach_sigflag;
-
-    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
-       not sa_handler. */
-    act.sa_flags = SA_SIGINFO;
+    act.sa_handler = &ach_sigdummy;
 
     if (sigaction(sig, &act, NULL) < 0) {
         ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
     }
+}
 
-    /* if( SIG_ERR == signal(SIGPIPE, SIG_IGN) ) { */
-    /*     ACH_LOG( LOG_ERR, "Couldn't ignore SIGPIPE: %s", strerror(errno) ); */
-    /* } */
+void ach_sig_dfl_unblock( int sig ) {
+    /* Default Disposition */
+    if( SIG_ERR == signal(sig, SIG_DFL) ) {
+        ACH_LOG( LOG_ERR, "Couldn't set default signal disposition: %s", strerror(errno) );
+    }
+
+    /* Unlock Signal */
+    sigset_t blockmask;
+    if( sigemptyset(&blockmask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
+    if( sigaddset(&blockmask, sig) ) ACH_DIE("sigaddset(%d) failed: %s\n", sig, strerror(errno));
+    if( sigprocmask(SIG_UNBLOCK, &blockmask, NULL) ) {
+        ACH_LOG( LOG_ERR, "sigprocmask failed: %s\n", strerror(errno) );
+    }
 }
