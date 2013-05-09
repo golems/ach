@@ -168,19 +168,19 @@ int main( int argc, char **argv ) {
                   "Watchdog to run and restart ach child processes\n"
                   "\n"
                   "Options:\n"
-                  "  -P,                       File for pid of cop process (only valid with -r)\n"
-                  "  -p,                       File for pid of child process\n"
-                  "  -d,                       Detach and run in background\n"
-                  "  -r,                       Restart failed children\n"
-                  //"  -s,                       Wait for SIGUSR1 to redirect output and restart child\n"
-                  "  -o,                       Redirect stdout to this file\n"
-                  "  -e,                       Redirect stderr to this file\n"
-                  "  -v,                       Make output more verbose\n"
-                  "  -?,                       Give program help list\n"
-                  "  -V,                       Print program version\n"
+                  "  -P pid-file,      File for pid of cop process (only valid with -r)\n"
+                  "  -p pid-file,      File for pid of child process\n"
+                  "  -o out-file,      Redirect stdout to this file\n"
+                  "  -e out-file,      Redirect stderr to this file\n"
+                  "  -d,               Detach and run in background\n"
+                  "  -r,               Restart failed children\n"
+                  //"  -s,             Wait for SIGUSR1 to redirect output and restart child\n"
+                  "  -v,               Make output more verbose\n"
+                  "  -?,               Give program help list\n"
+                  "  -V,               Print program version\n"
                   "\n"
                   "Examples:\n"
-                  "  achcop -P /var/run/myppid -p /var/run/mypid -o /var/log/myout -- my-daemon -xyz"
+                  "  achcop -rd -P /var/run/myppid -p /var/run/mypid -o /var/log/myout -- my-daemon -xyz"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
@@ -381,8 +381,7 @@ static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **ar
 }
 
 static void start_child( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
-
-    pid_t pid = fork(); /* if not restarting, just exec away */
+    pid_t pid = fork();
 
     if( 0 == pid ) { /* child: exec */
         execvp( file, (char *const*)args );
