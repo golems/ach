@@ -23,6 +23,9 @@ man/achpipe.1: $(top_srcdir)/achpipe
 man/achlog.1: $(top_srcdir)/achlog
 	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
 
+man/achcop.1: $(top_srcdir)/achcop
+	$(HELP2MAN) -h -h -v -V --no-info -n "Watchdog for ach daemons" $(top_srcdir)/achcop -o $@
+
 if HAVE_MAN2HTML
 .1.html:
 	$(MAN2HTML) -r $< | sed -e '1d;2d;8d;s/@\|&amp;/{at}/g' > $@
@@ -36,11 +39,11 @@ endif
 
 # test what to install
 if HAVE_MANPAGES
-dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achpipe.bin.1 man/achpipe.1 man/achlog.1 man/achd.1
+dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achpipe.bin.1 man/achpipe.1 man/achlog.1 man/achd.1 man/achcop.1
 endif
 
 if HAVE_MANHTML
-MAN_HTML = man/ach.html man/achbench.html man/achcat.html man/achpipe.bin.html man/achpipe.html man/achlog.html man/achd.html
+MAN_HTML = man/ach.html man/achbench.html man/achcat.html man/achpipe.bin.html man/achpipe.html man/achlog.html man/achd.html man/achcop.html
 endif
 
 if HAVE_MANUAL

@@ -43,6 +43,32 @@
 #ifndef ACHUTIL_H
 #define ACHUTIL_H
 
+#include <signal.h>
+
+/* Routines for ach utilities.  Not for external consumption */
+
 void ach_print_version( const char *name );
+
+
+#ifdef __GNUC__
+#define ACH_ATTR_PRINTF(m,n) __attribute__((format(printf, m, n)))
+#else
+#define ACH_ATTR_PRINTF(m,n)
+#endif
+
+extern int ach_verbosity;
+
+void ach_log( int level, const char fmt[], ...)          ACH_ATTR_PRINTF(2,3);
+
+#define ACH_LOG( priority, ... ) \
+    if((priority) <= LOG_NOTICE + ach_verbosity) ach_log((priority), __VA_ARGS__);
+
+#define ACH_DIE(...) {ACH_LOG(LOG_ERR,__VA_ARGS__); exit(EXIT_FAILURE); }
+
+extern sig_atomic_t ach_got_sigterm;
+extern sig_atomic_t ach_got_sigint;
+extern sig_atomic_t ach_got_sigchild;
+
+void ach_install_sigflag( int sig );
 
 #endif //ACHUTIL_H

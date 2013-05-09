@@ -75,3 +75,4 @@ Makefile.in
 /python/setup.py
 /python/build/
 /spin/pan*
+/achcop

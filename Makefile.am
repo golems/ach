@@ -15,7 +15,7 @@ noinst_HEADERS = include/achutil.h include/achd.h
 lib_LTLIBRARIES = libach.la
 
 if HAVE_RT
-bin_PROGRAMS = ach achpipe.bin achcat achbench achd
+bin_PROGRAMS = ach achpipe.bin achcat achbench achd achcop
 noinst_PROGRAMS = achtest ach-example
 else
 bin_PROGRAMS = ach achpipe.bin
@@ -32,6 +32,9 @@ libach_la_LDFLAGS = -version-info 2:0:1
 
 ach_SOURCES = src/achtool.c src/achutil.c
 ach_LDADD = libach.la
+
+
+achcop_SOURCES = src/achcop.c src/achutil.c
 
 achpipe_bin_SOURCES = src/achpipe-bin.c src/achutil.c
 achpipe_bin_LDADD = libach.la

@@ -65,9 +65,13 @@
 
 #include <string.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <syslog.h>
 
 #include "ach.h"
 #include "achutil.h"
+
+int ach_verbosity = 0;
 
 void ach_print_version( const char *name ) {
     printf( "%s " PACKAGE_VERSION "\n"
@@ -79,4 +83,64 @@ void ach_print_version( const char *name ) {
             "Written by Neil T. Dantam\n",
             name
         );
+}
+
+void ach_log( int level, const char fmt[], ...) {
+    int tty = isatty(STDERR_FILENO);
+    if( tty ) {
+        va_list argp;
+        va_start( argp, fmt );
+        vfprintf(stderr, fmt, argp );
+        fflush(stderr);
+        va_end( argp );
+    }
+    if( !tty || 1 == getppid() ) {
+        va_list argp;
+        va_start( argp, fmt );
+        vsyslog( level, fmt, argp);
+        va_end( argp );
+    }
+}
+
+sig_atomic_t ach_got_sigterm;
+sig_atomic_t ach_got_sigint;
+sig_atomic_t ach_got_sigchild;
+
+static void ach_sigflag(int sig, siginfo_t *siginfo, void *context) {
+    (void)siginfo; (void)context;
+    //ACH_LOG( LOG_DEBUG, "Received signal: %d\n", sig );
+    switch(sig) {
+    case SIGTERM:
+        ach_got_sigterm = 1;
+        break;
+    case SIGINT:
+        ach_got_sigint = 1;
+        break;
+    case SIGCHLD:
+        ach_got_sigchild++;
+        break;
+    default:
+        /* This is unsafe, but maybe worth it to debug */
+        ACH_LOG( LOG_WARNING, "Received unexpected signal: %s (%d)\n",
+                 strsignal(sig), sig );
+    }
+}
+
+void ach_install_sigflag( int sig ) {
+    struct sigaction act;
+    memset( &act, 0, sizeof(act) );
+
+    act.sa_sigaction = &ach_sigflag;
+
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
+       not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+
+    if (sigaction(sig, &act, NULL) < 0) {
+        ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+    }
+
+    /* if( SIG_ERR == signal(SIGPIPE, SIG_IGN) ) { */
+    /*     ACH_LOG( LOG_ERR, "Couldn't ignore SIGPIPE: %s", strerror(errno) ); */
+    /* } */
 }
