@@ -111,12 +111,12 @@ static void detach(void);
 static void redirect(const char *name, int oldfd, int newfd );
 static int open_file(const char *name, int options );
 static int open_out_file(const char *name );
-static void lock_pid(int fd, FILE **fp);
+static void lock_pid(int fd );
 
-static void write_pid(FILE *fp, pid_t pid);
+static void write_pid( int fd, pid_t pid);
 static void child_arg( const char ***args, const char *arg, size_t *n);
-static void run( FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
-static void start_child( FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
+static void run( int fd_pid, pid_t *pid, const char *file, const char ** args);
+static void start_child( int fd_pid, pid_t *pid, const char *file, const char ** args);
 static void waitloop( pid_t pid, int *status, int *signalled );
 
 
@@ -155,8 +155,6 @@ int main( int argc, char **argv ) {
         int fd_err;
         int fd_cop_pid;
         int fd_child_pid;
-        FILE *fp_cop_pid;
-        FILE *fp_child_pid;
     } cx = {0};
 
     /* Parse Options */
@@ -224,17 +222,17 @@ int main( int argc, char **argv ) {
     /* Open and Lock PID files */
     if( opt.restart ) {
         /* Lock both PID files */
-        lock_pid( cx.fd_cop_pid, &cx.fp_cop_pid );
-        lock_pid( cx.fd_child_pid, &cx.fp_child_pid );
+        lock_pid( cx.fd_cop_pid );
+        lock_pid( cx.fd_child_pid );
         /* Write parent pid */
-        write_pid( cx.fp_cop_pid, getpid() );
+        write_pid( cx.fd_cop_pid, getpid() );
     } else {
         /* Lock only 'child' PID file
          * Since we exec the 'child', it's really the same as the parent process
          */
-        lock_pid( cx.fd_child_pid, &cx.fp_child_pid );
+        lock_pid( cx.fd_child_pid );
         /* Write self pid */
-        write_pid( cx.fp_child_pid, getpid() );
+        write_pid( cx.fd_child_pid, getpid() );
     }
 
     /* Redirect */
@@ -246,7 +244,7 @@ int main( int argc, char **argv ) {
 
     /* Fork child */
     if( opt.restart ) {
-        run( cx.fp_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
+        run( cx.fd_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
     } else {
         /* No restarts, just exec the child */
         execvp( opt.child_args[0], (char *const*)opt.child_args );
@@ -346,43 +344,51 @@ static int open_file(const char *name, int opts) {
     return fd;
 }
 
-static void lock_pid( int fd, FILE **fp) {
-    *fp = NULL;
+static void lock_pid( int fd ) {
     if( -1 == fd ) return;
     /* lock */
     if( lockf(fd, F_TLOCK, 0) ) {
         ACH_DIE( "Could not lock pid file: %s\n", strerror(errno) );
     }
-    /* lock FILE */
-    *fp = fdopen(fd, "w");
-    if( NULL == *fp ) {
-        ACH_DIE( "Could not open FILE pointer for: %s\n", strerror(errno) );
-    }
 }
 
-static void write_pid( FILE *fp, pid_t pid ) {
-    if( NULL == fp ) return;
+static void write_pid( int fd, pid_t pid ) {
+    if( -1 == fd ) return;
+    /* truncate */
+    if( ftruncate(fd, 0) ) {
+        ACH_DIE( "Could truncate pid file: %s\n", strerror(errno) );
+    }
     /* seek */
-    if( fseek(fp, 0, SEEK_SET) ) {
+    if( lseek(fd, 0, SEEK_SET) ) {
         ACH_LOG( LOG_ERR, "Could seek pid file\n");
     }
-    /* print */
-    if( fprintf(fp, "%d", pid) < 0 ) {
-        ACH_LOG( LOG_ERR, "Could not write pid\n");
+    /* format */
+    char buf[32] = {0}; /* 64 bits should take 21 decimal digits, including '\0' */
+    int size = snprintf( buf, sizeof(buf), "%d", pid );
+    if( size < 0 ) {
+        ACH_LOG(LOG_ERR, "Error formatting pid\n");
+        return;
+    } else if ( size >= (int)sizeof(buf)) {
+        ACH_LOG(LOG_ERR, "PID buffer overflow\n"); /* What, you've got 128 bit PIDs? */
+        return;
     }
-    /* flush */
-    int r;
-    do{ r = fflush(fp); }
-    while( 0 != r && EINTR == errno );
-    if( r ) {
-        ACH_LOG( LOG_ERR,  "Could not flush pid file: %s\n", strerror(errno) );
-    }
+    /* write */
+    size_t n = 0;
+    while( n < (size_t)size ) {
+        ssize_t r = write( fd, buf+n, (size_t)size-n );
+        if( r > 0 ) n += (size_t)r;
+        else if (EINTR == errno) continue;
+        else {
+            ACH_LOG( LOG_ERR, "Could not write pid %d\n", pid );
+            return;
+        }
+    } while( n < (size_t)size);
 }
 
 
 /* Now it gets hairy... */
 
-static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
+static void run( int fd_pid, pid_t *pid_ptr, const char *file, const char **args) {
 
     /* Block Signals */
     /* The signal mask is inherited through fork and exec, so we need
@@ -393,7 +399,7 @@ static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **ar
 
     while(1) {
         /* start */
-        start_child(  fp_pid, pid_ptr, file, args );
+        start_child( fd_pid, pid_ptr, file, args );
         /* wait for something */
         int sig = wait_for_signal();
         int status, signal;
@@ -425,7 +431,7 @@ static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **ar
     }
 }
 
-static void start_child( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
+static void start_child( int fd_pid, pid_t *pid_ptr, const char *file, const char **args) {
     pid_t pid = fork();
 
     if( 0 == pid ) { /* child: exec */
@@ -436,8 +442,9 @@ static void start_child( FILE *fp_pid, pid_t *pid_ptr, const char *file, const c
         execvp( file, (char *const*)args );
         ACH_DIE( "Could not exec: %s\n", strerror(errno) );
     } else if ( pid > 0 ) { /* parent: record child */
+        ACH_LOG( LOG_DEBUG, "Child forked, pid %d\n", pid )
         *pid_ptr = pid;
-        write_pid( fp_pid, pid );
+        write_pid( fd_pid, pid );
     } else {
         /* TODO: handle EAGAIN */
         ACH_DIE( "Could not fork child: %s\n", strerror(errno) );
