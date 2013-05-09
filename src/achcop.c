@@ -124,7 +124,7 @@ static int achcop_signals[] = {SIGINT, SIGTERM, SIGCHLD, 0};
  * Returns the received signal*/
 static int wait_for_signal(void);
 
-#define FILE_CLOSE_NAME "-"
+#define FILE_NOP_NAME "-"
 
 #ifdef __GNUC__
 #define ACHD_ATTR_PRINTF(m,n) __attribute__((format(printf, m, n)))
@@ -181,8 +181,10 @@ int main( int argc, char **argv ) {
                   "Options:\n"
                   "  -P pid-file,      File for pid of cop process (only valid with -r)\n"
                   "  -p pid-file,      File for pid of child process\n"
-                  "  -o out-file,      Redirect stdout to this file ("FILE_CLOSE_NAME" to close)\n"
-                  "  -e err-file,      Redirect stderr to this file ("FILE_CLOSE_NAME" to close)\n"
+                  "  -o out-file,      Redirect stdout to this file\n"
+                  "                      ("FILE_NOP_NAME" keeps unchanged, otherwise close)\n"
+                  "  -e err-file,      Redirect stderr to this file\n"
+                  "                      ("FILE_NOP_NAME" keeps unchanged, otherwise close)\n"
                   "  -d,               Detach and run in background\n"
                   "  -r,               Restart failed children\n"
                   //"  -s,             Wait for SIGUSR1 to redirect output and restart child\n"
@@ -191,7 +193,7 @@ int main( int argc, char **argv ) {
                   "  -V,               Print program version\n"
                   "\n"
                   "Examples:\n"
-                  "  achcop -rd -P /var/run/myppid -p /var/run/mypid -o /var/log/myout -- my-daemon -xyz"
+                  "  achcop -rd -P /var/run/myd.ppid -p /var/run/myd.pid -e /var/log/myd.err -- my-daemon -xyz"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
@@ -264,13 +266,9 @@ static void child_arg(const char ***args, const char *arg, size_t *n) {
     (*args)[(*n)++] = arg;
 }
 
-
 static void redirect(const char *name, int oldfd, int newfd ) {
-    /* check no-op */
-    if( NULL == name ) return;
-
     /* check close */
-    if( 0 == strcmp(name, FILE_CLOSE_NAME) ) {
+    if( NULL == name ) {
         if( close(newfd) ) {
             ACH_LOG( LOG_ERR, "Couldn't close file descriptor: %s\n", strerror(errno) );
         }
@@ -278,7 +276,9 @@ static void redirect(const char *name, int oldfd, int newfd ) {
     }
 
     /* check no-op */
-    if( -1 == oldfd ) return;
+    if( 0 == strcmp(name, FILE_NOP_NAME) || -1 == oldfd ) {
+        return;
+    }
 
     /* dup */
     if( -1 == dup2(oldfd, newfd) ) {
@@ -290,7 +290,7 @@ static void redirect(const char *name, int oldfd, int newfd ) {
 }
 
 static int open_out_file(const char *name ) {
-    if( NULL == name || 0 == strcmp(FILE_CLOSE_NAME, name) ) {
+    if( NULL == name || 0 == strcmp(FILE_NOP_NAME, name) ) {
         return -1;
     }
     return open_file( name, O_APPEND );
