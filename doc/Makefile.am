@@ -23,8 +23,8 @@ man/achpipe.1: $(top_srcdir)/achpipe
 man/achlog.1: $(top_srcdir)/achlog
 	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
 
-man/achcop.1: $(top_srcdir)/achcop
-	$(HELP2MAN) -h -h -v -V --no-info -n "Watchdog for ach daemons" $(top_srcdir)/achcop -o $@
+man/achcop.1: $(top_srcdir)/src/achcop.c
+	$(HELP2MAN) -h -\? -v -V --no-info -n "Watchdog for ach daemons" $(top_builddir)/achcop$(EXEEXT) -o $@
 
 if HAVE_MAN2HTML
 .1.html:
