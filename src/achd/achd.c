@@ -299,6 +299,8 @@ void achd_posarg(int i, const char *arg) {
 *********/
 
 void achd_serve() {
+    openlog("achd-serve", LOG_PID, LOG_DAEMON);
+
     sighandler_install();
 
     /* Get peer */

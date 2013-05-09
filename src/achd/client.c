@@ -74,6 +74,9 @@ static int server_connect( struct achd_conn*);
 static void sleep_till( const struct timespec *t0, int32_t ns );
 
 void achd_client() {
+    /* open log */
+    openlog("achd-client", LOG_PID, LOG_DAEMON);
+
     /* First, do some checks to make sure we can process the request */
     struct achd_conn conn;
     memset(&conn, 0, sizeof(conn));
