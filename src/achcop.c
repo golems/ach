@@ -115,10 +115,11 @@ static void lock_pid(int fd );
 
 static void write_pid( int fd, pid_t pid);
 static void child_arg( const char ***args, const char *arg, size_t *n);
-static void run( int fd_pid, pid_t *pid, const char *file, const char ** args);
+static int run( int fd_pid, pid_t *pid, const char *file, const char ** args);
 static void start_child( int fd_pid, pid_t *pid, const char *file, const char ** args);
-static void waitloop( pid_t pid, int *status, int *signalled );
+static void waitloop( pid_t *pid, int *status, int *signalled );
 
+static int achcop_signals[] = {SIGINT, SIGTERM, SIGCHLD, 0};
 
 /* Wait for signal to be received, taking care to avoid races
  * Returns the received signal*/
@@ -244,14 +245,15 @@ int main( int argc, char **argv ) {
 
     /* Fork child */
     if( opt.restart ) {
-        run( cx.fd_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
+        return run( cx.fd_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
     } else {
         /* No restarts, just exec the child */
         execvp( opt.child_args[0], (char *const*)opt.child_args );
         ACH_DIE( "Could not exec: %s\n", strerror(errno) );
     }
 
-    return 0;
+    /* Should never get here */
+    return EXIT_FAILURE;
 }
 
 
@@ -360,7 +362,7 @@ static void write_pid( int fd, pid_t pid ) {
     }
     /* seek */
     if( lseek(fd, 0, SEEK_SET) ) {
-        ACH_LOG( LOG_ERR, "Could seek pid file\n");
+        ACH_LOG( LOG_ERR, "Could seek pid file: %s\n", strerror(errno) );
     }
     /* format */
     char buf[32] = {0}; /* 64 bits should take 21 decimal digits, including '\0' */
@@ -369,7 +371,7 @@ static void write_pid( int fd, pid_t pid ) {
         ACH_LOG(LOG_ERR, "Error formatting pid\n");
         return;
     } else if ( size >= (int)sizeof(buf)) {
-        ACH_LOG(LOG_ERR, "PID buffer overflow\n"); /* What, you've got 128 bit PIDs? */
+        ACH_LOG(LOG_ERR, "PID buffer overflow for pid=%d\n", pid); /* What, you've got 128 bit PIDs? */
         return;
     }
     /* write */
@@ -379,56 +381,75 @@ static void write_pid( int fd, pid_t pid ) {
         if( r > 0 ) n += (size_t)r;
         else if (EINTR == errno) continue;
         else {
-            ACH_LOG( LOG_ERR, "Could not write pid %d\n", pid );
+            ACH_LOG( LOG_ERR, "Could not write pid %d: %s\n", pid, strerror(errno) );
             return;
         }
     } while( n < (size_t)size);
+    ACH_LOG( LOG_DEBUG, "Write pid %d\n", pid );
 }
 
 
 /* Now it gets hairy... */
 
-static void run( int fd_pid, pid_t *pid_ptr, const char *file, const char **args) {
+static int run( int fd_pid, pid_t *pid_ptr, const char *file, const char **args) {
 
     /* Block Signals */
     /* The signal mask is inherited through fork and exec, so we need
      * to unblock these for the child later */
-    ach_sig_block_dummy( SIGTERM );
-    ach_sig_block_dummy( SIGINT );
-    ach_sig_block_dummy( SIGCHLD );
-
-    while(1) {
-        /* start */
-        start_child( fd_pid, pid_ptr, file, args );
-        /* wait for something */
-        int sig = wait_for_signal();
-        int status, signal;
-        /* do something */
-        switch( sig ) {
-        case SIGTERM:
-        case SIGINT:
-            ACH_LOG(LOG_DEBUG, "Killing child\n");
-            /* Kill Child */
-            if( kill(*pid_ptr, SIGTERM) ) ACH_DIE( "Couldn't kill child: %s\n", strerror(errno) );
-            /* Wait Child */
-            waitloop(*pid_ptr, &status, &signal);
-            /* TODO: timeout and SIGKILL child */
-            /* Exit */
-            exit(status);
-        case SIGCHLD:
-            /* Get child status and restart or exit */
-            waitloop(*pid_ptr, &status, &signal);
-            if( 0 == signal && EXIT_SUCCESS == status ) {
-                ACH_LOG(LOG_DEBUG, "Child returned success, exiting\n");
-                exit(EXIT_SUCCESS);
-            }
-            ACH_LOG(LOG_DEBUG, "Restarting child\n");
-            /* else restart */
-            break;
-        default:
-            ACH_DIE("Unexpected signal: %d\n", sig);
+    { size_t i;
+        for( i = 0; achcop_signals[i]; i ++ ) {
+            ach_sig_block_dummy( achcop_signals[i] );
         }
     }
+
+    int do_start = 1, done = 0, exit_status = EXIT_FAILURE;
+    while( !done ) {
+        /* start */
+        if( do_start ) {
+            start_child( fd_pid, pid_ptr, file, args );
+            do_start = 0;
+        }
+        /* wait for signal */
+        int sig = wait_for_signal();
+        int status=0, signal=0;
+        pid_t wpid;
+        /* handle signal */
+        switch(sig) {
+        case SIGTERM:
+        case SIGINT: /* We got a sigterm/sigint */
+            /* Kill Child */
+            ACH_LOG(LOG_DEBUG, "Killing child\n");
+            if( kill(*pid_ptr, SIGTERM) ) ACH_DIE( "Couldn't kill child: %s\n", strerror(errno) );
+            /* Wait Child */
+            do { waitloop(&wpid, &status, &signal);
+            } while (wpid != *pid_ptr);
+            /* TODO: timeout and SIGKILL child */
+            /* Exit */
+            exit_status = status;
+            done = 1;
+            break;
+        case SIGCHLD: /* child died */
+            /* Get child status and restart or exit */
+            do { waitloop(&wpid, &status, &signal);
+            } while (wpid != *pid_ptr);
+            if( 0 == signal && EXIT_SUCCESS == status ) {
+                ACH_LOG(LOG_DEBUG, "Child returned success, exiting\n");
+                exit_status = status;
+                done = 1;
+            } else {
+                ACH_LOG(LOG_DEBUG, "Restarting child\n");
+                /* else restart */
+                do_start = 1;
+            }
+            break;
+        default:
+            /* continue and sigwait() */
+            ACH_LOG( LOG_WARNING, "Spurious signal received: %s (%d)\n",
+                     strsignal(sig), sig );
+        }
+    }
+    /* Done */
+    return exit_status;
 }
 
 static void start_child( int fd_pid, pid_t *pid_ptr, const char *file, const char **args) {
@@ -436,9 +457,11 @@ static void start_child( int fd_pid, pid_t *pid_ptr, const char *file, const cha
 
     if( 0 == pid ) { /* child: exec */
         /* Unblock signals for the child */
-        ach_sig_dfl_unblock(SIGTERM);
-        ach_sig_dfl_unblock(SIGINT);
-        ach_sig_dfl_unblock(SIGCHLD);
+        { size_t i;
+            for( i = 0; achcop_signals[i]; i ++ ) {
+                ach_sig_dfl_unblock( achcop_signals[i] );
+            }
+        }
         execvp( file, (char *const*)args );
         ACH_DIE( "Could not exec: %s\n", strerror(errno) );
     } else if ( pid > 0 ) { /* parent: record child */
@@ -451,30 +474,14 @@ static void start_child( int fd_pid, pid_t *pid_ptr, const char *file, const cha
     }
 }
 
-static void waitloop( pid_t pid, int *exit_status, int *signal ) {
-    assert( pid > 0 );
+static void waitloop( pid_t *pid, int *exit_status, int *signal ) {
+    *pid = 0;
     *exit_status = 0;
     *signal = 0;
-    while(1)
-    {
+    while(1) {
         int status;
-        pid_t wpid = wait( &status );
-        if( wpid == pid ) {
-            /* Child did something */
-            if( WIFEXITED(status) ) {
-                ACH_LOG(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
-                *exit_status = WEXITSTATUS(status);
-                return;
-            } else if ( WIFSIGNALED(status) ) {
-                ACH_LOG(LOG_DEBUG, "child signalled with %d\n", WTERMSIG(status));
-                *signal = WTERMSIG(status);
-                return;
-            } else {
-                ACH_LOG(LOG_WARNING, "Unexpected wait result %d\n", status);
-                /* I guess we keep waiting then */
-            }
-        } else if ( wpid < 0 ) {
-            /* Wait failed */
+        *pid = wait( &status );
+        if( *pid < 0 ) { /* Wait failed */
             if( EINTR == errno ) {
                 ACH_LOG(LOG_DEBUG, "wait interrupted\n");
             } else if (ECHILD == errno) {
@@ -482,9 +489,20 @@ static void waitloop( pid_t pid, int *exit_status, int *signal ) {
             } else { /* something bad */
                 ACH_DIE( "Couldn't wait for child: %s\n", strerror(errno));
             }
-        } else {
-            /* Wrong child somehow */
-            ACH_LOG( LOG_ERR, "Got unexpected PID, child %d, wait %d\n", pid, wpid);
+        } else { /* Child did something */
+            if( WIFEXITED(status) ) { /* child exited */
+                ACH_LOG(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
+                *exit_status = WEXITSTATUS(status);
+                return;
+            } else if ( WIFSIGNALED(status) ) { /* child signalled */
+                *signal = WTERMSIG(status);
+                ACH_LOG( LOG_DEBUG, "child signalled: %s (%d)\n",
+                         strsignal(*signal), *signal );
+                return;
+            } else { /* something weird happened */
+                ACH_LOG(LOG_WARNING, "Unexpected wait result %d\n", status);
+                /* I guess we keep waiting then */
+            }
         }
     }
 }
@@ -494,9 +512,13 @@ static int wait_for_signal() {
 
     sigset_t waitset;
     if( sigemptyset(&waitset) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
-    if( sigaddset(&waitset, SIGCHLD) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
-    if( sigaddset(&waitset, SIGTERM) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
-    if( sigaddset(&waitset, SIGINT) ) ACH_DIE("sigaddset failed: %s\n", strerror(errno));
+    { size_t i;
+        for( i = 0; achcop_signals[i]; i ++ ) {
+            if( sigaddset(&waitset, achcop_signals[i]) ) {
+                ACH_DIE("sigaddset failed: %s\n", strerror(errno));
+            }
+        }
+    }
 
     int sig;
     if( sigwait(&waitset, &sig) ) {
