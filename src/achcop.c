@@ -95,26 +95,16 @@
  * If sigterm received, signal child and wait for child to exit
  */
 
-enum wait_action {
-    WAIT_RESTART,   ///< restart the child
-    WAIT_SUCCESS,   ///< end successfully
-    WAIT_FAIL,      ///< end with failure
-    WAIT_TERM,      ///< terminate the child
-};
-
 
 /* CLI options */
-
 static void detach(void);
 static void redirect(int fd, const char *file);
 static void lock_pid(const char *name, int *fd, FILE **fp);
 static void write_pid(FILE *fp, pid_t pid);
 static void child_arg( const char ***args, const char *arg, size_t *n);
-static void run(FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
-
+static void run( FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
+static void start_child( FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
 static void waitloop( pid_t pid, int *status, int *signalled );
-
-static void start_child(FILE *fp_pid, pid_t *pid, const char *file, const char ** args);
 
 
 /* Wait for signal to be received, taking care to avoid races
@@ -135,6 +125,7 @@ sig_atomic_t achcop_sigchild_received = 0;
 
 
 int main( int argc, char **argv ) {
+    /* Command line arguments */
     static struct {
         const char *file_cop_pid;
         const char *file_child_pid;
@@ -143,9 +134,11 @@ int main( int argc, char **argv ) {
         const char **child_args;
         size_t n_child_args;
         int detach;
+        int restart;
     } opt = {0};
+
+    /* Global state */
     static struct {
-        pid_t pid_cop;
         pid_t pid_child;
         int fd_cop_pid;
         int fd_child_pid;
@@ -156,13 +149,14 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c;
     opterr = 0;
-    while( (c = getopt( argc, argv, "p:p:o:e:vdhH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "P:p:o:e:rvdhH?V")) != -1 ) {
         switch(c) {
         case 'P': opt.file_cop_pid = optarg; break;
         case 'p': opt.file_child_pid = optarg; break;
         case 'o': opt.file_stdout = optarg; break;
         case 'e': opt.file_stderr = optarg; break;
         case 'd': opt.detach = 1; break;
+        case 'r': opt.restart = 1; break;
         case 'V':   /* version     */
             ach_print_version("achcop");
             exit(EXIT_SUCCESS);
@@ -174,9 +168,10 @@ int main( int argc, char **argv ) {
                   "Watchdog to run and restart ach child processes\n"
                   "\n"
                   "Options:\n"
-                  "  -P,                       File for pid of cop process\n"
+                  "  -P,                       File for pid of cop process (only valid with -r)\n"
                   "  -p,                       File for pid of child process\n"
                   "  -d,                       Detach and run in background\n"
+                  "  -r,                       Restart failed children\n"
                   //"  -s,                       Wait for SIGUSR1 to redirect output and restart child\n"
                   "  -o,                       Redirect stdout to this file\n"
                   "  -e,                       Redirect stderr to this file\n"
@@ -207,11 +202,20 @@ int main( int argc, char **argv ) {
     if( opt.detach ) detach();
 
     /* Open and Lock PID files */
-    lock_pid( opt.file_cop_pid, &cx.fd_cop_pid, &cx.fp_cop_pid );
-    lock_pid( opt.file_child_pid, &cx.fd_child_pid, &cx.fp_child_pid );
-
-    /* Write parent pid */
-    write_pid( cx.fp_cop_pid, cx.pid_cop );
+    if( opt.restart ) {
+        /* Lock both PID files */
+        lock_pid( opt.file_cop_pid, &cx.fd_cop_pid, &cx.fp_cop_pid );
+        lock_pid( opt.file_child_pid, &cx.fd_child_pid, &cx.fp_child_pid );
+        /* Write parent pid */
+        write_pid( cx.fp_cop_pid, getpid() );
+    } else {
+        /* Lock only 'child' PID file
+         * Since we exec the 'child', it's really the same as the parent process
+         */
+        lock_pid( opt.file_child_pid, &cx.fd_child_pid, &cx.fp_child_pid );
+        /* Write self pid */
+        write_pid( cx.fp_child_pid, getpid() );
+    }
 
     /* Redirect */
     redirect(STDOUT_FILENO, opt.file_stdout);
@@ -226,7 +230,13 @@ int main( int argc, char **argv ) {
     ach_install_sigflag( SIGCHLD );
 
     /* Fork child */
-    run( cx.fp_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
+    if( opt.restart ) {
+        run( cx.fp_child_pid, &cx.pid_child, opt.child_args[0], opt.child_args );
+    } else {
+        /* No restarts, just exec the child */
+        execvp( opt.child_args[0], (char *const*)opt.child_args );
+        ACH_DIE( "Could not exec: %s\n", strerror(errno) );
+    }
 
     return 0;
 }
@@ -320,7 +330,7 @@ static void write_pid( FILE *fp, pid_t pid ) {
         ACH_LOG( LOG_ERR, "Could seek pid file\n");
     }
     /* print */
-    if( 0 < fprintf(fp, "%d", pid) ) {
+    if( fprintf(fp, "%d", pid) < 0 ) {
         ACH_LOG( LOG_ERR, "Could not write pid\n");
     }
     /* flush */
@@ -335,10 +345,10 @@ static void write_pid( FILE *fp, pid_t pid ) {
 
 /* Now it gets hairy... */
 
-static void run(FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
+static void run( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
     while(1) {
         /* start */
-        start_child( fp_pid, pid_ptr, file, args );
+        start_child(  fp_pid, pid_ptr, file, args );
         /* wait for something */
         int sig = wait_for_signal();
         int status, signal;
@@ -370,8 +380,9 @@ static void run(FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **arg
     }
 }
 
-static void start_child(FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
-    pid_t pid = fork();
+static void start_child( FILE *fp_pid, pid_t *pid_ptr, const char *file, const char **args) {
+
+    pid_t pid = fork(); /* if not restarting, just exec away */
 
     if( 0 == pid ) { /* child: exec */
         execvp( file, (char *const*)args );
