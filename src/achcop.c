@@ -107,7 +107,6 @@
 
 
 /* CLI options */
-static void detach(void);
 static void redirect(const char *name, int oldfd, int newfd );
 static int open_file(const char *name, int options );
 static int open_out_file(const char *name );
@@ -218,7 +217,10 @@ int main( int argc, char **argv ) {
     cx.fd_err = open_out_file( opt.file_stderr );
 
     /* Detach */
-    if( opt.detach ) detach();
+    if( opt.detach ) {
+        openlog("achcop", LOG_PID, LOG_DAEMON);
+        ach_detach();
+    }
 
     /* Open and Lock PID files */
     if( opt.restart ) {
@@ -262,47 +264,6 @@ static void child_arg(const char ***args, const char *arg, size_t *n) {
     (*args)[(*n)++] = arg;
 }
 
-static void detach(void) {
-    /* open syslog */
-    openlog("achcop", LOG_PID, LOG_DAEMON);
-
-    /* fork */
-    pid_t pid1 = fork();
-    if( pid1 < 0 ) {
-        ACH_DIE( "First fork failed: %s\n", strerror(errno) );
-    } else if ( pid1 ) { /* parent */
-        exit(EXIT_SUCCESS);
-    } /* else child */
-
-    /* set session id to lose our controlling terminal */
-    if( setsid() < 0 ) {
-        ACH_LOG( LOG_ERR, "Couldn't set sid: %s\n", strerror(errno) );
-    }
-
-    /* refork to prevent future controlling ttys */
-    pid_t pid2 = fork();
-    if( pid2 < 0 ) {
-        ACH_LOG( LOG_ERR, "Second fork failed: %s\n", strerror(errno) );
-        /* Don't give up */
-    } else if ( pid2 ) { /* parent */
-        exit(EXIT_SUCCESS);
-    } /* else child */
-
-    /* ignore sighup */
-    if( SIG_ERR == signal(SIGHUP, SIG_IGN) ) {
-        ACH_LOG( LOG_ERR, "Couldn't ignore SIGHUP: %s", strerror(errno) );
-    }
-
-    /* cd to root */
-    if( chdir("/") ) {
-        ACH_LOG( LOG_ERR, "Couldn't cd to /: %s", strerror(errno) );
-    }
-
-    /* close stdin */
-    if( close(STDIN_FILENO) ) {
-        ACH_LOG( LOG_ERR, "Couldn't close stdin: %s", strerror(errno) );
-    }
-}
 
 static void redirect(const char *name, int oldfd, int newfd ) {
     /* check no-op */

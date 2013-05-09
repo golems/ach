@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
                 cx.cl_opts.remote_chan_name = strdup(optarg);
                 break;
             case 'd':
-                cx.daemonize = 1;
+                cx.detach = 1;
                 break;
             case 'p':
                 cx.port = atoi(optarg);
@@ -153,7 +153,6 @@ int main(int argc, char **argv) {
                       "Daemon process to forward ach channels over network and dump to files\n"
                       "\n"
                       "Options:\n"
-                      "  -d,                          daemonize (client-mode only)\n"
                       "  -p PORT,                     port\n"
                       "  -f FILE,                     TODO: lock FILE and write pid\n"
                       "  -t (tcp|udp),                transport (default tcp)\n"

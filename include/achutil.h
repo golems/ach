@@ -71,4 +71,6 @@ void ach_sig_block_dummy( int sig );
 /* Restore default handler and unblock the signal */
 void ach_sig_dfl_unblock( int sig );
 
+void ach_detach( void );
+
 #endif //ACHUTIL_H

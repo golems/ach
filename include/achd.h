@@ -159,9 +159,9 @@ struct achd_cx {
     struct achd_headers cl_opts; /** Options from command line */
     int mode;
     int verbosity;
-    int daemonize;
     int port;
     int reconnect;
+    int detach;
     const char *pidfile;
     sig_atomic_t sig_received;
     void (*error)(enum ach_status code, const char fmt[], ...);

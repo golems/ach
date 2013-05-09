@@ -68,12 +68,10 @@
 * Client *
 *********/
 
-static void client_refork(void);
 static int socket_connect(void);
 static int server_connect( struct achd_conn*);
-static void daemonize(void);
+
 static void sleep_till( const struct timespec *t0, int32_t ns );
-static pid_t wait_for_child( pid_t pid );
 
 void achd_client() {
     /* First, do some checks to make sure we can process the request */
@@ -98,15 +96,19 @@ void achd_client() {
 
     sighandler_install();
 
-    /* maybe daemonize */
-    if( cx.daemonize ) {
-        daemonize();
+    /* maybe detach */
+    if( cx.detach ) {
+        ach_detach();
+        /* close stdout/stderr/stderr */
+        if( close(STDOUT_FILENO) ) {
+            achd_log( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
+        }
+        if( close(STDERR_FILENO) ) {
+            achd_log( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
+        }
     }
 
-    /* fork a worker if we are to retry connectons */
-    client_refork();
-
-    /* Finally, start the show, possibly in a child process */
+    /* Start the show */
 
     /* Open initial connection */
     int fd = server_connect( &conn );
@@ -291,151 +293,5 @@ static void sleep_till( const struct timespec *t0, int32_t ns ) {
             break;
         }
         assert(0);
-    }
-}
-
-/* Wait till child returns or signal received */
-static pid_t wait_for_child( pid_t pid ) {
-    assert( pid > 0 );
-    while(1)
-    {
-        int status;
-        achd_log(LOG_DEBUG, "now waiting: %d...\n", pid);
-        pid_t wpid = wait( &status );
-        achd_log(LOG_DEBUG, "wait(): %d, errno:  %s\n", wpid, strerror(errno));
-        if( wpid == pid ) {
-            achd_log(LOG_DEBUG, "WIFEXITED: %d, WIFSIGNALED: %d, WIFSTOPPED: %d\n",
-                     WIFEXITED(status),
-                     WIFSIGNALED(status),
-                     WIFSTOPPED(status));
-            /* Child did something */
-            if( WIFEXITED(status) ) {
-                achd_log(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
-                return 0;
-            } else if ( WIFSIGNALED(status) ) {
-                achd_log(LOG_DEBUG, "child signalled with %d\n", WTERMSIG(status));
-                return 0;
-            } else {
-                achd_log(LOG_WARNING, "Unexpected wait result %d\n", status);
-                continue; /* I guess we keep waiting then */
-            }
-        } else if ( wpid < 0 ) {
-            /* Wait failed */
-            if (cx.sig_received ) {
-                achd_log(LOG_DEBUG, "signal during wait\n");
-                return pid; /* process still running */
-            } else if( EINTR == errno ) {
-                achd_log(LOG_DEBUG, "wait interrupted\n");
-                continue; /* interrupted */
-            } else if (ECHILD == errno) {
-                achd_log(LOG_WARNING, "unexpected ECHILD\n");
-                return 0; /* child somehow died */
-            } else { /* something bad */
-                cx.error(ACH_FAILED_SYSCALL, "Couldn't wait for child\n", strerror(errno));
-            }
-        } else {
-            /* Wrong child somehow */
-            cx.error(ACH_BUG, "Got unexpected PID, child %d, wait %d\n", pid, wpid);
-        }
-        assert(0);
-    }
-}
-
-static void client_refork() {
-    /* TODO: When we refork the child, we "forget" our position in
-     * the channel.  This means some frames may be missed or resent.
-     * It would be better to have the child attempt to reconnect if
-     * the connection gets broken.
-     */
-    if( !cx.reconnect ) return;
-
-    pid_t pid = 0;
-
-    /* Loop to fork children when the die */
-    while( ! cx.sig_received ) {
-        assert( 0 == pid );
-        struct timespec t;
-        clock_gettime( CLOCK_MONOTONIC, &t );
-        pid = fork();
-        if( 0 == pid ) { /* Child case */
-            return;
-        } else if ( pid > 0 ) {
-            achd_log( LOG_DEBUG, "Forked child %d\n", pid );
-            /* Parent Case */
-            pid = wait_for_child(pid);
-            if( 0 == pid && !cx.sig_received ) {
-                achd_log( LOG_WARNING, "Child died, reforking\n" );
-            }
-            /* Maybe sleep to prevent forking too fast */
-            sleep_till(&t, ACHD_REFORK_NS);
-        } else {
-            assert( pid < 0 );
-            /* Error Case */
-            /* TODO: retry on EAGAIN */
-            cx.error(ACH_FAILED_SYSCALL, "Couldn't fork: %s\n", strerror(errno));
-        }
-    }
-
-    /* still in parent */
-    if( pid > 0 ) {
-        /* kill child if running */
-        if( kill( pid, SIGTERM ) ) {
-            achd_log( LOG_ERR, "Couldn't kill child: %s\n", strerror(errno) );
-        }
-    }
-
-    exit(EXIT_SUCCESS);
-}
-
-
-static void daemonize() {
-    /* fork */
-    pid_t grandparent = getpid();
-    pid_t pid1 = fork();
-    if( pid1 < 0 ) {
-        achd_log( LOG_CRIT, "First fork failed: %s\n", strerror(errno) );
-        exit(EXIT_FAILURE);
-    } else if ( pid1 ) { /* parent */
-        exit(EXIT_SUCCESS);
-    } /* else child */
-    pid1 = getppid();
-
-    /* set session id to lose our controlling terminal */
-    if( setsid() < 0 ) {
-        achd_log( LOG_WARNING, "Couldn't set sid: %s\n", strerror(errno) );
-    }
-
-    /* refork to prevent future controlling ttys */
-    pid_t parent = getpid();
-    pid_t pid2 = fork();
-    if( pid2 < 0 ) {
-        achd_log( LOG_ERR, "Second fork failed: %s\n", strerror(errno) );
-        /* Don't give up */
-    } else if ( pid2 ) { /* parent */
-        exit(EXIT_SUCCESS);
-    } /* else child */
-
-    /* ignore sighup */
-    if( SIG_ERR == signal(SIGHUP, SIG_IGN) ) {
-        achd_log( LOG_ERR, "Couldn't ignore SIGHUP: %s", strerror(errno) );
-    }
-
-    /* cd to root */
-    if( chdir("/") ) {
-        achd_log( LOG_ERR, "Couldn't cd to /: %s", strerror(errno) );
-    }
-
-    /* file mask */
-    umask(0);
-
-    /* close stdin/stdout/stderr */
-    if( close(STDIN_FILENO) ) {
-        achd_log( LOG_ERR, "Couldn't close stdin: %s", strerror(errno) );
-    }
-    if( close(STDOUT_FILENO) ) {
-        achd_log( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
-    }
-    if( close(STDERR_FILENO) ) {
-        achd_log( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
     }
 }
