@@ -150,6 +150,7 @@ static void child_arg( const char ***args, const char *arg, size_t *n);
 static int run( int restart, int fd_pid, const char *file, const char ** args);
 static pid_t start_child( int fd_pid, const char *file, const char ** args);
 static void exec_child( pid_t pid_notify, const char *file, const char ** args);
+static void terminate_child( pid_t pid );
 static void waitloop( pid_t *pid, int *status, int *signalled );
 
 /// signals for a running achcop
@@ -160,7 +161,7 @@ static int achcop_signals[] = {
     ACH_SIG_OK,     ///< child successfully started,
     ACH_SIG_FAIL,   ///< child failed to start,
     SIGALRM,        ///< Child timeout waiting for success
-    //TODO: SIGHUP,    ///< terminate child and restart
+    SIGHUP,         ///< terminate child and restart
     0};
 
 #define FILE_NOP_NAME "-"
@@ -374,6 +375,14 @@ static void write_pid( int fd, pid_t pid ) {
 
 /* Now it gets hairy... */
 
+enum run_state {
+    RUN_STATE_DONE,      /// end run loop
+    RUN_STATE_RUN,       /// normal state
+    RUN_STATE_START,     /// start the child
+    RUN_STATE_RESTART,   /// when child exits, restart it
+    RUN_STATE_TERMINATE  /// when child exits, done
+};
+
 static int run( int restart, int fd_pid, const char *file, const char **args) {
     /* Block Signals */
     /* The signal mask is inherited through fork and exec, so we need
@@ -382,20 +391,20 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
 
     ACH_LOG( LOG_DEBUG, "starting run loop as pid %d\n", getpid() );
 
-    int done = 0;      /* end of run */
     int exit_status = EXIT_FAILURE;  /* exit status for this process */
     int run_success = 0; /* has the child started successfully once? */
-    int do_start = 0;  /* start child on this iteration */
 
     pid_t child_pid = start_child( fd_pid, file, args );
     /* If child lasts this long, assume it's working */
     alarm( ACH_CHILD_TIMEOUT_SEC );
 
-    while( !done ) {
+    enum run_state state = RUN_STATE_RUN;
+
+    while( RUN_STATE_DONE != state ) {
         /* start */
-        if( do_start ) {
+        if( RUN_STATE_START == state ) {
             child_pid = start_child( fd_pid, file, args );
-            do_start = 0;
+            state = RUN_STATE_RUN;
         }
         /* wait for signal */
         int sig = ach_sig_wait( achcop_signals );
@@ -407,35 +416,54 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
         case SIGINT: /* We got a sigterm/sigint */
             /* Kill Child */
             ACH_LOG(LOG_DEBUG, "Killing child\n");
-            if( kill(child_pid, SIGTERM) ) ACH_DIE( "Couldn't kill child: %s\n", strerror(errno) );
-            /* Wait Child */
-            do { waitloop(&wpid, &status, &signal);
-            } while (wpid != child_pid);
-            /* TODO: timeout and SIGKILL child */
+            terminate_child( child_pid );
             /* Exit */
             exit_status = status;
-            done = 1;
+            state = RUN_STATE_TERMINATE;
             break;
         case SIGCHLD: /* child died */
             /* Get child status and restart or exit */
             do { waitloop(&wpid, &status, &signal);
             } while (wpid != child_pid);
-            if( 0 == signal && EXIT_SUCCESS == status ) {
-                ACH_LOG(LOG_DEBUG, "Child `%s' returned success, exiting\n", file);
-                exit_status = status;
-                done = 1;
-            } else if (!run_success) {
-                /* Child died to quickly first time, give up */
-                ACH_LOG(LOG_ERR, "Child `%s' died to fast, exiting\n", file);
-                exit_status = (EXIT_SUCCESS != status) ? status : EXIT_FAILURE;
-                done = 1;
-            } else {
-                /* else maybe restart */
-                ACH_LOG(LOG_DEBUG, "Child `%s' failed, restart: %d\n", file, restart);
-                do_start = 1;
-                exit_status = status;
-                done = !restart;
+            ACH_LOG( LOG_DEBUG, "Child exited, signal: %d, status: %d\n", signal, status );
+            /* Decide whether to restart the child */
+            switch(state) {
+            case RUN_STATE_RUN:
+                if( 0 == signal && EXIT_SUCCESS == status ) {
+                    ACH_LOG(LOG_DEBUG, "Child `%s' returned success, exiting\n", file);
+                    exit_status = status;
+                    state = RUN_STATE_DONE;
+                } else if (!run_success) { /* child never ran successfully */
+                    /* Child died to quickly first time, give up */
+                    ACH_LOG(LOG_ERR, "Child `%s' died to fast, exiting\n", file);
+                    exit_status = signal ? EXIT_FAILURE : status;
+                    state = RUN_STATE_DONE;
+                } else {
+                    /* else maybe restart */
+                    ACH_LOG(LOG_DEBUG, "Child `%s' failed, restart: %d\n", file, restart);
+                    exit_status = status;
+                    state = restart ? RUN_STATE_START : RUN_STATE_DONE;
+                }
+                break;
+            case RUN_STATE_RESTART:
+                ACH_LOG(LOG_DEBUG, "Now restart child\n");
+                state = RUN_STATE_START;
+                break;
+            case RUN_STATE_TERMINATE:
+                exit_status = signal ? EXIT_FAILURE : status;
+                ACH_LOG(LOG_DEBUG, "Now exit: %d\n", exit_status);
+                state = RUN_STATE_DONE;
+                break;
+            case RUN_STATE_DONE:
+            case RUN_STATE_START:
+                ACH_DIE( "Unexpected state when SIGCHLD received\n");
             }
+            break;
+        case SIGHUP: /* someone told us to restart the child */
+            ACH_LOG(LOG_DEBUG, "Restarting child on SIGHUP\n");
+            terminate_child( child_pid );
+            state = RUN_STATE_RESTART;
+            /* continue under SIGCHLD */
             break;
         case SIGALRM:
         case ACH_SIG_OK: /* child started ok, keep on waiting */
@@ -450,7 +478,7 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
             ACH_LOG( LOG_ERR, "Child failed with signal %s (%d), exiting\n",
                      strsignal(sig), sig );
             exit_status = EXIT_FAILURE;
-            done = 1;
+            state = RUN_STATE_DONE;
             break;
         default:
             /* continue and sigwait() */
@@ -530,5 +558,11 @@ static void waitloop( pid_t *pid, int *exit_status, int *signal ) {
                 /* I guess we keep waiting then */
             }
         }
+    }
+}
+
+static void terminate_child( pid_t pid ) {
+    if( kill(pid, SIGTERM) ) {
+        ACH_DIE( "Couldn't kill child: %s\n", strerror(errno) );
     }
 }
