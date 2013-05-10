@@ -7,7 +7,7 @@ SUBDIRS = . doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-TESTS = achtest achtooltest
+TESTS = achtest achtooltest test-achcop
 
 include_HEADERS = include/ach.h
 noinst_HEADERS = include/achutil.h include/achd.h

@@ -63,14 +63,32 @@ void ach_log( int level, const char fmt[], ...)          ACH_ATTR_PRINTF(2,3);
 #define ACH_LOG( priority, ... ) \
     if((priority) <= LOG_NOTICE + ach_verbosity) ach_log((priority), __VA_ARGS__);
 
-#define ACH_DIE(...) {ACH_LOG(LOG_ERR,__VA_ARGS__); exit(EXIT_FAILURE); }
+extern pid_t ach_pid_notify; /// tell this pid if we die or are ok
+void ach_notify(int sig);    /// tell pid something
+void ach_die(void);
+#define ACH_DIE(...) {ACH_LOG(LOG_ERR,__VA_ARGS__); ach_die(); }
+
+
+/*-- Signal Handling Helpers --*/
+void ach_sig_mask( const int *sig, sigset_t *mask );
+
+int ach_sig_wait( const int *sig );
 
 /* Block Signal, then install dummy signal handler. */
-void ach_sig_block_dummy( int sig );
+void ach_sig_block_dummy( const int *sig );
 
 /* Restore default handler and unblock the signal */
-void ach_sig_dfl_unblock( int sig );
+void ach_sig_dfl_unblock( const int *sig );
 
-void ach_detach( void );
+pid_t ach_detach( unsigned timeout );
+
+/// Wait this long for notification from child
+#define ACH_PARENT_TIMEOUT_SEC 3
+
+/// If child exits with failure before this timeout, give up
+#define ACH_CHILD_TIMEOUT_SEC 1
+
+#define ACH_SIG_OK   SIGUSR1
+#define ACH_SIG_FAIL SIGUSR2
 
 #endif //ACHUTIL_H

@@ -101,13 +101,17 @@ void achd_client() {
 
     /* maybe detach */
     if( cx.detach ) {
-        ach_detach();
+        pid_t gp = ach_detach( ACH_PARENT_TIMEOUT_SEC );
         /* close stdout/stderr/stderr */
         if( close(STDOUT_FILENO) ) {
             achd_log( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
         }
         if( close(STDERR_FILENO) ) {
             achd_log( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
+        }
+        /* let GP know we're ok */
+        if( kill( gp, SIGUSR1 ) ) {
+            achd_log( LOG_ERR, "Couldn't signal grandparent with status: %s\n", strerror(errno) );
         }
     }
 

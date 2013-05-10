@@ -106,49 +106,113 @@ static void ach_sigdummy(int sig) {
     (void)sig;
 }
 
-void ach_sig_block_dummy( int sig ) {
+
+void ach_sig_mask( const int *sig, sigset_t *mask ) {
+    if( sigemptyset(mask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
+    size_t i;
+    for( i = 0; sig[i]; i ++ ) {
+        if( sigaddset(mask, sig[i]) ) {
+            ACH_DIE("sigaddset of %s (%d) failed: %s\n",
+                    strsignal(sig[i]), sig[i], strerror(errno) );
+        }
+    }
+}
+
+
+int ach_sig_wait( const int *sigs ) {
+    ACH_LOG( LOG_DEBUG, "pid %d waiting for signal\n", getpid() );
+
+    sigset_t waitset;
+    ach_sig_mask( sigs, &waitset );
+
+    int sig;
+    if( sigwait(&waitset, &sig) ) {
+        ACH_DIE("sigwait failed: %s\n", strerror(errno));
+    }
+
+    ACH_LOG( LOG_DEBUG, "pid %d signalled: '%s' %d\n",
+             getpid(), strsignal(sig), sig );
+
+    return sig;
+}
+
+void ach_sig_block_dummy( const int *sig ) {
     /* Block Signal */
-    sigset_t blockmask;
-    if( sigemptyset(&blockmask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
-    if( sigaddset(&blockmask, sig) ) ACH_DIE("sigaddset(%d) failed: %s\n", sig, strerror(errno));
-    if( sigprocmask(SIG_BLOCK, &blockmask, NULL) ) {
-        ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
+    {
+        sigset_t blockmask;
+        ach_sig_mask( sig, &blockmask );
+        if( sigprocmask(SIG_BLOCK, &blockmask, NULL) ) {
+            ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
+        }
     }
-
     /* Install Dummy Handler */
-    struct sigaction act;
-    memset( &act, 0, sizeof(act) );
-
-    act.sa_handler = &ach_sigdummy;
-
-    if (sigaction(sig, &act, NULL) < 0) {
-        ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+    size_t i;
+    for( i = 0; sig[i]; i ++ ) {
+        struct sigaction act;
+        memset( &act, 0, sizeof(act) );
+        act.sa_handler = &ach_sigdummy;
+        if (sigaction(sig[i], &act, NULL) < 0) {
+            ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+        }
     }
 }
 
-void ach_sig_dfl_unblock( int sig ) {
-    /* Default Disposition */
-    if( SIG_ERR == signal(sig, SIG_DFL) ) {
-        ACH_LOG( LOG_ERR, "Couldn't set default signal disposition: %s", strerror(errno) );
+void ach_sig_dfl_unblock( const int *sig ) {
+    size_t i;
+    for( i = 0; sig[i]; i ++ ) {
+        /* Default Disposition */
+        if( SIG_ERR == signal(sig[i], SIG_DFL) ) {
+            ACH_LOG( LOG_ERR, "Couldn't set default signal disposition for %s (%d): %s",
+                     strsignal(sig[i]), sig[i], strerror(errno) );
+        }
     }
-
-    /* Unlock Signal */
-    sigset_t blockmask;
-    if( sigemptyset(&blockmask) ) ACH_DIE("sigemptyset failed: %s\n", strerror(errno));
-    if( sigaddset(&blockmask, sig) ) ACH_DIE("sigaddset(%d) failed: %s\n", sig, strerror(errno));
-    if( sigprocmask(SIG_UNBLOCK, &blockmask, NULL) ) {
-        ACH_LOG( LOG_ERR, "sigprocmask failed: %s\n", strerror(errno) );
+    /* Unblock Signal */
+    {
+        sigset_t blockmask;
+        ach_sig_mask( sig, &blockmask );
+        if( sigprocmask(SIG_UNBLOCK, &blockmask, NULL) ) {
+            ACH_DIE( "sigprocmask failed: %s\n", strerror(errno) );
+        }
     }
 }
 
-void ach_detach () {
+pid_t ach_detach ( unsigned timeout ) {
+    pid_t gp_pid = getpid();
+    ACH_LOG( LOG_DEBUG, "detach grandparent: %d\n", gp_pid );
+    /* Block signals for child status notification */
+    const int sigs[] = {ACH_SIG_OK, ACH_SIG_FAIL, SIGALRM, 0};
+    ach_sig_block_dummy(sigs);
+
     /* fork */
     pid_t pid1 = fork();
     if( pid1 < 0 ) {
         ACH_DIE( "First fork failed: %s\n", strerror(errno) );
     } else if ( pid1 ) { /* parent */
-        exit(EXIT_SUCCESS);
+        /* wait for a signal */
+        alarm( timeout );
+        int sig = ach_sig_wait(sigs);
+        ACH_LOG( LOG_DEBUG, "Detach grandparent got: '%s' (%d)\n",
+                 strsignal(sig), sig );
+        switch( sig ) {
+        case SIGALRM:
+            ACH_LOG( LOG_ERR, "Detached child failed on timeout\n" );
+            exit( EXIT_FAILURE );
+        case SIGUSR2:
+            ACH_LOG( LOG_ERR, "Detached child reported failure\n" );
+            exit( EXIT_FAILURE );
+        case SIGUSR1:
+            ACH_LOG( LOG_ERR, "Detached child OK\n" );
+            exit(EXIT_SUCCESS);
+        default:
+            ACH_LOG( LOG_ERR, "Unexpected signal in detach: %s (%d)\n",
+                     strsignal(sig), sig );
+            exit( EXIT_FAILURE );
+        }
+        assert(0);
     } /* else child */
+
+    /* Unblock signals that were blocked in the parent */
+    ach_sig_dfl_unblock( sigs );
 
     /* set session id to lose our controlling terminal */
     if( setsid() < 0 ) {
@@ -161,8 +225,11 @@ void ach_detach () {
         ACH_LOG( LOG_ERR, "Second fork failed: %s\n", strerror(errno) );
         /* Don't give up */
     } else if ( pid2 ) { /* parent */
+        ACH_LOG( LOG_DEBUG, "detach parent: %d\n", getpid() );
         exit(EXIT_SUCCESS);
     } /* else child */
+
+    ACH_LOG( LOG_DEBUG, "detach child: %d\n", getpid() );
 
     /* ignore sighup */
     if( SIG_ERR == signal(SIGHUP, SIG_IGN) ) {
@@ -178,4 +245,24 @@ void ach_detach () {
     if( close(STDIN_FILENO) ) {
         ACH_LOG( LOG_ERR, "Couldn't close stdin: %s", strerror(errno) );
     }
+
+    return gp_pid;
+}
+
+
+pid_t ach_pid_notify = 0;
+
+void ach_notify(int sig) {
+    if( ach_pid_notify > 0 ) {
+        if( kill(ach_pid_notify, sig) ) {
+            ACH_LOG( LOG_ERR, "Could not notify pid %d of failure: %s\n",
+                     ach_pid_notify, strerror(errno) );
+        }
+        ach_pid_notify = 0;
+    }
+}
+
+void ach_die(void) {
+    ach_notify(ACH_SIG_FAIL);
+    exit(EXIT_FAILURE);
 }
