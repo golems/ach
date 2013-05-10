@@ -139,61 +139,78 @@
  */
 
 
-/* CLI options */
+/* Redirect output to newfd to oldfd */
 static void redirect(const char *name, int oldfd, int newfd );
-static int open_file(const char *name, int options );
-static int open_out_file(const char *name );
-static void lock_pid(int fd );
 
+/* Error checking open() */
+static int open_file(const char *name, int options );
+
+/* Error checking open(name, O_APPEND) */
+static int open_out_file(const char *name );
+
+/* Lock fd */
+static void lock_pid( int fd );
+
+/* Write pid to fd */
 static void write_pid( int fd, pid_t pid);
+
+/* Add arg to end of args, reallocing */
 static void child_arg( const char ***args, const char *arg, size_t *n);
+
+/* Main run loop */
 static int run( int restart, int fd_pid, const char *file, const char ** args);
+
+/* Fork and exec a child process, writing its PID to fd_pid */
 static pid_t start_child( int fd_pid, const char *file, const char ** args);
+
+/* Exec the child, signalling an error if exec fails */
 static void exec_child( pid_t pid_notify, const char *file, const char ** args);
+
+/* Error checking on kill(SIGTERM) */
 static void terminate_child( pid_t pid );
+
+/* Error checking on wait() */
 static void waitloop( pid_t *pid, int *status, int *signalled );
 
-/// signals for a running achcop
-static int achcop_signals[] = {
-    SIGINT,         ///< terminate child and exit, returing child's status
-    SIGTERM,        ///< terminate child and exit, returing child's status
-    SIGCHLD,        ///< check child status. if success, exit, else, restart child
-    ACH_SIG_OK,     ///< child successfully started,
-    ACH_SIG_FAIL,   ///< child failed to start,
-    SIGALRM,        ///< Child timeout waiting for success
-    SIGHUP,         ///< terminate child and restart
-    0};
 
+/** Signals for a running achcop */
+static int achcop_signals[] = {
+    SIGINT,         /**< terminate child and exit, returing child's status */
+    SIGTERM,        /**< terminate child and exit, returing child's status */
+    SIGCHLD,        /**< check child status. if success, exit, else, restart child */
+    ACH_SIG_OK,     /**< child successfully started, */
+    ACH_SIG_FAIL,   /**< child failed to start, */
+    SIGALRM,        /**< Child timeout waiting for success */
+    SIGHUP,         /**< terminate child and restart */
+    0}; /* null terminated array */
+
+
+/** Filename to indicate no stdout/stderr redirection */
 #define FILE_NOP_NAME "-"
 
-#ifdef __GNUC__
-#define ACHD_ATTR_PRINTF(m,n) __attribute__((format(printf, m, n)))
-#else
-#define ACHD_ATTR_PRINTF(m,n)
-#endif
-
-sig_atomic_t achcop_sigchild_received = 0;
-
+/** If child exits with failure before this timeout, give up.
+ */
+#define ACH_CHILD_TIMEOUT_SEC 1
 
 int main( int argc, char **argv ) {
     /* Command line arguments */
     static struct {
-        const char *file_cop_pid;
-        const char *file_child_pid;
-        const char *file_stderr;
-        const char *file_stdout;
-        const char **child_args;
-        size_t n_child_args;
-        int detach;
-        int restart;
+        const char *file_cop_pid;     /**< file name for achcop PID */
+        const char *file_child_pid;   /**< file name for child PID */
+        const char *file_stderr;      /**< file name for stderr redirect */
+        const char *file_stdout;      /**< file name for stdout redirect */
+        const char **child_args;      /**< arguments to pass to child */
+        size_t n_child_args;          /**< size of child_args */
+        int detach;                   /**< detach (daemonize) flag */
+        int restart;                  /**< restart failed processes flag */
     } opt = {0};
 
     /* Global state */
     static struct {
-        int fd_out;
-        int fd_err;
-        int fd_cop_pid;
-        int fd_child_pid;
+        int fd_out;                   /**< file descriptor for stdout redirect */
+        int fd_err;                   /**< file descriptor for stderr redirect */
+        int fd_cop_pid;               /**< file descriptor for achcop PID file */
+        int fd_child_pid;             /**< file descriptor for child PID file */
     } cx = {0};
 
     /* Parse Options */
@@ -221,9 +238,9 @@ int main( int argc, char **argv ) {
                   "  -P pid-file,      File for pid of cop process (only valid with -r)\n"
                   "  -p pid-file,      File for pid of child process\n"
                   "  -o out-file,      Redirect stdout to this file\n"
-                  "                      ("FILE_NOP_NAME" keeps unchanged, otherwise close)\n"
+                  "                      ("FILE_NOP_NAME" keeps unchanged, no option closes)\n"
                   "  -e err-file,      Redirect stderr to this file\n"
-                  "                      ("FILE_NOP_NAME" keeps unchanged, otherwise close)\n"
+                  "                      ("FILE_NOP_NAME" keeps unchanged, no option closes)\n"
                   "  -d,               Detach and run in background\n"
                   "  -r,               Restart failed children\n"
                   "  -v,               Make output more verbose\n"
@@ -231,7 +248,7 @@ int main( int argc, char **argv ) {
                   "  -V,               Print program version\n"
                   "\n"
                   "Examples:\n"
-                  "  achcop -rd -P /var/run/myd.ppid -p /var/run/myd.pid -e /var/log/myd.err -- my-daemon -xyz"
+                  "  achcop -rd -P /var/run/myd.ppid -p /var/run/myd.pid -- my-daemon -xyz"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
@@ -265,6 +282,9 @@ int main( int argc, char **argv ) {
     /* Lock PID files */
     lock_pid( cx.fd_cop_pid );
     lock_pid( cx.fd_child_pid );
+
+    /* Log that we're starting */
+    ACH_LOG( LOG_NOTICE, "achcop running `%s'\n", opt.child_args[0] );
 
     /* Write my PID */
     write_pid( cx.fd_cop_pid, getpid() );
@@ -376,11 +396,11 @@ static void write_pid( int fd, pid_t pid ) {
 /* Now it gets hairy... */
 
 enum run_state {
-    RUN_STATE_DONE,      /// end run loop
-    RUN_STATE_RUN,       /// normal state
-    RUN_STATE_START,     /// start the child
-    RUN_STATE_RESTART,   /// when child exits, restart it
-    RUN_STATE_TERMINATE  /// when child exits, done
+    RUN_STATE_DONE,      /**< end run loop */
+    RUN_STATE_RUN,       /**< normal state */
+    RUN_STATE_START,     /**< start the child */
+    RUN_STATE_RESTART,   /**< when child exits, restart it */
+    RUN_STATE_TERMINATE  /**< when child exits, done */
 };
 
 static int run( int restart, int fd_pid, const char *file, const char **args) {
@@ -430,19 +450,31 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
             switch(state) {
             case RUN_STATE_RUN:
                 if( 0 == signal && EXIT_SUCCESS == status ) {
-                    ACH_LOG(LOG_DEBUG, "Child `%s' returned success, exiting\n", file);
+                    /* Child successful */
+                    ACH_LOG(LOG_NOTICE, "Child `%s' returned success, exiting\n", file);
                     exit_status = status;
-                    state = RUN_STATE_DONE;
-                } else if (!run_success) { /* child never ran successfully */
-                    /* Child died to quickly first time, give up */
-                    ACH_LOG(LOG_ERR, "Child `%s' died to fast, exiting\n", file);
-                    exit_status = signal ? EXIT_FAILURE : status;
                     state = RUN_STATE_DONE;
                 } else {
-                    /* else maybe restart */
-                    ACH_LOG(LOG_DEBUG, "Child `%s' failed, restart: %d\n", file, restart);
-                    exit_status = status;
-                    state = restart ? RUN_STATE_START : RUN_STATE_DONE;
+                    /* Child failed */
+                    if( signal ) {
+                        ACH_LOG( LOG_ERR, "Child `%s' died on signal: '%s' (%d)\n",
+                                 file, strsignal(signal), signal );
+                    } else {
+                        ACH_LOG( LOG_ERR, "Child `%s' died returning: %d\n",
+                                 file, status );
+                    }
+                    if (!run_success) { /* child never ran successfully */
+                        /* Child died to quickly first time, give up */
+                        ACH_LOG(LOG_ERR, "Child `%s' died too fast, exiting\n", file);
+                        exit_status = signal ? EXIT_FAILURE : status;
+                        state = RUN_STATE_DONE;
+                    } else {
+                        /* else maybe restart */
+                        ACH_LOG(LOG_ERR, "Child `%s' died:  %s\n",
+                                file, restart ? "restarting" : "exiting" );
+                        exit_status = status;
+                        state = restart ? RUN_STATE_START : RUN_STATE_DONE;
+                    }
                 }
                 break;
             case RUN_STATE_RESTART:
@@ -475,8 +507,7 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
             break;
             /* else fall through to relay */
         case ACH_SIG_FAIL: /* child failed, give up */
-            ACH_LOG( LOG_ERR, "Child failed with signal %s (%d), exiting\n",
-                     strsignal(sig), sig );
+            ACH_LOG( LOG_ERR, "Child signalled failure, exiting\n");
             exit_status = EXIT_FAILURE;
             state = RUN_STATE_DONE;
             break;

@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2008-2012, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -47,6 +47,8 @@
 
 /* Routines for ach utilities.  Not for external consumption */
 
+
+/** Print version and copyright info */
 void ach_print_version( const char *name );
 
 
@@ -56,22 +58,57 @@ void ach_print_version( const char *name );
 #define ACH_ATTR_PRINTF(m,n)
 #endif
 
-extern int ach_verbosity;
 
+/** Print to stderr and/or syslog
+ * If stderr is a TTY, print to it.
+ * If stderr is not a TTY or our parent is init, print to syslog.
+ * (may print to both stderr and syslog)
+ */
 void ach_log( int level, const char fmt[], ...)          ACH_ATTR_PRINTF(2,3);
 
+/** Verbosity of log output.
+ *
+ * At 0, any log priority greater than LOG_NOTICE is printed.
+ */
+extern int ach_verbosity;
+
+/** Conditional logging macro.
+ *
+ * Logs if ach_verbosity sufficiently high.
+ */
 #define ACH_LOG( priority, ... ) \
     if((priority) <= LOG_NOTICE + ach_verbosity) ach_log((priority), __VA_ARGS__);
 
-extern pid_t ach_pid_notify; /// tell this pid if we die or are ok
-void ach_notify(int sig);    /// tell pid something
+/** PID to notify of failure or success to start.
+ *
+ * This should probably be the PID returned by ach_detach() or the
+ * parent PID if running under achcop.
+ */
+extern pid_t ach_pid_notify;
+
+/** Signal ach_pid_notify if ach_pid_notify is a valid PID */
+void ach_notify(int sig);
+
+/** Signal ach_pid_notify that we failed, then exit */
 void ach_die(void);
+
+/** Log an error message, then die */
 #define ACH_DIE(...) {ACH_LOG(LOG_ERR,__VA_ARGS__); ach_die(); }
 
 
 /*-- Signal Handling Helpers --*/
+
+#define ACH_SIG_OK   SIGUSR1
+#define ACH_SIG_FAIL SIGUSR2
+
+/* These operate on int strings (null terminated arrays) of signal
+ * numbers.
+ */
+
+/* Empty mask, then add all signals in sig to mask */
 void ach_sig_mask( const int *sig, sigset_t *mask );
 
+/* wait for any signal in sig */
 int ach_sig_wait( const int *sig );
 
 /* Block Signal, then install dummy signal handler. */
@@ -80,15 +117,20 @@ void ach_sig_block_dummy( const int *sig );
 /* Restore default handler and unblock the signal */
 void ach_sig_dfl_unblock( const int *sig );
 
+
+/** Detach process and run in background
+ *
+ *  Returns PID of the original process.
+ *
+ *  The original process exits with EXIT_SUCCESS if it receives
+ *  ACH_SIG_OK (SIGUSR1) before timeout seconds elapse.  Otherwise, it
+ *  exits with failure.
+ */
 pid_t ach_detach( unsigned timeout );
 
-/// Wait this long for notification from child
+/** Wait this long for notification from child.
+ * A default timeout for ach_detach
+ */
 #define ACH_PARENT_TIMEOUT_SEC 3
-
-/// If child exits with failure before this timeout, give up
-#define ACH_CHILD_TIMEOUT_SEC 1
-
-#define ACH_SIG_OK   SIGUSR1
-#define ACH_SIG_FAIL SIGUSR2
 
 #endif //ACHUTIL_H

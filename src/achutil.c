@@ -86,6 +86,7 @@ void ach_print_version( const char *name ) {
 }
 
 void ach_log( int level, const char fmt[], ...) {
+    /* If stderr is a tty, print to it */
     int tty = isatty(STDERR_FILENO);
     if( tty ) {
         va_list argp;
@@ -94,6 +95,7 @@ void ach_log( int level, const char fmt[], ...) {
         fflush(stderr);
         va_end( argp );
     }
+    /* If stderr is not a tty or our parent is init, log to syslog */
     if( !tty || 1 == getppid() ) {
         va_list argp;
         va_start( argp, fmt );
@@ -102,6 +104,7 @@ void ach_log( int level, const char fmt[], ...) {
     }
 }
 
+/* A signal handler that does nothing */
 static void ach_sigdummy(int sig) {
     (void)sig;
 }
@@ -201,7 +204,7 @@ pid_t ach_detach ( unsigned timeout ) {
             ACH_LOG( LOG_ERR, "Detached child reported failure\n" );
             exit( EXIT_FAILURE );
         case SIGUSR1:
-            ACH_LOG( LOG_ERR, "Detached child OK\n" );
+            ACH_LOG( LOG_DEBUG, "Detached child OK\n" );
             exit(EXIT_SUCCESS);
         default:
             ACH_LOG( LOG_ERR, "Unexpected signal in detach: %s (%d)\n",
