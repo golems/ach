@@ -421,17 +421,17 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
             do { waitloop(&wpid, &status, &signal);
             } while (wpid != child_pid);
             if( 0 == signal && EXIT_SUCCESS == status ) {
-                ACH_LOG(LOG_DEBUG, "Child returned success, exiting\n");
+                ACH_LOG(LOG_DEBUG, "Child `%s' returned success, exiting\n", file);
                 exit_status = status;
                 done = 1;
             } else if (!run_success) {
                 /* Child died to quickly first time, give up */
-                ACH_LOG(LOG_ERR, "Child died to fast, exiting\n");
+                ACH_LOG(LOG_ERR, "Child `%s' died to fast, exiting\n", file);
                 exit_status = (EXIT_SUCCESS != status) ? status : EXIT_FAILURE;
                 done = 1;
             } else {
                 /* else maybe restart */
-                ACH_LOG(LOG_DEBUG, "Child failed, restart: %d\n", restart);
+                ACH_LOG(LOG_DEBUG, "Child `%s' failed, restart: %d\n", file, restart);
                 do_start = 1;
                 exit_status = status;
                 done = !restart;

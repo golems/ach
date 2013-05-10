@@ -119,7 +119,9 @@ void achd_client() {
 
     /* Open initial connection */
     int fd = server_connect( &conn );
-    if( fd < 0 ) fd = achd_reconnect( &conn );
+    if( fd < 0 ) {
+        ACH_DIE( "Couldn't connect to server\n" );
+    }
 
     /* Allocate buffers */
     conn.pipeframe_size =
