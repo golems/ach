@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
     /* process options */
     int c = 0, i = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "dp:t:f:z:qrvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "dp:t:f:z:qrvsV?")) != -1 ) {
             switch(c) {
             case 'z':
                 cx.cl_opts.remote_chan_name = strdup(optarg);
@@ -139,6 +139,9 @@ int main(int argc, char **argv) {
             case 't':
                 cx.cl_opts.transport = strdup(optarg);
                 break;
+            case 's':
+                ach_pid_notify = getppid();
+                break;
             case 'q':
                 cx.verbosity --;
                 break;
@@ -158,6 +161,7 @@ int main(int argc, char **argv) {
                       "  -t (tcp|udp),                transport (default tcp)\n"
                       "  -z CHANNEL_NAME,             remote channel name\n"
                       "  -r,                          reconnect if connection is lost\n"
+                      "  -s,                          Signal parent of sucess or failure (see achcop)\n"
                       "  -q,                          be quiet\n"
                       "  -v,                          be verbose\n"
                       "  -V,                          version\n"

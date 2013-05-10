@@ -140,6 +140,7 @@ void achd_client() {
      */
 
     /* Start running */
+    ach_notify(ACH_SIG_OK);
     if ( fd >= 0 && !cx.sig_received ) {
         ACH_LOG(LOG_INFO, "Client running\n");
         conn.vtab->handler( &conn );
