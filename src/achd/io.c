@@ -129,7 +129,7 @@ enum ach_status achd_printf(int fd, const char fmt[], ...) {
         n = vsnprintf(buf, sizeof(buf), fmt, ap);
         va_end( ap );
         if( n < 0 ) {
-            achd_log( LOG_CRIT, "Error in printf\n");
+            ACH_LOG( LOG_CRIT, "Error in printf\n");
             return ACH_BUG;
         } else if( (size_t)n < sizeof(buf) ) {
             if ( (ssize_t)n == achd_write( fd, buf, (size_t)n ) ) {

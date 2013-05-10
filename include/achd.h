@@ -133,7 +133,7 @@ void achd_serve(void);
 void achd_client(void);
 
 /* logging and error handlers */
-void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);
+/*void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);*/
 void achd_error_header( enum ach_status code, const char fmt[], ... ) ACHD_ATTR_PRINTF(2,3);
 void achd_error_log( enum ach_status code, const char fmt[], ... )    ACHD_ATTR_PRINTF(2,3);
 

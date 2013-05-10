@@ -104,14 +104,14 @@ void achd_client() {
         pid_t gp = ach_detach( ACH_PARENT_TIMEOUT_SEC );
         /* close stdout/stderr/stderr */
         if( close(STDOUT_FILENO) ) {
-            achd_log( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
+            ACH_LOG( LOG_ERR, "Couldn't close stdout: %s", strerror(errno) );
         }
         if( close(STDERR_FILENO) ) {
-            achd_log( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
+            ACH_LOG( LOG_ERR, "Couldn't close stderr: %s", strerror(errno) );
         }
         /* let GP know we're ok */
         if( kill( gp, SIGUSR1 ) ) {
-            achd_log( LOG_ERR, "Couldn't signal grandparent with status: %s\n", strerror(errno) );
+            ACH_LOG( LOG_ERR, "Couldn't signal grandparent with status: %s\n", strerror(errno) );
         }
     }
 
@@ -141,14 +141,14 @@ void achd_client() {
 
     /* Start running */
     if ( fd >= 0 && !cx.sig_received ) {
-        achd_log(LOG_INFO, "Client running\n");
+        ACH_LOG(LOG_INFO, "Client running\n");
         conn.vtab->handler( &conn );
-        achd_log(LOG_INFO, "Client done\n");
+        ACH_LOG(LOG_INFO, "Client done\n");
     }
 }
 
 static int server_connect( struct achd_conn *conn) {
-    achd_log( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
+    ACH_LOG( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
     conn->in = conn->out = -1;
 
     /* Note the time */
@@ -159,7 +159,7 @@ static int server_connect( struct achd_conn *conn) {
     if (fd < 0) {
         return fd;
     } else {
-        achd_log( LOG_DEBUG, "Socket connected\n");
+        ACH_LOG( LOG_DEBUG, "Socket connected\n");
     }
 
     /* Write request */
@@ -179,11 +179,11 @@ static int server_connect( struct achd_conn *conn) {
                           "push" : "pull" )
                         /* remote end does the opposite */ );
         if( ACH_OK != r ) {
-            achd_log(LOG_DEBUG, "couldn't send headers\n");
+            ACH_LOG(LOG_DEBUG, "couldn't send headers\n");
             close(fd);
             return -1;
         } else {
-            achd_log(LOG_DEBUG, "headers sent\n");
+            ACH_LOG(LOG_DEBUG, "headers sent\n");
         }
     }
 
@@ -208,7 +208,7 @@ static int server_connect( struct achd_conn *conn) {
             }
         }
     }
-    achd_log(LOG_DEBUG, "Server response received\n");
+    ACH_LOG(LOG_DEBUG, "Server response received\n");
 
     /* Try to create channel if needed */
     if( ! conn->channel.shm ) {
@@ -235,7 +235,7 @@ static int server_connect( struct achd_conn *conn) {
 int achd_reconnect( struct achd_conn *conn) {
     int fd = -1;
     while( cx.reconnect && fd < 0 && !cx.sig_received ) {
-        achd_log(LOG_DEBUG, "Reconnect attempt\n");
+        ACH_LOG(LOG_DEBUG, "Reconnect attempt\n");
         sleep_till( &conn->t0, ACHD_RECONNECT_NS );
         fd = server_connect( conn );
     }
@@ -247,7 +247,7 @@ static int socket_connect() {
     /* Make socket */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        achd_log(LOG_ERR, "Couldn't create socket: %s\n", strerror(errno));
+        ACH_LOG(LOG_ERR, "Couldn't create socket: %s\n", strerror(errno));
         return sockfd;
     }
 
@@ -255,7 +255,7 @@ static int socket_connect() {
     assert( cx.cl_opts.remote_host );
     struct hostent *server = gethostbyname( cx.cl_opts.remote_host );
     if( NULL == server ) {
-        achd_log(LOG_ERR, "Host '%s' not found\n", cx.cl_opts.remote_host);
+        ACH_LOG(LOG_ERR, "Host '%s' not found\n", cx.cl_opts.remote_host);
         close(sockfd);
         return -1;
     }
@@ -271,7 +271,7 @@ static int socket_connect() {
 
     /* Connect */
     if( connect(sockfd,  (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
-        achd_log(LOG_ERR, "Couldn't connect: %s\n", strerror(errno));
+        ACH_LOG(LOG_ERR, "Couldn't connect: %s\n", strerror(errno));
         close(sockfd);
         return -1;
     }
@@ -296,7 +296,7 @@ static void sleep_till( const struct timespec *t0, int32_t ns ) {
             break;
         } else {
             /* weird error */
-            achd_log( LOG_ERR, "clock_nanosleep failed: %s\n", strerror(errno) );
+            ACH_LOG( LOG_ERR, "clock_nanosleep failed: %s\n", strerror(errno) );
             break;
         }
         assert(0);

@@ -112,7 +112,7 @@ static void get_frame( struct achd_conn *conn ) {
         }
         /* check return code */
         if( ACH_OVERFLOW == r ) {
-            achd_log( LOG_NOTICE, "buffer too small, resizing to %" PRIuPTR "\n", frame_size);
+            ACH_LOG( LOG_NOTICE, "buffer too small, resizing to %" PRIuPTR "\n", frame_size);
             /* enlarge buffer and retry on overflow */
             assert(frame_size > conn->pipeframe_size );
             conn->pipeframe_size = frame_size;
@@ -175,8 +175,8 @@ int achd_udp_sock( struct achd_conn *conn ) {
     if( getsockname( ucx->sock, (struct sockaddr *) &(ucx->addr), &len ) ) {
         cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of UDP receiver: %s\n", strerror(errno));
     } else {
-        achd_log( LOG_DEBUG, "Local UDP socket %s:%d\n",
-                  inet_ntoa(ucx->addr.sin_addr), ntohs( ucx->addr.sin_port) );
+        ACH_LOG( LOG_DEBUG, "Local UDP socket %s:%d\n",
+                 inet_ntoa(ucx->addr.sin_addr), ntohs( ucx->addr.sin_port) );
     }
 
     /* Tell peer the port */
@@ -219,10 +219,10 @@ void achd_push_tcp( struct achd_conn *conn ) {
         int sent_frame = 0;
         do {
             size_t size = sizeof(ach_pipe_frame_t) - 1 + ach_pipe_get_size(conn->pipeframe);
-            achd_log( LOG_DEBUG, "Writing frame, %" PRIuPTR " bytes total\n", size);
+            ACH_LOG( LOG_DEBUG, "Writing frame, %" PRIuPTR " bytes total\n", size);
             ssize_t r = achd_write( conn->out, conn->pipeframe, size );
             if( r < 0 || (size_t)r != size ) {
-                achd_log( LOG_ERR, "Couldn't write frame\n");
+                ACH_LOG( LOG_ERR, "Couldn't write frame\n");
                 if( cx.reconnect ) achd_reconnect(conn);
                 else return;
             } else sent_frame = 1;
@@ -251,13 +251,13 @@ void achd_pull_tcp( struct achd_conn *conn ) {
             /* get size */
             ssize_t s = achd_read(conn->in, conn->pipeframe, 16 );
             if( s <= 0 ) {
-                achd_log(LOG_DEBUG, "Empty read: %s (%d)\n", strerror(errno), errno);
+                ACH_LOG(LOG_DEBUG, "Empty read: %s (%d)\n", strerror(errno), errno);
                 achd_reconnect(conn);
             } else if( 16 != (ssize_t)s ) {
-                achd_log(LOG_ERR, "Incomplete frame header\n");
+                ACH_LOG(LOG_ERR, "Incomplete frame header\n");
                 achd_reconnect(conn);
             } else if( memcmp("achpipe", conn->pipeframe->magic, 8) ) {
-                achd_log(LOG_ERR, "Invalid frame header\n");
+                ACH_LOG(LOG_ERR, "Invalid frame header\n");
                 achd_reconnect(conn);
             } else {
                 cnt = ach_pipe_get_size( conn->pipeframe );
@@ -272,7 +272,7 @@ void achd_pull_tcp( struct achd_conn *conn ) {
                 /* get data */
                 s = achd_read( conn->in, conn->pipeframe->data, (size_t)cnt );
                 if( (ssize_t)cnt != s ) {
-                    achd_log(LOG_ERR, "Incomplete frame data\n");
+                    ACH_LOG(LOG_ERR, "Incomplete frame data\n");
                     achd_reconnect(conn);
                 } else {
                     got_frame = 1;
@@ -302,8 +302,8 @@ static void udp_peer( struct achd_conn *conn, struct sockaddr_in *addr_peer ) {
     } else {
         addr_peer->sin_addr = addr_tcp.sin_addr;
         addr_peer->sin_port = htons((in_port_t)conn->recv_hdr.remote_port);
-        achd_log( LOG_DEBUG, "UDP peer %s:%d\n",
-                  inet_ntoa(addr_peer->sin_addr), ntohs(addr_peer->sin_port) );
+        ACH_LOG( LOG_DEBUG, "UDP peer %s:%d\n",
+                 inet_ntoa(addr_peer->sin_addr), ntohs(addr_peer->sin_port) );
     }
 }
 
@@ -324,13 +324,13 @@ static int udp_poll( struct pollfd pfd[2] ) {
                pfd[1].revents & POLLNVAL ) {
         /* Seems these don't actually do what we expect, and POLLIN is
          * set instead */
-        achd_log(LOG_DEBUG, "TCP closed\n");
+        ACH_LOG(LOG_DEBUG, "TCP closed\n");
         return -1;
     }  else if ( (pfd[1].revents & POLLIN) ) {
         /* TODO: perhaps should recv() instead of assuming this means a closed socket */
         /* but, since we don't expect data here anyway, maybe best to
          * return */
-        achd_log(LOG_DEBUG, "TCP closed\n");
+        ACH_LOG(LOG_DEBUG, "TCP closed\n");
         return -1;
     }
     return 0;
@@ -347,7 +347,7 @@ void achd_push_udp( struct achd_conn *conn ) {
     struct sockaddr_in addr_udp;
     udp_peer( conn, &addr_udp );
 
-    achd_log( LOG_INFO, "sending UDP to %s:%d\n",
+    ACH_LOG( LOG_INFO, "sending UDP to %s:%d\n",
               inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
 
     struct pollfd pfd[] = {{ .fd = ucx->sock,
@@ -364,14 +364,14 @@ void achd_push_udp( struct achd_conn *conn ) {
         size_t cnt = ach_pipe_get_size( conn->pipeframe );
         if( cnt > MTU_UDP ) {
             if( ! warned_mtu_udp ) {
-                achd_log( LOG_ERR, "Cannot send %" PRIuPTR " bytes via UDP\n", cnt );
+                ACH_LOG( LOG_ERR, "Cannot send %" PRIuPTR " bytes via UDP\n", cnt );
                 warned_mtu_udp = 1;
             }
             continue;
         } else if ( cnt + HEADER_BYTES_UDP + HEADER_BYTES_IPV4 > MTU_ETH &&
                     ! warned_mtu_eth ) {
-            achd_log( LOG_WARNING, "Size %" PRIuPTR " exceeds typical ethernet MTU\n",
-                      cnt + HEADER_BYTES_UDP + HEADER_BYTES_IPV4 );
+            ACH_LOG( LOG_WARNING, "Size %" PRIuPTR " exceeds typical ethernet MTU\n",
+                     cnt + HEADER_BYTES_UDP + HEADER_BYTES_IPV4 );
             warned_mtu_eth = 1;
         }
 
@@ -385,14 +385,14 @@ void achd_push_udp( struct achd_conn *conn ) {
             } else if( cx.sig_received ) {
                 return;
             } else if ( ! (pfd[0].revents & POLLOUT) ) {
-                achd_log(LOG_ERR, "No output possible after poll\n");
+                ACH_LOG(LOG_ERR, "No output possible after poll\n");
             }
         }
 
 
         /* UDP Send */
         ssize_t r = -1;
-        achd_log( LOG_DEBUG, "Sending %"PRIuPTR" UDP bytes\n", cnt );
+        ACH_LOG( LOG_DEBUG, "Sending %"PRIuPTR" UDP bytes\n", cnt );
         do {
             r = sendto( ucx->sock, conn->pipeframe->data, cnt, 0,
                         (struct sockaddr*) &addr_udp, sizeof(addr_udp) );
@@ -430,7 +430,7 @@ void achd_pull_udp( struct achd_conn *conn ) {
             } else if( r < 0 ) {
                 break;
             } else if ( ! (pfd[0].revents & POLLIN) ) {
-                achd_log(LOG_ERR, "No input avaiable after poll\n");
+                ACH_LOG(LOG_ERR, "No input avaiable after poll\n");
                 continue;
             }
         }
@@ -453,14 +453,14 @@ void achd_pull_udp( struct achd_conn *conn ) {
                          sizeof(addr_udp.sin_addr) ) ||
             addr_udp.sin_port != addr_peer.sin_port )
         {
-            achd_log( LOG_WARNING, "Stray packet from %s:%d, wanted %s:%d\n",
-                      inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port),
-                      inet_ntoa(addr_peer.sin_addr), ntohs(addr_peer.sin_port) );
+            ACH_LOG( LOG_WARNING, "Stray packet from %s:%d, wanted %s:%d\n",
+                     inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port),
+                     inet_ntoa(addr_peer.sin_addr), ntohs(addr_peer.sin_port) );
             continue;
         }
 
-        achd_log( LOG_DEBUG, "Received %" PRIdPTR " UDP bytes from %s:%d\n",
-                  r, inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
+        ACH_LOG( LOG_DEBUG, "Received %" PRIdPTR " UDP bytes from %s:%d\n",
+                 r, inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
 
         /* Put the frame */
         ach_pipe_set_size( conn->pipeframe, (size_t)r );

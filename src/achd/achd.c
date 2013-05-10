@@ -102,7 +102,7 @@ static const struct achd_conn_vtab handlers[] = {
 
 /* Main */
 int main(int argc, char **argv) {
-    achd_log( LOG_DEBUG, "achd started\n");
+    ACH_LOG( LOG_DEBUG, "achd started\n");
 
     /* set some defaults */
     memset( &cx, 0, sizeof(cx) );
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
             case 'p':
                 cx.port = atoi(optarg);
                 if( !optarg ) {
-                    achd_log(LOG_ERR, "Invalid port: %s\n", optarg);
+                    ACH_LOG(LOG_ERR, "Invalid port: %s\n", optarg);
                     exit(EXIT_FAILURE);
                 }
                 break;
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
     /* serve */
     if ( ACHD_MODE_SERVE == cx.mode ) {
         if( isatty(STDIN_FILENO) || isatty(STDOUT_FILENO) ) {
-            achd_log(LOG_ERR, "We don't serve TTYs here!\n");
+            ACH_LOG(LOG_ERR, "We don't serve TTYs here!\n");
             exit(EXIT_FAILURE);
         }
         cx.error = achd_error_header;
@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 void achd_posarg(int i, const char *arg) {
     switch(i) {
     case 0:
-        achd_log(LOG_DEBUG, "mode %s\n", arg);
+        ACH_LOG(LOG_DEBUG, "mode %s\n", arg);
         if( 0 == strcasecmp(arg, "serve") ) {
             cx.mode = ACHD_MODE_SERVE;
         } else if( 0 == strcasecmp(arg, "push") ) {
@@ -276,20 +276,19 @@ void achd_posarg(int i, const char *arg) {
             cx.mode = ACHD_MODE_PULL;
             cx.cl_opts.direction = ACHD_DIRECTION_PULL;
         } else {
-            achd_log(LOG_ERR, "Invalid command: %s\n", arg);
-            exit(EXIT_FAILURE);
+            ACH_DIE("Invalid command: %s\n", arg);
         }
         break;
     case 1:
-        achd_log(LOG_DEBUG, "host %s\n", arg);
+        ACH_LOG(LOG_DEBUG, "host %s\n", arg);
         cx.cl_opts.remote_host = strdup(arg);
         break;
     case 2:
-        achd_log(LOG_DEBUG, "channel %s\n", arg);
+        ACH_LOG(LOG_DEBUG, "channel %s\n", arg);
         cx.cl_opts.chan_name = strdup(arg);
         break;
     default:
-        achd_log(LOG_ERR, "Spurious argument: %s\n", arg);
+        ACH_LOG(LOG_ERR, "Spurious argument: %s\n", arg);
         exit(EXIT_FAILURE);
     }
 }
@@ -337,10 +336,10 @@ void achd_serve() {
     {
         cx.error( ACH_BAD_HEADER, "%s:%d no direction header\n", inet_ntoa(addr.sin_addr), addr.sin_port);
     } else {
-        achd_log( LOG_NOTICE, "serving %s:%d channel %s via %s %s\n",
-                  inet_ntoa(addr.sin_addr), addr.sin_port, conn.recv_hdr.chan_name,
-                  conn.recv_hdr.transport,
-                  (ACHD_DIRECTION_PUSH == conn.recv_hdr.direction) ? "push" : "pull" );
+        ACH_LOG( LOG_NOTICE, "serving %s:%d channel %s via %s %s\n",
+                 inet_ntoa(addr.sin_addr), addr.sin_port, conn.recv_hdr.chan_name,
+                 conn.recv_hdr.transport,
+                 (ACHD_DIRECTION_PUSH == conn.recv_hdr.direction) ? "push" : "pull" );
     }
 
     /* open channel */
@@ -382,7 +381,7 @@ void achd_serve() {
 
     /* start i/o */
     conn.vtab->handler( &conn );
-    achd_log( LOG_INFO, "Finished serving %s:%d\n", inet_ntoa(addr.sin_addr), addr.sin_port );
+    ACH_LOG( LOG_INFO, "Finished serving %s:%d\n", inet_ntoa(addr.sin_addr), addr.sin_port );
     return;
 }
 
@@ -430,7 +429,7 @@ enum ach_status achd_parse_headers(int fd, struct achd_headers *headers) {
         line++;
         /* Break on ".\n" */
         if (! regexec(&dot_regex, lineptr, 0, NULL, 0)) break;
-        achd_log(LOG_DEBUG, "header line %d: %s\n", line, lineptr);
+        ACH_LOG(LOG_DEBUG, "header line %d: %s\n", line, lineptr);
         /* kill comments and translate */
         char *cmt = strchr(lineptr, '#');
         if( cmt ) *cmt = '\0';
@@ -446,7 +445,7 @@ enum ach_status achd_parse_headers(int fd, struct achd_headers *headers) {
             lineptr[match[2].rm_eo] = '\0';
             char *key = lineptr+match[1].rm_so;
             char *val = lineptr+match[2].rm_so;
-            achd_log( LOG_DEBUG, "header line %d parsed `%s' : `%s'\n", line, key, val );
+            ACH_LOG( LOG_DEBUG, "header line %d parsed `%s' : `%s'\n", line, key, val );
             achd_set_header(key, val, headers);
         }
 
@@ -636,49 +635,49 @@ void achd_error_log( enum ach_status code, const char fmt[],  ...) {
     exit(EXIT_FAILURE);
 }
 
-void achd_log( int level, const char fmt[], ...) {
+/* void achd_log( int level, const char fmt[], ...) { */
 
-    switch( level ) {
-    case LOG_EMERG:
-        goto dolog;
-    case LOG_ALERT:
-        goto dolog;
-    case LOG_CRIT:
-        goto dolog;
-    case LOG_ERR:
-        goto dolog;
-    case LOG_WARNING:
-        if( cx.verbosity >= -1 ) goto dolog;
-        else return;
-    case LOG_NOTICE:
-        if( cx.verbosity >= 0 ) goto dolog;
-        else return;
-    case LOG_INFO:
-        if( cx.verbosity >= 1 ) goto dolog;
-        else return;
-    case LOG_DEBUG:
-        if( cx.verbosity >= 2 ) goto dolog;
-        else return;
-    default: assert(0);
-    }
+/*     switch( level ) { */
+/*     case LOG_EMERG: */
+/*         goto dolog; */
+/*     case LOG_ALERT: */
+/*         goto dolog; */
+/*     case LOG_CRIT: */
+/*         goto dolog; */
+/*     case LOG_ERR: */
+/*         goto dolog; */
+/*     case LOG_WARNING: */
+/*         if( cx.verbosity >= -1 ) goto dolog; */
+/*         else return; */
+/*     case LOG_NOTICE: */
+/*         if( cx.verbosity >= 0 ) goto dolog; */
+/*         else return; */
+/*     case LOG_INFO: */
+/*         if( cx.verbosity >= 1 ) goto dolog; */
+/*         else return; */
+/*     case LOG_DEBUG: */
+/*         if( cx.verbosity >= 2 ) goto dolog; */
+/*         else return; */
+/*     default: assert(0); */
+/*     } */
 
-    int tty;
-dolog:
-    tty = isatty(STDERR_FILENO);
-    if( tty ) {
-        va_list argp;
-        va_start( argp, fmt );
-        vfprintf(stderr, fmt, argp );
-        fflush(stderr);
-        va_end( argp );
-    }
-    if( !tty || ACHD_MODE_SERVE == cx.mode || 1 == getppid() ) {
-        va_list argp;
-        va_start( argp, fmt );
-        vsyslog(level, fmt, argp);
-        va_end( argp );
-    }
-}
+/*     int tty; */
+/* dolog: */
+/*     tty = isatty(STDERR_FILENO); */
+/*     if( tty ) { */
+/*         va_list argp; */
+/*         va_start( argp, fmt ); */
+/*         vfprintf(stderr, fmt, argp ); */
+/*         fflush(stderr); */
+/*         va_end( argp ); */
+/*     } */
+/*     if( !tty || ACHD_MODE_SERVE == cx.mode || 1 == getppid() ) { */
+/*         va_list argp; */
+/*         va_start( argp, fmt ); */
+/*         vsyslog(level, fmt, argp); */
+/*         va_end( argp ); */
+/*     } */
+/* } */
 
 /* TODO:
  *   For client daemons, have SIGHUP kill and restart the subprocess.
@@ -686,14 +685,14 @@ dolog:
 
 static void sighandler(int sig, siginfo_t *siginfo, void *context) {
     (void)siginfo; (void)context;
-    achd_log( LOG_DEBUG, "Received signal: %d\n", sig );
+    ACH_LOG( LOG_DEBUG, "Received signal: %d\n", sig );
     switch(sig) {
     case SIGTERM:
     case SIGINT:
         cx.sig_received = 1;
         break;
     default:
-        achd_log( LOG_WARNING, "Received unexpected signal: %d\n", sig );
+        ACH_LOG( LOG_WARNING, "Received unexpected signal: %d\n", sig );
     }
 }
 
@@ -709,14 +708,14 @@ void sighandler_install() {
     act.sa_flags = SA_SIGINFO;
 
     if (sigaction(SIGTERM, &act, NULL) < 0) {
-        achd_log( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+        ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
     }
 
     if (sigaction(SIGINT, &act, NULL) < 0) {
-        achd_log( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
+        ACH_LOG( LOG_ERR, "Couldn't install signal handler: %s", strerror(errno) );
     }
 
     if( SIG_ERR == signal(SIGPIPE, SIG_IGN) ) {
-        achd_log( LOG_ERR, "Couldn't ignore SIGPIPE: %s", strerror(errno) );
+        ACH_LOG( LOG_ERR, "Couldn't ignore SIGPIPE: %s", strerror(errno) );
     }
 }
