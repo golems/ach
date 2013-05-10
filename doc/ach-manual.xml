@@ -826,6 +826,205 @@ Connection closed by foreign host.
 
   <sect1>
     <title>
+      achcop Watchdog Utility
+    </title>
+    <para>
+      The <command>achcop</command> program which can be used to start
+      daemons, and restart them if they die.
+    </para>
+
+    <cmdsynopsis>
+      <command>achcop</command>
+      <arg>-P <replaceable>cop-pid-file</replaceable></arg>
+      <arg>-p <replaceable>child-pid-file</replaceable></arg>
+      <arg>-e <replaceable>stderr-file</replaceable></arg>
+      <arg>-o <replaceable>stdout-file</replaceable></arg>
+      <arg>-d</arg>
+      <arg>-r</arg>
+      <arg>-v</arg>
+      <arg>-V</arg>
+      <arg>-?</arg>
+      <arg choice="plain">--</arg>
+      <arg choice="req">child-program</arg>
+      <arg choice="opt">child-arguments...</arg>
+    </cmdsynopsis>
+    <sect2><title>Features</title>
+    <itemizedlist>
+      <listitem>
+        <para>
+          Detach process from terminal and run in background
+          (daemonize), <userinput>-d</userinput> flag.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Lock PID files and write PIDs, <userinput>-P</userinput> and
+          <userinput>-p</userinput> flags.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Restart child if it terminates unsuccessfully,
+          <userinput>-r</userinput> flag.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Redirect standard output and standard error to files,
+          <userinput>-o</userinput> and <userinput>-e</userinput>
+          flags.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          Restart process if <constant>SIGHUP</constant> is received
+        </para>
+      </listitem>
+    </itemizedlist>
+    </sect2>
+
+    <sect2><title>Signals </title>
+
+    <note>
+      <para>
+        <emphasis>Signals</emphasis> are how POSIX user programs are
+        notified of asynchrous events. They are similar in spirit to
+        low-level interrupts and interrupt service routines.  When a
+        process receives a signal, its execution is interrupted, and
+        it runs the specified handler for that signal.  For example,
+        when you hit <userinput>Control-C</userinput> at a terminal,
+        the process in the forground receives the interrupt signal,
+        <constant>SIGINT</constant>.  The default handler for this
+        signal will terminate the process.  For more details, see
+        <command>man 7 signal</command>.
+      </para>
+    </note>
+
+    <para><command>Achcop</command> will respond to the following
+    signals.  You can send a signal with the <command>kill</command>
+    shell command or the <function>kill</function> C function.</para>
+
+    <variablelist>
+      <varlistentry>
+        <term><constant>SIGTERM</constant>, <constant>SIGINT</constant></term>
+        <listitem>
+          <para><command>Achcop</command> sends SIGTERM to the child,
+          waits for child to exit, and return child's exit status</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>SIGHUP</constant></term>
+        <listitem>
+          <para><command>Achcop</command> sends SIGTERM to the child,
+          waits for child to exit, and restarts the child</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>SIGUSR1</constant></term>
+        <listitem>
+          <para>Indicates that the child has started successfully.  If
+          the child does not send SIGUSR1 and continues running past
+          an initial timeout, <command>achcop</command> assumes it
+          started successfully.</para>
+        </listitem>
+      </varlistentry>
+      <varlistentry>
+        <term><constant>SIGUSR2</constant></term>
+        <listitem>
+          <para>Indicates that the child has failed to start properly.
+          If the child fails on its first attempt and before a timeout
+          has elapsed, it will not be restarted.  If your child does
+          not send this signal, <command>achcop</command> may wait a
+          few seconds to ensure that the child runs
+          successfully.</para>
+        </listitem>
+      </varlistentry>
+    </variablelist>
+    </sect2>
+
+    <sect2><title>Examples</title>
+
+    <sect3><title>Shell Commands</title>
+    <para>The following shell lines show how one might run <command>achcop</command>.</para>
+
+    <example><title>Run achd in the background (-d), restarting (-r) if it fails</title>
+    <cmdsynopsis>
+      <command>achcop</command>
+      <arg choice="plain">-d</arg>
+      <arg choice="plain">-r</arg>
+      <arg choice="plain">-P /var/run/achcop-foo.pid</arg>
+      <arg choice="plain">-p /var/run/achd-foo.pid</arg>
+      <arg choice="plain">--</arg>
+      <arg choice="plain">achd</arg>
+      <arg choice="plain">-s</arg>
+      <arg choice="plain">-r</arg>
+      <arg choice="plain">push</arg>
+      <arg choice="plain"><replaceable>server</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_foo</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Command achcop to restart achd</title>
+    <cmdsynopsis>
+      <command>kill</command>
+      <arg choice="plain">-HUP</arg>
+      <arg choice="plain">`cat /var/run/achcop-foo.pid`</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Command achcop to terminate achd</title>
+    <cmdsynopsis>
+      <command>kill</command>
+      <arg choice="plain">`cat /var/run/achcop-foo.pid`</arg>
+    </cmdsynopsis>
+    </example>
+
+    </sect3>
+
+    <sect3><title>Signaling Achcop from Child</title>
+    <para>
+      The following C code will notify a parent
+      <command>achcop</command> of your child's success or failure.
+      This is an optional step. <command>Achcop</command> will operate
+      properly without these signals; however, providing the signals
+      means <command>achcop</command> does not need to wait for a
+      brief timeout to ensure that your child continues operating.
+    </para>
+
+    <example><title>Signal achcop of child success or failure</title>
+    <programlisting language="C">
+/* only send signal if running under achcop */
+if( my_parent_is_achcop ) {
+    int sig;
+    /* determine signal to send */
+    if( initialized_correctly ) {
+        sig = SIGUSR1; /* success */
+    } else {
+        sig = SIGUSR2; /* failure */
+    }
+    /* send the signal */
+    int r = kill( getppid(), sig );
+    /* check that we sent the signal */
+    if( r ) {
+        perror("Couldn't signal parent");
+        exit(EXIT_FAILURE);
+    }
+}
+    </programlisting>
+    </example>
+      <para>
+        Note that the default signal handlers for
+        <constant>SIGUSR1</constant> and <constant>SIGUSER2</constant>
+        terminate the process; therefore, if you send these signals to
+        your shell, your shell will terminate.
+      </para>
+    </sect3>
+    </sect2>
+
+  </sect1>
+
+  <sect1>
+    <title>
       Performance Tuning
     </title>
     <para>The performance of your real-time application will be highly
