@@ -76,3 +76,4 @@ Makefile.in
 /python/build/
 /spin/pan*
 /achcop
+/canceltest

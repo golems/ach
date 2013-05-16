@@ -138,6 +138,8 @@
 #ifndef ACH_H
 #define ACH_H
 
+#include <signal.h>
+
 /* restict only in C99 */
 #ifdef __cplusplus
 /** Alias restrict keyword */
@@ -232,7 +234,8 @@ extern "C" {
         ACH_EINVAL = 12,        /**< invalid channel */
         ACH_CORRUPT = 13,       /**< channel memory has been corrupted */
         ACH_BAD_HEADER = 14,    /**< an invalid header was given */
-        ACH_EACCES = 15         /**< permission denied */
+        ACH_EACCES = 15,        /**< permission denied */
+        ACH_CANCELED = 16       /**< operation canceled */
     } ach_status_t;
 
 
@@ -336,6 +339,7 @@ extern "C" {
                 uint64_t seq_num;    /**< last sequence number read */
                 size_t next_index;   /**< next index entry to try get from */
                 ach_attr_t attr;     /**< attributes used to create this channel */
+                sig_atomic_t cancel; /**< cancel a waiting ach_get */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
@@ -474,6 +478,27 @@ extern "C" {
     /** Delete an ach channel */
     enum ach_status
     ach_unlink( const char *name );
+
+
+    /** Attributes parameter for ach_cancel */
+    typedef struct ach_cancel_attr {
+        union {
+            struct {
+                int async_unsafe; /**< If true, permit calls that are
+                                   * unsafe in a signal handler */
+            };
+            int64_t reserved[8];
+        };
+    } ach_cancel_attr_t;
+
+
+    /** Initialize attributes */
+    void
+    ach_cancel_attr_init( ach_cancel_attr_t *attr );
+
+    /** Cancel a pending ach_get() on channel */
+    enum ach_status
+    ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr );
 
     /** Format for ach frames sent over pipes or stored on disk */
     typedef struct {

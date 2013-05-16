@@ -7,7 +7,7 @@ SUBDIRS = . doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
-TESTS = achtest achtooltest test-achcop
+TESTS = achtest achtooltest test-achcop canceltest
 
 include_HEADERS = include/ach.h
 noinst_HEADERS = include/achutil.h include/achd.h
@@ -17,13 +17,8 @@ lib_LTLIBRARIES = libach.la
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
-if HAVE_RT
 bin_PROGRAMS = ach achpipe.bin achcat achbench achd achcop
-noinst_PROGRAMS = achtest ach-example
-else
-bin_PROGRAMS = ach achpipe.bin
-noinst_PROGRAMS = achtest
-endif
+noinst_PROGRAMS = achtest ach-example canceltest
 
 libach_la_SOURCES = src/ach.c src/pipe.c
 
@@ -45,6 +40,10 @@ achpipe_bin_LDADD = libach.la libachutil.la
 
 achtest_SOURCES = src/achtest.c
 achtest_LDADD = libach.la
+
+canceltest_SOURCES = src/canceltest.c
+canceltest_LDADD = libach.la
+
 
 if HAVE_RT
 
