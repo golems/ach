@@ -167,6 +167,9 @@
       <listitem><para>Timeout occurred.  No data received.
       </para></listitem>
       </varlistentry>
+      <varlistentry><term><constant>ACH_CANCELED</constant></term>
+      <listitem><para>Message wait was canceled.  </para></listitem>
+      </varlistentry>
       <varlistentry><term><constant>ACH_EEXIST</constant></term>
       <listitem><para>Channel already exists.
       </para></listitem>
@@ -398,6 +401,71 @@ if( ACH_TIMEOUT == r ) {
       which is not slewed, but is also not portable.
       </para>
       </note>
+
+    </sect2>
+
+
+    <sect2><title>Cancel message wait</title>
+    <funcsynopsis>
+      <funcprototype>
+        <funcdef>enum ach_status <function>ach_cancel</function></funcdef>
+        <paramdef>ach_channel_t *<parameter>channel</parameter></paramdef>
+        <paramdef>const ach_cancel_attr_t *<parameter>attr</parameter></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+
+    <para>
+      To interrupt an in-progress call to <function>ach_get</function>
+      that has blocked waiting for a new message, use the
+      <function>ach_cancel</function> function.  This will cause
+      <function>ach_get</function> to return
+      <constant>ACH_CANCELED</constant>.
+    </para>
+
+
+      <example><title>Cancel waits upon a signal</title>
+      <para>
+        This will install a signal handler to cancel waits when a
+        signal is received.
+      </para>
+      <programlisting language="C">
+ach_channel_t channel;
+
+...
+
+static void sighandler_cancel ( int sig ) {
+    enum ach_status r = ach_cancel(&amp;channel, NULL);
+    if( ACH_OK != r ) exit(EXIT_FAILURE);
+}
+
+...
+
+void setup_sighandler_cancel ( int sig ) {
+    struct sigaction act;
+    memset(&amp;act, 0, sizeof(act));
+    act.sa_handler = &amp;sighandler_cancel;
+    if( sigaction(sig, &amp;act, NULL) ) exit(EXIT_FAILURE);
+}
+      </programlisting>
+      </example>
+
+      <example><title>Cancel waits in another thread</title>
+      <para>
+        This will notify waits in another thread to cancel.
+      </para>
+      <programlisting language="C">
+ach_channel_t channel;
+
+...
+
+ach_cancel_attr_t attr;
+ach_cancel_attr_init(&amp;attr);
+attr.async_unsafe = 1; /* permit functions that are unsafe in signal handlers */
+enum ach_status r = ach_cancel(&amp;channel, &amp;attr);
+if( ACH_OK != r ) exit(EXIT_FAILURE);
+      </programlisting>
+      </example>
+
 
     </sect2>
 
