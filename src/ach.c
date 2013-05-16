@@ -234,43 +234,63 @@ static int fd_for_channel_name( const char *name, int oflag ) {
  * - Use eventfd to signal new data
  */
 
+static enum ach_status
+check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
+    switch( lock_result ) {
+    case ETIMEDOUT:
+        if( is_cond_check )
+            pthread_mutex_unlock( &chan->shm->sync.mutex );
+        return ACH_TIMEOUT;
+    case ENOTRECOVERABLE:
+    case EOWNERDEAD: /* mutex holder died */
+        if( ! chan->shm->sync.dirty )
+            pthread_mutex_consistent( &chan->shm->sync.mutex );
+    case 0: /* ok */
+        if( chan->shm->sync.dirty ) {
+            pthread_mutex_unlock( &chan->shm->sync.mutex );
+            return ACH_CORRUPT;
+        } else return ACH_OK; /* it's ok, channel is consistent */
+    default: return ACH_FAILED_SYSCALL;
+    }
+
+    return ACH_BUG;
+}
+
+static enum ach_status
+test_lock( ach_channel_t *chan ) {
+    int i = pthread_mutex_lock( & chan->shm->sync.mutex );
+    return check_lock( i, chan, 0 );
+}
 
 static enum ach_status
 rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime ) {
 
     ach_header_t *shm = chan->shm;
-
-    if( pthread_mutex_lock( & shm->sync.mutex ) ) return ACH_FAILED_SYSCALL;
-    if( shm->sync.dirty ) return ACH_BUG;
-
+    {
+        enum ach_status r = test_lock(chan);
+        if( ACH_OK != r ) return r;
+    }
     enum ach_status r = ACH_BUG;
 
     while(ACH_BUG == r) {
-        if( chan->cancel ) r = ACH_CANCELED;                   /* check operation cancelled */
-        else if( !wait ) r = ACH_OK;                           /* check no wait */
-        else if (chan->seq_num != shm->last_seq ) r = ACH_OK;  /* check if got a frame */
-        /* else wait */
-        else if( abstime ) { /* timed wait */
-            int i = pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime );
-            /* check for timeout */
-            if( ETIMEDOUT == i ) r =  ACH_TIMEOUT;
-            else if (i) r = ACH_FAILED_SYSCALL;
-            /* else check condition next iteration */
-        }
-        else { /* wait forever */
-            if( pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex ) ) {
-                r = ACH_FAILED_SYSCALL;
-            }
+        if( chan->cancel ) {  /* check operation cancelled */
+            pthread_mutex_unlock( &shm->sync.mutex );
+            r = ACH_CANCELED;
+        } else if( !wait ) r = ACH_OK;                          /* check no wait */
+        else if ( chan->seq_num != shm->last_seq ) r = ACH_OK;  /* check if got a frame */
+        /* else condition wait */
+        else {
+            int i = abstime ?
+                pthread_cond_timedwait( &shm->sync.cond,  &shm->sync.mutex, abstime ) :
+                pthread_cond_wait( &shm->sync.cond,  &shm->sync.mutex );
+            enum ach_status c = check_lock(i, chan, 1);
+            if( ACH_OK != c ) r = c;
+            /* check r and condition next iteration */
         }
     }
-    /* exception encounted */
-    if( ACH_OK != r ) pthread_mutex_unlock( &shm->sync.mutex );
+
     return r;
 }
-
-/* static void rdlock( ach_header_t *shm ) { */
-/*     rdlock_wait( shm, NULL, NULL ); */
-/* } */
 
 static void unrdlock( ach_header_t *shm ) {
     int r;
@@ -279,22 +299,25 @@ static void unrdlock( ach_header_t *shm ) {
     assert( 0 == r );
 }
 
-static void wrlock( ach_header_t *shm ) {
-    int r = pthread_mutex_lock( & shm->sync.mutex );
-    assert( 0 == shm->sync.dirty );
-    shm->sync.dirty = 1;
-    assert( 0 == r );
+static enum ach_status wrlock( ach_channel_t *chan ) {
+
+    enum ach_status r = test_lock(chan);
+    if( ACH_OK != r ) return r;
+
+    assert( 0 == chan->shm->sync.dirty );
+
+    chan->shm->sync.dirty = 1;
+
+    return r;
 }
 
 static void unwrlock( ach_header_t *shm ) {
-    int r;
-
     /* mark clean */
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
 
     /* unlock */
-    r = pthread_mutex_unlock( & shm->sync.mutex );
+    int r = pthread_mutex_unlock( & shm->sync.mutex );
     assert( 0 == r );
 
     /* broadcast to wake up waiting readers */
@@ -435,7 +458,14 @@ ach_create( const char *channel_name,
                 return ACH_FAILED_SYSCALL;
             }
 #endif
-
+            /* Robust Mutex */
+#ifdef PTHREAD_MUTEX_ROBUST
+            if( (r = pthread_mutexattr_setrobust(&mutex_attr,
+                                                 PTHREAD_MUTEX_ROBUST)) ) {
+                DEBUG_PERROR("pthread_mutexattr_setrobust");
+                return ACH_FAILED_SYSCALL;
+            }
+#endif
             if( (r = pthread_mutex_init(&shm->sync.mutex, &mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
@@ -621,7 +651,6 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
         enum ach_status r = rdlock( chan, o_wait, abstime );
         if( ACH_OK != r ) return r;
     }
-
     assert( chan->seq_num <= shm->last_seq );
 
     enum ach_status retval = ACH_BUG;
@@ -720,7 +749,7 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
     if( len > shm->data_size ) return ACH_OVERFLOW;
 
     /* take write lock */
-    wrlock( shm );
+    wrlock( chan );
 
     /* find next index entry */
     ach_index_t *idx = index_ar + shm->index_head;
@@ -874,7 +903,8 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
 
     if( attr->async_unsafe ) {
         /* Don't be async safe, i.e., called from another thread */
-        if( pthread_mutex_lock( &chan->shm->sync.mutex ) ) return ACH_FAILED_SYSCALL;
+        enum ach_status r = test_lock(chan);
+        if( ACH_OK != r ) return r;
         chan->cancel = 1;
         if( pthread_mutex_unlock( &chan->shm->sync.mutex ) ) return ACH_FAILED_SYSCALL;
         if( pthread_cond_broadcast( &chan->shm->sync.cond ) )  {
@@ -899,7 +929,7 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
              * set-cancel, cond-broadcast, cond-wait loses the race).
              */
             /* Lock mutex */
-            if( pthread_mutex_lock( &chan->shm->sync.mutex ) ) {
+            if( ACH_OK != test_lock(chan) ) {
                 /* TODO: pipe to pass error to parent? except, can't
                  * wait in the parent or we risk deadlock */
                 exit(EXIT_FAILURE);

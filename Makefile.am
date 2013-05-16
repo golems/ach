@@ -20,7 +20,7 @@ noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
 bin_PROGRAMS = ach achpipe.bin achcat achbench achd achcop
-noinst_PROGRAMS = achtest ach-example canceltest
+noinst_PROGRAMS = achtest ach-example canceltest breaktest
 
 libach_la_SOURCES = src/ach.c src/pipe.c
 
@@ -40,12 +40,14 @@ achcop_LDADD = libachutil.la
 achpipe_bin_SOURCES = src/achpipe-bin.c
 achpipe_bin_LDADD = libach.la libachutil.la
 
-achtest_SOURCES = src/achtest.c
+achtest_SOURCES = src/test/achtest.c
 achtest_LDADD = libach.la
 
-canceltest_SOURCES = src/canceltest.c
+canceltest_SOURCES = src/test/canceltest.c
 canceltest_LDADD = libach.la
 
+breaktest_SOURCES = src/test/breaktest.c
+breaktest_LDADD = libach.la
 
 if HAVE_RT
 

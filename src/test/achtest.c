@@ -179,8 +179,10 @@ int test_basic() {
     }
 
     /* copy last */
+    printf("> copy start\n");
     r = ach_get( &chan, &s, sizeof(s), &frame_size, NULL,
                  ACH_O_LAST | ACH_O_COPY);
+    printf("> copy done\n");
     if( ACH_OK != r ) {
         printf("copy_last failed: %s\n", ach_result_to_string(r));
         exit(-1);
