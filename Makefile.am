@@ -1,7 +1,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = CMakeLists.txt spin
-dist_bin_SCRIPTS = achpipe achlog achtooltest src/run-benchmarks
+dist_bin_SCRIPTS = achpipe achlog
+
+dist_noinst_SCRIPTS = achtooltest src/run-benchmarks test-achcop
 
 SUBDIRS = . doc
 
@@ -79,7 +81,7 @@ clean-local:
 	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.*
 
 distclean-local:
-	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake
+	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake .nfs*
 
 maintainer-clean-local:
 	-rm -rf  *.tar.gz
