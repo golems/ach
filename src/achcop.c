@@ -289,6 +289,11 @@ int main( int argc, char **argv ) {
     /* Write my PID */
     write_pid( cx.fd_cop_pid, getpid() );
 
+    /* Set environment variable to indicate achcop is the parent */
+    if( setenv("ACHCOP", "1", 1 ) ) {
+        ACH_LOG( LOG_ERR, "could not set environment: %s\n", strerror(errno) );
+    }
+
     /* Redirect */
     redirect(opt.file_stdout, cx.fd_out, STDOUT_FILENO );
     redirect(opt.file_stderr, cx.fd_err, STDERR_FILENO );
