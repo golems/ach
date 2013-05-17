@@ -238,13 +238,23 @@ static enum ach_status
 check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
     switch( lock_result ) {
     case ETIMEDOUT:
-        if( is_cond_check )
+        if( is_cond_check ) {
+            /* release mutex with cond_var times out */
             pthread_mutex_unlock( &chan->shm->sync.mutex );
+        }
         return ACH_TIMEOUT;
     case ENOTRECOVERABLE:
+        /* Shouldn't actually get this because we always mark the
+         * mutex as consistent. */
+        /* We do not hold the mutex at this point */
+        return ACH_CORRUPT;
     case EOWNERDEAD: /* mutex holder died */
-        if( ! chan->shm->sync.dirty )
-            pthread_mutex_consistent( &chan->shm->sync.mutex );
+        /* We use the dirty bit to detect unrecoverable (for now)
+         * errors.  Unconditionally mark the mutex as consistent.
+         * Others will detect corruption based on the dirty bit.
+         */
+        pthread_mutex_consistent( &chan->shm->sync.mutex );
+        /* continue to check the dirty bit */
     case 0: /* ok */
         if( chan->shm->sync.dirty ) {
             pthread_mutex_unlock( &chan->shm->sync.mutex );
@@ -257,7 +267,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
 }
 
 static enum ach_status
-test_lock( ach_channel_t *chan ) {
+chan_lock( ach_channel_t *chan ) {
     int i = pthread_mutex_lock( & chan->shm->sync.mutex );
     return check_lock( i, chan, 0 );
 }
@@ -267,7 +277,7 @@ rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime ) {
 
     ach_header_t *shm = chan->shm;
     {
-        enum ach_status r = test_lock(chan);
+        enum ach_status r = chan_lock(chan);
         if( ACH_OK != r ) return r;
     }
     enum ach_status r = ACH_BUG;
@@ -293,15 +303,14 @@ rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime ) {
 }
 
 static void unrdlock( ach_header_t *shm ) {
-    int r;
     assert( 0 == shm->sync.dirty );
-    r = pthread_mutex_unlock( & shm->sync.mutex );
+    int r = pthread_mutex_unlock( & shm->sync.mutex );
     assert( 0 == r );
 }
 
 static enum ach_status wrlock( ach_channel_t *chan ) {
 
-    enum ach_status r = test_lock(chan);
+    enum ach_status r = chan_lock(chan);
     if( ACH_OK != r ) return r;
 
     assert( 0 == chan->shm->sync.dirty );
@@ -897,7 +906,7 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
 
     if( attr->async_unsafe ) {
         /* Don't be async safe, i.e., called from another thread */
-        enum ach_status r = test_lock(chan);
+        enum ach_status r = chan_lock(chan);
         if( ACH_OK != r ) return r;
         chan->cancel = 1;
         if( pthread_mutex_unlock( &chan->shm->sync.mutex ) ) return ACH_FAILED_SYSCALL;
@@ -923,7 +932,7 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
              * set-cancel, cond-broadcast, cond-wait loses the race).
              */
             /* Lock mutex */
-            if( ACH_OK != test_lock(chan) ) {
+            if( ACH_OK != chan_lock(chan) ) {
                 /* TODO: pipe to pass error to parent? except, can't
                  * wait in the parent or we risk deadlock */
                 exit(EXIT_FAILURE);

@@ -66,16 +66,19 @@ static void test(int t, enum ach_status r, const char *thing) {
     }
 }
 
-static void make_locked( ach_channel_t *chan ) {
+static void make_locked( ) {
     pid_t pid = fork();
     if( 0 == pid ) { /* child */
-        pthread_mutex_lock(&chan->shm->sync.mutex);
-        sleep(1);
+        ach_channel_t channel;
+        /* open */
+        enum ach_status r = ach_open(&channel, OPT_CHAN, NULL);
+        test(ACH_OK == r, r, "ach_open");
+
+        pthread_mutex_lock(&channel.shm->sync.mutex);
         exit(EXIT_SUCCESS);
+
     } else if (0 < pid) {
-        printf("wait\n");
         wait( NULL );
-        printf("done\n");
     } else {
         exit(EXIT_FAILURE);
     }
@@ -97,18 +100,32 @@ int main( int argc, char **argv ){
     r = ach_create(OPT_CHAN, 32ul, 64ul, NULL );
     test(ACH_OK == r, r, "ach_create");
 
+
     /* open */
     r = ach_open(&channel, OPT_CHAN, NULL);
     test(ACH_OK == r, r, "ach_open");
 
-    /* unlink */
-    r = ach_unlink(OPT_CHAN);
-    test(ACH_OK == r, r, "ach_unlink");
-
-
+    /* first test */
+    r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
+    test( ACH_STALE_FRAMES == r, r, "get stale");
 
     /* read test */
-    make_locked(&channel);
+    make_locked();
+    r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
+    test( ACH_STALE_FRAMES == r, r, "get stale");
+
+    /* corrupt test */
+    make_locked();
+    channel.shm->sync.dirty = 1;
+    r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
+    test( ACH_CORRUPT == r, r, "get corrupt");
+    /* and again */
+    r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
+    test( ACH_CORRUPT == r, r, "get corrupt");
+
+    /* another read test */
+    channel.shm->sync.dirty = 0;
+    r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
     r = ach_get( &channel, NULL, 0, NULL, NULL, ACH_O_LAST );
     test( ACH_STALE_FRAMES == r, r, "get stale");
 

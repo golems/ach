@@ -77,4 +77,4 @@ Makefile.in
 /spin/pan*
 /achcop
 /canceltest
-/breaktest
+/robusttest
