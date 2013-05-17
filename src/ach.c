@@ -443,29 +443,23 @@ ach_create( const char *channel_name,
                 return ACH_FAILED_SYSCALL;
             }
             /* Error Checking Mutex */
-#ifdef PTHREAD_MUTEX_ERRORCHECK_NP
             if( (r = pthread_mutexattr_settype(&mutex_attr,
-                                               PTHREAD_MUTEX_ERRORCHECK_NP)) ) {
+                                               PTHREAD_MUTEX_ERRORCHECK)) ) {
                 DEBUG_PERROR("pthread_mutexattr_settype");
                 return ACH_FAILED_SYSCALL;
             }
-#endif
             /* Priority Inheritance Mutex */
-#ifdef PTHREAD_PRIO_INHERIT
             if( (r = pthread_mutexattr_setprotocol(&mutex_attr,
                                                    PTHREAD_PRIO_INHERIT)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setprotocol");
                 return ACH_FAILED_SYSCALL;
             }
-#endif
             /* Robust Mutex */
-#ifdef PTHREAD_MUTEX_ROBUST
             if( (r = pthread_mutexattr_setrobust(&mutex_attr,
                                                  PTHREAD_MUTEX_ROBUST)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setrobust");
                 return ACH_FAILED_SYSCALL;
             }
-#endif
             if( (r = pthread_mutex_init(&shm->sync.mutex, &mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
