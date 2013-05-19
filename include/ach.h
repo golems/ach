@@ -339,7 +339,7 @@ extern "C" {
                 uint64_t seq_num;    /**< last sequence number read */
                 size_t next_index;   /**< next index entry to try get from */
                 ach_attr_t attr;     /**< attributes used to create this channel */
-                sig_atomic_t cancel; /**< cancel a waiting ach_get */
+                volatile sig_atomic_t cancel; /**< cancel a waiting ach_get */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
