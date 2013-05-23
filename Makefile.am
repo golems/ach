@@ -49,8 +49,6 @@ canceltest_LDADD = libach.la
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la
 
-if HAVE_RT
-
 achcat_SOURCES = src/achcat.c
 achcat_LDADD = libach.la libachutil.la
 
@@ -65,8 +63,6 @@ ach_example_LDADD = libach.la -lm
 
 achbench_SOURCES = src/ach-bench.c
 achbench_LDADD = libach.la libachutil.la
-
-endif
 
 if HAVE_PYTHON
 

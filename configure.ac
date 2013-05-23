@@ -44,12 +44,6 @@ AC_CHECK_DECL([PRIuPTR],
         [],
         [AC_DEFINE([PRIuPTR], ["ul"], [Assume this is unsigned long])])
 
-# Check for POSIX realtime extensions
-AC_CHECK_DECL([CLOCK_REALTIME],
-        AM_CONDITIONAL([HAVE_RT], true),
-        AM_CONDITIONAL([HAVE_RT], false),
-        [[#include <time.h>]])
-
 # check pthread decls
 dnl AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
 dnl        [], [],
@@ -58,7 +52,92 @@ dnl        [#include<pthread.h>])
 dnl AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
 dnl               [], [], [#include<pthread.h>])
 
-dnl AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
+
+
+dnl AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
+AC_SEARCH_LIBS([pthread_mutex_lock],[pthread])
+AC_SEARCH_LIBS([clock_gettime],[rt])
+
+# check process-shared mutex
+AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED],
+              [],
+              [AC_MSG_ERROR([process-shared condition variables are required])])
+
+# CHECK_SOURCE( checking-msg, prologue, body, symbol )
+# Runs source if native compiling.  If cross-compiling, just checks that it compiles.
+AC_DEFUN([CHECK_SOURCE],
+         [AC_MSG_CHECKING([$1])
+          AC_RUN_IFELSE([AC_LANG_PROGRAM([$2], [$3])],
+                        [echo [yes]; $4],
+                        [echo [no]],
+                        [AC_TRY_COMPILE([$2],[$3],
+                                        [echo [yes]; $4],
+                                        [echo [no]])])])
+
+# check priority inheritance mutex
+CHECK_SOURCE([for priority-inherit mutex],
+             [#include <pthread.h>],
+             [
+pthread_mutexattr_t mutex_attr;
+pthread_mutex_t mutex;
+if( pthread_mutexattr_init(&mutex_attr) )
+    return -1;
+if( pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED) )
+    return -1;
+if( pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT) )
+    return -1;
+if( pthread_mutex_init(&mutex, &mutex_attr) )
+    return -1;
+            ],
+            [AC_DEFINE([HAVE_MUTEX_PRIORITY_INHERIT],[1],[Priority Inheritance Mutex])])
+
+
+# check robust mutex
+CHECK_SOURCE([for robust mutex],
+             [#include <pthread.h>],
+             [
+pthread_mutexattr_t mutex_attr;
+pthread_mutex_t mutex;
+if( pthread_mutexattr_init(&mutex_attr) )
+    return -1;
+if( pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED) )
+    return -1;
+#ifdef HAVE_MUTEX_PRIORITY_INHERIT
+if( pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT) )
+    return -1;
+#endif
+if( pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST) )
+    return -1;
+if( pthread_mutex_init(&mutex, &mutex_attr) )
+    return -1;
+             ],
+             [AC_DEFINE([HAVE_MUTEX_ROBUST],[1],[Robust Mutexes])])
+
+
+# check error-checking mutex
+CHECK_SOURCE([for error-checking mutex],
+             [#include <pthread.h>],
+             [
+pthread_mutexattr_t mutex_attr;
+pthread_mutex_t mutex;
+if( pthread_mutexattr_init(&mutex_attr) )
+    return -1;
+if( pthread_mutexattr_setpshared(&mutex_attr, PTHREAD_PROCESS_SHARED) )
+    return -1;
+#ifdef HAVE_MUTEX_PRIORITY_INHERIT
+if( pthread_mutexattr_setprotocol(&mutex_attr, PTHREAD_PRIO_INHERIT) )
+    return -1;
+#endif
+#ifdef HAVE_MUTEX_ROBUST
+if( pthread_mutexattr_setrobust(&mutex_attr, PTHREAD_MUTEX_ROBUST) )
+    return -1;
+#endif
+if( pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK) )
+    return -1;
+if( pthread_mutex_init(&mutex, &mutex_attr) )
+    return -1;
+             ],
+             [AC_DEFINE([HAVE_MUTEX_ERROR_CHECK],[1],[Error Checking Mutexes])])
 
 ## Checks for library functions.
 
@@ -70,10 +149,7 @@ dnl AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED])
 # AC_FUNC_REALLOC
 # AC_FUNC_STRTOD
 
-dnl AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
-AC_SEARCH_LIBS([pthread_create],[pthread])
-AC_SEARCH_LIBS([clock_gettime],[rt])
-
+# Check mutex options
 
 # Enable maximum warnings
 m4_ifdef([AX_CFLAGS_WARN_ALL],

@@ -451,24 +451,30 @@ ach_create( const char *channel_name,
                 DEBUG_PERROR("pthread_mutexattr_setpshared");
                 return ACH_FAILED_SYSCALL;
             }
-            /* Error Checking Mutex */
-            if( (r = pthread_mutexattr_settype(&mutex_attr,
-                                               PTHREAD_MUTEX_ERRORCHECK)) ) {
-                DEBUG_PERROR("pthread_mutexattr_settype");
-                return ACH_FAILED_SYSCALL;
-            }
+#ifdef HAVE_MUTEX_PRIORITY_INHERIT
             /* Priority Inheritance Mutex */
             if( (r = pthread_mutexattr_setprotocol(&mutex_attr,
                                                    PTHREAD_PRIO_INHERIT)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setprotocol");
                 return ACH_FAILED_SYSCALL;
             }
+#endif
+#ifdef HAVE_MUTEX_ROBUST
             /* Robust Mutex */
             if( (r = pthread_mutexattr_setrobust(&mutex_attr,
                                                  PTHREAD_MUTEX_ROBUST)) ) {
                 DEBUG_PERROR("pthread_mutexattr_setrobust");
                 return ACH_FAILED_SYSCALL;
             }
+#endif
+#ifdef HAVE_MUTEX_ERROR_CHECK
+            /* Error Checking Mutex */
+            if( (r = pthread_mutexattr_settype(&mutex_attr,
+                                               PTHREAD_MUTEX_ERRORCHECK)) ) {
+                DEBUG_PERROR("pthread_mutexattr_settype");
+                return ACH_FAILED_SYSCALL;
+            }
+#endif
             if( (r = pthread_mutex_init(&shm->sync.mutex, &mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
