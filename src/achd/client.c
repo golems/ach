@@ -152,7 +152,7 @@ void achd_client() {
 
 static int server_connect( struct achd_conn *conn) {
     ACH_LOG( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
-    conn->in = conn->out = -1;
+    conn->in = conn->out = conn->aux = -1;
 
     /* Note the time */
     clock_gettime( CLOCK_MONOTONIC, &conn->t0 );
@@ -235,7 +235,14 @@ static int server_connect( struct achd_conn *conn) {
 }
 
 
+
 int achd_reconnect( struct achd_conn *conn) {
+
+    /* close old fds */
+    close( conn->in );
+    close( conn->out );
+    if( conn->aux >= 0 ) close(conn->aux);
+
     int fd = -1;
     while( cx.reconnect && fd < 0 && !cx.sig_received ) {
         ACH_LOG(LOG_DEBUG, "Reconnect attempt\n");

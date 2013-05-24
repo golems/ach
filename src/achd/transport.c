@@ -71,7 +71,6 @@
 /* TODO: add SCTP, RDS, DCCP Support */
 
 struct udp_cx {
-    int sock;
     struct sockaddr_in addr;
 };
 
@@ -142,8 +141,8 @@ int achd_udp_sock( struct achd_conn *conn ) {
     }
 
     /* Create socket */
-    ucx->sock = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
-    if( ucx->sock < 0 ) {
+    conn->aux = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
+    if( conn->aux < 0 ) {
         cx.error(ACH_FAILED_SYSCALL, "Couldn't create UDP socket: %s\n", strerror(errno) );
     }
 
@@ -153,13 +152,13 @@ int achd_udp_sock( struct achd_conn *conn ) {
     addr.sin_family = AF_INET;
     addr.sin_port = 0;
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    if( bind( ucx->sock, (struct sockaddr*)&addr, sizeof(addr) ) ) {
+    if( bind( conn->aux, (struct sockaddr*)&addr, sizeof(addr) ) ) {
         cx.error( ACH_FAILED_SYSCALL, "Could not bind udp socket: %s\n", strerror(errno) );
     }
 
     /* Get Address */
     socklen_t len = sizeof(ucx->addr);
-    if( getsockname( ucx->sock, (struct sockaddr *) &(ucx->addr), &len ) ) {
+    if( getsockname( conn->aux, (struct sockaddr *) &(ucx->addr), &len ) ) {
         cx.error( ACH_FAILED_SYSCALL, "Couldn't determine name of UDP receiver: %s\n", strerror(errno));
     } else {
         ACH_LOG( LOG_DEBUG, "Local UDP socket %s:%d\n",
@@ -239,13 +238,13 @@ void achd_pull_tcp( struct achd_conn *conn ) {
             ssize_t s = achd_read(conn->in, conn->pipeframe, 16 );
             if( s <= 0 ) {
                 ACH_LOG(LOG_DEBUG, "Empty read: %s (%d)\n", strerror(errno), errno);
-                achd_reconnect(conn);
+                if( cx.reconnect ) achd_reconnect(conn);
             } else if( 16 != (ssize_t)s ) {
                 ACH_LOG(LOG_ERR, "Incomplete frame header\n");
-                achd_reconnect(conn);
+                if( cx.reconnect ) achd_reconnect(conn);
             } else if( memcmp("achpipe", conn->pipeframe->magic, 8) ) {
                 ACH_LOG(LOG_ERR, "Invalid frame header\n");
-                achd_reconnect(conn);
+                if( cx.reconnect ) achd_reconnect(conn);
             } else {
                 cnt = ach_pipe_get_size( conn->pipeframe );
                 /* TODO: sanity check that cnt is not something outrageous */
@@ -260,7 +259,7 @@ void achd_pull_tcp( struct achd_conn *conn ) {
                 s = achd_read( conn->in, conn->pipeframe->data, (size_t)cnt );
                 if( (ssize_t)cnt != s ) {
                     ACH_LOG(LOG_ERR, "Incomplete frame data\n");
-                    achd_reconnect(conn);
+                    if( cx.reconnect ) achd_reconnect(conn);
                 } else {
                     got_frame = 1;
                 }
@@ -337,7 +336,7 @@ void achd_push_udp( struct achd_conn *conn ) {
     ACH_LOG( LOG_INFO, "sending UDP to %s:%d\n",
               inet_ntoa(addr_udp.sin_addr), ntohs(addr_udp.sin_port) );
 
-    struct pollfd pfd[] = {{ .fd = ucx->sock,
+    struct pollfd pfd[] = {{ .fd = conn->aux,
                              .events = POLLOUT},
                            { .fd = conn->in,
                              .events = POLLIN } };
@@ -368,7 +367,10 @@ void achd_push_udp( struct achd_conn *conn ) {
         while( ! (pfd[0].revents & POLLOUT) ) {
             int r = udp_poll( pfd );
             if( r < 0 ) {
-                return;
+                if( cx.reconnect ) {
+                    achd_reconnect(conn);
+                    udp_peer( conn, &addr_udp );
+                } else return;
             } else if( cx.sig_received ) {
                 return;
             } else if ( ! (pfd[0].revents & POLLOUT) ) {
@@ -381,7 +383,7 @@ void achd_push_udp( struct achd_conn *conn ) {
         ssize_t r = -1;
         ACH_LOG( LOG_DEBUG, "Sending %"PRIuPTR" UDP bytes\n", cnt );
         do {
-            r = sendto( ucx->sock, conn->pipeframe->data, cnt, 0,
+            r = sendto( conn->aux, conn->pipeframe->data, cnt, 0,
                         (struct sockaddr*) &addr_udp, sizeof(addr_udp) );
         } while( r < 0 && !cx.sig_received && EINTR == errno );
 
@@ -402,7 +404,7 @@ void achd_pull_udp( struct achd_conn *conn ) {
     udp_peer( conn, &addr_peer );
 
     /* setup for poll */
-    struct pollfd pfd[] = {{ .fd = ucx->sock,
+    struct pollfd pfd[] = {{ .fd = conn->aux,
                              .events = POLLIN},
                            { .fd = conn->in,
                              .events = POLLIN } };
@@ -410,15 +412,19 @@ void achd_pull_udp( struct achd_conn *conn ) {
     /* Get the packets */
     while( !cx.sig_received ) {
         /* Poll FDs */
-        {
+        pfd[0].revents = 0;
+        while( ! (pfd[0].revents & POLLIN) ) {
             int r = udp_poll( pfd );
             if( cx.sig_received ) {
-                break;
+                ACH_LOG(LOG_DEBUG, "Poll got EINTR");
+                return;;
             } else if( r < 0 ) {
-                break;
+                if( cx.reconnect ) {
+                    achd_reconnect(conn);
+                    udp_peer( conn, &addr_peer );
+                } else return;
             } else if ( ! (pfd[0].revents & POLLIN) ) {
                 ACH_LOG(LOG_ERR, "No input avaiable after poll\n");
-                continue;
             }
         }
 
@@ -429,7 +435,7 @@ void achd_pull_udp( struct achd_conn *conn ) {
         ssize_t r = -1;
         do {
             /* TODO: handle too small buffers */
-            r = recvfrom( ucx->sock, conn->pipeframe->data, conn->pipeframe_size,
+            r = recvfrom( conn->aux, conn->pipeframe->data, conn->pipeframe_size,
                           0, (struct sockaddr*) &addr_udp, &len );
         } while( r < 0 && EINTR == errno && !cx.sig_received );
 

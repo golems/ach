@@ -112,8 +112,10 @@ struct achd_conn {
     struct timespec t0;
     struct achd_headers send_hdr;
     struct achd_headers recv_hdr;
-    int in;
-    int out;
+
+    int in;   ///< input file descriptor  (stdin or TCP)
+    int out;  ///< output file descriptor (stdout or TCP)
+    int aux;  ///< auxillary file descriptor (e.g., UDP)
 
     size_t pipeframe_size;
     ach_pipe_frame_t *pipeframe;
