@@ -260,7 +260,12 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
             pthread_mutex_unlock( &chan->shm->sync.mutex );
             return ACH_CORRUPT;
         } else return ACH_OK; /* it's ok, channel is consistent */
-    default: return ACH_FAILED_SYSCALL;
+    default:
+        if( is_cond_check ) {
+            /* release mutex with cond_wait fails */
+            pthread_mutex_unlock( &chan->shm->sync.mutex );
+        }
+        return ACH_FAILED_SYSCALL;
     }
 
     return ACH_BUG;
