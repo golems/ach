@@ -125,7 +125,7 @@ void achd_client() {
 
     /* Allocate buffers */
     conn.pipeframe_size =
-        conn.channel.shm->data_size / conn.channel.shm->index_cnt;
+        cx.channel.shm->data_size / cx.channel.shm->index_cnt;
     conn.pipeframe = ach_pipe_alloc( conn.pipeframe_size );
 
     /* TODO: If we lose and then re-establish a connections, frames
@@ -214,20 +214,20 @@ static int server_connect( struct achd_conn *conn) {
     ACH_LOG(LOG_DEBUG, "Server response received\n");
 
     /* Try to create channel if needed */
-    if( ! conn->channel.shm ) {
-        ach_status_t r = ach_open(&conn->channel, cx.cl_opts.chan_name, NULL);
+    if( ! cx.channel.shm ) {
+        ach_status_t r = ach_open(&cx.channel, cx.cl_opts.chan_name, NULL);
         if( ACH_ENOENT == r) {
             int frame_size = conn->recv_hdr.frame_size ? conn->recv_hdr.frame_size : ACH_DEFAULT_FRAME_SIZE;
             int frame_count = conn->recv_hdr.frame_count ? conn->recv_hdr.frame_count : ACH_DEFAULT_FRAME_COUNT;
             /* Fixme: should sanity check these counts */
             r = ach_create( cx.cl_opts.chan_name, (size_t)frame_count, (size_t)frame_size, NULL );
             if( ACH_OK != r )  cx.error( r, "Couldn't create channel\n");
-            r = ach_open( &conn->channel, cx.cl_opts.chan_name, NULL );
+            r = ach_open( &cx.channel, cx.cl_opts.chan_name, NULL );
             if( ACH_OK != r )  cx.error( r, "Couldn't open channel\n");
         } else if (ACH_OK != r ) {
             cx.error( r, "Couldn't open channel\n");
         }
-        r = ach_flush(&conn->channel );
+        r = ach_flush(&cx.channel );
         if( ACH_OK != r )  cx.error( r, "Couldn't flush channel\n");
     }
 

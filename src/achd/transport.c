@@ -86,54 +86,41 @@ static void put_frame( struct achd_conn *conn );
 
 
 static void get_frame( struct achd_conn *conn ) {
+    int done = 0;
     do {
         size_t frame_size = 0;
-        ach_status_t r = ACH_BUG;
-        if( 0 ) {
-            /* parse command */
-            /* if ( 0 == memcmp("next", cmd, 4) ) { */
-            /*     r = ach_get(&chan, frame->data, max, &frame_size,  NULL, */
-            /*                 ACH_O_WAIT ); */
-            /* }else if ( 0 == memcmp("last", cmd, 4) ){ */
-            /*     r = ach_get(&chan, frame->data, max, &frame_size,  NULL, */
-            /*                 ACH_O_WAIT | ACH_O_LAST ); */
-            /* } else if ( 0 == memcmp("poll", cmd, 4) ) { */
-            /*     r = ach_get( &chan, frame->data, max, &frame_size, NULL, */
-            /*                  ACH_O_COPY | ACH_O_LAST ); */
-            /* } else { */
-            /*     hard_assert(0, "Invalid command: %s\n", cmd ); */
-            /* } */
-        } else {
-            /* push the data */
-            /* TODO: getlast header is not right */
-            r = ach_get( &conn->channel, conn->pipeframe->data, conn->pipeframe_size, &frame_size,  NULL,
-                         ( (conn->recv_hdr.get_last /*|| is_freq*/) ?
-                           (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
-        }
+        ach_status_t r  = ach_get( &cx.channel, conn->pipeframe->data, conn->pipeframe_size, &frame_size,  NULL,
+                                   ( (conn->recv_hdr.get_last /*|| is_freq*/) ?
+                                     (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
         /* check return code */
-        if( ACH_OVERFLOW == r ) {
+        switch(r) {
+        case ACH_OVERFLOW:
             ACH_LOG( LOG_NOTICE, "buffer too small, resizing to %" PRIuPTR "\n", frame_size);
             /* enlarge buffer and retry on overflow */
             assert(frame_size > conn->pipeframe_size );
             conn->pipeframe_size = frame_size;
             free(conn->pipeframe);
             conn->pipeframe = ach_pipe_alloc( conn->pipeframe_size );
-        } else if (ACH_OK == r || ACH_MISSED_FRAME == r ) {
-            ach_pipe_set_size( conn->pipeframe, frame_size );
             break;
-        }else {
+        case ACH_OK:
+        case ACH_MISSED_FRAME:
+            ach_pipe_set_size( conn->pipeframe, frame_size );
+            done = 1;
+        case ACH_CANCELED:
+            break;
+        default:
             /* abort on other errors */
             /* hard_assert( 0, "sub: ach_error: %s\n", */
             /*              ach_result_to_string(r) ); */
-            assert(0);
+            ACH_LOG( LOG_ERR, "Unhandled ach result getting frame: %s (%d)\n", ach_result_to_string(r), r );
         }
-    }while( !cx.sig_received );
+    } while( !cx.sig_received && !done );
 }
 
 static void put_frame( struct achd_conn *conn ) {
     size_t cnt =  ach_pipe_get_size(conn->pipeframe);
     if( !cx.sig_received ) {
-        ach_status_t r = ach_put( &conn->channel, conn->pipeframe->data, cnt );
+        ach_status_t r = ach_put( &cx.channel, conn->pipeframe->data, cnt );
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't put frame, size %d\n", cnt );
         }

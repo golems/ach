@@ -112,7 +112,6 @@ struct achd_conn {
     struct timespec t0;
     struct achd_headers send_hdr;
     struct achd_headers recv_hdr;
-    ach_channel_t channel;
     int in;
     int out;
 
@@ -133,7 +132,7 @@ void achd_serve(void);
 void achd_client(void);
 
 /* logging and error handlers */
-/*void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);*/
+void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);
 void achd_error_header( enum ach_status code, const char fmt[], ... ) ACHD_ATTR_PRINTF(2,3);
 void achd_error_log( enum ach_status code, const char fmt[], ... )    ACHD_ATTR_PRINTF(2,3);
 
@@ -164,6 +163,7 @@ struct achd_cx {
     int detach;
     const char *pidfile;
     sig_atomic_t sig_received;
+    ach_channel_t channel;
     void (*error)(enum ach_status code, const char fmt[], ...);
 };
 

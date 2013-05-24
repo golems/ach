@@ -348,12 +348,12 @@ void achd_serve() {
 
     /* open channel */
     {
-        enum ach_status r = ach_open( &conn.channel, conn.recv_hdr.chan_name, NULL );
+        enum ach_status r = ach_open( &cx.channel, conn.recv_hdr.chan_name, NULL );
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't open channel %s - %s\n", conn.recv_hdr.chan_name, strerror(errno) );
             assert(0);
         } else {
-            ach_flush(&conn.channel);
+            ach_flush(&cx.channel);
         }
     }
 
@@ -369,8 +369,8 @@ void achd_serve() {
                 "frame-size: %" PRIuPTR "\n"
                 "status: %d # %s\n"
                 ".\n",
-                conn.channel.shm->index_cnt,
-                conn.channel.shm->data_size / conn.channel.shm->index_cnt,
+                cx.channel.shm->index_cnt,
+                cx.channel.shm->data_size / cx.channel.shm->index_cnt,
                 ACH_OK, ach_result_to_string(ACH_OK)
         );
 
@@ -380,7 +380,7 @@ void achd_serve() {
 
     /* Allocate buffers */
     conn.pipeframe_size =
-        conn.channel.shm->data_size / conn.channel.shm->index_cnt;
+        cx.channel.shm->data_size / cx.channel.shm->index_cnt;
     conn.pipeframe = ach_pipe_alloc( conn.pipeframe_size );
 
     /* start i/o */
@@ -693,7 +693,18 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context) {
     switch(sig) {
     case SIGTERM:
     case SIGINT:
+        /* mark shutdown */
         cx.sig_received = 1;
+        /* cancel operation */
+        /* TODO: only necessary to cancel get operations */
+        if( cx.channel.shm ) {
+            ach_status_t r = ach_cancel( &cx.channel, NULL );
+            if( ACH_OK != r ) { /* try to log failure, write() is async-safe */
+                static const char msg[] = "error on ach_cancel()\n";
+                /* if strlen is not async-safe, you deserve to lose */
+                write( STDERR_FILENO, msg, strlen(msg) );
+            }
+        }
         break;
     default:
         ACH_LOG( LOG_WARNING, "Received unexpected signal: %d\n", sig );
