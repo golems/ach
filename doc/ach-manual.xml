@@ -679,9 +679,12 @@ c.close()
     </cmdsynopsis>
 
     <para>The achd server should be setup to run from the
-    <command>inetd</command> super-server. Some distributions use the
-    alternative <command>xinetd</command>, which is configured
-    differently.</para>
+    <command><ulink
+    url="http://en.wikipedia.org/wiki/Inetd">inetd</ulink></command>
+    super-server. Some distributions use the alternative
+    <command><ulink
+    url="http://www.xinetd.org/">xinetd</ulink></command>, which is
+    configured differently.</para>
 
     <note>
       <para>
@@ -715,9 +718,9 @@ c.close()
 
     <para>
       You will probably need to restart inetd after editing the
-      configuration file.  How to do this may vary depending on the
-      init system used by your operating system and the particular
-      inetd you are using.  Here are some options which may work:
+      configuration file.  How to do this depends on the init system
+      used by your operating system and the particular inetd you are
+      using.  Here are some options which may work:
     </para>
     <variablelist>
       <varlistentry><term>SysV Init (general GNU/Linux)</term>
@@ -803,23 +806,42 @@ Connection closed by foreign host.
 
     <tip>
       <para>
-        For the achd server to access any channel, it must be readable
-        and writable by the user under which achd runs ("nobody" in
-        the above example line for inetd.conf).  If you trust all
-        users on the local machine, you can set the channel
-        permissions to "666", but please note that this is not a
-        secure configuration.  An alternative is to create a separate
-        user account for achd and ensure that channels are readable
+        If <command>achd</command> is not operating properly, check
+        the log files on your machine for more information.  The log
+        output will typically be stored in a file such as
+        <filename>/var/log/daemon.log</filename>, though this depends
+        on how <ulink
+        url="http://en.wikipedia.org/wiki/Syslog">syslog</ulink> is
+        configured on your system.  You can also add the
+        <userinput>-vv</userinput> flags to both server
+        <command>achd</command> (in <filename>inetd.conf</filename>)
+        the client <command>achd</command> commands to enable
+        debugging output.  Syslog may store the debug output in
+        <filename>/var/log/debug.log</filename>.
+      </para>
+    </tip>
+
+    <tip>
+      <para>
+        For the <command>achd</command> server to access any channel,
+        it must be readable and writable by the user under which
+        <command>achd</command> runs ("nobody" in the above example
+        line for inetd.conf).  If you trust all users on the local
+        machine, you can set the channel permissions to "666", but
+        please note that this is not a secure configuration.  An
+        alternative is to create a separate user account for
+        <command>achd</command> and ensure that channels are readable
         and writable by that account or one of its groups.
       </para>
     </tip>
     <warning>
       <para>
-        Currently, achd performs no authentication, access control, or
-        encryption (this may be added in the future).  If security is
-        a concern in your application, it must currently be addressed
-        at the network level, e.g. by physical isolation, firewalling,
-        a VPN such as IPSec, and/or SSH tunnelling.
+        Currently, <command>achd</command> performs no authentication,
+        access control, or encryption (this may be added in the
+        future).  If security is a concern in your application, it
+        must currently be addressed at the network level, e.g. by
+        physical isolation, firewalling, a VPN such as IPSec, and/or
+        SSH tunnelling.
       </para>
     </warning>
     </sect3>
@@ -932,8 +954,8 @@ Connection closed by foreign host.
       </listitem>
       <listitem>
         <para>
-          Restart child if it terminates unsuccessfully,
-          <userinput>-r</userinput> flag.
+          Reconnect if connection is broken, <userinput>-r</userinput>
+          flag.
         </para>
       </listitem>
       <listitem>
@@ -1321,13 +1343,17 @@ if( my_parent_is_achcop ) {
 
     <sect2><title>Serialization</title>
     <para>
-      Ach is orthogonal to the issue of serialization: it only
-      handles raw byte arrays.  Thus, you can choose whatever type of
+      Ach is orthogonal to the issue of serialization: it only handles
+      raw byte arrays.  Thus, you can choose whatever type of
       serialization is most appropriate for you application.  For
       maximum performance, it may be appropriate to define message
       types as simple C structures.  If more flexibility is required,
-      there are a variety of other options to choose from: XDR, ASN.1,
-      Protocol Buffers, etc.
+      there are a variety of other options to choose from: <ulink
+      url="http://tools.ietf.org/html/rfc1014">XDR</ulink>, <ulink
+      url="http://www.itu.int/ITU-T/asn1/introduction/">ASN.1</ulink>,
+      <ulink
+      url="https://developers.google.com/protocol-buffers/">Protocol
+      Buffers</ulink>, etc.
     </para>
     </sect2>
 
