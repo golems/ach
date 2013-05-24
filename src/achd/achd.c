@@ -143,10 +143,10 @@ int main(int argc, char **argv) {
                 ach_pid_notify = getppid();
                 break;
             case 'q':
-                cx.verbosity --;
+                ach_verbosity --;
                 break;
             case 'v':
-                cx.verbosity ++;
+                ach_verbosity ++;
                 break;
             case 'V':   /* version     */
                 ach_print_version("achd");
@@ -620,7 +620,7 @@ void achd_error_header( enum ach_status code, const char fmt[], ... ) {
 
 void achd_error_log( enum ach_status code, const char fmt[],  ...) {
     int tty = isatty(STDERR_FILENO);
-    if( tty && cx.verbosity >= -1) {
+    if( tty && ach_verbosity >= -1) {
         if( ACH_OK != code ) {
             fprintf(stderr, "status: %s\n", ach_result_to_string(code));
         }

@@ -157,7 +157,6 @@ void achd_pull_udp( struct achd_conn *);
 struct achd_cx {
     struct achd_headers cl_opts; /** Options from command line */
     int mode;
-    int verbosity;
     int port;
     int reconnect;
     int detach;
