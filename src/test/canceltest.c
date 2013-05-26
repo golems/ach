@@ -55,7 +55,7 @@
 #include <stdio.h>
 #include "ach.h"
 
-#define OPT_CHAN  "ach-test"
+#define OPT_CHAN  "ach-test-cancel"
 
 static void test(ach_status_t r, const char *thing) {
     if( r != ACH_OK ) {

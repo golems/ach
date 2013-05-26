@@ -57,8 +57,8 @@
 
 #define OPT_CHAN  "ach-test"
 
-#define OPT_N_SUB  8
-#define OPT_N_PUB  8
+#define OPT_N_SUB  4
+#define OPT_N_PUB  4
 #define OPT_PUB_SLEEP_US  500
 #define OPT_N_MSGS  1024
 

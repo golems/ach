@@ -56,7 +56,7 @@
 #include <assert.h>
 #include "ach.h"
 
-#define OPT_CHAN  "ach-test"
+#define OPT_CHAN  "ach-test-robust"
 
 static void test(int t, enum ach_status r, const char *thing) {
     if( !t ) {

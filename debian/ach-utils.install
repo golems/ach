@@ -1,8 +1,6 @@
 usr/bin/ach
-usr/bin/achpipe
-usr/bin/achpipe.bin
-usr/bin/achlog
 usr/bin/achcat
 usr/bin/achbench
 usr/bin/achd
+usr/bin/achcop
 usr/share/man/man1/*.1

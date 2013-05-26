@@ -56,6 +56,7 @@ dnl               [], [], [#include<pthread.h>])
 
 dnl AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
 AC_SEARCH_LIBS([pthread_mutex_lock],[pthread])
+AC_SEARCH_LIBS([pthread_mutexattr_setpshared],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 
 # check process-shared mutex
