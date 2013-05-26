@@ -1,4 +1,4 @@
-EXTRA_DIST = ach-manual.xml achpipe.bin.inc achd.inc
+EXTRA_DIST = ach-manual.xml achd.inc
 
 # Rules to build
 if HAVE_HELP2MAN
@@ -11,14 +11,8 @@ man/achbench.1: $(top_srcdir)/src/ach-bench.c $(top_srcdir)/configure.ac
 man/achcat.1: $(top_srcdir)/src/achcat.c $(top_srcdir)/configure.ac
 	$(HELP2MAN) -h -h -v -V --no-info -n "ach debugging tool" $(top_builddir)/achcat$(EXEEXT) -o $@
 
-man/achpipe.bin.1: $(top_srcdir)/src/achpipe-bin.c $(top_srcdir)/configure.ac achpipe.bin.inc
-	$(HELP2MAN) -h -h -v -V --no-info -i achpipe.bin.inc -n "send ach messages over streams" $(top_builddir)/achpipe.bin$(EXEEXT) -o $@
-
 man/achd.1: $(top_srcdir)/src/achd/achd.c $(top_srcdir)/configure.ac achd.inc
 	$(HELP2MAN) -h -\? -v -V -i achd.inc --no-info -n "send ach messages over streams" $(top_builddir)/achd$(EXEEXT) -o $@
-
-man/achpipe.1: $(top_srcdir)/achpipe
-	$(HELP2MAN) -h -h -v -V --no-info -n "send ach messages over streams" $(top_srcdir)/achpipe -o $@
 
 man/achlog.1: $(top_srcdir)/achlog
 	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
@@ -39,7 +33,7 @@ endif
 
 # test what to install
 if HAVE_MANPAGES
-dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achpipe.bin.1 man/achpipe.1 man/achlog.1 man/achd.1 man/achcop.1
+dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achlog.1 man/achd.1 man/achcop.1
 endif
 
 if HAVE_MANHTML

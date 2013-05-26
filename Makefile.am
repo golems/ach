@@ -1,7 +1,7 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = CMakeLists.txt spin
-dist_bin_SCRIPTS = achpipe achlog
+# dist_bin_SCRIPTS = achpipe achlog
 
 dist_noinst_SCRIPTS = achtooltest src/run-benchmarks test-achcop
 
@@ -22,7 +22,7 @@ lib_LTLIBRARIES = libach.la
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
-bin_PROGRAMS = ach achpipe.bin achcat achbench achd achcop
+bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example canceltest robusttest
 
 libach_la_SOURCES = src/ach.c src/pipe.c
@@ -40,8 +40,10 @@ ach_LDADD = libach.la libachutil.la
 achcop_SOURCES = src/achcop.c
 achcop_LDADD = libachutil.la
 
-achpipe_bin_SOURCES = src/achpipe-bin.c
-achpipe_bin_LDADD = libach.la libachutil.la
+# achpipe_bin_SOURCES = src/achpipe-bin.c
+# achpipe_bin_LDADD = libach.la libachutil.la
+achlog_SOURCES = src/achlog.c
+achlog_LDADD = libach.la libachutil.la
 
 achtest_SOURCES = src/test/achtest.c
 achtest_LDADD = libach.la
