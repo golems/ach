@@ -142,6 +142,11 @@ static void posarg( char *arg ) {
 }
 
 int main( int argc, char **argv ) {
+    /* Check if we're running under achcop */
+    if( getenv("ACHCOP") ) {
+        ach_pid_notify = getppid();
+    }
+
     int c;
     while( (c = getopt( argc, argv, "zlnh?V")) != -1 ) {
         switch(c) {
@@ -220,6 +225,7 @@ int main( int argc, char **argv ) {
         int r = pthread_create( thread+i, NULL, worker, (void*)(log_desc+i) );
         if( r ) ACH_DIE( "Couldn't start worker thread: %s\n", strerror(r) );
     }
+    ach_notify(ACH_SIG_OK);
 
     /* Wait for Signal */
     ach_sig_wait( sigs );
