@@ -69,6 +69,10 @@ static struct log_desc {
 static size_t n_log = 0;
 static double opt_freq = 0;
 static int opt_last = 0;
+static int opt_gzip = 0;
+
+
+static FILE *filter( const char *program, const char *channel, const char *suffix );
 
 static void *worker( void *arg ) {
     struct log_desc *desc = (struct log_desc*)arg;
@@ -132,34 +136,14 @@ static void *worker( void *arg ) {
     return arg;
 }
 
-
-
-static void help() {
-    puts( "Usage: achlog [OPTIONS] channels...\n"
-          "Log ach channels to files"
-          "\n"
-          "Options:\n"
-          "  -?,                  Show help\n"
-          "\n"
-          "Examples:\n"
-          "  achlog foo bar       Log channels foo and bar\n"
-          "\n"
-          "Report bugs to <ntd@gatech.edu>"
-        );
-    exit(EXIT_SUCCESS);
-}
-
 static void posarg( char *arg ) {
-    if( 0 == strcmp("--help", arg) ) help();
-
     log_desc = (struct log_desc*)realloc( log_desc, (1+n_log)*sizeof(log_desc[0]) );
     log_desc[n_log++].name = arg;
 }
 
-
 int main( int argc, char **argv ) {
     int c;
-    while( (c = getopt( argc, argv, "lnh?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "zlnh?V")) != -1 ) {
         switch(c) {
         case 'v':
             ach_verbosity ++;
@@ -170,6 +154,9 @@ int main( int argc, char **argv ) {
         case 'n':
             opt_last = 0;
             break;
+        case 'z':
+            opt_gzip = 1;
+            break;
         /* case 'f': */
         /*     opt_freq = atof(optarg); */
         /*     break; */
@@ -179,7 +166,19 @@ int main( int argc, char **argv ) {
         case '?':
         case 'h':
         case 'H':
-            help();
+            puts( "Usage: achlog [OPTIONS] channels...\n"
+                  "Log ach channels to files"
+                  "\n"
+                  "Options:\n"
+                  "  -?,                  Show help\n"
+                  "  -z,                  Filter output through gzip\n"
+                  "\n"
+                  "Examples:\n"
+                  "  achlog foo bar       Log channels foo and bar\n"
+                  "\n"
+                  "Report bugs to <ntd@gatech.edu>"
+                );
+            exit(EXIT_SUCCESS);
         default:
             posarg(optarg);
         }
@@ -188,6 +187,12 @@ int main( int argc, char **argv ) {
         posarg(argv[optind++]);
     }
     if( 0 == n_log ) ACH_DIE("No channels to log\n");
+
+    /* Block Signals */
+    /* Have to block these before forking so ctrl-C doesn't kill the
+     * gzip */
+    int sigs[] = {SIGTERM, SIGINT, 0};
+    ach_sig_block_dummy( sigs );
 
     /* Open Channels */
     size_t i;
@@ -198,17 +203,16 @@ int main( int argc, char **argv ) {
                      log_desc[i].name, ach_result_to_string(r) );
         }
         /* Open log file */
-        log_desc[i].fout = fopen(log_desc[i].name, "w");
+        if( opt_gzip ) {
+            log_desc[i].fout = filter( "gzip -c", log_desc[i].name, ".gz" );
+        } else {
+            log_desc[i].fout = fopen(log_desc[i].name, "w");
+        }
         if( NULL == log_desc[i].fout ) {
             ACH_DIE( "Could not open log file for %s: %s\n",
                      log_desc[i].name, strerror(errno) );
         }
     }
-
-
-    /* Block Signals */
-    int sigs[] = {SIGTERM, SIGINT, 0};
-    ach_sig_block_dummy( sigs );
 
     /* Create Workers */
     pthread_t thread[n_log];
@@ -232,7 +236,49 @@ int main( int argc, char **argv ) {
     for( i = 0; i < n_log; i ++ ) {
         int r = pthread_join( thread[i], NULL );
         if( r ) ACH_DIE( "Couldn't join worker thread: %s\n", strerror(r) );
+        if( opt_gzip ) {
+            if( pclose(log_desc[i].fout) < 0 ) {
+                ACH_LOG( LOG_ERR, "Could not pclose output for %s: %s\n",
+                         log_desc[i].name, strerror(errno) );
+            }
+        } else {
+            fclose(log_desc[i].fout);
+        }
     }
 
     return 0;
+}
+
+static FILE *filter( const char *program, const char *channel, const char *suffix ) {
+    size_t n = strlen(channel) + strlen(suffix) + 1;
+    char buf[n];
+    strcpy(buf, channel);
+    strcat(buf, suffix);
+    FILE *fout = fopen( buf, "w");
+    if( NULL == fout ) {
+        ACH_DIE( "Could not open log file %s: %s\n",
+                 buf, strerror(errno) );
+    }
+    int oldout = dup(STDOUT_FILENO);
+    if( oldout < 0 )  {
+        ACH_DIE( "Could not dup stdout: %s\n", strerror(errno) );
+    }
+    if( dup2(fileno(fout), STDOUT_FILENO) < 0 ) {
+        ACH_DIE( "Could not dup output: %s\n", strerror(errno) );
+    }
+    FILE *f = popen(program, "w");
+    if( NULL == f ) {
+        ACH_DIE( "Could not popen `%s': %s\n", program, strerror(errno) );
+    }
+    if( dup2(oldout, STDOUT_FILENO) < 0 ) {
+        ACH_DIE( "Could not dup stdout back: %s\n", strerror(errno) );
+    }
+    if( close(oldout) ) {
+        ACH_LOG( LOG_WARNING, "Could not close dup'ed stdout: %s\n", strerror(errno) );
+    }
+    if( fclose(fout) )  {
+        ACH_LOG( LOG_WARNING, "Could not close dup'ed output file: %s\n", strerror(errno) );
+    }
+
+    return f;
 }
