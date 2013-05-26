@@ -226,7 +226,7 @@ AS_IF([test "x$with_python" = "xyes"],[
     [PYTHON_VERSION=none])
 
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
-AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py])
+AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
 
 AC_OUTPUT
 

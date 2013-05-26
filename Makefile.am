@@ -9,6 +9,9 @@ SUBDIRS = . doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = ach.pc
+
 TESTS = achtest achtooltest test-achcop canceltest
 
 include_HEADERS = include/ach.h
