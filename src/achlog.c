@@ -56,6 +56,9 @@
 #include <errno.h>
 #include <inttypes.h>
 #include <syslog.h>
+#include <unistd.h>
+#include <limits.h>
+#include <pwd.h>
 #include "ach.h"
 #include "achutil.h"
 
@@ -71,6 +74,17 @@ static double opt_freq = 0;
 static int opt_last = 0;
 static int opt_gzip = 0;
 
+static struct timespec now_ach, now_real;
+const char *now_real_str = "\n";
+
+/* SUSv2 guarantees that "Host names are limited to 255 bytes".
+ * POSIX.1-2001 guarantees that "Host names (not including the
+ * terminating null byte) are limited to HOST_NAME_MAX bytes".  On
+ * Linux, HOST_NAME_MAX is defined with the value 64, which has been
+ * the limit since Linux 1.0 (earlier kernels imposed a limit of 8
+ * bytes). */
+static char host[HOST_NAME_MAX+1] = {0};
+const struct passwd *passwd;
 
 static FILE *filter( const char *program, const char *channel, const char *suffix );
 
@@ -80,11 +94,27 @@ static void *worker( void *arg ) {
     /* write header */
     fprintf( desc->fout,
              "ACHLOG\n"
-             "log-channel: %s\n"
+             "channel-name: %s\n"
              "log-version: 0\n"
-             ".\n",
-             desc->name
-        );
+             "log-time-ach: %lu.%09lu\n"
+             "log-time-real: %lu.%09lu # %s"
+             "local-host: %s\n",
+             desc->name,
+             now_ach.tv_sec, now_ach.tv_nsec,
+             now_real.tv_sec, now_real.tv_nsec, now_real_str,
+             host );
+    if( passwd ) {
+        fprintf( desc->fout,
+                 "user: %s # %s\n",
+                 passwd->pw_name, passwd->pw_gecos
+            );
+    }
+    fputs( ".\n", desc->fout );
+
+    if( fflush(desc->fout) ) {
+        ACH_LOG( LOG_ERR, "Could not flush file %s: %s\n",
+                 desc->name, strerror(errno) );
+    }
 
     size_t max = 512;
     ach_pipe_frame_t *frame = ach_pipe_alloc( max );
@@ -218,6 +248,22 @@ int main( int argc, char **argv ) {
                      log_desc[i].name, strerror(errno) );
         }
     }
+
+    /* get some data */
+    if( clock_gettime(ACH_DEFAULT_CLOCK, &now_ach ) ||
+        clock_gettime(CLOCK_REALTIME,    &now_real ) )
+    {
+        ACH_DIE( "Could not get time: %s\n", strerror(errno) );
+    }
+    if( gethostname( host, sizeof(host) ) ) {
+        ACH_LOG(LOG_ERR, "Could not get host name: %s\n", strerror(errno));
+    }
+    host[sizeof(host)-1] = '\0';
+    passwd = getpwuid(getuid());
+    if( passwd ) {
+        strtok(passwd->pw_gecos, ",");
+    }
+    now_real_str = ctime( &now_real.tv_sec );
 
     /* Create Workers */
     pthread_t thread[n_log];
