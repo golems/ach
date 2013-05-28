@@ -121,14 +121,13 @@
  *   GRANDPARENT will call alarm() and wait for signals.  If it times
  *   out on SIGALARM, it assumes failure.
  *
- *   WORKER will accept SIGUSR1 and SIGUSR2.  If received it will
- *   relay (one time only) to GRANDPARENT (if one exists), and
- *   consider corresponding success or failure CHILD.  If WORKER
- *   instead times out on sigalarm before the CHILD exits, it assumes
- *   CHILD is running correctly and sends SIGUSR1 to the GRANDPARENT
- *   If the CHILD exits with failure before the SIGALRM timeout, then
- *   WORKER considers it to have failed, sends SIGUSR2 to GRANDPARENT,
- *   and exits itself with failure.
+ *   WORKER will accept SIGUSR1.  If received it will relay (one time
+ *   only) to GRANDPARENT (if one exists), If WORKER instead times out
+ *   on sigalarm before the CHILD exits, it assumes CHILD is running
+ *   correctly and sends SIGUSR1 to the GRANDPARENT. If the CHILD
+ *   exits with failure before the SIGALRM timeout, then WORKER
+ *   considers it to have failed, sends SIGUSR2 to GRANDPARENT, and
+ *   exits itself with failure.
  */
 
 /*
@@ -163,14 +162,11 @@ static int run( int restart, int fd_pid, const char *file, const char ** args);
 /* Fork and exec a child process, writing its PID to fd_pid */
 static pid_t start_child( int fd_pid, const char *file, const char ** args);
 
-/* Exec the child, signalling an error if exec fails */
-static void exec_child( pid_t pid_notify, const char *file, const char ** args);
-
 /* Error checking on kill(SIGTERM) */
 static void terminate_child( pid_t pid );
 
 /* Error checking on wait() */
-static void waitloop( pid_t *pid, int *status, int *signalled );
+static void waitloop( pid_t pid_child, int *status );
 
 
 /** Signals for a running achcop */
@@ -399,13 +395,12 @@ static void write_pid( int fd, pid_t pid ) {
 
 
 /* Now it gets hairy... */
-
-enum run_state {
-    RUN_STATE_DONE,      /**< end run loop */
-    RUN_STATE_RUN,       /**< normal state */
-    RUN_STATE_START,     /**< start the child */
-    RUN_STATE_RESTART,   /**< when child exits, restart it */
-    RUN_STATE_TERMINATE  /**< when child exits, done */
+struct flags {
+    int first_run;
+    int restart;
+    int force_restart;
+    int start;
+    int done;
 };
 
 static int run( int restart, int fd_pid, const char *file, const char **args) {
@@ -417,104 +412,73 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
     ACH_LOG( LOG_DEBUG, "starting run loop as pid %d\n", getpid() );
 
     int exit_status = EXIT_FAILURE;  /* exit status for this process */
-    int run_success = 0; /* has the child started successfully once? */
 
-    pid_t child_pid = start_child( fd_pid, file, args );
-    /* If child lasts this long, assume it's working */
-    alarm( ACH_CHILD_TIMEOUT_SEC );
+    struct flags flags = { .restart = restart,
+                           .force_restart = 0,
+                           .first_run = 1,
+                           .start = 1,
+                           .done = 0
+    };
 
-    enum run_state state = RUN_STATE_RUN;
+    pid_t pid_child = -1;
+    while( ! flags.done ) {
 
-    while( RUN_STATE_DONE != state ) {
         /* start */
-        if( RUN_STATE_START == state ) {
-            child_pid = start_child( fd_pid, file, args );
-            state = RUN_STATE_RUN;
+        if( flags.start ) {
+            pid_child = start_child( fd_pid, file, args );
+            /* If child lasts this long, assume it's working */
+            if( flags.first_run )
+                alarm( ACH_CHILD_TIMEOUT_SEC );
+            flags.start = 0;
+            flags.force_restart = 0;
         }
+
         /* wait for signal */
         int sig = ach_sig_wait( achcop_signals );
-        int status=0, signal=0;
-        pid_t wpid;
+
         /* handle signal */
         switch(sig) {
         case SIGTERM:
         case SIGINT: /* We got a sigterm/sigint */
             /* Kill Child */
             ACH_LOG(LOG_DEBUG, "Killing child\n");
-            terminate_child( child_pid );
-            /* Exit */
-            exit_status = status;
-            state = RUN_STATE_TERMINATE;
+            flags.restart = 0;
+            terminate_child( pid_child );
             break;
         case SIGCHLD: /* child died */
-            /* Get child status and restart or exit */
-            do { waitloop(&wpid, &status, &signal);
-            } while (wpid != child_pid);
-            ACH_LOG( LOG_DEBUG, "Child exited, signal: %d, status: %d\n", signal, status );
+            /* Get child status */
+            waitloop(pid_child, &exit_status );
             /* Decide whether to restart the child */
-            switch(state) {
-            case RUN_STATE_RUN:
-                if( 0 == signal && EXIT_SUCCESS == status ) {
-                    /* Child successful */
-                    ACH_LOG(LOG_NOTICE, "Child `%s' returned success, exiting\n", file);
-                    exit_status = status;
-                    state = RUN_STATE_DONE;
-                } else {
-                    /* Child failed */
-                    if( signal ) {
-                        ACH_LOG( LOG_ERR, "Child `%s' died on signal: '%s' (%d)\n",
-                                 file, strsignal(signal), signal );
-                    } else {
-                        ACH_LOG( LOG_ERR, "Child `%s' died returning: %d\n",
-                                 file, status );
-                    }
-                    if (!run_success) { /* child never ran successfully */
-                        /* Child died to quickly first time, give up */
-                        ACH_LOG(LOG_ERR, "Child `%s' died too fast, exiting\n", file);
-                        exit_status = signal ? EXIT_FAILURE : status;
-                        state = RUN_STATE_DONE;
-                    } else {
-                        /* else maybe restart */
-                        ACH_LOG(LOG_ERR, "Child `%s' died:  %s\n",
-                                file, restart ? "restarting" : "exiting" );
-                        exit_status = status;
-                        state = restart ? RUN_STATE_START : RUN_STATE_DONE;
-                    }
-                }
-                break;
-            case RUN_STATE_RESTART:
-                ACH_LOG(LOG_DEBUG, "Now restart child\n");
-                state = RUN_STATE_START;
-                break;
-            case RUN_STATE_TERMINATE:
-                exit_status = signal ? EXIT_FAILURE : status;
-                ACH_LOG(LOG_DEBUG, "Now exit: %d\n", exit_status);
-                state = RUN_STATE_DONE;
-                break;
-            case RUN_STATE_DONE:
-            case RUN_STATE_START:
-                ACH_DIE( "Unexpected state when SIGCHLD received\n");
+            if( flags.force_restart ) {
+                /* Child successful */
+                ACH_LOG(LOG_NOTICE, "Child returned, restarting\n" );
+                flags.start = 1;
+            } else if( EXIT_SUCCESS == exit_status ) {
+                /* Child successful */
+                ACH_LOG(LOG_NOTICE, "Child `%s' returned success, exiting\n", file);
+                flags.done = 1;
+            } else if (flags.first_run) { /* child never ran successfully */
+                /* Child died too quickly first time, give up */
+                ACH_LOG(LOG_ERR, "Child `%s' died too fast, exiting\n", file);
+                flags.done = 1;
+            } else if (flags.restart) {
+                ACH_LOG(LOG_NOTICE, "Restarting child\n");
+                flags.start = 1;
+            } else {
+                ACH_LOG(LOG_NOTICE, "Exiting\n");
+                flags.done = 1;
             }
             break;
         case SIGHUP: /* someone told us to restart the child */
             ACH_LOG(LOG_DEBUG, "Restarting child on SIGHUP\n");
-            terminate_child( child_pid );
-            state = RUN_STATE_RESTART;
-            /* continue under SIGCHLD */
+            flags.force_restart = 1;
+            terminate_child( pid_child );
             break;
         case SIGALRM:
         case ACH_SIG_OK: /* child started ok, keep on waiting */
-            if( !run_success ) {
-                run_success = 1;
-                ACH_LOG( LOG_INFO, "Child %d started ok\n", child_pid );
-            }
+            ACH_LOG( LOG_INFO, "Child %d started ok\n", pid_child );
+            flags.first_run = 0;
             ach_notify( ACH_SIG_OK );
-            break;
-            /* else fall through to relay */
-        case ACH_SIG_FAIL: /* child failed, give up */
-            ACH_LOG( LOG_ERR, "Child signalled failure, exiting\n");
-            exit_status = EXIT_FAILURE;
-            state = RUN_STATE_DONE;
             break;
         default:
             /* continue and sigwait() */
@@ -531,14 +495,15 @@ static int run( int restart, int fd_pid, const char *file, const char **args) {
 }
 
 static pid_t start_child( int fd_pid, const char *file, const char **args) {
-    pid_t ppid = getpid();
     pid_t cpid = fork();
 
     if( 0 == cpid ) { /* child: exec */
         ACH_LOG( LOG_DEBUG, "In child %d\n", getpid() );
         /* Unblock signals for the child */
         ach_sig_dfl_unblock( achcop_signals );
-        exec_child( ppid, file, args );
+        execvp( file, (char *const*)args );
+        ACH_LOG( LOG_ERR, "Could not exec: %s\n", strerror(errno) );
+        exit(EXIT_FAILURE);
         assert(0);
     } else if ( cpid > 0 ) { /* parent: record child */
         ACH_LOG( LOG_DEBUG, "In parent: forked off %d\n", cpid );
@@ -550,55 +515,37 @@ static pid_t start_child( int fd_pid, const char *file, const char **args) {
     return cpid;
 }
 
-static void exec_child( pid_t pid_notify, const char *file, const char ** args) {
-    execvp( file, (char *const*)args );
-    int exec_error = errno;
-    /* Should not get here */
-    if( pid_notify > 0 ) {
-        if( kill(pid_notify, ACH_SIG_FAIL) ) {
-            ACH_LOG( LOG_ERR, "Could not notify parent %d of failure: %s\n",
-                     pid_notify, strerror(errno) );
-        }
+static void waitloop( pid_t pid_child, int *exit_status ) {
+    *exit_status = EXIT_FAILURE;
+
+    /* wait */
+    pid_t p;
+    int status;
+    while( ( (p = waitpid( pid_child, &status, WNOHANG)) < 0 &&
+            EINTR == errno ) );
+    if( p < 0 ) ACH_DIE("Could not wait for child: %s\n", strerror(errno) );
+
+    /* if unexpected pid */
+    if( p != pid_child ) {
+        ACH_DIE( "Unexpected wait pid: %d\n", p );
     }
-    ACH_LOG( LOG_ERR, "Could not exec: %s\n", strerror(exec_error) );
-    exit(EXIT_FAILURE);
+
+    /* check status */
+    if( WIFEXITED(status) ) { /* child exited */
+        ACH_LOG(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
+        *exit_status = WEXITSTATUS(status);
+    } else if ( WIFSIGNALED(status) ) { /* child signalled */
+        int sig = WTERMSIG(status);
+        ACH_LOG( LOG_NOTICE, "child signalled: %s (%d)\n",
+                 strsignal(sig), sig );
+    } else { /* something weird happened */
+        ACH_LOG( LOG_ERR, "Unexpexted wait status: %d\n", status );
+    }
 }
 
-static void waitloop( pid_t *pid, int *exit_status, int *signal ) {
-    *pid = 0;
-    *exit_status = 0;
-    *signal = 0;
-    while(1) {
-        int status;
-        *pid = wait( &status );
-        if( *pid < 0 ) { /* Wait failed */
-            if( EINTR == errno ) {
-                ACH_LOG(LOG_DEBUG, "wait interrupted\n");
-            } else if (ECHILD == errno) {
-                ACH_DIE("unexpected ECHILD\n");
-            } else { /* something bad */
-                ACH_DIE( "Couldn't wait for child: %s\n", strerror(errno));
-            }
-        } else { /* Child did something */
-            if( WIFEXITED(status) ) { /* child exited */
-                ACH_LOG(LOG_DEBUG, "child exited with %d\n", WEXITSTATUS(status));
-                *exit_status = WEXITSTATUS(status);
-                return;
-            } else if ( WIFSIGNALED(status) ) { /* child signalled */
-                *signal = WTERMSIG(status);
-                ACH_LOG( LOG_DEBUG, "child signalled: %s (%d)\n",
-                         strsignal(*signal), *signal );
-                return;
-            } else { /* something weird happened */
-                ACH_LOG(LOG_WARNING, "Unexpected wait result %d\n", status);
-                /* I guess we keep waiting then */
-            }
-        }
-    }
-}
 
 static void terminate_child( pid_t pid ) {
     if( kill(pid, SIGTERM) ) {
-        ACH_DIE( "Couldn't kill child: %s\n", strerror(errno) );
+        ACH_LOG( LOG_ERR, "Couldn't kill child: %s\n", strerror(errno) );
     }
 }

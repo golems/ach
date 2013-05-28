@@ -266,6 +266,8 @@ void ach_notify(int sig) {
 }
 
 void ach_die(void) {
-    ach_notify(ACH_SIG_FAIL);
+    /* notify failure if not our parent */
+    if( getppid() != ach_pid_notify )
+        ach_notify(ACH_SIG_FAIL);
     exit(EXIT_FAILURE);
 }

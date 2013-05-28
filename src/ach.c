@@ -239,7 +239,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
     switch( lock_result ) {
     case ETIMEDOUT:
         if( is_cond_check ) {
-            /* release mutex with cond_var times out */
+            /* release mutex if cond_wait times out */
             pthread_mutex_unlock( &chan->shm->sync.mutex );
         }
         return ACH_TIMEOUT;
@@ -262,7 +262,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
         } else return ACH_OK; /* it's ok, channel is consistent */
     default:
         if( is_cond_check ) {
-            /* release mutex with cond_wait fails */
+            /* release mutex if cond_wait fails */
             pthread_mutex_unlock( &chan->shm->sync.mutex );
         }
         return ACH_FAILED_SYSCALL;
