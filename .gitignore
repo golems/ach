@@ -79,3 +79,4 @@ Makefile.in
 /canceltest
 /robusttest
 /ach.pc
+/achlog

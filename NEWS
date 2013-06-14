@@ -1,3 +1,15 @@
+Ach 1.2.0
+=========
+
+* Feature: ach_cancel() permits interrupting readers waiting for a
+  frame
+* Improvement: more robust behavior when processes holding the channel
+  mutex die
+  - Readers who die with the mutex cause no problem
+  - Writers who die with the mutex cause future calls to return
+    ACH_CORRUPT
+* Feature: achcop utility to background and monitor daemon processes
+
 Ach 1.1.0
 =========
 

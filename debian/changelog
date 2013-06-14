@@ -1,3 +1,11 @@
+ach (1.2.0~rc0) unstable; urgency=low
+
+  * Add ach_cancel() function
+  * Improve mutex robustness
+  * Add achlog program
+
+ -- Neil Dantam <ntd@gatech.edu>  Fri, 14 June 2013 17:10:00 -0400
+
 ach (1.1.0) unstable; urgency=low
 
   * Add achd network daemon

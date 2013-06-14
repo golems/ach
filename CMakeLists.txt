@@ -18,7 +18,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 1.1.0)
+set(VERSION 1.2.0)
 
 add_definitions(-DPACKAGE_VERSION=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 #add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
@@ -37,17 +37,21 @@ target_link_libraries(ach pthread ${LIBRT})
 # Does not correspond to the package version
 SET_TARGET_PROPERTIES( ach PROPERTIES
                        SOVERSION 1     # Major version
-                       VERSION 1.1.0 ) # Major.minor.patch
+                       VERSION 1.2.0 ) # Major.minor.patch
 
 add_executable(achtool src/achtool.c src/achutil.c)
 target_link_libraries(achtool ach pthread ${LIBRT})
 SET_TARGET_PROPERTIES(achtool PROPERTIES OUTPUT_NAME ach)
 
-add_executable(achtest src/achtest.c)
+add_executable(achtest src/test/achtest.c)
 target_link_libraries(achtest ach pthread ${LIBRT} m)
 
-add_executable(achpipe.bin src/achpipe-bin.c src/achutil.c)
-target_link_libraries(achpipe.bin ach pthread ${LIBRT})
+add_executable(achcop src/achcop.c src/achutil.c)
+target_link_libraries(achtest ach pthread ${LIBRT} m)
+
+add_executable(achd src/achd/achd.c src/achd/client.c src/achd/io.c src/achd/transport.c src/achutil.c)
+target_link_libraries(achd ach pthread ${LIBRT} m)
+
 
 if(HAVE_LIBRT)
    add_executable(achcat src/achcat.c src/achutil.c)

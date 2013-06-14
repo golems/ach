@@ -1,7 +1,7 @@
 Source: ach
 Priority: extra
 Maintainer: Neil Dantam <ntd@gatech.edu>
-Build-Depends: debhelper (>= 9), autotools-dev, python, po-debconf
+Build-Depends: debhelper (>= 9), autotools-dev, po-debconf
 Standards-Version: 3.9.4
 Section: libs
 Homepage: http://golems.org/node/1526
@@ -43,7 +43,7 @@ Description: Realtime message bus IPC library, library files
 Package: ach-utils
 Section: libs
 Architecture: any
-Depends: libach1, ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, openbsd-inetd | inet-superserver
+Depends: libach1, ${shlibs:Depends}, ${misc:Depends}, openbsd-inetd | inet-superserver
 Description: Realtime message bus IPC library, utility programs
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control

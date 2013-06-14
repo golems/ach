@@ -37,7 +37,7 @@ dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achlog.1 man/achd.1 ma
 endif
 
 if HAVE_MANHTML
-MAN_HTML = man/ach.html man/achbench.html man/achcat.html man/achpipe.bin.html man/achpipe.html man/achlog.html man/achd.html man/achcop.html
+MAN_HTML = man/ach.html man/achbench.html man/achcat.html man/achlog.html man/achd.html man/achcop.html
 endif
 
 if HAVE_MANUAL
