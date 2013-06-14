@@ -919,7 +919,7 @@ Connection closed by foreign host.
       achcop Watchdog Utility
     </title>
     <para>
-      The <command>achcop</command> program which can be used to start
+      The <command>achcop</command> program can be used to start
       daemons, and restart them if they die.
     </para>
 
@@ -1109,6 +1109,94 @@ if( my_parent_is_achcop ) {
         your shell, your shell will terminate.
       </para>
     </sect3>
+    </sect2>
+
+  </sect1>
+
+  <sect1>
+    <title>achlog Logging Utility</title>
+
+    <para>
+      The <command>achlog</command> program can be used to log
+      messages from an ach channel to disk.
+    </para>
+
+   <cmdsynopsis>
+      <command>achlog</command>
+      <arg>-z</arg>
+      <arg>-V</arg>
+      <arg>-?</arg>
+      <arg choice="req">channels...</arg>
+    </cmdsynopsis>
+
+    <sect2><title>Log Format</title>
+    <para>
+      The Log format is similar to the TCP network protocol for
+      achpipe.  The log files begins with a sequence of ASCII
+      key-value headers, followed by a single "." character, followed
+      by a sequence of messages.
+    </para>
+
+    <example><title>achlog headers</title>
+    <screen>
+ACHLOG
+channel-name: foo
+log-version: 0
+log-time-ach: 6226133.801454417
+log-time-real: 1371238788.956337009 # Fri Jun 14 15:39:48 2013
+local-host: daneel
+user: ntd # Neil T. Dantam
+.
+</screen>
+    </example>
+    <para>
+      Messages are framed in the file with the following C struct:
+    </para>
+    <programlisting language="C">
+struct {
+    uint8_t reserved[8];   /* reserved for future use */
+    uint8_t size_bytes[8]; /* size of data, stored little endian */
+    uint8_t data[1];       /* flexible array containing size_bytes of data */
+};
+    </programlisting>
+    </sect2>
+
+    <sect2><title>Usage</title>
+    <example><title>Log channel foo</title>
+    <cmdsynopsis>
+      <command>achlog</command>
+      <arg choice="plain">foo</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Log channel foo and bar, compress with gzip</title>
+    <cmdsynopsis>
+      <command>achlog</command>
+      <arg choice="plain">-z</arg>
+      <arg choice="plain">foo</arg>
+      <arg choice="plain">bar</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Log channel foo in the background</title>
+    <cmdsynopsis>
+      <command>achcop</command>
+      <arg choice="plain">-d</arg>
+      <arg choice="plain">-P /var/run/achcop-achlog-foo.pid</arg>
+      <arg choice="plain">-p /var/run/achlog-foo.pid</arg>
+      <arg choice="plain">--</arg>
+      <arg choice="plain">achlog</arg>
+      <arg choice="plain">foo</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Stop background logging</title>
+    <cmdsynopsis>
+      <command>kill</command>
+      <arg choice="plain">`cat /var/run/achcop-achlog-foo.pid`</arg>
+    </cmdsynopsis>
+    </example>
+
     </sect2>
 
   </sect1>
