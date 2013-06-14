@@ -1,7 +1,7 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2012, Georgia Tech Research Corporation
+ * Copyright (c) 2012-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -254,39 +254,44 @@ int achd_reconnect( struct achd_conn *conn) {
 }
 
 static int socket_connect() {
-    /* Make socket */
-    int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        ACH_LOG(LOG_ERR, "Couldn't create socket: %s\n", strerror(errno));
-        return sockfd;
-    }
-
     /* Lookup Host */
     assert( cx.cl_opts.remote_host );
-    struct hostent *server = gethostbyname( cx.cl_opts.remote_host );
-    if( NULL == server ) {
-        ACH_LOG(LOG_ERR, "Host '%s' not found\n", cx.cl_opts.remote_host);
-        close(sockfd);
+
+    char port_buf[32];
+    sprintf(port_buf, "%d", cx.port );
+
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(struct addrinfo));
+    hints.ai_family = AF_UNSPEC;     /* Allow IPv4 or IPv6 */
+    hints.ai_socktype = SOCK_STREAM; /* stream socket */
+    hints.ai_flags = 0;
+    hints.ai_protocol = IPPROTO_TCP; /* TCP */
+
+    struct addrinfo *addr;
+    int raddr = getaddrinfo( cx.cl_opts.remote_host, port_buf, &hints, &addr );
+    if( raddr ) {
+        ACH_LOG( LOG_ERR, "Host '%s' not found: %s\n",
+                 cx.cl_opts.remote_host, gai_strerror(raddr) );
         return -1;
     }
 
-    /* Make socket address */
-    struct sockaddr_in serv_addr;
-    memset( &serv_addr, 0, sizeof(serv_addr) );
-    serv_addr.sin_family = AF_INET;
-    memcpy( &serv_addr.sin_addr.s_addr,
-            server->h_addr,
-            (size_t)server->h_length);
-    serv_addr.sin_port = htons(cx.port); /* Well, ipv4 only for now */
-
-    /* Connect */
-    if( connect(sockfd,  (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0 ) {
-        ACH_LOG(LOG_ERR, "Couldn't connect: %s\n", strerror(errno));
-        close(sockfd);
-        return -1;
+    /* Make socket */
+    int sockfd = socket(addr->ai_family, addr->ai_socktype, addr->ai_protocol);
+    if (sockfd < 0) {
+        ACH_LOG(LOG_ERR, "Couldn't create socket: %s\n", strerror(errno));
+    } else {
+        /* Connect */
+        if( connect(sockfd,  addr->ai_addr, addr->ai_addrlen) ) {
+            ACH_LOG(LOG_ERR, "Couldn't connect: %s\n", strerror(errno));
+            close(sockfd);
+            sockfd = -1;
+        }
     }
 
+    /* return */
+    freeaddrinfo(addr);
     return sockfd;
+
 }
 
 
