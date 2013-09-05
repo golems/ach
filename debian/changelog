@@ -1,4 +1,4 @@
-ach (1.2.0~rc0) unstable; urgency=low
+ach (1.2.0) unstable; urgency=low
 
   * Add ach_cancel() function
   * Improve mutex robustness
