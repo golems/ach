@@ -1,46 +1,49 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
-<HTML><HEAD><TITLE>Man page of ACHLOG</TITLE>
+<HTML><HEAD><TITLE>Man page of ACHPIPE.BIN</TITLE>
 </HEAD><BODY>
-<H1>ACHLOG</H1>
-Section: User Commands (1)<BR>Updated: February 2013<BR><A HREF="#index">Index</A>
+<H1>ACHPIPE.BIN</H1>
+Section: User Commands (1)<BR>Updated: September 2013<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
 
-achlog - log ach messages
+achpipe.bin - log ach messages
 <A NAME="lbAC">&nbsp;</A>
 <H2>SYNOPSIS</H2>
 
 <B>achlog</B>
 
-[<I>options</I>] <I>channel-1 </I>... <I>channel-n</I>
+[<I>OPTIONS</I>] <I>channels</I>...
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
-Logs ach frames to files until given SIGTERM or SIGINT
+Log ach channels to files
+Options:
+<DL COMPACT>
+<DT>-?,<DD>
+Show help
+<DT><B>-z</B>,<DD>
+Filter output through gzip
+</DL>
 <A NAME="lbAE">&nbsp;</A>
-<H2>OPTIONS</H2>
+<H2>EXAMPLES</H2>
 
 <DL COMPACT>
-<DT><B>-h</B>, <B>--help</B><DD>
-show this help message and exit
-<DT>
-<B>-v</B>, <B>--verbose</B>
-<DT>
-<B>-d</B> DIRECTORY, <B>--directory</B>=<I>DIRECTORY</I>
-<DT>
-<B>-f</B> FREQUENCY, <B>--frequency</B>=<I>FREQUENCY</I>
-<DT>
-<B>-V</B>, <B>--Version</B>
+<DT>achlog foo bar<DD>
+Log channels foo and bar
 </DL>
 <A NAME="lbAF">&nbsp;</A>
 <H2>AUTHOR</H2>
 
-<DD>Written by Neil T. Dantam
+Written by Neil T. Dantam
 <A NAME="lbAG">&nbsp;</A>
+<H2>REPORTING BUGS</H2>
+
+Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+<A NAME="lbAH">&nbsp;</A>
 <H2>COPYRIGHT</H2>
 
-Copyright &#169; 2008-2012, Georgia Tech Research Corporation
+Copyright &#169; 2008-2013, Georgia Tech Research Corporation
 <BR>
 
 This is free software; see the source for copying conditions.  There is NO
@@ -53,14 +56,15 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 <DT><A HREF="#lbAB">NAME</A><DD>
 <DT><A HREF="#lbAC">SYNOPSIS</A><DD>
 <DT><A HREF="#lbAD">DESCRIPTION</A><DD>
-<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAE">EXAMPLES</A><DD>
 <DT><A HREF="#lbAF">AUTHOR</A><DD>
-<DT><A HREF="#lbAG">COPYRIGHT</A><DD>
+<DT><A HREF="#lbAG">REPORTING BUGS</A><DD>
+<DT><A HREF="#lbAH">COPYRIGHT</A><DD>
 </DL>
 <HR>
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 03:49:20 GMT, February 13, 2013
+Time: 22:31:34 GMT, September 05, 2013
 </BODY>
 </HTML>

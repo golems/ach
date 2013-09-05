@@ -67,6 +67,23 @@ COLSPAN="3"
 ><TR
 ><TD
 ALIGN="LEFT"
+>Revision 1.2.0</TD
+><TD
+ALIGN="LEFT"
+>2013-06-14</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>New Release with ach_cancel, achcop, achlog</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
 >Revision 1.1.0-1</TD
 ><TD
 ALIGN="LEFT"
@@ -106,7 +123,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN26"
+NAME="AEN31"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -133,209 +150,271 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN29"
+HREF="#AEN34"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN61"
+HREF="#AEN66"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN63"
+HREF="#AEN68"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN143"
+HREF="#AEN153"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN165"
+HREF="#AEN175"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN181"
+HREF="#AEN191"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN200"
+HREF="#AEN210"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN260"
->Closing a channel</A
+HREF="#AEN270"
+>Cancel message wait</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN268"
->Deleting a channel</A
+HREF="#AEN293"
+>Closing a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN276"
->Channel Permissions</A
+HREF="#AEN301"
+>Deleting a channel</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN293"
+HREF="#AEN309"
+>Channel Permissions</A
+></DT
+><DT
+>2.10. <A
+HREF="#AEN326"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN302"
+HREF="#AEN335"
 >Language Bindings</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN304"
+HREF="#AEN337"
 >Common Lisp</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN307"
+HREF="#AEN340"
 >Python</A
 ></DT
 ></DL
 ></DD
 ><DT
 >4. <A
-HREF="#AEN321"
+HREF="#AEN354"
 >ach Shell Tool</A
 ></DT
 ><DT
 >5. <A
-HREF="#AEN404"
+HREF="#AEN437"
 >achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN408"
+HREF="#AEN441"
 >Server</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1.1. <A
-HREF="#AEN423"
+HREF="#AEN458"
 >Traditional Inetd Configuration</A
 ></DT
 ><DT
 >5.1.2. <A
-HREF="#AEN441"
+HREF="#AEN476"
 >Xinetd Configuration</A
 ></DT
 ><DT
 >5.1.3. <A
-HREF="#AEN463"
+HREF="#AEN498"
 >Testing Server Configuration</A
 ></DT
 ></DL
 ></DD
 ><DT
 >5.2. <A
-HREF="#AEN474"
+HREF="#AEN523"
 >Client</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN537"
->Performance Tuning</A
+HREF="#AEN586"
+>achcop Watchdog Utility</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN540"
->Disable CPU frequency scaling</A
+HREF="#AEN608"
+>Features</A
 ></DT
 ><DT
 >6.2. <A
-HREF="#AEN543"
->Use a Real-Time Operating System</A
+HREF="#AEN628"
+>Signals</A
+></DT
+><DT
+>6.3. <A
+HREF="#AEN666"
+>Examples</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.2.1. <A
-HREF="#AEN546"
->Linux PREEMPT_RT</A
+>6.3.1. <A
+HREF="#AEN668"
+>Shell Commands</A
 ></DT
 ><DT
->6.2.2. <A
-HREF="#AEN549"
->Linux / Xenomai</A
-></DT
-><DT
->6.2.3. <A
-HREF="#AEN556"
->Other Real-Time Operating Systems</A
+>6.3.2. <A
+HREF="#AEN700"
+>Signaling Achcop from Child</A
 ></DT
 ></DL
 ></DD
-><DT
->6.3. <A
-HREF="#AEN559"
->Benchmark your system</A
-></DT
 ></DL
 ></DD
 ><DT
 >7. <A
-HREF="#AEN577"
->Theory of Operation</A
+HREF="#AEN712"
+>achlog Logging Utility</A
 ></DT
 ><DD
 ><DL
 ><DT
 >7.1. <A
-HREF="#AEN580"
->Data Structure</A
+HREF="#AEN722"
+>Log Format</A
 ></DT
 ><DT
 >7.2. <A
-HREF="#AEN584"
+HREF="#AEN730"
+>Usage</A
+></DT
+></DL
+></DD
+><DT
+>8. <A
+HREF="#AEN759"
+>Performance Tuning</A
+></DT
+><DD
+><DL
+><DT
+>8.1. <A
+HREF="#AEN762"
+>Disable CPU frequency scaling</A
+></DT
+><DT
+>8.2. <A
+HREF="#AEN765"
+>Use a Real-Time Operating System</A
+></DT
+><DD
+><DL
+><DT
+>8.2.1. <A
+HREF="#AEN768"
+>Linux PREEMPT_RT</A
+></DT
+><DT
+>8.2.2. <A
+HREF="#AEN771"
+>Linux / Xenomai</A
+></DT
+><DT
+>8.2.3. <A
+HREF="#AEN778"
+>Other Real-Time Operating Systems</A
+></DT
+></DL
+></DD
+><DT
+>8.3. <A
+HREF="#AEN781"
+>Benchmark your system</A
+></DT
+></DL
+></DD
+><DT
+>9. <A
+HREF="#AEN799"
+>Theory of Operation</A
+></DT
+><DD
+><DL
+><DT
+>9.1. <A
+HREF="#AEN802"
+>Data Structure</A
+></DT
+><DT
+>9.2. <A
+HREF="#AEN806"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.2.1. <A
-HREF="#AEN589"
+>9.2.1. <A
+HREF="#AEN811"
 >ach_put</A
 ></DT
 ><DT
->7.2.2. <A
-HREF="#AEN605"
+>9.2.2. <A
+HREF="#AEN827"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
->7.3. <A
-HREF="#AEN621"
+>9.3. <A
+HREF="#AEN843"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN624"
+HREF="#AEN849"
 >Colophon</A
 ></DT
 ></DL
@@ -345,7 +424,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN29"
+NAME="AEN34"
 >1. Introduction</A
 ></H2
 ><P
@@ -434,7 +513,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN61"
+NAME="AEN66"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -442,7 +521,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN63"
+NAME="AEN68"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -547,6 +626,15 @@ CLASS="constant"
 ><DT
 ><CODE
 CLASS="constant"
+>ACH_CANCELED</CODE
+></DT
+><DD
+><P
+>Message wait was canceled.  </P
+></DD
+><DT
+><CODE
+CLASS="constant"
 >ACH_EEXIST</CODE
 ></DT
 ><DD
@@ -625,7 +713,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN143"
+NAME="AEN153"
 >2.2. Creating a channel</A
 ></H3
 ><DIV
@@ -633,7 +721,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN145"
+NAME="AEN155"
 ></A
 ><P
 ><CODE
@@ -665,7 +753,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN161"
+NAME="AEN171"
 ></A
 ><P
 ><B
@@ -695,7 +783,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN165"
+NAME="AEN175"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -703,7 +791,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN167"
+NAME="AEN177"
 ></A
 ><P
 ><CODE
@@ -721,7 +809,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN178"
+NAME="AEN188"
 ></A
 ><P
 ><B
@@ -743,7 +831,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN181"
+NAME="AEN191"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -751,7 +839,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN183"
+NAME="AEN193"
 ></A
 ><P
 ><CODE
@@ -776,7 +864,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN197"
+NAME="AEN207"
 ></A
 ><P
 ><B
@@ -798,7 +886,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN200"
+NAME="AEN210"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -806,7 +894,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN202"
+NAME="AEN212"
 ></A
 ><P
 ><CODE
@@ -881,7 +969,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN239"
+NAME="AEN249"
 ></A
 ><P
 ><B
@@ -908,7 +996,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN243"
+NAME="AEN253"
 ></A
 ><P
 ><B
@@ -926,7 +1014,7 @@ CLASS="programlisting"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN247"
+NAME="AEN257"
 ></A
 ><P
 ><B
@@ -1028,15 +1116,119 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN260"
->2.6. Closing a channel</A
+NAME="AEN270"
+>2.6. Cancel message wait</A
 ></H3
 ><DIV
 CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN262"
+NAME="AEN272"
+></A
+><P
+><CODE
+><CODE
+CLASS="FUNCDEF"
+>enum ach_status ach_cancel</CODE
+>(ach_channel_t *channel, const ach_cancel_attr_t *attr);</CODE
+></P
+><P
+></P
+></DIV
+><P
+>&#13;      To interrupt an in-progress call to <CODE
+CLASS="function"
+>ach_get</CODE
+>
+      that has blocked waiting for a new message, use the
+      <CODE
+CLASS="function"
+>ach_cancel</CODE
+> function.  This will cause
+      <CODE
+CLASS="function"
+>ach_get</CODE
+> to return
+      <CODE
+CLASS="constant"
+>ACH_CANCELED</CODE
+>.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN285"
+></A
+><P
+><B
+>Example 7. Cancel waits upon a signal</B
+></P
+><P
+>&#13;        This will install a signal handler to cancel waits when a
+        signal is received.
+      </P
+><PRE
+CLASS="programlisting"
+>&#13;ach_channel_t channel;
+
+...
+
+static void sighandler_cancel ( int sig ) {
+    enum ach_status r = ach_cancel(&#38;channel, NULL);
+    if( ACH_OK != r ) exit(EXIT_FAILURE);
+}
+
+...
+
+void setup_sighandler_cancel ( int sig ) {
+    struct sigaction act;
+    memset(&#38;act, 0, sizeof(act));
+    act.sa_handler = &#38;sighandler_cancel;
+    if( sigaction(sig, &#38;act, NULL) ) exit(EXIT_FAILURE);
+}
+      </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN289"
+></A
+><P
+><B
+>Example 8. Cancel waits in another thread</B
+></P
+><P
+>&#13;        This will notify waits in another thread to cancel.
+      </P
+><PRE
+CLASS="programlisting"
+>&#13;ach_channel_t channel;
+
+...
+
+ach_cancel_attr_t attr;
+ach_cancel_attr_init(&#38;attr);
+attr.async_unsafe = 1; /* permit functions that are unsafe in signal handlers */
+enum ach_status r = ach_cancel(&#38;channel, &#38;attr);
+if( ACH_OK != r ) exit(EXIT_FAILURE);
+      </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN293"
+>2.7. Closing a channel</A
+></H3
+><DIV
+CLASS="funcsynopsis"
+><P
+></P
+><A
+NAME="AEN295"
 ></A
 ><P
 ><CODE
@@ -1054,15 +1246,15 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN268"
->2.7. Deleting a channel</A
+NAME="AEN301"
+>2.8. Deleting a channel</A
 ></H3
 ><DIV
 CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN270"
+NAME="AEN303"
 ></A
 ><P
 ><CODE
@@ -1080,15 +1272,15 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN276"
->2.8. Channel Permissions</A
+NAME="AEN309"
+>2.9. Channel Permissions</A
 ></H3
 ><DIV
 CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN278"
+NAME="AEN311"
 ></A
 ><P
 ><CODE
@@ -1112,11 +1304,11 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN288"
+NAME="AEN321"
 ></A
 ><P
 ><B
->Example 7. Make channel user and group accessible</B
+>Example 9. Make channel user and group accessible</B
 ></P
 ><P
 >It is best to specify <CODE
@@ -1136,15 +1328,15 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN293"
->2.9. Ignore old messages</A
+NAME="AEN326"
+>2.10. Ignore old messages</A
 ></H3
 ><DIV
 CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN295"
+NAME="AEN328"
 ></A
 ><P
 ><CODE
@@ -1166,7 +1358,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN302"
+NAME="AEN335"
 >3. Language Bindings</A
 ></H2
 ><DIV
@@ -1174,7 +1366,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN304"
+NAME="AEN337"
 >3.1. Common Lisp</A
 ></H3
 ><P
@@ -1186,7 +1378,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN307"
+NAME="AEN340"
 >3.2. Python</A
 ></H3
 ><P
@@ -1219,11 +1411,11 @@ CLASS="classname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN315"
+NAME="AEN348"
 ></A
 ><P
 ><B
->Example 8. Python Put</B
+>Example 10. Python Put</B
 ></P
 ><PRE
 CLASS="programlisting"
@@ -1237,11 +1429,11 @@ c.close()
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN318"
+NAME="AEN351"
 ></A
 ><P
 ><B
->Example 9. Python Get</B
+>Example 11. Python Get</B
 ></P
 ><PRE
 CLASS="programlisting"
@@ -1265,7 +1457,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN321"
+NAME="AEN354"
 >4. ach Shell Tool</A
 ></H2
 ><P
@@ -1308,11 +1500,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN347"
+NAME="AEN380"
 ></A
 ><P
 ><B
->Example 10. Create a channel</B
+>Example 12. Create a channel</B
 ></P
 ><P
 >Create channel named "my_channel" with slots for 10
@@ -1341,11 +1533,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN359"
+NAME="AEN392"
 ></A
 ><P
 ><B
->Example 11. Delete a channel</B
+>Example 13. Delete a channel</B
 ></P
 ><P
 >Delete channel named "my_channel".</P
@@ -1363,11 +1555,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN367"
+NAME="AEN400"
 ></A
 ><P
 ><B
->Example 12. Create a world-accessible channel</B
+>Example 14. Create a world-accessible channel</B
 ></P
 ><P
 >Create channel named "my_channel" which is
@@ -1402,11 +1594,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN381"
+NAME="AEN414"
 ></A
 ><P
 ><B
->Example 13. Create a channel unless it already exists</B
+>Example 15. Create a channel unless it already exists</B
 ></P
 ><P
 >Create channel named "my_channel" unless it already
@@ -1436,11 +1628,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN394"
+NAME="AEN427"
 ></A
 ><P
 ><B
->Example 14. Set channel permissions</B
+>Example 16. Set channel permissions</B
 ></P
 ><P
 >Make channel accessible only by user and group.</P
@@ -1466,7 +1658,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN404"
+NAME="AEN437"
 >5. achd Network Daemon</A
 ></H2
 ><P
@@ -1481,7 +1673,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN408"
+NAME="AEN441"
 >5.1. Server</A
 ></H3
 ><P
@@ -1493,13 +1685,22 @@ CLASS="command"
 >The achd server should be setup to run from the
     <B
 CLASS="command"
->inetd</B
-> super-server. Some distributions use the
-    alternative <B
+><A
+HREF="http://en.wikipedia.org/wiki/Inetd"
+TARGET="_top"
+>inetd</A
+></B
+>
+    super-server. Some distributions use the alternative
+    <B
 CLASS="command"
->xinetd</B
->, which is configured
-    differently.</P
+><A
+HREF="http://www.xinetd.org/"
+TARGET="_top"
+>xinetd</A
+></B
+>, which is
+    configured differently.</P
 ><DIV
 CLASS="note"
 ><P
@@ -1577,7 +1778,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN423"
+NAME="AEN458"
 >5.1.1. Traditional Inetd Configuration</A
 ></H4
 ><P
@@ -1597,9 +1798,9 @@ CLASS="screen"
 </PRE
 ><P
 >&#13;      You will probably need to restart inetd after editing the
-      configuration file.  How to do this may vary depending on the
-      init system used by your operating system and the particular
-      inetd you are using.  Here are some options which may work:
+      configuration file.  How to do this depends on the init system
+      used by your operating system and the particular inetd you are
+      using.  Here are some options which may work:
     </P
 ><P
 ></P
@@ -1634,7 +1835,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN441"
+NAME="AEN476"
 >5.1.2. Xinetd Configuration</A
 ></H4
 ><P
@@ -1716,7 +1917,7 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN463"
+NAME="AEN498"
 >5.1.3. Testing Server Configuration</A
 ></H4
 ><P
@@ -1764,13 +1965,85 @@ ALT="Tip"></TD
 ALIGN="LEFT"
 VALIGN="TOP"
 ><P
->&#13;        For the achd server to access any channel, it must be readable
-        and writable by the user under which achd runs ("nobody" in
-        the above example line for inetd.conf).  If you trust all
-        users on the local machine, you can set the channel
-        permissions to "666", but please note that this is not a
-        secure configuration.  An alternative is to create a separate
-        user account for achd and ensure that channels are readable
+>&#13;        If <B
+CLASS="command"
+>achd</B
+> is not operating properly, check
+        the log files on your machine for more information.  The log
+        output will typically be stored in a file such as
+        <TT
+CLASS="filename"
+>/var/log/daemon.log</TT
+>, though this depends
+        on how <A
+HREF="http://en.wikipedia.org/wiki/Syslog"
+TARGET="_top"
+>syslog</A
+> is
+        configured on your system.  You can also add the
+        <KBD
+CLASS="userinput"
+>-vv</KBD
+> flags to both server
+        <B
+CLASS="command"
+>achd</B
+> (in <TT
+CLASS="filename"
+>inetd.conf</TT
+>)
+        the client <B
+CLASS="command"
+>achd</B
+> commands to enable
+        debugging output.  Syslog may store the debug output in
+        <TT
+CLASS="filename"
+>/var/log/debug.log</TT
+>.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        For the <B
+CLASS="command"
+>achd</B
+> server to access any channel,
+        it must be readable and writable by the user under which
+        <B
+CLASS="command"
+>achd</B
+> runs ("nobody" in the above example
+        line for inetd.conf).  If you trust all users on the local
+        machine, you can set the channel permissions to "666", but
+        please note that this is not a secure configuration.  An
+        alternative is to create a separate user account for
+        <B
+CLASS="command"
+>achd</B
+> and ensure that channels are readable
         and writable by that account or one of its groups.
       </P
 ></TD
@@ -1798,11 +2071,15 @@ ALT="Warning"></TD
 ALIGN="LEFT"
 VALIGN="TOP"
 ><P
->&#13;        Currently, achd performs no authentication, access control, or
-        encryption (this may be added in the future).  If security is
-        a concern in your application, it must currently be addressed
-        at the network level, e.g. by physical isolation, firewalling,
-        a VPN such as IPSec, and/or SSH tunnelling.
+>&#13;        Currently, <B
+CLASS="command"
+>achd</B
+> performs no authentication,
+        access control, or encryption (this may be added in the
+        future).  If security is a concern in your application, it
+        must currently be addressed at the network level, e.g. by
+        physical isolation, firewalling, a VPN such as IPSec, and/or
+        SSH tunnelling.
       </P
 ></TD
 ></TR
@@ -1815,7 +2092,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN474"
+NAME="AEN523"
 >5.2. Client</A
 ></H3
 ><P
@@ -1854,11 +2131,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN498"
+NAME="AEN547"
 ></A
 ><P
 ><B
->Example 15. Pull channel from server</B
+>Example 17. Pull channel from server</B
 ></P
 ><P
 ><B
@@ -1879,11 +2156,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN507"
+NAME="AEN556"
 ></A
 ><P
 ><B
->Example 16. Push channel to server and retry dropped connections</B
+>Example 18. Push channel to server and retry dropped connections</B
 ></P
 ><P
 ><B
@@ -1904,11 +2181,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN517"
+NAME="AEN566"
 ></A
 ><P
 ><B
->Example 17. Pull channel from server via UDP</B
+>Example 19. Pull channel from server via UDP</B
 ></P
 ><P
 ><B
@@ -1929,11 +2206,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN527"
+NAME="AEN576"
 ></A
 ><P
 ><B
->Example 18. Push channel to server, running the the background</B
+>Example 20. Push channel to server, running the the background</B
 ></P
 ><P
 ><B
@@ -1958,8 +2235,537 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN537"
->6. Performance Tuning</A
+NAME="AEN586"
+>6. achcop Watchdog Utility</A
+></H2
+><P
+>&#13;      The <B
+CLASS="command"
+>achcop</B
+> program can be used to start
+      daemons, and restart them if they die.
+    </P
+><P
+><B
+CLASS="command"
+>achcop</B
+>  [-P <TT
+CLASS="replaceable"
+><I
+>cop-pid-file</I
+></TT
+>] [-p <TT
+CLASS="replaceable"
+><I
+>child-pid-file</I
+></TT
+>] [-e <TT
+CLASS="replaceable"
+><I
+>stderr-file</I
+></TT
+>] [-o <TT
+CLASS="replaceable"
+><I
+>stdout-file</I
+></TT
+>] [-d] [-r] [-v] [-V] [-?]  --  {child-program} [child-arguments...]</P
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN608"
+>6.1. Features</A
+></H3
+><P
+></P
+><UL
+><LI
+><P
+>&#13;          Detach process from terminal and run in background
+          (daemonize), <KBD
+CLASS="userinput"
+>-d</KBD
+> flag.
+        </P
+></LI
+><LI
+><P
+>&#13;          Lock PID files and write PIDs, <KBD
+CLASS="userinput"
+>-P</KBD
+> and
+          <KBD
+CLASS="userinput"
+>-p</KBD
+> flags.
+        </P
+></LI
+><LI
+><P
+>&#13;          Reconnect if connection is broken, <KBD
+CLASS="userinput"
+>-r</KBD
+>
+          flag.
+        </P
+></LI
+><LI
+><P
+>&#13;          Redirect standard output and standard error to files,
+          <KBD
+CLASS="userinput"
+>-o</KBD
+> and <KBD
+CLASS="userinput"
+>-e</KBD
+>
+          flags.
+        </P
+></LI
+><LI
+><P
+>&#13;          Restart process if <CODE
+CLASS="constant"
+>SIGHUP</CODE
+> is received
+        </P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN628"
+>6.2. Signals</A
+></H3
+><DIV
+CLASS="note"
+><P
+></P
+><TABLE
+CLASS="note"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        <SPAN
+CLASS="emphasis"
+><I
+CLASS="emphasis"
+>Signals</I
+></SPAN
+> are how POSIX user programs are
+        notified of asynchrous events. They are similar in spirit to
+        low-level interrupts and interrupt service routines.  When a
+        process receives a signal, its execution is interrupted, and
+        it runs the specified handler for that signal.  For example,
+        when you hit <KBD
+CLASS="userinput"
+>Control-C</KBD
+> at a terminal,
+        the process in the forground receives the interrupt signal,
+        <CODE
+CLASS="constant"
+>SIGINT</CODE
+>.  The default handler for this
+        signal will terminate the process.  For more details, see
+        <B
+CLASS="command"
+>man 7 signal</B
+>.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+><P
+><B
+CLASS="command"
+>Achcop</B
+> will respond to the following
+    signals.  You can send a signal with the <B
+CLASS="command"
+>kill</B
+>
+    shell command or the <CODE
+CLASS="function"
+>kill</CODE
+> C function.</P
+><P
+></P
+><DIV
+CLASS="variablelist"
+><DL
+><DT
+><CODE
+CLASS="constant"
+>SIGTERM</CODE
+>, <CODE
+CLASS="constant"
+>SIGINT</CODE
+></DT
+><DD
+><P
+><B
+CLASS="command"
+>Achcop</B
+> sends SIGTERM to the child,
+          waits for child to exit, and return child's exit status</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>SIGHUP</CODE
+></DT
+><DD
+><P
+><B
+CLASS="command"
+>Achcop</B
+> sends SIGTERM to the child,
+          waits for child to exit, and restarts the child</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>SIGUSR1</CODE
+></DT
+><DD
+><P
+>Indicates that the child has started successfully.  If
+          the child does not send SIGUSR1 and continues running past
+          an initial timeout, <B
+CLASS="command"
+>achcop</B
+> assumes it
+          started successfully.</P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>SIGUSR2</CODE
+></DT
+><DD
+><P
+>Indicates that the child has failed to start properly.
+          If the child fails on its first attempt and before a timeout
+          has elapsed, it will not be restarted.  If your child does
+          not send this signal, <B
+CLASS="command"
+>achcop</B
+> may wait a
+          few seconds to ensure that the child runs
+          successfully.</P
+></DD
+></DL
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN666"
+>6.3. Examples</A
+></H3
+><DIV
+CLASS="sect3"
+><H4
+CLASS="sect3"
+><A
+NAME="AEN668"
+>6.3.1. Shell Commands</A
+></H4
+><P
+>The following shell lines show how one might run <B
+CLASS="command"
+>achcop</B
+>.</P
+><DIV
+CLASS="example"
+><A
+NAME="AEN672"
+></A
+><P
+><B
+>Example 21. Run achd in the background (-d), restarting (-r) if it fails</B
+></P
+><P
+><B
+CLASS="command"
+>achcop</B
+>   -d   -r   -P /var/run/achcop-foo.pid   -p /var/run/achd-foo.pid   --   achd   -s   -r   push   <TT
+CLASS="replaceable"
+><I
+>server</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_foo</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN689"
+></A
+><P
+><B
+>Example 22. Command achcop to restart achd</B
+></P
+><P
+><B
+CLASS="command"
+>kill</B
+>   -HUP   `cat /var/run/achcop-foo.pid` </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN695"
+></A
+><P
+><B
+>Example 23. Command achcop to terminate achd</B
+></P
+><P
+><B
+CLASS="command"
+>kill</B
+>   `cat /var/run/achcop-foo.pid` </P
+></DIV
+></DIV
+><DIV
+CLASS="sect3"
+><HR><H4
+CLASS="sect3"
+><A
+NAME="AEN700"
+>6.3.2. Signaling Achcop from Child</A
+></H4
+><P
+>&#13;      The following C code will notify a parent
+      <B
+CLASS="command"
+>achcop</B
+> of your child's success or failure.
+      This is an optional step. <B
+CLASS="command"
+>Achcop</B
+> will operate
+      properly without these signals; however, providing the signals
+      means <B
+CLASS="command"
+>achcop</B
+> does not need to wait for a
+      brief timeout to ensure that your child continues operating.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN706"
+></A
+><P
+><B
+>Example 24. Signal achcop of child success or failure</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;/* only send signal if running under achcop */
+if( my_parent_is_achcop ) {
+    int sig;
+    /* determine signal to send */
+    if( initialized_correctly ) {
+        sig = SIGUSR1; /* success */
+    } else {
+        sig = SIGUSR2; /* failure */
+    }
+    /* send the signal */
+    int r = kill( getppid(), sig );
+    /* check that we sent the signal */
+    if( r ) {
+        perror("Couldn't signal parent");
+        exit(EXIT_FAILURE);
+    }
+}
+    </PRE
+></DIV
+><P
+>&#13;        Note that the default signal handlers for
+        <CODE
+CLASS="constant"
+>SIGUSR1</CODE
+> and <CODE
+CLASS="constant"
+>SIGUSER2</CODE
+>
+        terminate the process; therefore, if you send these signals to
+        your shell, your shell will terminate.
+      </P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN712"
+>7. achlog Logging Utility</A
+></H2
+><P
+>&#13;      The <B
+CLASS="command"
+>achlog</B
+> program can be used to log
+      messages from an ach channel to disk.
+    </P
+><P
+><B
+CLASS="command"
+>achlog</B
+>  [-z] [-V] [-?] {channels...}</P
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN722"
+>7.1. Log Format</A
+></H3
+><P
+>&#13;      The Log format is similar to the TCP network protocol for
+      achpipe.  The log files begins with a sequence of ASCII
+      key-value headers, followed by a single "." character, followed
+      by a sequence of messages.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN725"
+></A
+><P
+><B
+>Example 25. achlog headers</B
+></P
+><PRE
+CLASS="screen"
+>&#13;ACHLOG
+channel-name: foo
+log-version: 0
+log-time-ach: 6226133.801454417
+log-time-real: 1371238788.956337009 # Fri Jun 14 15:39:48 2013
+local-host: daneel
+user: ntd # Neil T. Dantam
+.
+</PRE
+></DIV
+><P
+>&#13;      Messages are framed in the file with the following C struct:
+    </P
+><PRE
+CLASS="programlisting"
+>&#13;struct {
+    uint8_t reserved[8];   /* reserved for future use */
+    uint8_t size_bytes[8]; /* size of data, stored little endian */
+    uint8_t data[1];       /* flexible array containing size_bytes of data */
+};
+    </PRE
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN730"
+>7.2. Usage</A
+></H3
+><DIV
+CLASS="example"
+><A
+NAME="AEN732"
+></A
+><P
+><B
+>Example 26. Log channel foo</B
+></P
+><P
+><B
+CLASS="command"
+>achlog</B
+>   foo </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN737"
+></A
+><P
+><B
+>Example 27. Log channel foo and bar, compress with gzip</B
+></P
+><P
+><B
+CLASS="command"
+>achlog</B
+>   -z   foo   bar </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN744"
+></A
+><P
+><B
+>Example 28. Log channel foo in the background</B
+></P
+><P
+><B
+CLASS="command"
+>achcop</B
+>   -d   -P /var/run/achcop-achlog-foo.pid   -p /var/run/achlog-foo.pid   --   achlog   foo </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN754"
+></A
+><P
+><B
+>Example 29. Stop background logging</B
+></P
+><P
+><B
+CLASS="command"
+>kill</B
+>   `cat /var/run/achcop-achlog-foo.pid` </P
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN759"
+>8. Performance Tuning</A
 ></H2
 ><P
 >The performance of your real-time application will be highly
@@ -1974,8 +2780,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN540"
->6.1. Disable CPU frequency scaling</A
+NAME="AEN762"
+>8.1. Disable CPU frequency scaling</A
 ></H3
 ><P
 >&#13;      Many current CPUs will lower their frequency when idle in order
@@ -1993,8 +2799,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN543"
->6.2. Use a Real-Time Operating System</A
+NAME="AEN765"
+>8.2. Use a Real-Time Operating System</A
 ></H3
 ><P
 >&#13;      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
@@ -2010,8 +2816,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN546"
->6.2.1. Linux PREEMPT_RT</A
+NAME="AEN768"
+>8.2.1. Linux PREEMPT_RT</A
 ></H4
 ><P
 >&#13;      If using a Linux kernel, you can apply the PREEMPT_RT patch to
@@ -2027,8 +2833,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN549"
->6.2.2. Linux / Xenomai</A
+NAME="AEN771"
+>8.2.2. Linux / Xenomai</A
 ></H4
 ><P
 >&#13;      Xenomai is a dual-kernel real-time operating system.  A hard
@@ -2091,8 +2897,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN556"
->6.2.3. Other Real-Time Operating Systems</A
+NAME="AEN778"
+>8.2.3. Other Real-Time Operating Systems</A
 ></H4
 ><P
 >&#13;      While Ach development has focused on Linux, it should be
@@ -2109,8 +2915,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN559"
->6.3. Benchmark your system</A
+NAME="AEN781"
+>8.3. Benchmark your system</A
 ></H3
 ><P
 >&#13;      You can use the included <B
@@ -2128,11 +2934,11 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN564"
+NAME="AEN786"
 ></A
 ><P
 ><B
->Example 19. Benchmarking Latency</B
+>Example 30. Benchmarking Latency</B
 ></P
 ><P
 >Measure latency with one publisher and two subscribers over ten seconds</P
@@ -2169,8 +2975,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN577"
->7. Theory of Operation</A
+NAME="AEN799"
+>9. Theory of Operation</A
 ></H2
 ><P
 >&#13;      POSIX provides a rich variety of IPC mechanisms, but none of
@@ -2193,8 +2999,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN580"
->7.1. Data Structure</A
+NAME="AEN802"
+>9.1. Data Structure</A
 ></H3
 ><P
 >&#13;      The core data structure of an Ach channel is a pair of circular
@@ -2226,8 +3032,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN584"
->7.2. Core Procedures</A
+NAME="AEN806"
+>9.2. Core Procedures</A
 ></H3
 ><P
 >&#13;      Two procedures compose the core of ach:
@@ -2244,8 +3050,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN589"
->7.2.1. ach_put</A
+NAME="AEN811"
+>9.2.1. ach_put</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -2301,8 +3107,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN605"
->7.2.2. ach_get</A
+NAME="AEN827"
+>9.2.2. ach_get</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -2365,17 +3171,30 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN621"
->7.3. Serialization</A
+NAME="AEN843"
+>9.3. Serialization</A
 ></H3
 ><P
->&#13;      Ach is orthogonal to the issue of serialization: it only
-      handles raw byte arrays.  Thus, you can choose whatever type of
+>&#13;      Ach is orthogonal to the issue of serialization: it only handles
+      raw byte arrays.  Thus, you can choose whatever type of
       serialization is most appropriate for you application.  For
       maximum performance, it may be appropriate to define message
       types as simple C structures.  If more flexibility is required,
-      there are a variety of other options to choose from: XDR, ASN.1,
-      Protocol Buffers, etc.
+      there are a variety of other options to choose from: <A
+HREF="http://tools.ietf.org/html/rfc1014"
+TARGET="_top"
+>XDR</A
+>, <A
+HREF="http://www.itu.int/ITU-T/asn1/introduction/"
+TARGET="_top"
+>ASN.1</A
+>,
+      <A
+HREF="https://developers.google.com/protocol-buffers/"
+TARGET="_top"
+>Protocol
+      Buffers</A
+>, etc.
     </P
 ></DIV
 ></DIV
@@ -2383,7 +3202,7 @@ NAME="AEN621"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN624"
+NAME="AEN849"
 ></A
 >Colophon</H1
 ><P

@@ -72,7 +72,8 @@ $(document).ready(function(){initNavTree('ach_8h.html','');});
 <div class="title">ach.h File Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
-
+<div class="textblock"><code>#include &lt;signal.h&gt;</code><br/>
+</div>
 <p><a href="ach_8h_source.html">Go to the source code of this file.</a></p>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="nested-classes"></a>
@@ -87,6 +88,8 @@ Data Structures</h2></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attributes to pass to ach_create.  <a href="structach__create__attr__t.html#details">More...</a><br/></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__channel__t.html">ach_channel_t</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Descriptor for shared memory area.  <a href="structach__channel__t.html#details">More...</a><br/></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__cancel__attr.html">ach_cancel_attr</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attributes parameter for ach_cancel.  <a href="structach__cancel__attr.html#details">More...</a><br/></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Format for ach frames sent over pipes or stored on disk.  <a href="structach__pipe__frame__t.html#details">More...</a><br/></td></tr>
 </table><table class="memberdecls">
@@ -142,6 +145,9 @@ Typedefs</h2></td></tr>
 <tr class="memitem:a37a6ca5cbf68c6e7f8f4abd5ce783ddc"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a37a6ca5cbf68c6e7f8f4abd5ce783ddc"></a>
 typedef enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc">ach_status_t</a></td></tr>
 <tr class="memdesc:a37a6ca5cbf68c6e7f8f4abd5ce783ddc"><td class="mdescLeft">&#160;</td><td class="mdescRight">return status codes for ach functions <br/></td></tr>
+<tr class="memitem:ad1c3442d5d78094ca8601b95f10a33c7"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ad1c3442d5d78094ca8601b95f10a33c7"></a>
+typedef struct <a class="el" href="structach__cancel__attr.html">ach_cancel_attr</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#ad1c3442d5d78094ca8601b95f10a33c7">ach_cancel_attr_t</a></td></tr>
+<tr class="memdesc:ad1c3442d5d78094ca8601b95f10a33c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attributes parameter for ach_cancel. <br/></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2><a name="enum-members"></a>
 Enumerations</h2></td></tr>
@@ -164,7 +170,9 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47">ACH_EINVAL</a> =  12, 
 <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020">ACH_CORRUPT</a> =  13, 
 <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551aef9365db53cb5885e3c42cfbda2904a1">ACH_BAD_HEADER</a> =  14, 
-<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a3bf899f62128237b9b544dfdcb865340">ACH_EACCES</a> =  15
+<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a3bf899f62128237b9b544dfdcb865340">ACH_EACCES</a> =  15, 
+<br/>
+&#160;&#160;<a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551a06fcb5858ccb1d76e9fcd8468ce670ba">ACH_CANCELED</a> =  16
 <br/>
  }</td></tr>
 <tr class="memdesc:a0b989f189bcea60548c3692b10eda551"><td class="mdescLeft">&#160;</td><td class="mdescRight">return status codes for ach functions  <a href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">More...</a><br/></td></tr>
@@ -182,13 +190,12 @@ Functions</h2></td></tr>
 <tr class="memdesc:a1fa91ef1ccb0e3521a8b1d6ecfd2a66c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize attributes for creating channels.  <a href="#a1fa91ef1ccb0e3521a8b1d6ecfd2a66c"></a><br/></td></tr>
 <tr class="memitem:afd2a92b13a96dc80bb4ce70b68c36e82"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82">ach_create</a> (const char *channel_name, size_t frame_cnt, size_t frame_size, <a class="el" href="structach__create__attr__t.html">ach_create_attr_t</a> *attr)</td></tr>
 <tr class="memdesc:afd2a92b13a96dc80bb4ce70b68c36e82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates a new channel.  <a href="#afd2a92b13a96dc80bb4ce70b68c36e82"></a><br/></td></tr>
-<tr class="memitem:aaa61413f11032605e3dc46d0fb9a52c9"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="aaa61413f11032605e3dc46d0fb9a52c9"></a>
-enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9">ach_open</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const char *channel_name, <a class="el" href="structach__attr__t.html">ach_attr_t</a> *attr)</td></tr>
-<tr class="memdesc:aaa61413f11032605e3dc46d0fb9a52c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a handle to channel. <br/></td></tr>
+<tr class="memitem:aaa61413f11032605e3dc46d0fb9a52c9"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aaa61413f11032605e3dc46d0fb9a52c9">ach_open</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const char *channel_name, <a class="el" href="structach__attr__t.html">ach_attr_t</a> *attr)</td></tr>
+<tr class="memdesc:aaa61413f11032605e3dc46d0fb9a52c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Opens a handle to channel.  <a href="#aaa61413f11032605e3dc46d0fb9a52c9"></a><br/></td></tr>
 <tr class="memitem:aee074eb5c6f1bb0256194b43f7164386"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386">ach_get</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t size, size_t *frame_size, const struct timespec *<a class="el" href="ach_8h.html#a36320691b8bddb17d7416a7c57e296f5">ACH_RESTRICT</a> abstime, int options)</td></tr>
 <tr class="memdesc:aee074eb5c6f1bb0256194b43f7164386"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pulls a message from the channel.  <a href="#aee074eb5c6f1bb0256194b43f7164386"></a><br/></td></tr>
-<tr class="memitem:acb8fcfaba91a22e295a5e437cd5b9c9b"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#acb8fcfaba91a22e295a5e437cd5b9c9b">ach_put</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, void *buf, size_t len)</td></tr>
-<tr class="memdesc:acb8fcfaba91a22e295a5e437cd5b9c9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes a new message in the channel.  <a href="#acb8fcfaba91a22e295a5e437cd5b9c9b"></a><br/></td></tr>
+<tr class="memitem:a37cf31dd992edf21b58fc6384025137a"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a37cf31dd992edf21b58fc6384025137a">ach_put</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const void *buf, size_t len)</td></tr>
+<tr class="memdesc:a37cf31dd992edf21b58fc6384025137a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Writes a new message in the channel.  <a href="#a37cf31dd992edf21b58fc6384025137a"></a><br/></td></tr>
 <tr class="memitem:af51fdf3b5edf39ce54f62ac0f031dd2b"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#af51fdf3b5edf39ce54f62ac0f031dd2b">ach_flush</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
 <tr class="memdesc:af51fdf3b5edf39ce54f62ac0f031dd2b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Discards all previously received messages for this handle.  <a href="#af51fdf3b5edf39ce54f62ac0f031dd2b"></a><br/></td></tr>
 <tr class="memitem:a397913b30e59cd6c1ab0b9cf8c5b331c"><td class="memItemLeft" align="right" valign="top">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c">ach_close</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan)</td></tr>
@@ -204,6 +211,12 @@ enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_stat
 <tr class="memitem:a3ca9384476568e624155fd7f17aa16f6"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a3ca9384476568e624155fd7f17aa16f6"></a>
 enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a3ca9384476568e624155fd7f17aa16f6">ach_unlink</a> (const char *name)</td></tr>
 <tr class="memdesc:a3ca9384476568e624155fd7f17aa16f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Delete an ach channel. <br/></td></tr>
+<tr class="memitem:a437c624f840a373a89cbafdb255e1f19"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a437c624f840a373a89cbafdb255e1f19"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a437c624f840a373a89cbafdb255e1f19">ach_cancel_attr_init</a> (<a class="el" href="ach_8h.html#ad1c3442d5d78094ca8601b95f10a33c7">ach_cancel_attr_t</a> *attr)</td></tr>
+<tr class="memdesc:a437c624f840a373a89cbafdb255e1f19"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initialize attributes. <br/></td></tr>
+<tr class="memitem:a2a166ffaae2926f05fd23685cd0ce52a"><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2a166ffaae2926f05fd23685cd0ce52a"></a>
+enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a2a166ffaae2926f05fd23685cd0ce52a">ach_cancel</a> (<a class="el" href="structach__channel__t.html">ach_channel_t</a> *chan, const <a class="el" href="ach_8h.html#ad1c3442d5d78094ca8601b95f10a33c7">ach_cancel_attr_t</a> *attr)</td></tr>
+<tr class="memdesc:a2a166ffaae2926f05fd23685cd0ce52a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Cancel a pending <a class="el" href="ach_8h.html#aee074eb5c6f1bb0256194b43f7164386" title="Pulls a message from the channel.">ach_get()</a> on channel. <br/></td></tr>
 <tr class="memitem:a401609c85440cb0b3d5a8f862b1436ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce">ach_pipe_alloc</a> (size_t size)</td></tr>
 <tr class="memdesc:a401609c85440cb0b3d5a8f862b1436ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Malloc an <a class="el" href="structach__pipe__frame__t.html" title="Format for ach frames sent over pipes or stored on disk.">ach_pipe_frame_t</a> with room for `size' data bytes.  <a href="#a401609c85440cb0b3d5a8f862b1436ce"></a><br/></td></tr>
 <tr class="memitem:a43db63c13e365879b6f345dadd606a56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ach_8h.html#a43db63c13e365879b6f345dadd606a56">ach_pipe_set_size</a> (<a class="el" href="structach__pipe__frame__t.html">ach_pipe_frame_t</a> *frame, uint64_t size)</td></tr>
@@ -374,6 +387,9 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a3bf899f62128237b9b544dfdcb865340"></a>ACH_EACCES</em>&nbsp;</td><td>
 <p>permission denied </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a0b989f189bcea60548c3692b10eda551a06fcb5858ccb1d76e9fcd8468ce670ba"></a>ACH_CANCELED</em>&nbsp;</td><td>
+<p>operation canceled </p>
 </td></tr>
 </table>
 </dd>
@@ -590,6 +606,42 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
+<a class="anchor" id="aaa61413f11032605e3dc46d0fb9a52c9"></a>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="ach_8h.html#a0b989f189bcea60548c3692b10eda551">ach_status</a> ach_open </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structach__channel__t.html">ach_channel_t</a> *&#160;</td>
+          <td class="paramname"><em>chan</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *&#160;</td>
+          <td class="paramname"><em>channel_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structach__attr__t.html">ach_attr_t</a> *&#160;</td>
+          <td class="paramname"><em>attr</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Opens a handle to channel. </p>
+<dl class="section post"><dt>Postcondition</dt><dd>A file descriptor for the named channel is opened, and chan is initialized.</dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>ACH_OK on success. Otherwise, return an error code indicating the particular error. </dd></dl>
+
+</div>
+</div>
 <a class="anchor" id="a401609c85440cb0b3d5a8f862b1436ce"></a>
 <div class="memitem">
 <div class="memproto">
@@ -669,7 +721,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 
 </div>
 </div>
-<a class="anchor" id="acb8fcfaba91a22e295a5e437cd5b9c9b"></a>
+<a class="anchor" id="a37cf31dd992edf21b58fc6384025137a"></a>
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
@@ -682,7 +734,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">void *&#160;</td>
+          <td class="paramtype">const void *&#160;</td>
           <td class="paramname"><em>buf</em>, </td>
         </tr>
         <tr>
@@ -720,7 +772,7 @@ size_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="ac
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
     <li class="navelem"><a class="el" href="dir_d44c64559bbebec7f509842c48db8b23.html">include</a></li><li class="navelem"><a class="el" href="ach_8h.html">ach.h</a></li>
-    <li class="footer">Generated on Tue Feb 12 2013 22:49:12 for ach by
+    <li class="footer">Generated on Thu Sep 5 2013 18:57:06 for ach by
     <a href="http://www.doxygen.org/index.html">
     <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.8.1.2 </li>
   </ul>

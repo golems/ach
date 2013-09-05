@@ -1,6 +1,7 @@
 var annotated =
 [
     [ "ach_attr_t", "structach__attr__t.html", "structach__attr__t" ],
+    [ "ach_cancel_attr", "structach__cancel__attr.html", "structach__cancel__attr" ],
     [ "ach_channel_t", "structach__channel__t.html", "structach__channel__t" ],
     [ "ach_create_attr_t", "structach__create__attr__t.html", "structach__create__attr__t" ],
     [ "ach_header_t", "structach__header__t.html", "structach__header__t" ],

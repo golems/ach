@@ -5,6 +5,7 @@ var ach_8h =
     [ "ach_attr_t", "structach__attr__t.html", "structach__attr__t" ],
     [ "ach_create_attr_t", "structach__create__attr__t.html", "structach__create__attr__t" ],
     [ "ach_channel_t", "structach__channel__t.html", "structach__channel__t" ],
+    [ "ach_cancel_attr", "structach__cancel__attr.html", "structach__cancel__attr" ],
     [ "ach_pipe_frame_t", "structach__pipe__frame__t.html", "structach__pipe__frame__t" ],
     [ "ACH_CHAN_NAME_MAX", "ach_8h.html#abb5d1fae5fa66a03d7d8d4761011e86c", null ],
     [ "ACH_CHAN_NAME_PREFIX", "ach_8h.html#afd256125e8e540929dd1b945e4a9c791", null ],
@@ -22,6 +23,7 @@ var ach_8h =
     [ "ACH_SHM_GUARD_INDEX_NUM", "ach_8h.html#a9756b6b93b39fbed2645e463dfc7d327", null ],
     [ "ACH_SHM_INDEX", "ach_8h.html#a1a58bc54a5ccd573e5d6185696c5b93f", null ],
     [ "ACH_SHM_MAGIC_NUM", "ach_8h.html#a6ee6cd8dede61e5c4413a70317f63731", null ],
+    [ "ach_cancel_attr_t", "ach_8h.html#ad1c3442d5d78094ca8601b95f10a33c7", null ],
     [ "ach_status_t", "ach_8h.html#a37a6ca5cbf68c6e7f8f4abd5ce783ddc", null ],
     [ "ach_get_opts_t", "ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fe", [
       [ "ACH_O_WAIT", "ach_8h.html#ae42d0299e86224c0ac39dc58959bd7fea84945ef892a7ea70b1c28734957b9885", null ],
@@ -44,9 +46,12 @@ var ach_8h =
       [ "ACH_EINVAL", "ach_8h.html#a0b989f189bcea60548c3692b10eda551ab6a4cbfae7d1696eb07ed831b8b31a47", null ],
       [ "ACH_CORRUPT", "ach_8h.html#a0b989f189bcea60548c3692b10eda551afc8868986ff6656713379fa9482cf020", null ],
       [ "ACH_BAD_HEADER", "ach_8h.html#a0b989f189bcea60548c3692b10eda551aef9365db53cb5885e3c42cfbda2904a1", null ],
-      [ "ACH_EACCES", "ach_8h.html#a0b989f189bcea60548c3692b10eda551a3bf899f62128237b9b544dfdcb865340", null ]
+      [ "ACH_EACCES", "ach_8h.html#a0b989f189bcea60548c3692b10eda551a3bf899f62128237b9b544dfdcb865340", null ],
+      [ "ACH_CANCELED", "ach_8h.html#a0b989f189bcea60548c3692b10eda551a06fcb5858ccb1d76e9fcd8468ce670ba", null ]
     ] ],
     [ "ach_attr_init", "ach_8h.html#a860d84dfee4d1306fe58df7b073c440a", null ],
+    [ "ach_cancel", "ach_8h.html#a2a166ffaae2926f05fd23685cd0ce52a", null ],
+    [ "ach_cancel_attr_init", "ach_8h.html#a437c624f840a373a89cbafdb255e1f19", null ],
     [ "ach_chmod", "ach_8h.html#ab81866aaeb3995e12e12de27457e1635", null ],
     [ "ach_close", "ach_8h.html#a397913b30e59cd6c1ab0b9cf8c5b331c", null ],
     [ "ach_create", "ach_8h.html#afd2a92b13a96dc80bb4ce70b68c36e82", null ],
@@ -58,7 +63,7 @@ var ach_8h =
     [ "ach_pipe_alloc", "ach_8h.html#a401609c85440cb0b3d5a8f862b1436ce", null ],
     [ "ach_pipe_get_size", "ach_8h.html#a22a869cc3211869668fc530c875630ee", null ],
     [ "ach_pipe_set_size", "ach_8h.html#a43db63c13e365879b6f345dadd606a56", null ],
-    [ "ach_put", "ach_8h.html#acb8fcfaba91a22e295a5e437cd5b9c9b", null ],
+    [ "ach_put", "ach_8h.html#a37cf31dd992edf21b58fc6384025137a", null ],
     [ "ach_result_to_string", "ach_8h.html#a11e481d90a14ba4485d3bb15a8bb77c3", null ],
     [ "ach_unlink", "ach_8h.html#a3ca9384476568e624155fd7f17aa16f6", null ],
     [ "ach_attr_size", "ach_8h.html#a7bdba00f25de2f8ac2887056d0a34154", null ],

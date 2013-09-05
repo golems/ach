@@ -1,6 +1,7 @@
 var structach__channel__t =
 [
     [ "attr", "structach__channel__t.html#a89379463e3c9b74bcda111f0bd91142d", null ],
+    [ "cancel", "structach__channel__t.html#a257511e130af74919fbeac12725a58f5", null ],
     [ "fd", "structach__channel__t.html#a1ca73e995dbe967ea54cba7f4a10d620", null ],
     [ "len", "structach__channel__t.html#a90c8cfdb460ab6f8cdad5bd1920f011f", null ],
     [ "next_index", "structach__channel__t.html#a786e22cafe4161682dd63832c35f9102", null ],
