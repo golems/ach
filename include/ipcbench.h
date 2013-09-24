@@ -58,6 +58,9 @@
 
 struct ipcbench_vtab {
 
+    /** Init global structures */
+    void (*init)(void);
+
     /** Initialize sending process data */
     void (*init_send)(void);
     /** Initialize receiving process data */
@@ -72,6 +75,10 @@ struct ipcbench_vtab {
     void (*destroy_send)(void);
     /** Destroy receiving process data */
     void (*destroy_recv)(void);
+
+
+    /** Destroy global structures */
+    void (*destroy)(void);
 };
 
 

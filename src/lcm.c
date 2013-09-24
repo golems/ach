@@ -50,14 +50,14 @@
 static lcm_t * lcm;
 
 
-void s_init_send(void) {
+static void s_init_send(void) {
     lcm = lcm_create(NULL);
     if(!lcm)
         abort();
 }
 
 
-void s_send( const struct timespec *ts ) {
+static void s_send( const struct timespec *ts ) {
     ipcbench_lcm_timestamp_t msg;
     msg.secs = ts->tv_sec;
     msg.nsecs = ts->tv_nsec;
@@ -79,12 +79,12 @@ listen_handler(const lcm_recv_buf_t *rbuf, const char * channel,
 }
 
 
-void s_init_recv(void) {
+static void s_init_recv(void) {
     s_init_send();
     ipcbench_lcm_timestamp_t_subscribe(lcm, "EXAMPLE", &listen_handler, NULL);
 }
 
-void s_recv( struct timespec *ts ) {
+static void s_recv( struct timespec *ts ) {
     s_ts = ts;
     lcm_handle(lcm);
 }
@@ -92,7 +92,7 @@ void s_recv( struct timespec *ts ) {
 
 
 
-void s_destroy_send_recv(void) {
+static void s_destroy_send_recv(void) {
     lcm_destroy(lcm);
 }
 

@@ -93,6 +93,9 @@ int main( int argc, char **argv ) {
 
 
     struct ipcbench_vtab *vtab = &ipc_bench_vtab_lcm;
+    //struct ipcbench_vtab *vtab = &ipc_bench_vtab_ach;
+
+    if( vtab->init ) vtab->init();
 
     pid_t pid_send = fork();
     if( 0 == pid_send ) {
@@ -111,6 +114,10 @@ int main( int argc, char **argv ) {
     }
 
     sleep(100);
+
+
+    if( vtab->destroy ) vtab->destroy();
+
     return 0;
 
 }

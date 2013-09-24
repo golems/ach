@@ -15,9 +15,11 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 bin_PROGRAMS = ipcbench
 
 ipcbench_SOURCES = src/ipcbench.c
-ipcbench_LDADD = -lm
 
-ipcbench_SOURCES += ipcbench_lcm_timestamp_t.c src/lcm/bench_lcm.c
+ipcbench_SOURCES += src/ach.c
+ipcbench_LDADD = -lach
+
+ipcbench_SOURCES += ipcbench_lcm_timestamp_t.c src/lcm.c
 ipcbench_LDADD += -llcm
 
 
@@ -25,5 +27,5 @@ BUILT_SOURCES = ipcbench_lcm_timestamp_t.c ipcbench_lcm_timestamp_t.h
 
 ipcbench_lcm_timestamp_t.h: ipcbench_lcm_timestamp_t.c
 
-ipcbench_lcm_timestamp_t.c: src/lcm/lcm_msg.lcm
+ipcbench_lcm_timestamp_t.c: src/lcm_msg.lcm
 	lcm-gen -c $<
