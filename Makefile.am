@@ -12,10 +12,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 # rt4_SOURCES = src/main.c
 # rt4_LDADD = librt4kernel.la
 
-bin_PROGRAMS = bench_lcm
+bin_PROGRAMS = ipcbench
 
-bench_lcm_SOURCES = ipcbench_lcm_timestamp_t.c src/lcm/bench_lcm.c
-bench_lcm_LDADD = -llcm
+ipcbench_SOURCES = src/ipcbench.c
+ipcbench_LDADD = -lm
+
+ipcbench_SOURCES += ipcbench_lcm_timestamp_t.c src/lcm/bench_lcm.c
+ipcbench_LDADD += -llcm
 
 
 BUILT_SOURCES = ipcbench_lcm_timestamp_t.c ipcbench_lcm_timestamp_t.h

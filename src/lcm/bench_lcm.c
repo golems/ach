@@ -1,42 +1,114 @@
+/* -*- mode: C; c-basic-offset: 4 -*- */
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
+/*
+ * Copyright (c) 2011-2013, Georgia Tech Research Corporation
+ * All rights reserved.
+ *
+ * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Georgia Tech Humanoid Robotics Lab
+ * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
+ *
+ *
+ * This file is provided under the following "BSD-style" License:
+ *
+ *
+ *   Redistribution and use in source and binary forms, with or
+ *   without modification, are permitted provided that the following
+ *   conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *
+ *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
+ *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
+ *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+ *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+ *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+ *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *   POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 
-#include <stdio.h>
+#ifdef HAVE_CONFIG
+#include "config.h"
+#endif //HAVE_CONFIG
 
-#include <inttypes.h>
-#include <unistd.h>
-#include <time.h>
-#include <lcm/lcm.h>
+#include <ipcbench.h>
 #include "ipcbench_lcm_timestamp_t.h"
 
-double overhead = 0;
+static lcm_t * lcm;
 
-static double ticks_delta(struct timespec t0, struct timespec t1) {
-    double dsec =  ((double)t1.tv_sec -  (double)t0.tv_sec);
-    double dnsec = ((double)t1.tv_nsec - (double)t0.tv_nsec) / 1e9;
-    return dsec + dnsec - overhead;
-}
 
-struct timespec get_ticks() {
-    struct timespec t;
-    clock_gettime( CLOCK_MONOTONIC, &t );
-    return t;
-}
-
-void calibrate(void) {
-    //make_realtime(30);
-    double a = 0;
-    struct timespec r0,r1;
-    size_t i;
-    overhead = 0;
-    for( i = 0; i<1000; i++ ) {
-        r0 = get_ticks();
-        r1 = get_ticks();
-        a += ticks_delta(r0,r1);
-    }
-    overhead = (a) / 1000;
+void s_init_send(void) {
+    lcm = lcm_create(NULL);
+    if(!lcm)
+        abort();
 }
 
 
+void s_send( const struct timespec *ts ) {
+    ipcbench_lcm_timestamp_t msg;
+    msg.secs = ts->tv_sec;
+    msg.nsecs = ts->tv_nsec;
+    ipcbench_lcm_timestamp_t_publish(lcm, "EXAMPLE", &msg);
+}
 
+
+static struct timespec *s_ts;
+
+static void
+listen_handler(const lcm_recv_buf_t *rbuf, const char * channel,
+        const ipcbench_lcm_timestamp_t * msg, void * user)
+{
+    (void)rbuf;
+    (void)user;
+    (void)channel;
+    s_ts->tv_sec = msg->secs;
+    s_ts->tv_nsec = msg->nsecs;
+}
+
+
+void s_init_recv(void) {
+    s_init_send();
+    ipcbench_lcm_timestamp_t_subscribe(lcm, "EXAMPLE", &listen_handler, NULL);
+}
+
+void s_recv( struct timespec *ts ) {
+    s_ts = ts;
+    lcm_handle(lcm);
+}
+
+
+
+
+void s_destroy_send_recv(void) {
+    lcm_destroy(lcm);
+}
+
+
+struct ipcbench_vtab ipc_bench_vtab_lcm = {
+    .init_send = s_init_send,
+    .init_recv = s_init_recv,
+    .send = s_send,
+    .recv = s_recv,
+    .destroy_send = s_destroy_send_recv,
+    .destroy_recv = s_destroy_send_recv,
+};
+
+
+
+/*
 void send(void)
 {
     lcm_t * lcm = lcm_create(NULL);
@@ -60,44 +132,12 @@ void send(void)
 }
 
 
-static void
-listen_handler(const lcm_recv_buf_t *rbuf, const char * channel,
-        const ipcbench_lcm_timestamp_t * msg, void * user)
-{
-
-    struct timespec ts0 = {.tv_sec = msg->secs, .tv_nsec = msg->nsecs };
-    struct timespec ts1;
-    clock_gettime( CLOCK_MONOTONIC, &ts1 );
-    (void)rbuf;
-    (void)user;
-    printf("Received message on channel \"%s\":\n", channel);
-    printf("secs: %ld, nsecs: %d\n", msg->secs, msg->nsecs );
-    printf("delta: %lf us\n", ticks_delta( ts0, ts1 ) * 1e6);
-
-
-    /* printf("  timestamp   = %"PRId64"\n", msg->timestamp); */
-    /* printf("  position    = (%f, %f, %f)\n", */
-    /*         msg->position[0], msg->position[1], msg->position[2]); */
-    /* printf("  orientation = (%f, %f, %f, %f)\n", */
-    /*         msg->orientation[0], msg->orientation[1], msg->orientation[2], */
-    /*         msg->orientation[3]); */
-    /* printf("  ranges:"); */
-    /* for(i = 0; i < msg->num_ranges; i++) */
-
-    /*     printf(" %d", msg->ranges[i]); */
-    /* printf("\n"); */
-    /* printf("  name        = '%s'\n", msg->name); */
-    /* printf("  enabled     = %d\n", msg->enabled); */
-}
-
-
 void listen(void)
 {
     lcm_t * lcm = lcm_create(NULL);
     if(!lcm)
         abort();
 
-    ipcbench_lcm_timestamp_t_subscribe(lcm, "EXAMPLE", &listen_handler, NULL);
 
     while(1)
         lcm_handle(lcm);
@@ -106,30 +146,4 @@ void listen(void)
     return;
 }
 
-
-int main( int argc, char **argv ) {
-    (void)argc;
-    (void)argv;
-
-    calibrate();
-    printf("overhead: %f\n", overhead);
-
-    pid_t pid_send = fork();
-    if( 0 == pid_send ) {
-        send();
-        return 0;
-    } else if ( pid_send < 0 ) {
-        abort();
-    }
-
-    pid_t pid_listen = fork();
-    if( 0 == pid_listen ) {
-        listen();
-        return 0;
-    } else if ( pid_listen < 0 ) {
-        abort();
-    }
-
-    sleep(100);
-    return 0;
-}
+*/
