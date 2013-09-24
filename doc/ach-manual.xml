@@ -115,7 +115,7 @@
     <para>
       Channels must be created before they can be opened. Creation may
       be done directly by either the reading or writing process, or it
-      may be done via the shell command, <command>ach -C
+      may be done via the shell command, <command>ach mk
       channel_name</command>, before the reader or writer start. After
       the channel is created, each reader or writer must open the
       channel before it can individually get or put messages.
@@ -650,7 +650,7 @@ c.close()
       <cmdsynopsis>
         <command>ach</command>
          <arg choice="plain">mk</arg>
-         <arg choice="plain">-C <replaceable>my_channel</replaceable></arg>
+         <arg choice="plain"><replaceable>my_channel</replaceable></arg>
          <arg choice="plain">-m <replaceable>10</replaceable></arg>
          <arg choice="plain">-n <replaceable>64</replaceable></arg>
          <arg choice="plain">-1</arg>
