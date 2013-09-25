@@ -40,52 +40,48 @@
  *
  */
 
-#ifndef IPCBENCH_H
-#define IPCBENCH_H
+#ifdef HAVE_CONFIG
+#include "config.h"
+#endif //HAVE_CONFIG
 
-#include <stdio.h>
-#include <sched.h>
-#include <inttypes.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <ipcbench.h>
+#include <ach.h>
+
+static int fd[2];
 
 
-struct ipcbench_vtab {
+static void s_init(void) {
+    if( pipe(fd) ) {
+        perror( "could not create pipe" );
+        abort();
+    }
+}
 
-    /** Init global structures */
-    void (*init)(void);
+static void s_destroy(void) {
+    if( close(fd[0]) || close(fd[1]) ) {
+        perror( "error closing pipe" );
+    }
+}
 
-    /** Initialize sending process data */
-    void (*init_send)(void);
-    /** Initialize receiving process data */
-    void (*init_recv)(void);
+static void s_send( const struct timespec *ts ) {
+    ssize_t r = write(fd[1], ts, sizeof(*ts));
+    if( sizeof(*ts) != r ) {
+        perror( "could not send data on pipe" );
+        abort();
+    }
+}
 
-    /** Send a timespec */
-    void (*send)(const struct timespec *ts);
-    /** Receive a timespec */
-    void (*recv)(struct timespec *ts );
+static void s_recv( struct timespec *ts ) {
+    ssize_t r = read(fd[0], ts, sizeof(*ts));
+    if( sizeof(*ts) != r ) {
+        perror( "could not receive data on pipe" );
+        abort();
+    }
+}
 
-    /** Destroy sending process data */
-    void (*destroy_send)(void);
-    /** Destroy receiving process data */
-    void (*destroy_recv)(void);
-
-
-    /** Destroy global structures */
-    void (*destroy)(void);
+struct ipcbench_vtab ipc_bench_vtab_pipe = {
+    .init = s_init,
+    .send = s_send,
+    .recv = s_recv,
+    .destroy = s_destroy,
 };
-
-
-extern struct ipcbench_vtab ipc_bench_vtab_ach;
-extern struct ipcbench_vtab ipc_bench_vtab_lcm;
-extern struct ipcbench_vtab ipc_bench_vtab_pipe;
-extern struct ipcbench_vtab ipc_bench_vtab_mq;
-extern struct ipcbench_vtab ipc_bench_vtab_locdgram;
-
-#endif // IPCBENCH_H

@@ -40,52 +40,66 @@
  *
  */
 
-#ifndef IPCBENCH_H
-#define IPCBENCH_H
+#ifdef HAVE_CONFIG
+#include "config.h"
+#endif //HAVE_CONFIG
 
-#include <stdio.h>
-#include <sched.h>
-#include <inttypes.h>
-#include <unistd.h>
-#include <time.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <errno.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <ipcbench.h>
+#include <sys/fcntl.h>
+#include <mqueue.h>
 
+static mqd_t fd;
 
-struct ipcbench_vtab {
+static void s_open(int flag) {
+    struct mq_attr attr = {.mq_maxmsg = 10,
+                           .mq_msgsize = sizeof(struct timespec),
+                           .mq_flags = 0};
+    if( (fd = mq_open("/ipcbench", O_CREAT|flag, 0666, &attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+}
 
-    /** Init global structures */
-    void (*init)(void);
+static void s_init_send(void) {
+    s_open( O_WRONLY );
+}
 
-    /** Initialize sending process data */
-    void (*init_send)(void);
-    /** Initialize receiving process data */
-    void (*init_recv)(void);
+static void s_init_recv(void) {
+    s_open( O_RDONLY );
+}
 
-    /** Send a timespec */
-    void (*send)(const struct timespec *ts);
-    /** Receive a timespec */
-    void (*recv)(struct timespec *ts );
+static void s_destroy_send_recv(void) {
+    if( close(fd) ) {
+        perror( "error closing mq" );
+    }
+}
 
-    /** Destroy sending process data */
-    void (*destroy_send)(void);
-    /** Destroy receiving process data */
-    void (*destroy_recv)(void);
+static void s_send( const struct timespec *ts ) {
+    if( mq_send(fd, (char*)ts, sizeof(*ts), 0) ) {
+        perror( "could not send data mq" );
+        abort();
+    }
+}
 
+static void s_recv( struct timespec *ts ) {
+    ssize_t r = mq_receive( fd, (char*)ts, sizeof(*ts), NULL );
+    if( 0 > r ) {
+        perror( "could not receive data mq" );
+        abort();
+    }
+}
 
-    /** Destroy global structures */
-    void (*destroy)(void);
+static void s_destroy( ) {
+    mq_unlink("/ipcbench");
+}
+
+struct ipcbench_vtab ipc_bench_vtab_mq = {
+    .init = s_destroy,
+    .init_send = s_init_send,
+    .init_recv = s_init_recv,
+    .send = s_send,
+    .recv = s_recv,
+    .destroy_send = s_destroy_send_recv,
+    .destroy_recv = s_destroy_send_recv,
+    .destroy = s_destroy
 };
-
-
-extern struct ipcbench_vtab ipc_bench_vtab_ach;
-extern struct ipcbench_vtab ipc_bench_vtab_lcm;
-extern struct ipcbench_vtab ipc_bench_vtab_pipe;
-extern struct ipcbench_vtab ipc_bench_vtab_mq;
-extern struct ipcbench_vtab ipc_bench_vtab_locdgram;
-
-#endif // IPCBENCH_H

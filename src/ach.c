@@ -55,7 +55,7 @@ static void s_init(void) {
     /* create channel */
     int r = ach_unlink(CHAN_NAME);               /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
-    r = ach_create(CHAN_NAME, 32,
+    r = ach_create(CHAN_NAME, 10,
                    sizeof(struct timespec), NULL );
     assert(ACH_OK == r);
 
@@ -72,7 +72,6 @@ static void s_init_send_recv(void) {
 
 static void s_send( const struct timespec *ts ) {
     int r = ach_put( &channel, ts, sizeof(*ts) );
-    printf("sending: %lu, %lu\n", ts->tv_sec, ts->tv_nsec);
     if( ACH_OK != r ) abort();
 }
 
