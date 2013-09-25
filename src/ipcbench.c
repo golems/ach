@@ -133,6 +133,8 @@ int main( int argc, char **argv ) {
         {"lcm", &ipc_bench_vtab_lcm},
         {"pipe", &ipc_bench_vtab_pipe},
         {"mq", &ipc_bench_vtab_mq},
+        {"tcp", &ipc_bench_vtab_tcp},
+        {"local", &ipc_bench_vtab_local},
         {NULL, NULL},
     };
     struct ipcbench_vtab *vtab;
