@@ -69,6 +69,8 @@ ach_example_LDADD = libach.la -lm
 achbench_SOURCES = src/ach-bench.c
 achbench_LDADD = libach.la libachutil.la
 
+## PYTHON ##
+
 if HAVE_PYTHON
 
 python_PYTHON = python/ach.py
@@ -80,8 +82,28 @@ ach_py_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
 endif
 
 
+
+## JAVA ##
+if HAVE_JAVAC
+
+BUILT_SOURCES = org_golems_ach_Channel.h
+
+org/golems/ach/Channel.class: $(top_srcdir)/java/org/golems/ach/Channel.java
+	$(JAVAC) -d $(top_builddir)  $<
+
+org_golems_ach_Channel.h: $(top_builddir)/org/golems/ach/Channel.class
+	javah org.golems.ach.Channel
+
+lib_LTLIBRARIES += libachj.la
+libachj_la_CPPFLAGS = $(CPPFLAGS) $(JNICPPFLAGS)
+libachj_la_SOURCES = java/achj.c
+
+endif
+
+## LOCAL CLEAN ##
+
 clean-local:
-	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.*
+	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Channel.h
 
 distclean-local:
 	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake .nfs*
