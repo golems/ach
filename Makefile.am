@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = CMakeLists.txt spin
+EXTRA_DIST = CMakeLists.txt spin java/Channel.java java/Lib.java
 # dist_bin_SCRIPTS = achpipe achlog
 
 dist_noinst_SCRIPTS = achtooltest src/run-benchmarks test-achcop
@@ -86,13 +86,19 @@ endif
 ## JAVA ##
 if HAVE_JAVAC
 
-BUILT_SOURCES = org_golems_ach_Channel.h
+BUILT_SOURCES = org_golems_ach_Lib.h
 
-org/golems/ach/Channel.class: $(top_srcdir)/java/org/golems/ach/Channel.java
-	$(JAVAC) -d $(top_builddir)  $<
+JSOURCES =                                \
+	$(top_srcdir)/java/Channel.java   \
+	$(top_srcdir)/java/Lib.java
 
-org_golems_ach_Channel.h: $(top_builddir)/org/golems/ach/Channel.class
-	javah org.golems.ach.Channel
+org/golems/ach/Channel.class: $(JSOURCES)
+	$(JAVAC) -d $(top_builddir) $(JSOURCES)
+
+org/golems/ach/Lib.class: org/golems/ach/Channel.class
+
+org_golems_ach_Lib.h: $(top_builddir)/org/golems/ach/Lib.class
+	javah org.golems.ach.Lib
 
 lib_LTLIBRARIES += libachj.la
 libachj_la_CPPFLAGS = $(CPPFLAGS) $(JNICPPFLAGS)
@@ -103,7 +109,7 @@ endif
 ## LOCAL CLEAN ##
 
 clean-local:
-	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Channel.h
+	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Lib.h
 
 distclean-local:
 	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake .nfs*

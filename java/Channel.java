@@ -38,23 +38,36 @@
  *
  */
 
-/** \file ach.h
- *  \author Neil T. Dantam
- */
-
 package org.golems.ach;
 
 
 class Channel
 {
-    public native void open(String channel_name);
-    public native void close();
-    public native void put(String channel_name);
-
-    public static void main(String[] args) {
+    public int open( String channel_name ) {
+        long[] ptr = new long[1];
+        int r = Lib.open(channel_name, ptr);
+        this.chan_ptr = ptr[0];
+        return r;
     }
 
-    static{
-        System.loadLibrary("libach");
+    public int close() {
+        int r = Lib.close( this.chan_ptr );
+        chan_ptr = 0;
+        return r;
     }
+
+    public int flush() {
+        return Lib.flush( this.chan_ptr );
+    }
+
+    public int put( byte[] buf ) {
+        return Lib.put( this.chan_ptr, buf );
+    }
+
+    public int get( byte[] buf, long[] frame_size, int options ) {
+        return Lib.put( this.chan_ptr, buf );
+    }
+
+    private long chan_ptr = 0;
+
 }

@@ -80,5 +80,5 @@ Makefile.in
 /robusttest
 /ach.pc
 /achlog
-/org_golems_ach_Channel.h
-/org/golems/ach/Channel.class
+/org_golems_ach_Lib.h
+*.class
