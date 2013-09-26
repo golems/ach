@@ -14,8 +14,8 @@ man/achcat.1: $(top_srcdir)/src/achcat.c $(top_srcdir)/configure.ac
 man/achd.1: $(top_srcdir)/src/achd/achd.c $(top_srcdir)/configure.ac achd.inc
 	$(HELP2MAN) -h -\? -v -V -i achd.inc --no-info -n "send ach messages over streams" $(top_builddir)/achd$(EXEEXT) -o $@
 
-man/achlog.1: $(top_srcdir)/achlog
-	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_srcdir)/achlog -o $@
+man/achlog.1: $(top_srcdir)/src/achlog.c
+	$(HELP2MAN) -h -h -v -V --no-info -n "log ach messages" $(top_builddir)/achlog$(EXEEXT) -o $@
 
 man/achcop.1: $(top_srcdir)/src/achcop.c
 	$(HELP2MAN) -h -\? -v -V --no-info -n "Watchdog for ach daemons" $(top_builddir)/achcop$(EXEEXT) -o $@
