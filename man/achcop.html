@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML><HEAD><TITLE>Man page of ACHCOP</TITLE>
+</HEAD><BODY>
+<H1>ACHCOP</H1>
+Section: User Commands (1)<BR>Updated: September 2013<BR><A HREF="#index">Index</A>
+
+<A NAME="lbAB">&nbsp;</A>
+<H2>NAME</H2>
+
+achcop - Watchdog for ach daemons
+<A NAME="lbAC">&nbsp;</A>
+<H2>SYNOPSIS</H2>
+
+<B>achcop</B>
+
+[<I>OPTIONS</I>...] <I>-- child-name </I>[<I>CHILD-OPTIONS</I>]
+<A NAME="lbAD">&nbsp;</A>
+<H2>DESCRIPTION</H2>
+
+Watchdog to run and restart ach child processes
+<A NAME="lbAE">&nbsp;</A>
+<H2>OPTIONS</H2>
+
+<DL COMPACT>
+<DT><B>-P</B> pid-file,<DD>
+File for pid of cop process (only valid with <B>-r</B>)
+<DT><B>-p</B> pid-file,<DD>
+File for pid of child process
+<DT><B>-o</B> out-file,<DD>
+Redirect stdout to this file
+(- keeps unchanged, no option closes)
+<DT><B>-e</B> err-file,<DD>
+Redirect stderr to this file
+(- keeps unchanged, no option closes)
+<DT><B>-d</B>,<DD>
+Detach and run in background
+<DT><B>-r</B>,<DD>
+Restart failed children
+<DT><B>-v</B>,<DD>
+Make output more verbose
+<DT>-?,<DD>
+Give program help list
+<DT><B>-V</B>,<DD>
+Print program version
+</DL>
+<A NAME="lbAF">&nbsp;</A>
+<H2>EXAMPLES</H2>
+
+<DL COMPACT>
+<DT><DD>
+achcop <B>-rd</B> <B>-P</B> /var/run/myd.ppid <B>-p</B> /var/run/myd.pid <B>--</B> my-daemon <B>-xyz</B>
+</DL>
+<A NAME="lbAG">&nbsp;</A>
+<H2>AUTHOR</H2>
+
+Written by Neil T. Dantam
+<A NAME="lbAH">&nbsp;</A>
+<H2>REPORTING BUGS</H2>
+
+Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+<A NAME="lbAI">&nbsp;</A>
+<H2>COPYRIGHT</H2>
+
+Copyright &#169; 2008-2013, Georgia Tech Research Corporation
+<BR>
+
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+<P>
+
+<HR>
+<A NAME="index">&nbsp;</A><H2>Index</H2>
+<DL>
+<DT><A HREF="#lbAB">NAME</A><DD>
+<DT><A HREF="#lbAC">SYNOPSIS</A><DD>
+<DT><A HREF="#lbAD">DESCRIPTION</A><DD>
+<DT><A HREF="#lbAE">OPTIONS</A><DD>
+<DT><A HREF="#lbAF">EXAMPLES</A><DD>
+<DT><A HREF="#lbAG">AUTHOR</A><DD>
+<DT><A HREF="#lbAH">REPORTING BUGS</A><DD>
+<DT><A HREF="#lbAI">COPYRIGHT</A><DD>
+</DL>
+<HR>
+This document was created by
+<A HREF="/cgi-bin/man/man2html">man2html</A>,
+using the manual pages.<BR>
+Time: 01:51:46 GMT, September 24, 2013
+</BODY>
+</HTML>
