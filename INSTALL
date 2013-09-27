@@ -7,8 +7,9 @@ I.   Autotools Installion Summary
 II.  Alternative CMake Installation Summary
 III. Cross Compiling
 IV.  Language Bindings
-    3.1 Common Lisp
-    3.2 Python
+    1. Common Lisp
+    2. Python
+    3. Java
 V.   Generic Autotools Instructions
 
 I. AUTOTOOLS INSTALLATION SUMMARY
@@ -176,6 +177,12 @@ pip.
 
     ./configure --with-python && make && sudo make install
 
+Java
+----
+
+Java bindings are provided in the ./java directory.  When the Java
+compiler is present, a JNI native library and jarfile will be built
+and installed.
 
 V. GNU Autotools Generic Instructions
 =====================================

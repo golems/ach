@@ -89,20 +89,38 @@ if HAVE_JAVAC
 BUILT_SOURCES = org_golems_ach_Lib.h
 
 JSOURCES =                                \
+	$(top_srcdir)/java/Lib.java       \
+	$(top_srcdir)/java/Status.java    \
 	$(top_srcdir)/java/Channel.java   \
-	$(top_srcdir)/java/Lib.java
+	$(top_srcdir)/java/Test.java
 
-org/golems/ach/Channel.class: $(JSOURCES)
+JCLASSES =                                \
+	org/golems/ach/Status.class       \
+	org/golems/ach/Channel.class      \
+	org/golems/ach/Test.class
+
+org/golems/ach/Lib.class: $(JSOURCES)
 	$(JAVAC) -d $(top_builddir) $(JSOURCES)
 
-org/golems/ach/Lib.class: org/golems/ach/Channel.class
+org/golems/ach/Status.class: org/golems/ach/Lib.class
+org/golems/ach/Channel.class: org/golems/ach/Lib.class
+org/golems/ach/Test.class: org/golems/ach/Lib.class
 
 org_golems_ach_Lib.h: $(top_builddir)/org/golems/ach/Lib.class
 	javah org.golems.ach.Lib
 
+org.golems.ach.jar: $(JCLASSES)
+	jar cf $@ $(JCLASSES)
+
+
+# install the jar file somewhere reasonable
+javadir = $(datadir)/java
+java_DATA = org.golems.ach.jar
+
 lib_LTLIBRARIES += libachj.la
 libachj_la_CPPFLAGS = $(CPPFLAGS) $(JNICPPFLAGS)
 libachj_la_SOURCES = java/achj.c
+libachj_la_LIBADD = libach.la
 
 endif
 

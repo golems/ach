@@ -82,3 +82,4 @@ Makefile.in
 /achlog
 /org_golems_ach_Lib.h
 *.class
+/org.golems.ach.jar

@@ -41,13 +41,15 @@ DOCUMENTATION
 
 LANGUAGE BINDINGS
 =================
-Language bindings are included for Common Lisp and Python.
+Language bindings are included for Common Lisp, Python, and Java.
 
 * Common Lisp bindings use CFFI and can be loaded with ASDF.
 
 * Python bindings are a C extension modules and a Python module 'ach'.
   This can be installed either via `make install` or via Python's
   distutils/pip.
+
+* Java bindings use JNI.  See the class org.golems.ach.Channel.
 
 See the INSTALL file for details.
 

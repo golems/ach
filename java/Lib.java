@@ -45,6 +45,10 @@ package org.golems.ach;
 class Lib
 {
 
+    static{
+        System.loadLibrary("achj");
+    }
+
     /* Native Function Wrappers */
 
     public static native int open(String channel_name, long[] chan_ptr);
@@ -99,14 +103,28 @@ class Lib
     public static final int EACCES = ACH_EACCES();
     public static final int CANCELED = ACH_CANCELED();
 
+
+    public static final int MASK_OK = 1<<OK;
+    public static final int MASK_OVERFLOW = 1<<OVERFLOW;
+    public static final int MASK_INVALID_NAME = 1<<INVALID_NAME;
+    public static final int MASK_BAD_SHM_FILE = 1<<BAD_SHM_FILE;
+    public static final int MASK_FAILED_SYSCALL = 1<<FAILED_SYSCALL;
+    public static final int MASK_STALE_FRAMES = 1<<STALE_FRAMES;
+    public static final int MASK_MISSED_FRAME = 1<<MISSED_FRAME;
+    public static final int MASK_TIMEOUT = 1<<TIMEOUT;
+    public static final int MASK_EEXIST = 1<<EEXIST;
+    public static final int MASK_ENOENT = 1<<ENOENT;
+    public static final int MASK_CLOSED = 1<<CLOSED;
+    public static final int MASK_BUG = 1<<BUG;
+    public static final int MASK_EINVAL = 1<<EINVAL;
+    public static final int MASK_CORRUPT = 1<<CORRUPT;
+    public static final int MASK_BAD_HEADER = 1<<BAD_HEADER;
+    public static final int MASK_EACCES = 1<<EACCES;
+    public static final int MASK_CANCELED = 1<<CANCELED;
+
     public static final int O_WAIT = ACH_O_WAIT();
     public static final int O_LAST = ACH_O_LAST();
     public static final int O_COPY = ACH_O_COPY();
-
-    static{
-        System.loadLibrary("libachj");
-        System.loadLibrary("libachj");
-    }
 }
 
 
