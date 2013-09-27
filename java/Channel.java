@@ -42,7 +42,7 @@ package org.golems.ach;
 
 /** An Ach channel.
  */
-class Channel
+public class Channel
 {
     /** Create a channel with default frame size
      */
@@ -50,15 +50,18 @@ class Channel
 
     /** Initialize a channel with a given nominal frame_size.
      *
-     * The frame size is used to preallocate buffers when receiving a
-     * message.  A mismatch between the value given here and the size
-     * of actual messages may result in extra buffer allocation.
+     * @param frame_size The frame size is used to preallocate buffers
+     * when receiving a message.  A mismatch between the value given
+     * here and the size of actual messages may result in extra buffer
+     * allocation.
      */
     public Channel(long frame_size) {
         this.frame_size = frame_size;
     }
 
     /** Open channel with the give channel_name.
+     *
+     * @param channel_name Name of the channel to open
      */
     public int open( String channel_name ) {
         long[] ptr = new long[1];
@@ -94,7 +97,11 @@ class Channel
         return Lib.flush( this.chan_ptr );
     }
 
-    /** Discard old messages in the channel. */
+    /** Discard old messages in the channel.
+     *
+     * @param status_mask Bit mask of ach_status codes to ignore.
+     *
+     */
     public void flush(int status_mask) throws Status.AchException {
         int r = flush();
         Status.maybe_throw( r, status_mask );
@@ -105,7 +112,10 @@ class Channel
         return Lib.put( this.chan_ptr, buf );
     }
 
-    /** Write buf to channel. */
+    /** Write buf to channel.
+     *
+     * @param status_mask Bit mask of ach_status codes to ignore.
+     */
     public void put( byte[] buf, int status_mask ) throws Exception {
         int r = Lib.put( this.chan_ptr, buf );
         Status.maybe_throw( r, status_mask );
@@ -125,7 +135,10 @@ class Channel
         return Lib.get( this.chan_ptr, buf, frame_size, options );
     }
 
-    /** Get buffer from channel. */
+    /** Get buffer from channel.
+     *
+     * @param status_mask Bit mask of ach_status codes to ignore.
+     */
     public byte[] get( int options, int status_mask ) throws Status.AchException {
         byte[] buf;
         long[] frame_size = new long[1];

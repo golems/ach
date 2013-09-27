@@ -83,3 +83,9 @@ Makefile.in
 /org_golems_ach_Lib.h
 *.class
 /org.golems.ach.jar
+/doc/javadoc/*.html
+/doc/javadoc/*.css
+/doc/javadoc/org
+/doc/.javadoc.stamp
+/doc/javadoc/package-list
+/doc/javadoc/resources/inherit.gif

@@ -40,8 +40,8 @@
 
 package org.golems.ach;
 
-
-class Status
+/** Outer class for ach_status methods and exceptions */
+public class Status
 {
 
     /** Exception base class */
@@ -49,54 +49,71 @@ class Status
         public int status() {return -1;}
     };
 
+    /** Exception type of ach_status of same name */
     public static class OK extends AchException {
         public int status() {return Lib.OK;}
     };
+    /** Exception type of ach_status of same name */
     public static class OVERFLOW extends AchException {
         public int status() {return Lib.OVERFLOW;}
     };
+    /** Exception type of ach_status of same name */
     public static class INVALID_NAME extends AchException {
         public int status() {return Lib.INVALID_NAME;}
     };
+    /** Exception type of ach_status of same name */
     public static class BAD_SHM_FILE extends AchException {
         public int status() {return Lib.BAD_SHM_FILE;}
     };
+    /** Exception type of ach_status of same name */
     public static class FAILED_SYSCALL extends AchException {
         public int status() {return Lib.FAILED_SYSCALL;}
     };
+    /** Exception type of ach_status of same name */
     public static class STALE_FRAMES extends AchException {
         public int status() {return Lib.STALE_FRAMES;}
     };
+    /** Exception type of ach_status of same name */
     public static class MISSED_FRAME extends AchException {
         public int status() {return Lib.MISSED_FRAME;}
     };
+    /** Exception type of ach_status of same name */
     public static class TIMEOUT extends AchException {
         public int status() {return Lib.TIMEOUT;}
     };
+    /** Exception type of ach_status of same name */
     public static class EEXIST extends AchException {
         public int status() {return Lib.EEXIST;}
     };
+    /** Exception type of ach_status of same name */
     public static class ENOENT extends AchException {
         public int status() {return Lib.ENOENT;}
     };
+    /** Exception type of ach_status of same name */
     public static class CLOSED extends AchException {
         public int status() {return Lib.CLOSED;}
     };
+    /** Exception type of ach_status of same name */
     public static class BUG extends AchException {
         public int status() {return Lib.BUG;}
     };
+    /** Exception type of ach_status of same name */
     public static class EINVAL extends AchException {
         public int status() {return Lib.EINVAL;}
     };
+    /** Exception type of ach_status of same name */
     public static class CORRUPT extends AchException {
         public int status() {return Lib.CORRUPT;}
     };
+    /** Exception type of ach_status of same name */
     public static class BAD_HEADER extends AchException {
         public int status() {return Lib.BAD_HEADER;}
     };
+    /** Exception type of ach_status of same name */
     public static class EACCES extends AchException {
         public int status() {return Lib.EACCES;}
     };
+    /** Exception type of ach_status of same name */
     public static class CANCELED extends AchException {
         public int status() {return Lib.CANCELED;}
     };
