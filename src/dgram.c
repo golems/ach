@@ -45,91 +45,61 @@
 #endif //HAVE_CONFIG
 
 #include <ipcbench.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <netinet/in.h>
+#include <sys/fcntl.h>
+#include <mqueue.h>
 
-#define PORT 8070
+static mqd_t fd;
 
-static int sock;
-static int csock;
-static int fd;
-static struct sockaddr_in addr = {0};
-static struct sockaddr_in caddr = {0};
-unsigned clen;
-
+static void s_open(int flag) {
+    struct mq_attr attr = {.mq_maxmsg = 10,
+                           .mq_msgsize = sizeof(struct timespec),
+                           .mq_flags = 0};
+    if( (fd = mq_open("/ipcbench", O_CREAT|flag, 0666, &attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+}
 
 static void s_init_send(void) {
-    sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
-
-    if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("failed to connect");
-        abort();
-    }
-
-    fd = sock;
+    s_open( O_WRONLY );
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
+    s_open( O_RDONLY );
+}
+
+static void s_destroy_send_recv(void) {
+    if( close(fd) ) {
+        perror( "error closing mq" );
     }
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
-
-
-    if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("Failed to bind the server socket");
-        abort();
-    }
-
-    if (listen(sock, 1) < 0) {
-        perror("Failed to listen on server socket");
-        abort();
-    }
-
-    if ((csock = accept(sock, (struct sockaddr *) &caddr, &clen)) < 0) {
-        perror(" failed to accept connection");
-        abort();
-    }
-
-    fd = csock;
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = write(fd, ts, sizeof(*ts));
-    if( sizeof(*ts) != r ) {
-        perror( "could not send data on pipe" );
+    if( mq_send(fd, (char*)ts, sizeof(*ts), 0) ) {
+        perror( "could not send data mq" );
         abort();
     }
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = read(fd, ts, sizeof(*ts));
-    if( sizeof(*ts) != r ) {
-        perror( "could not receive data on pipe" );
+    ssize_t r = mq_receive( fd, (char*)ts, sizeof(*ts), NULL );
+    if( 0 > r ) {
+        perror( "could not receive data mq" );
         abort();
     }
 }
 
-struct ipcbench_vtab ipc_bench_vtab_tcp = {
+static void s_destroy( ) {
+    mq_unlink("/ipcbench");
+}
+
+struct ipcbench_vtab ipc_bench_vtab_mq = {
+    .init = s_destroy,
     .init_send = s_init_send,
     .init_recv = s_init_recv,
     .send = s_send,
-    .recv = s_recv
+    .recv = s_recv,
+    .destroy_send = s_destroy_send_recv,
+    .destroy_recv = s_destroy_send_recv,
+    .destroy = s_destroy
 };

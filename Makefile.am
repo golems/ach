@@ -16,7 +16,7 @@ bin_PROGRAMS = ipcbench
 
 ipcbench_SOURCES = src/ipcbench.c
 
-ipcbench_SOURCES += src/ach.c src/pipe.c src/mq.c src/tcp.c src/unix.c
+ipcbench_SOURCES += src/ach.c src/pipe.c src/mq.c src/tcp.c src/unix.c src/udp.c src/localdgram.c
 ipcbench_LDADD = -lach
 
 ipcbench_SOURCES += ipcbench_lcm_timestamp_t.c src/lcm.c

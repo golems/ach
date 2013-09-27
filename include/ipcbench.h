@@ -88,5 +88,7 @@ extern struct ipcbench_vtab ipc_bench_vtab_pipe;
 extern struct ipcbench_vtab ipc_bench_vtab_mq;
 extern struct ipcbench_vtab ipc_bench_vtab_tcp;
 extern struct ipcbench_vtab ipc_bench_vtab_local;
+extern struct ipcbench_vtab ipc_bench_vtab_udp;
+extern struct ipcbench_vtab ipc_bench_vtab_local_dgram;
 
 #endif // IPCBENCH_H

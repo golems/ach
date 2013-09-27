@@ -50,84 +50,67 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <netinet/in.h>
+#include <sys/un.h>
 
 #define PORT 8070
+#define UNIX_PATH_MAX    108
 
 static int sock;
-static int csock;
-static int fd;
-static struct sockaddr_in addr = {0};
-static struct sockaddr_in caddr = {0};
-unsigned clen;
+static struct sockaddr_un addr = {0};
 
+#define NAME "/tmp/ipcbench.dsock"
+
+static void s_init(void) {
+    unlink( NAME );
+}
 
 static void s_init_send(void) {
-    sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
+    sock = socket( PF_UNIX, SOCK_DGRAM, 0 );
     if( sock < 0 ) {
         perror( "Could not create socket");
         abort();
     }
 
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
-
-    if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("failed to connect");
-        abort();
-    }
-
-    fd = sock;
+    addr.sun_family = AF_UNIX;
+    snprintf(addr.sun_path, UNIX_PATH_MAX, NAME );
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
+    sock = socket( PF_UNIX, SOCK_DGRAM, 0 );
     if( sock < 0 ) {
         perror( "Could not create socket");
         abort();
     }
 
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
-
+    addr.sun_family = AF_UNIX;
+    snprintf(addr.sun_path, UNIX_PATH_MAX, NAME );
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("Failed to bind the server socket");
+        perror("Failed to bind the socket");
         abort();
     }
-
-    if (listen(sock, 1) < 0) {
-        perror("Failed to listen on server socket");
-        abort();
-    }
-
-    if ((csock = accept(sock, (struct sockaddr *) &caddr, &clen)) < 0) {
-        perror(" failed to accept connection");
-        abort();
-    }
-
-    fd = csock;
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = write(fd, ts, sizeof(*ts));
+    ssize_t r = sendto( sock, ts, sizeof(*ts), 0,
+                        (struct sockaddr *) &addr, sizeof(addr) );
     if( sizeof(*ts) != r ) {
-        perror( "could not send data on pipe" );
+        perror( "could not send data " );
         abort();
     }
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = read(fd, ts, sizeof(*ts));
+    ssize_t r = recvfrom( sock, ts, sizeof(*ts), 0,
+                          NULL, 0 );
     if( sizeof(*ts) != r ) {
         perror( "could not receive data on pipe" );
         abort();
     }
 }
 
-struct ipcbench_vtab ipc_bench_vtab_tcp = {
+struct ipcbench_vtab ipc_bench_vtab_local_dgram = {
+    .init = s_init,
     .init_send = s_init_send,
     .init_recv = s_init_recv,
     .send = s_send,

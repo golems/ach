@@ -59,7 +59,7 @@ static void make_realtime( int priority ) {
 
 static void send(struct ipcbench_vtab *vtab) {
     //make_realtime(99);
-    //sleep(1);
+    usleep(0.25e6);
     if( vtab->init_send ) vtab->init_send();
 
     while(1) {
@@ -135,6 +135,8 @@ int main( int argc, char **argv ) {
         {"mq", &ipc_bench_vtab_mq},
         {"tcp", &ipc_bench_vtab_tcp},
         {"local", &ipc_bench_vtab_local},
+        {"udp", &ipc_bench_vtab_udp},
+        {"localdgram", &ipc_bench_vtab_local_dgram},
         {NULL, NULL},
     };
     struct ipcbench_vtab *vtab;

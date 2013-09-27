@@ -73,6 +73,26 @@ static void s_init_send(void) {
     addr.sun_family = AF_UNIX;
     snprintf(addr.sun_path, UNIX_PATH_MAX, "/tmp/ipcbench.sock");
 
+
+    if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+        perror("failed to connect");
+        abort();
+    }
+
+    fd = sock;
+}
+
+static void s_init_recv(void) {
+    sock = socket( PF_UNIX, SOCK_STREAM, 0 );
+    if( sock < 0 ) {
+        perror( "Could not create socket");
+        abort();
+    }
+
+    addr.sun_family = AF_UNIX;
+    snprintf(addr.sun_path, UNIX_PATH_MAX, "/tmp/ipcbench.sock");
+
+
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("Failed to bind the server socket");
         abort();
@@ -89,24 +109,6 @@ static void s_init_send(void) {
     }
 
     fd = csock;
-}
-
-static void s_init_recv(void) {
-    sleep(1);
-    sock = socket( PF_UNIX, SOCK_STREAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, UNIX_PATH_MAX, "/tmp/ipcbench.sock");
-
-    if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("failed to connect");
-        abort();
-    }
-    fd = sock;
 }
 
 static void s_send( const struct timespec *ts ) {
