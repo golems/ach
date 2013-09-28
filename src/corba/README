@@ -1,0 +1,3 @@
+CORBA, ACE, and TAO disregard POSIX conventions for building software.
+You will need to set library and header include paths manually for
+this to build.

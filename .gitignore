@@ -24,3 +24,11 @@
 /config.h.in
 /config.log
 /ipcbench
+/src/corba/ipcbenchC.cpp
+/src/corba/ipcbenchC.h
+/src/corba/ipcbenchC.inl
+/src/corba/ipcbenchS.cpp
+/src/corba/ipcbenchS.h
+/src/corba/server
+/src/corba/client
+/src/corba/ior_file

@@ -1,0 +1,15 @@
+module ipcbench {
+
+    struct corba_timespec {
+        unsigned long long sec;
+        unsigned long nsec;
+    };
+
+     interface Thingy {
+         corba_timespec getit ();
+    };
+
+    interface Thingy_Factory {
+        Thingy get_thingy ( );
+    };
+};
