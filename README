@@ -1,0 +1,16 @@
+OVERVIEW
+========
+This package benchmarks latency for several IPC and networking
+mechanisms.
+
+BENCHMARKED MECHANISMS
+======================
+* POSIX Pipes
+* POSIX Message Queues
+* TCP Sockets
+* UDP Sockets
+* Local Domain Stream Sockets
+* Local Domain Datagram Sockets
+* Ach: https://github.com/golems/ach
+* LCM: https://code.google.com/p/lcm/
+* CORBA/TAO: http://www.cs.wustl.edu/~schmidt/TAO.html
