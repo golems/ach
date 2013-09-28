@@ -2,6 +2,8 @@
 #include "ace/streams.h"
 #include <stdio.h>
 
+#include "util.h"
+
 int main (int argc, char* argv[])
 {
   try {
@@ -19,9 +21,16 @@ int main (int argc, char* argv[])
 
     ipcbench::Thingy_var thing = factory->get_thingy ( );
 
-    ipcbench::corba_timespec ts = thing->getit();
+    make_realtime(30);
+    calibrate();
 
-    printf("Time: %ul, %ul\n", ts.sec, ts.nsec );
+    while(1) {
+        ipcbench::corba_timespec cts = thing->getit();
+        struct timespec ts = {.tv_sec = cts.sec, .tv_nsec = cts.nsec };
+        struct timespec now = get_ticks();
+        printf("delta: %lf us\n", ticks_delta( ts, now ) * 1e6);
+        usleep(1e3);
+    }
 
     // TAO-specific descructor
     orb->destroy ();

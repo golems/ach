@@ -1,6 +1,9 @@
 #include "ace/streams.h"
 #include "ipcbenchS.h"
 #include <stdio.h>
+#include <time.h>
+
+#include "util.h"
 
 class Thingy_i : public POA_ipcbench::Thingy {
 public:
@@ -14,10 +17,12 @@ private:
 ipcbench::corba_timespec
 Thingy_i::getit ()
 {
-    ipcbench::corba_timespec ts;
-    ts.sec = 1;
-    ts.nsec = 2;
-    return ts;
+    struct timespec ts = get_ticks();
+
+    ipcbench::corba_timespec cts;
+    cts.sec = ts.tv_sec;
+    cts.nsec = ts.tv_nsec;
+    return cts;
 }
 
 
@@ -67,6 +72,10 @@ int main (int argc, char* argv[])
     CORBA::String_var ior = orb->object_to_string (factory.in ());
     // Print it out!
     cout << ior.in () << endl;
+
+
+    make_realtime(30);
+    calibrate();
 
     orb->run ();
 
