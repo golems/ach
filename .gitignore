@@ -32,3 +32,4 @@
 /src/corba/server
 /src/corba/client
 /src/corba/ior_file
+/*.dat
