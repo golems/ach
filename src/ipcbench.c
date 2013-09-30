@@ -49,10 +49,16 @@
 #include "ipcbench.h"
 #include "util.h"
 
-
+#define MQ "/ipcbench.latency"
 sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
+
+
+#include <mqueue.h>
+struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
+                              .mq_msgsize = sizeof(double),
+                              .mq_flags = 0};
 
 
 static void sighandler( int sig ) {
@@ -110,6 +116,12 @@ static void recv(struct ipcbench_vtab *vtab) {
     //make_realtime(99);
     if( vtab->init_recv ) vtab->init_recv();
 
+    mqd_t mq;
+    if( (mq = mq_open(MQ, O_CREAT | O_WRONLY | O_NONBLOCK, 0600, &mq_lat_attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+
     /* warm up */
     for( size_t i = 0; i < 10; i ++ ) {
         struct timespec ts;
@@ -120,12 +132,29 @@ static void recv(struct ipcbench_vtab *vtab) {
         struct timespec ts;
         vtab->recv(&ts );
         struct timespec now = get_ticks();
-        printf("%lf\n", ticks_delta( ts, now ) * 1e6);
-        fflush(stdout);
+        double us = ticks_delta( ts, now ) * 1e6;
+        ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+        if( sizeof(us) == r )  {
+            perror("mq send failed \n");
+        }
     }
 
     if( vtab->destroy_recv ) vtab->destroy_recv();
     exit(EXIT_SUCCESS);
+}
+
+static void time_print( ) {
+    mqd_t mq;
+    if( (mq = mq_open(MQ, O_CREAT | O_RDONLY, 0600, &mq_lat_attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+
+    while( ! sig_canceled ) {
+        double us;
+        ssize_t r = mq_receive( mq, (char*)&us, sizeof(us), NULL );
+        if( sizeof(us) == r ) printf("%lf\n", us );
+    }
 }
 
 int main( int argc, char **argv ) {
@@ -217,11 +246,22 @@ int main( int argc, char **argv ) {
         vtab = sym_vtabs[i].vtab;
     }
 
+    /* Setup message queue */
+    mq_unlink(MQ);
+    pid_t pid_time_print = fork();
+    if( 0 == pid_time_print ) {
+        register_handler();
+        time_print();
+        return 0;
+    } else if (pid_time_print < 0 ) {
+        perror("Couldn't fork\n");
+        abort();
+    }
+
     /* Make realtime */
     make_realtime(30);
     calibrate();
     fprintf(stderr, "overhead: %f us\n", overhead * 1e6);
-
 
     /* Execute */
     if( vtab->init ) vtab->init();
@@ -232,6 +272,7 @@ int main( int argc, char **argv ) {
         send(vtab);
         return 0;
     } else if ( pid_send < 0 ) {
+        perror("Couldn't fork\n");
         abort();
     }
 
@@ -241,12 +282,16 @@ int main( int argc, char **argv ) {
         recv(vtab);
         return 0;
     } else if ( pid_listen < 0 ) {
+        perror("Couldn't fork\n");
         abort();
     }
 
     sleep(opt_sec);
     kill_wait(pid_listen);
     kill_wait(pid_send);
+
+    usleep(100e3);
+    kill_wait(pid_time_print);
 
     if( vtab->destroy ) vtab->destroy();
 
