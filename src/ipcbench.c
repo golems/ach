@@ -3,25 +3,66 @@
 #include "config.h"
 #endif //HAVE_CONFIG
 
+#include <signal.h>
+#include <sys/wait.h>
 #include "ipcbench.h"
 #include "util.h"
 
 
+sig_atomic_t sig_canceled = 0;
+double opt_freq = 1000;
+double opt_sec = 1;
+
+
+static void sighandler( int sig ) {
+    (void) sig;
+    sig_canceled = 1;
+}
+
+
+static void register_handler( ) {
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+    act.sa_handler = &sighandler;
+    if( sigaction(SIGUSR1, &act, NULL) ) {
+        perror("couldn't register signal handler");
+        abort();
+    }
+}
 
 
 static void send(struct ipcbench_vtab *vtab) {
     //make_realtime(99);
+    struct timespec relsleep;
+    double period = 1.0 / opt_freq;
+    relsleep.tv_sec = period;
+    relsleep.tv_nsec = (period - (time_t)period) * 1e9;
+
     usleep(0.25e6);
     if( vtab->init_send ) vtab->init_send();
 
-    while(1) {
+    while( !sig_canceled ) {
         struct timespec ts = get_ticks();
         clock_gettime( CLOCK_MONOTONIC, &ts );
         vtab->send(&ts);
-        usleep(1e3);
+        clock_nanosleep( CLOCK_MONOTONIC, 0, &relsleep, NULL ); // TODO, handle eintr
     }
 
     if( vtab->destroy_send ) vtab->destroy_send();
+}
+
+static void kill_wait(pid_t pid) {
+    if( kill(pid, SIGUSR1) ) {
+        perror("Couldn't kill");
+        abort();
+    }
+
+    int status;
+    if( waitpid( pid, &status, 0 ) < 0 ) {
+        perror("Couldn't wait");
+        abort();
+
+    }
 }
 
 static void recv(struct ipcbench_vtab *vtab) {
@@ -29,19 +70,20 @@ static void recv(struct ipcbench_vtab *vtab) {
     if( vtab->init_recv ) vtab->init_recv();
 
     /* warm up */
-    //for( size_t i = 0; i < 10; i ++ ) {
-        //struct timespec ts;
-        //vtab->recv(&ts );
-    //}
+    for( size_t i = 0; i < 10; i ++ ) {
+        struct timespec ts;
+        vtab->recv(&ts );
+    }
 
-    while(1) {
+    while(! sig_canceled ) {
         struct timespec ts;
         vtab->recv(&ts );
         struct timespec now = get_ticks();
-        printf("delta: %lf us\n", ticks_delta( ts, now ) * 1e6);
+        printf("%lf\n", ticks_delta( ts, now ) * 1e6);
     }
 
     if( vtab->destroy_recv ) vtab->destroy_recv();
+    exit(EXIT_SUCCESS);
 }
 
 int main( int argc, char **argv ) {
@@ -50,17 +92,34 @@ int main( int argc, char **argv ) {
 
     /* Parse args */
     const char *type = "ach";
+    char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "s:f:v?V")) != -1 ) {
         switch(c) {
         case 'V':   /* version     */
             puts("ipcbench 0.0");
             exit(EXIT_SUCCESS);
+        case 'f':
+            opt_freq = strtod(optarg, &endptr);
+            if( NULL == endptr )  {
+                fprintf( stderr, "Invalid frequency: %s\n", optarg );
+                exit(EXIT_FAILURE);
+            }
+            break;
+        case 's':
+            opt_sec = strtod(optarg, &endptr);
+            if( NULL == endptr )  {
+                fprintf( stderr, "Invalid duration: %s\n", optarg );
+                exit(EXIT_FAILURE);
+            }
+            break;
         case '?':   /* version     */
             puts("Usage: ipcbench [OPTION....] TYPE\n"
                  "Benchmark IPC\n"
                  "\n"
                  "Options:\n"
+                 "  -f FREQUENCY,     Frequency in Hertz (1000)\n"
+                 "  -s SECONDS,       Duration in seconds (1)\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
                 );
@@ -113,6 +172,7 @@ int main( int argc, char **argv ) {
 
     pid_t pid_send = fork();
     if( 0 == pid_send ) {
+        register_handler();
         send(vtab);
         return 0;
     } else if ( pid_send < 0 ) {
@@ -121,14 +181,16 @@ int main( int argc, char **argv ) {
 
     pid_t pid_listen = fork();
     if( 0 == pid_listen ) {
+        register_handler();
         recv(vtab);
         return 0;
     } else if ( pid_listen < 0 ) {
         abort();
     }
 
-    sleep(100);
-
+    sleep(opt_sec);
+    kill_wait(pid_listen);
+    kill_wait(pid_send);
 
     if( vtab->destroy ) vtab->destroy();
 
