@@ -29,8 +29,8 @@ AC_CHECK_HEADERS( [ach.h], [have_ach=yes], [],
 ] )
 
 
-AM_CONDITIONAL([HAVE_LCM], [test x$have_lcm != xyes])
-AM_CONDITIONAL([HAVE_ACH], [test x$have_ach != xyes])
+AM_CONDITIONAL([HAVE_LCM], [test x$have_lcm = xyes])
+AM_CONDITIONAL([HAVE_ACH], [test x$have_ach = xyes])
 
 # Enable maximum warnings
 m4_ifdef([AX_CFLAGS_WARN_ALL],

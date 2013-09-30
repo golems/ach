@@ -40,7 +40,7 @@
  *
  */
 
-#ifdef HAVE_CONFIG
+#ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif //HAVE_CONFIG
 
@@ -121,6 +121,7 @@ static void recv(struct ipcbench_vtab *vtab) {
         vtab->recv(&ts );
         struct timespec now = get_ticks();
         printf("%lf\n", ticks_delta( ts, now ) * 1e6);
+        fflush(stdout);
     }
 
     if( vtab->destroy_recv ) vtab->destroy_recv();
@@ -131,11 +132,34 @@ int main( int argc, char **argv ) {
     (void)argc;
     (void)argv;
 
+
+
+    /* Lookup vtab */
+    struct {
+        const char *name;
+        struct ipcbench_vtab *vtab;
+    } sym_vtabs[] = {
+#ifdef HAVE_ACH_H
+        {"ach", &ipc_bench_vtab_ach},
+#endif
+#ifdef HAVE_LCM_LCM_H
+        {"lcm", &ipc_bench_vtab_lcm},
+#endif
+        {"pipe", &ipc_bench_vtab_pipe},
+        {"mq", &ipc_bench_vtab_mq},
+        {"tcp", &ipc_bench_vtab_tcp},
+        {"local", &ipc_bench_vtab_local},
+        {"udp", &ipc_bench_vtab_udp},
+        {"localdgram", &ipc_bench_vtab_local_dgram},
+        {NULL, NULL},
+    };
+
+
     /* Parse args */
     const char *type = "ach";
     char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "s:f:v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "ls:f:v?V")) != -1 ) {
         switch(c) {
         case 'V':   /* version     */
             puts("ipcbench 0.0");
@@ -154,6 +178,11 @@ int main( int argc, char **argv ) {
                 exit(EXIT_FAILURE);
             }
             break;
+        case 'l':
+            for( size_t i = 0; sym_vtabs[i].name; i++ ) {
+                puts( sym_vtabs[i].name );
+            }
+            exit(EXIT_SUCCESS);
         case '?':   /* version     */
             puts("Usage: ipcbench [OPTION....] TYPE\n"
                  "Benchmark IPC\n"
@@ -161,6 +190,7 @@ int main( int argc, char **argv ) {
                  "Options:\n"
                  "  -f FREQUENCY,     Frequency in Hertz (1000)\n"
                  "  -s SECONDS,       Duration in seconds (1)\n"
+                 "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
                 );
@@ -176,21 +206,6 @@ int main( int argc, char **argv ) {
 
     fprintf(stderr, "type: %s\n", type );
 
-    /* Lookup vtab */
-    struct {
-        const char *name;
-        struct ipcbench_vtab *vtab;
-    } sym_vtabs[] = {
-        {"ach", &ipc_bench_vtab_ach},
-        {"lcm", &ipc_bench_vtab_lcm},
-        {"pipe", &ipc_bench_vtab_pipe},
-        {"mq", &ipc_bench_vtab_mq},
-        {"tcp", &ipc_bench_vtab_tcp},
-        {"local", &ipc_bench_vtab_local},
-        {"udp", &ipc_bench_vtab_udp},
-        {"localdgram", &ipc_bench_vtab_local_dgram},
-        {NULL, NULL},
-    };
     struct ipcbench_vtab *vtab;
     {
         size_t i = 0;
