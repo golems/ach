@@ -4,7 +4,7 @@
 AC_PREREQ([2.65])
 AC_INIT([ipcbench], [0.0.0], [ntd@gatech.edu])
 AM_INIT_AUTOMAKE([-Wall])
-AC_CONFIG_SRCDIR([src/lcm/bench_lcm.c])
+AC_CONFIG_SRCDIR([src/ipcbench.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
