@@ -13,6 +13,7 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_C99
 AC_PROG_LIBTOOL
+AC_PROG_CXX
 
 AC_C_RESTRICT
 AC_C_INLINE
@@ -29,8 +30,28 @@ AC_CHECK_HEADERS( [ach.h], [have_ach=yes], [],
 ] )
 
 
-AM_CONDITIONAL([HAVE_LCM], [test x$have_lcm = xyes])
+# Check CORBA
+
+# Apply ACE_ROOT Variable
+AC_LANG([C++])
+
+AS_IF([test "x$ACE_ROOT" != "x"],
+      [
+       AC_MSG_NOTICE([Detected ACE_ROOT=$ACE_ROOT])
+       CPPFLAGS="$CPPFLAGS -I$ACE_ROOT -I$ACE_ROOT/TAO"
+       LDFLAGS="-L$ACE_ROOT/lib"
+      ])
+
+AC_SUBST([ACE_ROOT])
+AC_CHECK_HEADERS( [tao/ORB.h],[have_tao=yes] )
+
+AC_LANG([C])
+
 AM_CONDITIONAL([HAVE_ACH], [test x$have_ach = xyes])
+AM_CONDITIONAL([HAVE_LCM], [test x$have_lcm = xyes])
+AM_CONDITIONAL([HAVE_TAO], [test x$have_tao = xyes])
+
+
 
 # Enable maximum warnings
 m4_ifdef([AX_CFLAGS_WARN_ALL],
@@ -70,3 +91,12 @@ AC_MSG_NOTICE([CONFIGURATION SUMMARY])
 AC_MSG_NOTICE([=====================])
 AC_MSG_NOTICE([LCM:      $have_lcm])
 AC_MSG_NOTICE([ACH:      $have_ach])
+AC_MSG_NOTICE([TAO:      $have_tao])
+
+
+
+
+
+
+
+

@@ -33,3 +33,10 @@
 /src/corba/client
 /src/corba/ior_file
 /*.dat
+/ipcbenchC.cpp
+/ipcbenchC.h
+/ipcbenchC.inl
+/ipcbenchS.cpp
+/ipcbenchS.h
+/ace_server
+/.idlgen.stamp

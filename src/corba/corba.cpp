@@ -40,49 +40,54 @@
  *
  */
 
+#include "ipcbench.h"
 #include "ipcbenchC.h"
 #include "ace/streams.h"
 #include <stdio.h>
+#include <time.h>
 
-#include "util.h"
+#define IOR_THING "file:///tmp/ipcbench.ior"
 
+CORBA::ORB_var orb;
+CORBA::Object_var factory_object;
+ipcbench::Thingy_Factory_var factory;
+ipcbench::Thingy_var thing;
 
+static void s_init_recv() {
+    static int k = 1;
+    static const char *v [] = {"ipcbench", NULL};
 
-int main (int argc, char* argv[])
-{
-  try {
-    // First initialize the ORB, that will remove some arguments...
-    CORBA::ORB_var orb =
-      CORBA::ORB_init (argc, argv,
-                       "my_orb" /* the ORB name, it can be anything! */);
-
-
-    CORBA::Object_var factory_object =
-        orb->string_to_object (argv[1]);
-
-    ipcbench::Thingy_Factory_var factory =
-        ipcbench::Thingy_Factory::_narrow (factory_object.in ());
-
-    ipcbench::Thingy_var thing = factory->get_thingy ( );
-
-    make_realtime(30);
-    calibrate();
-
-    alarm(600);
-
-    while(1) {
-        ipcbench::corba_timespec cts = thing->getit();
-        struct timespec ts = {.tv_sec = cts.sec, .tv_nsec = cts.nsec };
-        struct timespec now = get_ticks();
-        printf("delta: %lf us\n", ticks_delta( ts, now ) * 1e6);
-        usleep(1e3);
-    }
-
-    // TAO-specific destructor
-    orb->destroy ();
-  }
-  catch (CORBA::Exception &ex) {
-      std::cerr << "CORBA exception raised!" << std::endl;
-  }
-  return 0;
+    orb = CORBA::ORB_init (k, (char**)v, "my_orb" );
+    factory_object = orb->string_to_object (IOR_THING);
+    factory = ipcbench::Thingy_Factory::_narrow (factory_object.in ());
+    thing = factory->get_thingy ( );
 }
+
+
+//static void s_nop(void) { }
+
+static void s_nop_ts(const struct timespec *ts) { (void)ts; }
+
+static void s_recv( struct timespec *ts ) {
+    /* Kludge: do the wait here, instead of the publish */
+    clock_nanosleep( CLOCK_MONOTONIC, 0, &ipcbench_period, NULL ); // TODO, handle eintr
+
+    ipcbench::corba_timespec cts = thing->getit();
+    ts->tv_sec = cts.sec;
+    ts->tv_nsec = cts.nsec;
+}
+
+static void s_destroy_recv(void) {
+    orb->destroy();
+}
+
+struct ipcbench_vtab ipc_bench_vtab_corba = {
+    NULL, // init
+    NULL, // init_send
+    s_init_recv, // init_recv
+    s_nop_ts, // send
+    s_recv, // recv
+    NULL, // destroy_send
+    s_destroy_recv, // destroy_recv
+    NULL // destroy
+};

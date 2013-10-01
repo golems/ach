@@ -54,6 +54,7 @@ sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
 
+struct timespec ipcbench_period;
 
 #include <mqueue.h>
 struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
@@ -80,10 +81,6 @@ static void register_handler( ) {
 
 static void send(struct ipcbench_vtab *vtab) {
     //make_realtime(99);
-    struct timespec relsleep;
-    double period = 1.0 / opt_freq;
-    relsleep.tv_sec = period;
-    relsleep.tv_nsec = (period - (time_t)period) * 1e9;
 
     usleep(0.25e6);
     if( vtab->init_send ) vtab->init_send();
@@ -92,7 +89,7 @@ static void send(struct ipcbench_vtab *vtab) {
         struct timespec ts = get_ticks();
         clock_gettime( CLOCK_MONOTONIC, &ts );
         vtab->send(&ts);
-        clock_nanosleep( CLOCK_MONOTONIC, 0, &relsleep, NULL ); // TODO, handle eintr
+        clock_nanosleep( CLOCK_MONOTONIC, 0, &ipcbench_period, NULL ); // TODO, handle eintr
     }
 
     if( vtab->destroy_send ) vtab->destroy_send();
@@ -174,6 +171,9 @@ int main( int argc, char **argv ) {
 #ifdef HAVE_LCM_LCM_H
         {"lcm", &ipc_bench_vtab_lcm},
 #endif
+#ifdef HAVE_TAO_ORB_H
+        {"corba", &ipc_bench_vtab_corba},
+#endif
         {"pipe", &ipc_bench_vtab_pipe},
         {"mq", &ipc_bench_vtab_mq},
         {"tcp", &ipc_bench_vtab_tcp},
@@ -244,6 +244,13 @@ int main( int argc, char **argv ) {
             exit(EXIT_FAILURE);
         }
         vtab = sym_vtabs[i].vtab;
+    }
+
+    /* Compute period */
+    {
+        double period = 1.0 / opt_freq;
+        ipcbench_period.tv_sec = period;
+        ipcbench_period.tv_nsec = (period - (time_t)period) * 1e9;
     }
 
     /* Setup message queue */

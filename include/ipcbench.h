@@ -81,6 +81,7 @@ struct ipcbench_vtab {
     void (*destroy)(void);
 };
 
+extern struct timespec ipcbench_period;
 
 extern struct ipcbench_vtab ipc_bench_vtab_ach;
 extern struct ipcbench_vtab ipc_bench_vtab_lcm;
@@ -90,5 +91,6 @@ extern struct ipcbench_vtab ipc_bench_vtab_tcp;
 extern struct ipcbench_vtab ipc_bench_vtab_local;
 extern struct ipcbench_vtab ipc_bench_vtab_udp;
 extern struct ipcbench_vtab ipc_bench_vtab_local_dgram;
+extern struct ipcbench_vtab ipc_bench_vtab_corba;
 
 #endif // IPCBENCH_H
