@@ -164,7 +164,7 @@ ach_status_t Channel::get(::std::vector<uint8_t> *buf, size_t offset,
     }
 }
 
-ach_status_t Channel::put(void* buf,
+ach_status_t Channel::put(const void* buf,
                           size_t len,
                           int allow_mask,
                           int warn_mask) {

@@ -107,7 +107,7 @@ public:
                        int warn_mask=ACH_MASK_NONE);
 
     /** Put frame to channel. */
-    ach_status_t put(void* buf,
+    ach_status_t put(const void* buf,
                      size_t len,
                      int allow_mask=ACH_MASK_OK,
                      int warn_mask=ACH_MASK_NONE);
