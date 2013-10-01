@@ -3,6 +3,10 @@ Georgia Tech Humanoid Robotics Lab
 Under Direction of Prof. Mike Stilman
 
 
-NAME:              Email Address:
----------------------------------
-Neil Dantam        <ntd@gatech.edu>
+NAME:                  Email Address:                    Contribution:
+--------------------------------------------------------------------------------
+Neil Dantam              <ntd@gatech.edu>
+Matt Zucker              <mzucker1@swarthmore.edu>         C++ Wrapper
+Jon Scholz               <jkscholz@gatech.edu>             ach_chmod()
+Brian Gerkey             <gerkey@willowgarage.com>         CMake build script
+Saul Reynold-Haertle     <saulrh@gatech.edu>               C++ compatability
