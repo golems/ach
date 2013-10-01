@@ -12,6 +12,7 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_C89
+AC_PROG_CXX
 AC_PROG_LIBTOOL
 
 
@@ -163,22 +164,37 @@ dnl Check if FLAG is supported, and if so, add it
 dnl The AX_CHECK_COMPILER_FLAGS maco was renamed to AX_CHECK_COMPILE_FLAG
 dnl Checking for both versions
 m4_ifdef([AX_CHECK_COMPILE_FLAG],
-         [AC_DEFUN([APPEND_FLAG],
-                   [AX_CHECK_COMPILE_FLAG([$1], [CFLAGS="$1 $CFLAGS"])])])
+         [AC_DEFUN([APPEND_CFLAG],
+                   [AX_CHECK_COMPILE_FLAG([$1], [CFLAGS="$1 $CFLAGS"])])
+          AC_DEFUN([APPEND_CXXFLAG],
+                   [AX_CHECK_COMPILE_FLAG([$1], [CXXFLAGS="$1 $CXXFLAGS"])])])
 
 m4_ifdef([AX_CHECK_COMPILER_FLAGS],
-         [AC_DEFUN([APPEND_FLAG],
-                   [AX_CHECK_COMPILER_FLAGS([$1], [CFLAGS="$1 $CFLAGS"])])])
+         [AC_DEFUN([APPEND_CFLAG],
+                   [AX_CHECK_COMPILER_FLAGS([$1], [CFLAGS="$1 $CFLAGS"])])
+          AC_DEFUN([APPEND_CXXFLAG],
+                   [AX_CHECK_COMPILER_FLAGS([$1], [CXXFLAGS="$1 $CXXFLAGS"])])])
 
 dnl If we found the flag checking macro, check some flags
-m4_ifdef([APPEND_FLAG],
-         [APPEND_FLAG([-Wextra])
-          APPEND_FLAG([-Wconversion])
-          APPEND_FLAG([-Wpointer-arith])
-          APPEND_FLAG([-Wfloat-equal])
-          APPEND_FLAG([-Wshadow])
-          APPEND_FLAG([-Wwrite-strings])
-          APPEND_FLAG([-Wc++-compat])])
+
+m4_ifdef([APPEND_CFLAG],
+         [AC_LANG(C)
+          APPEND_CFLAG([-Wextra])
+          APPEND_CFLAG([-Wconversion])
+          APPEND_CFLAG([-Wpointer-arith])
+          APPEND_CFLAG([-Wfloat-equal])
+          APPEND_CFLAG([-Wshadow])
+          APPEND_CFLAG([-Wwrite-strings])
+          APPEND_CFLAG([-Wc++-compat])])
+
+m4_ifdef([APPEND_CXXFLAG],
+         [AC_LANG(C++)
+          APPEND_CXXFLAG([-Wextra])
+          APPEND_CXXFLAG([-Wconversion])
+          APPEND_CXXFLAG([-Wpointer-arith])
+          APPEND_CXXFLAG([-Wfloat-equal])
+          APPEND_CXXFLAG([-Wshadow])
+          APPEND_CXXFLAG([-Wwrite-strings])])
 
 # Doxygen
 m4_ifdef([DX_INIT_DOXYGEN],

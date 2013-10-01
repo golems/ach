@@ -89,3 +89,4 @@ Makefile.in
 /doc/.javadoc.stamp
 /doc/javadoc/package-list
 /doc/javadoc/resources/inherit.gif
+/cpptest

@@ -49,8 +49,11 @@ Language bindings are included for Common Lisp, Python, and Java.
   This can be installed either via `make install` or via Python's
   distutils/pip.
 
+* C++ bindings wrap the C API.
+  See `./include/Ach.hpp`
+
 * Java bindings via the Java Native Interface (JNI).
-  See `./doc/javadoc' or
+  See `./doc/javadoc` or
        http://golems.github.io/ach/javadoc/
 
 See the INSTALL file for details.

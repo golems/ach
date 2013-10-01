@@ -9,7 +9,8 @@ III. Cross Compiling
 IV.  Language Bindings
     1. Common Lisp
     2. Python
-    3. Java
+    3. C++
+    4. Java
 V.   Generic Autotools Instructions
 
 I. AUTOTOOLS INSTALLATION SUMMARY
@@ -177,12 +178,19 @@ pip.
 
     ./configure --with-python && make && sudo make install
 
+C++
+----
+
+A C++ wrapper is provided in the ./cpp directory.  It is built
+alongside the C library.  The shared library will be installed as as
+libachcpp.
+
 Java
 ----
 
 Java bindings are provided in the ./java directory.  When the Java
-compiler is present, a JNI native library and jarfile will be built
-and installed.
+compiler is present, a JNI native library (libachj) and jarfile
+(org.golems.ach.jar) will be built and installed.
 
 V. GNU Autotools Generic Instructions
 =====================================

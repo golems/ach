@@ -69,6 +69,19 @@ ach_example_LDADD = libach.la -lm
 achbench_SOURCES = src/ach-bench.c
 achbench_LDADD = libach.la libachutil.la
 
+
+## C++ ##
+
+lib_LTLIBRARIES += libachcpp.la
+libachcpp_la_SOURCES = cpp/achcpp.cpp
+libachcpp_la_LDFLAGS = -version-info 0:0:0
+libachcpp_la_LIBADD = libach.la
+
+bin_PROGRAMS += cpptest
+
+cpptest_SOURCES = cpp/cpptest.cpp
+cpptest_LDADD = libachcpp.la libach.la
+
 ## PYTHON ##
 
 if HAVE_PYTHON
@@ -110,6 +123,7 @@ org/golems/ach/Test.class: org/golems/ach/Lib.class
 
 org_golems_ach_Lib.h: $(top_builddir)/org/golems/ach/Lib.class
 	javah org.golems.ach.Lib
+	touch $@
 
 org.golems.ach.jar: $(JCLASSES)
 	jar cf $@ $(JCLASSES)
