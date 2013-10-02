@@ -53,6 +53,7 @@
 sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
+size_t opt_subscribers = 1;
 
 struct timespec ipcbench_period;
 
@@ -130,9 +131,11 @@ static void recv(struct ipcbench_vtab *vtab) {
         vtab->recv(&ts );
         struct timespec now = get_ticks();
         double us = ticks_delta( ts, now ) * 1e6;
-        ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
-        if( sizeof(us) == r )  {
-            perror("mq send failed \n");
+        if( !sig_canceled ) {
+            ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+            if( sizeof(us) == r )  {
+                perror("mq send failed \n");
+            }
         }
     }
 
@@ -188,7 +191,7 @@ int main( int argc, char **argv ) {
     const char *type = "ach";
     char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "ls:f:v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "lt:f:s:v?V")) != -1 ) {
         switch(c) {
         case 'V':   /* version     */
             puts("ipcbench 0.0");
@@ -200,7 +203,7 @@ int main( int argc, char **argv ) {
                 exit(EXIT_FAILURE);
             }
             break;
-        case 's':
+        case 't':
             opt_sec = strtod(optarg, &endptr);
             if( NULL == endptr )  {
                 fprintf( stderr, "Invalid duration: %s\n", optarg );
@@ -212,13 +215,17 @@ int main( int argc, char **argv ) {
                 puts( sym_vtabs[i].name );
             }
             exit(EXIT_SUCCESS);
+        case 's':
+            opt_subscribers = (size_t)atoi(optarg);
+            break;
         case '?':   /* version     */
             puts("Usage: ipcbench [OPTION....] TYPE\n"
                  "Benchmark IPC\n"
                  "\n"
                  "Options:\n"
                  "  -f FREQUENCY,     Frequency in Hertz (1000)\n"
-                 "  -s SECONDS,       Duration in seconds (1)\n"
+                 "  -t SECONDS,       Duration in seconds (1)\n"
+                 "  -s COUNT,         Number of subscribers, supported methods only (1)\n"
                  "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
@@ -283,18 +290,23 @@ int main( int argc, char **argv ) {
         abort();
     }
 
-    pid_t pid_listen = fork();
-    if( 0 == pid_listen ) {
-        register_handler();
-        recv(vtab);
-        return 0;
-    } else if ( pid_listen < 0 ) {
-        perror("Couldn't fork\n");
-        abort();
+    pid_t pid_listen[opt_subscribers];
+    for( size_t i = 0; i < opt_subscribers; i ++ ) {
+        pid_listen[i] = fork();
+        if( 0 == pid_listen[i] ) {
+            register_handler();
+            recv(vtab);
+            return 0;
+        } else if ( pid_listen[i] < 0 ) {
+            perror("Couldn't fork\n");
+            abort();
+        }
     }
 
     sleep(opt_sec);
-    kill_wait(pid_listen);
+    for( size_t i = 0; i < opt_subscribers; i ++ ) {
+        kill_wait(pid_listen[i]);
+    }
     kill_wait(pid_send);
 
     usleep(100e3);
