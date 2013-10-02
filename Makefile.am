@@ -17,7 +17,7 @@ bin_PROGRAMS = ipcbench
 ipcbench_SOURCES = src/ipcbench.c
 
 ## POSIX methods ##
-ipcbench_SOURCES += src/pipe.c src/mq.c src/tcp.c src/unix.c src/udp.c src/localdgram.c
+ipcbench_SOURCES += src/pipe.c src/mq.c src/tcp.c src/unix.c src/udp.c src/localdgram.c src/udp_multicast.c
 
 ## Ach ##
 if HAVE_ACH

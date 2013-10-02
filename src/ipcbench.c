@@ -167,23 +167,25 @@ int main( int argc, char **argv ) {
     struct {
         const char *name;
         struct ipcbench_vtab *vtab;
+        int multi_receiver;
     } sym_vtabs[] = {
 #ifdef HAVE_ACH_H
-        {"ach", &ipc_bench_vtab_ach},
+        {"ach", &ipc_bench_vtab_ach, 1},
 #endif
 #ifdef HAVE_LCM_LCM_H
-        {"lcm", &ipc_bench_vtab_lcm},
+        {"lcm", &ipc_bench_vtab_lcm, 1},
 #endif
 #ifdef HAVE_TAO_ORB_H
-        {"corba", &ipc_bench_vtab_corba},
+        {"corba", &ipc_bench_vtab_corba, 1},
 #endif
-        {"pipe", &ipc_bench_vtab_pipe},
-        {"mq", &ipc_bench_vtab_mq},
-        {"tcp", &ipc_bench_vtab_tcp},
-        {"local", &ipc_bench_vtab_local},
-        {"udp", &ipc_bench_vtab_udp},
-        {"localdgram", &ipc_bench_vtab_local_dgram},
-        {NULL, NULL},
+        {"pipe", &ipc_bench_vtab_pipe, 0},
+        {"mq", &ipc_bench_vtab_mq, 0},
+        {"tcp", &ipc_bench_vtab_tcp, 0},
+        {"local", &ipc_bench_vtab_local, 0},
+        {"udp", &ipc_bench_vtab_udp, 0},
+        {"udp_multicast", &ipc_bench_vtab_udp_multicast, 1},
+        {"localdgram", &ipc_bench_vtab_local_dgram, 0},
+        {NULL, NULL, 0},
     };
 
 
@@ -250,6 +252,12 @@ int main( int argc, char **argv ) {
             fprintf(stderr, "Invalid type: %s\n", type );
             exit(EXIT_FAILURE);
         }
+
+        if( opt_subscribers > 1 && !sym_vtabs[i].multi_receiver ) {
+            fprintf(stderr, "%s does not support multiple subscribers\n", sym_vtabs[i].name );
+            exit(EXIT_FAILURE);
+        }
+
         vtab = sym_vtabs[i].vtab;
     }
 
