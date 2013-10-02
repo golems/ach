@@ -62,6 +62,7 @@ public class Channel
     /** Open channel with the give channel_name.
      *
      * @param channel_name Name of the channel to open
+     * @return ach_status code indicating result of the operation
      */
     public int open( String channel_name ) {
         long[] ptr = new long[1];
@@ -70,7 +71,10 @@ public class Channel
         return r;
     }
 
-    /** Close the channel. */
+    /** Close the channel.
+     *
+     * @return ach_status code indicating result of the operation
+     */
     public int close() {
         if( chan_ptr != 0 ) {
             int r = Lib.close( this.chan_ptr );
@@ -92,7 +96,10 @@ public class Channel
         }
     }
 
-    /** Discard old messages in the channel. */
+    /** Discard old messages in the channel.
+     *
+     * @return ach_status code indicating result of the operation
+     */
     public int flush() {
         return Lib.flush( this.chan_ptr );
     }
@@ -107,7 +114,10 @@ public class Channel
         Status.maybe_throw( r, status_mask );
     }
 
-    /** Write buf to channel. */
+    /** Write buf to channel.
+     *
+     * @return ach_status code indicating result of the operation
+     */
     public int put( byte[] buf ) {
         return Lib.put( this.chan_ptr, buf );
     }
@@ -121,7 +131,10 @@ public class Channel
         Status.maybe_throw( r, status_mask );
     }
 
-    /** Write string to channel. */
+    /** Write string to channel.
+     *
+     * @return ach_status code indicating result of the operation
+     */
     public int put( String str ) {
         try {
             return Lib.put( this.chan_ptr, str.getBytes("UTF-8") );
@@ -130,7 +143,12 @@ public class Channel
         }
     }
 
-    /** Get buffer from channel. */
+    /** Get buffer from channel.
+     *
+     * @return ach_status code indicating result of the operation.
+     * The number of bytes read is stored in the zeroth element of the
+     * frame_size array.
+     */
     public int get( byte[] buf, long[] frame_size, int options ) {
         return Lib.get( this.chan_ptr, buf, frame_size, options );
     }
