@@ -54,6 +54,7 @@ sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
 size_t opt_subscribers = 1;
+size_t opt_discard = 10;
 
 struct timespec ipcbench_period;
 
@@ -121,7 +122,7 @@ static void recv(struct ipcbench_vtab *vtab) {
     }
 
     /* warm up */
-    for( size_t i = 0; i < 10; i ++ ) {
+    for( size_t i = 0; i < opt_discard; i ++ ) {
         struct timespec ts;
         vtab->recv(&ts );
     }
@@ -193,7 +194,7 @@ int main( int argc, char **argv ) {
     const char *type = "ach";
     char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "lt:f:s:v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "lt:f:s:d:v?V")) != -1 ) {
         switch(c) {
         case 'V':   /* version     */
             puts("ipcbench 0.0");
@@ -220,6 +221,9 @@ int main( int argc, char **argv ) {
         case 's':
             opt_subscribers = (size_t)atoi(optarg);
             break;
+        case 'd':
+            opt_discard = (size_t)atoi(optarg);
+            break;
         case '?':   /* version     */
             puts("Usage: ipcbench [OPTION....] TYPE\n"
                  "Benchmark IPC\n"
@@ -228,6 +232,7 @@ int main( int argc, char **argv ) {
                  "  -f FREQUENCY,     Frequency in Hertz (1000)\n"
                  "  -t SECONDS,       Duration in seconds (1)\n"
                  "  -s COUNT,         Number of subscribers, supported methods only (1)\n"
+                 "  -d COUNT,         Initial messages to discard (10)\n"
                  "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
