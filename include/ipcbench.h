@@ -79,6 +79,10 @@ struct ipcbench_vtab {
 
     /** Destroy global structures */
     void (*destroy)(void);
+
+
+    void (*send_loop)(void);
+    void (*recv_loop)(int emit);
 };
 
 extern struct timespec ipcbench_period;

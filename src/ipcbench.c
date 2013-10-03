@@ -54,9 +54,11 @@ sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
 size_t opt_subscribers = 1;
+size_t opt_nonrt_subscribers = 0;
 size_t opt_discard = 10;
 
 struct timespec ipcbench_period;
+double overhead = 0;
 
 #include <mqueue.h>
 struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
@@ -83,6 +85,7 @@ static void register_handler( ) {
 
 static void send(struct ipcbench_vtab *vtab) {
     //make_realtime(99);
+    register_handler();
 
     usleep(0.25e6);
     if( vtab->init_send ) vtab->init_send();
@@ -111,7 +114,8 @@ static void kill_wait(pid_t pid) {
     }
 }
 
-static void recv(struct ipcbench_vtab *vtab) {
+static void recv(struct ipcbench_vtab *vtab, int emit) {
+    register_handler();
     //make_realtime(99);
     if( vtab->init_recv ) vtab->init_recv();
 
@@ -130,12 +134,14 @@ static void recv(struct ipcbench_vtab *vtab) {
     while(! sig_canceled ) {
         struct timespec ts;
         vtab->recv(&ts );
-        struct timespec now = get_ticks();
-        double us = ticks_delta( ts, now ) * 1e6;
-        if( !sig_canceled ) {
-            ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
-            if( sizeof(us) == r )  {
-                perror("mq send failed \n");
+        if( emit ) {
+            struct timespec now = get_ticks();
+            double us = ticks_delta( ts, now ) * 1e6;
+            if( !sig_canceled ) {
+                ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+                if( sizeof(us) == r )  {
+                    perror("mq send failed \n");
+                }
             }
         }
     }
@@ -145,6 +151,7 @@ static void recv(struct ipcbench_vtab *vtab) {
 }
 
 static void time_print( ) {
+    register_handler();
     mqd_t mq;
     if( (mq = mq_open(MQ, O_CREAT | O_RDONLY, 0600, &mq_lat_attr )) < 0 ) {
         perror( "could not open mq" );
@@ -177,7 +184,7 @@ int main( int argc, char **argv ) {
         {"lcm", &ipc_bench_vtab_lcm, 1},
 #endif
 #ifdef HAVE_TAO_ORB_H
-        {"corba", &ipc_bench_vtab_corba, 1},
+        {"corba", &ipc_bench_vtab_corba, 0},
 #endif
         {"pipe", &ipc_bench_vtab_pipe, 0},
         {"mq", &ipc_bench_vtab_mq, 0},
@@ -194,7 +201,7 @@ int main( int argc, char **argv ) {
     const char *type = "ach";
     char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "lt:f:s:d:v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "lt:f:s:S:d:v?V")) != -1 ) {
         switch(c) {
         case 'V':   /* version     */
             puts("ipcbench 0.0");
@@ -221,6 +228,9 @@ int main( int argc, char **argv ) {
         case 's':
             opt_subscribers = (size_t)atoi(optarg);
             break;
+        case 'S':
+            opt_nonrt_subscribers = (size_t)atoi(optarg);
+            break;
         case 'd':
             opt_discard = (size_t)atoi(optarg);
             break;
@@ -231,7 +241,8 @@ int main( int argc, char **argv ) {
                  "Options:\n"
                  "  -f FREQUENCY,     Frequency in Hertz (1000)\n"
                  "  -t SECONDS,       Duration in seconds (1)\n"
-                 "  -s COUNT,         Number of subscribers, supported methods only (1)\n"
+                 "  -s COUNT,         Number of subscribers (1)\n"
+                 "  -S COUNT,         Number of non-real-time subscribers (0)\n"
                  "  -d COUNT,         Initial messages to discard (10)\n"
                  "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
@@ -258,7 +269,7 @@ int main( int argc, char **argv ) {
             exit(EXIT_FAILURE);
         }
 
-        if( opt_subscribers > 1 && !sym_vtabs[i].multi_receiver ) {
+        if( opt_subscribers + opt_nonrt_subscribers > 1 && !sym_vtabs[i].multi_receiver ) {
             fprintf(stderr, "%s does not support multiple subscribers\n", sym_vtabs[i].name );
             exit(EXIT_FAILURE);
         }
@@ -277,7 +288,6 @@ int main( int argc, char **argv ) {
     mq_unlink(MQ);
     pid_t pid_time_print = fork();
     if( 0 == pid_time_print ) {
-        register_handler();
         time_print();
         return 0;
     } else if (pid_time_print < 0 ) {
@@ -293,22 +303,18 @@ int main( int argc, char **argv ) {
     /* Execute */
     if( vtab->init ) vtab->init();
 
-    pid_t pid_send = fork();
-    if( 0 == pid_send ) {
-        register_handler();
-        send(vtab);
-        return 0;
-    } else if ( pid_send < 0 ) {
-        perror("Couldn't fork\n");
-        abort();
-    }
-
-    pid_t pid_listen[opt_subscribers];
-    for( size_t i = 0; i < opt_subscribers; i ++ ) {
+    /* Fork subscribers */
+    pid_t pid_listen[opt_subscribers + opt_nonrt_subscribers];
+    for( size_t i = 0; i < opt_subscribers + opt_nonrt_subscribers; i ++ ) {
         pid_listen[i] = fork();
         if( 0 == pid_listen[i] ) {
-            register_handler();
-            recv(vtab);
+            int emit = 1;
+            if( i >= opt_subscribers ) {
+                make_realtime(0);
+                emit=0;
+            }
+            if( vtab->recv_loop ) vtab->recv_loop(emit);
+            else recv(vtab, emit);
             return 0;
         } else if ( pid_listen[i] < 0 ) {
             perror("Couldn't fork\n");
@@ -316,6 +322,18 @@ int main( int argc, char **argv ) {
         }
     }
 
+    /* Fork Publishers */
+    pid_t pid_send = fork();
+    if( 0 == pid_send ) {
+        if( vtab->send_loop ) vtab->send_loop();
+        else send(vtab);
+        return 0;
+    } else if ( pid_send < 0 ) {
+        perror("Couldn't fork\n");
+        abort();
+    }
+
+    /* Wait */
     sleep(opt_sec);
     for( size_t i = 0; i < opt_subscribers; i ++ ) {
         kill_wait(pid_listen[i]);

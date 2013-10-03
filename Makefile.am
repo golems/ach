@@ -90,8 +90,15 @@ cos_run_LDADD =  \
 	-lTAO_PortableServer \
 	-lTAO_IFR_Client
 
-ipcbench_SOURCES += src/corba/corba.cpp ipcbenchC.cpp
-LDADD_TAO = -lACE -lTAO -lTAO_AnyTypeCode
+ipcbench_SOURCES += src/corba/corba.cpp ipcbenchC.cpp ipcbenchS.cpp
+LDADD_TAO = \
+	-lACE -lTAO \
+	-lTAO_AnyTypeCode \
+	-lTAO_TypeCodeFactory \
+	-lTAO_IDL_BE \
+	-lTAO_IDL_FE \
+	-lTAO_PortableServer \
+	-lTAO_IFR_Client
 endif
 
 # Link Libraries

@@ -1,5 +1,5 @@
 
-double overhead = 0;
+extern double overhead;
 #define STACK_SIZE (8*1024)
 
 static double ticks_delta(struct timespec t0, struct timespec t1) {
@@ -42,7 +42,7 @@ static void make_realtime( int priority ) {
     }
     struct sched_param sp;
     sp.sched_priority = priority; /* 99 is max priority on linux */
-    if( sched_setscheduler( 0, SCHED_FIFO, &sp) < 0 ) {
+    if( sched_setscheduler( 0, priority ? SCHED_FIFO : SCHED_OTHER, &sp) < 0 ) {
         fprintf(stderr, "Couldn't set scheduling priority: %s\n",
                 strerror(errno) );
         abort();

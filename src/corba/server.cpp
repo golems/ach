@@ -47,14 +47,14 @@
 
 #include "util.h"
 
+double overhead = 0;
+
 class Thingy_i : public POA_ipcbench::Thingy {
 public:
     virtual ipcbench::corba_timespec getit ( void );
 private:
 };
 
-
-//Thingy_i::Thingy_i() {};
 
 ipcbench::corba_timespec
 Thingy_i::getit ()

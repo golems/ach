@@ -31,5 +31,5 @@ srccount local_stream src/unix.c
 
 disp lcm $(( `count src/lcm.c` + `wccount src/lcm_msg.lcm` ))
 
-disp corba $(( `count src/corba/corba.cpp src/corba/server.cpp` + `wccount src/corba/ipcbench.idl` ))
+disp corba $(( `count src/corba/corba.cpp` + `wccount src/corba/ipcbench.idl` ))
 disp cos $(( `count src/corba/cos.cpp` + `wccount src/corba/ipcbench.idl` ))
