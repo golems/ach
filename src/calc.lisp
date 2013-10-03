@@ -129,3 +129,17 @@
        :nine-7 nine-7
        :nine-8 nine-8
        :nine-9 nine-9))))
+
+
+(defun cmp-sloc (file)
+  (let ((data (sort (with-open-file (s file)
+                      (loop for x = (read s nil nil)
+                         while x
+                         collect (list (string (first x))
+                                       (second x))))
+                    (lambda (a b)
+                      (< (second a) (second b))))))
+    (let ((min (apply #'min (map 'list #'second data))))
+      (loop for (sym x) in data
+         do
+           (format t "~&~:(~A~) & ~A & ~,2Fx \\\\~&" sym x (/ x min))))))
