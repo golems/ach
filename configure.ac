@@ -38,7 +38,7 @@ AC_LANG([C++])
 AS_IF([test "x$ACE_ROOT" != "x"],
       [
        AC_MSG_NOTICE([Detected ACE_ROOT=$ACE_ROOT])
-       CPPFLAGS="$CPPFLAGS -I$ACE_ROOT -I$ACE_ROOT/TAO"
+       CPPFLAGS="$CPPFLAGS -I$ACE_ROOT -I$ACE_ROOT/TAO -I$ACE_ROOT/TAO/orbsvcs"
        LDFLAGS="-L$ACE_ROOT/lib"
       ])
 

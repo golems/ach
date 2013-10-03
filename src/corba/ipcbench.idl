@@ -7,9 +7,11 @@ module ipcbench {
 
      interface Thingy {
          corba_timespec getit ();
+         void set_timespec ( in long long sec, in long nsec );
     };
 
     interface Thingy_Factory {
         Thingy get_thingy ( );
     };
+
 };

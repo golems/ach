@@ -42,7 +42,7 @@ endif
 ## TAO ##
 if HAVE_TAO
 
-bin_PROGRAMS += ace_server
+bin_PROGRAMS += ace_server cos_run
 BUILT_TAO = .idlgen.stamp
 
 
@@ -53,11 +53,37 @@ BUILT_TAO = .idlgen.stamp
 
 ipcbenchS.cpp: .idlgen.stamp
 ipcbenchC.cpp: .idlgen.stamp
+ipcbenchS.h: .idlgen.stamp
+ipcbenchC.h: .idlgen.stamp
 
 ace_server_SOURCES = src/corba/server.cpp ipcbenchS.cpp ipcbenchC.cpp
 ace_server_LDADD =  \
 	-lACE -lTAO \
 	-lTAO_AnyTypeCode \
+	-lTAO_TypeCodeFactory \
+	-lTAO_IDL_BE \
+	-lTAO_IDL_FE \
+	-lTAO_PortableServer \
+	-lTAO_IFR_Client
+
+
+cos_run_SOURCES = src/corba/cos.cpp ipcbenchS.cpp ipcbenchC.cpp
+cos_run_LDADD =  \
+	-lACE -lTAO \
+	-lTAO_AnyTypeCode \
+	-lTAO_Svc_Utils \
+	-lTAO_Messaging \
+	-lTAO_Valuetype \
+	-lTAO_PI \
+	-lTAO_CodecFactory \
+	-lTAO_DynamicInterface \
+	-lTAO_CosEvent_Skel \
+	-lTAO_CosEvent \
+	-lTAO_CosNaming \
+	-lTAO_CosNotification \
+	-lTAO_CosTime \
+	-lTAO_CosTrading \
+	-lTAO_CosEvent_Serv \
 	-lTAO_TypeCodeFactory \
 	-lTAO_IDL_BE \
 	-lTAO_IDL_FE \
