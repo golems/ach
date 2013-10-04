@@ -97,5 +97,10 @@ extern struct ipcbench_vtab ipc_bench_vtab_udp;
 extern struct ipcbench_vtab ipc_bench_vtab_udp_multicast;
 extern struct ipcbench_vtab ipc_bench_vtab_local_dgram;
 extern struct ipcbench_vtab ipc_bench_vtab_corba;
+extern struct ipcbench_vtab ipc_bench_vtab_cos;
+
+
+#define MQ "/ipcbench.latency"
+extern struct mq_attr mq_lat_attr;
 
 #endif // IPCBENCH_H

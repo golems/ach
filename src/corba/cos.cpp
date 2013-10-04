@@ -40,6 +40,7 @@
  *
  */
 
+#include "ipcbench.h"
 #include "ace/streams.h"
 #include "ipcbenchC.h"
 #include "ipcbenchS.h"
@@ -54,14 +55,16 @@
 
 #include "util.h"
 
+#include <mqueue.h>
+mqd_t mq;
 
 /* Thingy */
 
-class Thingy_i
+class CosThingy_i
   : public virtual POA_ipcbench::Thingy
 {
 public:
-    Thingy_i();
+    CosThingy_i();
     virtual ipcbench::corba_timespec getit ( void );
     virtual void set_timespec ( CORBA::LongLong sec, CORBA::Long nsec );
 
@@ -73,24 +76,22 @@ private:
 
     CosEventChannelAdmin::ProxyPushConsumer_var consumer_proxy_;
 
-    POA_CosEventComm::PushSupplier_tie<Thingy_i> supplier_personality_;
+    POA_CosEventComm::PushSupplier_tie<CosThingy_i> supplier_personality_;
 };
 
-Thingy_i::Thingy_i()
+CosThingy_i::CosThingy_i()
     :  supplier_personality_ (this)
 {}
 
 ipcbench::corba_timespec
-Thingy_i::getit ()
+CosThingy_i::getit ()
 {
     return data;
 }
 
 void
-Thingy_i::set_timespec ( CORBA::LongLong sec, CORBA::Long nsec )
+CosThingy_i::set_timespec ( CORBA::LongLong sec, CORBA::Long nsec )
 {
-    printf("set_timespec: %ld, %d \n", sec, nsec);
-
     data.sec = sec;
     data.nsec = nsec;
 
@@ -103,7 +104,7 @@ Thingy_i::set_timespec ( CORBA::LongLong sec, CORBA::Long nsec )
 }
 
 void
-Thingy_i::disconnect_push_supplier (void)
+CosThingy_i::disconnect_push_supplier (void)
 {
   // Forget about the consumer it is not there anymore
   this->consumer_proxy_ =
@@ -111,7 +112,7 @@ Thingy_i::disconnect_push_supplier (void)
 }
 
 void
-Thingy_i::connect (CosEventChannelAdmin::SupplierAdmin_ptr supplier_admin)
+CosThingy_i::connect (CosEventChannelAdmin::SupplierAdmin_ptr supplier_admin)
 {
   this->consumer_proxy_ =
     supplier_admin->obtain_push_consumer ();
@@ -123,25 +124,25 @@ Thingy_i::connect (CosEventChannelAdmin::SupplierAdmin_ptr supplier_admin)
 
 /* Thingy Factory */
 
-class Thingy_Factory_i : public POA_ipcbench::Thingy_Factory {
+class CosThingy_Factory_i : public POA_ipcbench::Thingy_Factory {
 public:
-    Thingy_Factory_i ();
+    CosThingy_Factory_i ();
     ipcbench::Thingy_ptr get_thingy ();
     PortableServer::POA_var factory_poa_;
-    Thingy_i obj;
+    CosThingy_i obj;
     void load( PortableServer::POA_ptr poa,
                PortableServer::POAManager_ptr poa_manager,
                CosEventChannelAdmin::SupplierAdmin_ptr supplier_admin);
 };
 
-Thingy_Factory_i::Thingy_Factory_i () {}
+CosThingy_Factory_i::CosThingy_Factory_i () {}
 
 ipcbench::Thingy_ptr
-Thingy_Factory_i::get_thingy ( ) {
+CosThingy_Factory_i::get_thingy ( ) {
     return this->obj._this();
 }
 void
-Thingy_Factory_i::load( PortableServer::POA_ptr poa,
+CosThingy_Factory_i::load( PortableServer::POA_ptr poa,
                         PortableServer::POAManager_ptr poa_manager,
                         CosEventChannelAdmin::SupplierAdmin_ptr supplier_admin) {
 
@@ -203,12 +204,18 @@ Thingy_Consumer::connect (CosEventChannelAdmin::EventChannel_ptr event_channel)
 void
 Thingy_Consumer::push (const CORBA::Any& data)
 {
-    puts("consumer::push()");
+    struct timespec now = get_ticks();
     ipcbench::corba_timespec *event;
     if ((data >>= event) == 0)
         return; // Invalid event
 
-    printf("time: %lu, %u\n", event->sec, event->nsec );
+    struct timespec ts = {event->sec, event->nsec };
+
+    double us = ticks_delta( ts, now ) * 1e6;
+    ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+    if( sizeof(us) == r )  {
+        perror("mq send failed \n");
+    }
 }
 
 void
@@ -290,7 +297,7 @@ static void server() {
         poa_manager->activate ();
 
         // Create the servant
-        Thingy_Factory_i factory_i;
+        CosThingy_Factory_i factory_i;
 
         // Activate it to obtain the object reference
         ipcbench::Thingy_Factory_var factory = factory_i._this ();
@@ -324,6 +331,7 @@ static void server() {
         factory_i.load( poa.in (),
                         poa_manager.in (),
                         supplier_admin.in ());
+
         // ****************************************************************
         {
             puts("server running");
@@ -344,10 +352,138 @@ static void server() {
     }
 }
 
-int main( int argc, char **argv ) {
-    if( 0 == strcmp(argv[1], "server") ) server();
-    else if ( 0 == strcmp(argv[1], "client") ) client();
-    else return -1;
+static CORBA::ORB_var orb;
+static CORBA::Object_var factory_object;
+static ipcbench::Thingy_Factory_var factory;
+static ipcbench::Thingy_var thing;
 
-    return 0;
+static CORBA::Object_var poa_object;
+static PortableServer::POA_var poa;
+static PortableServer::POAManager_var poa_manager;
+static CosThingy_Factory_i factory_i;
+
+static Thingy_Consumer consumer_i;
+static void s_init_recv() {
+    if( (mq = mq_open(MQ, O_CREAT | O_WRONLY | O_NONBLOCK, 0600, &mq_lat_attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+
+
+    int argc = 1;
+    const char *argv[] = {"client", NULL};
+    orb = CORBA::ORB_init (argc, (char**)argv);
+    poa_object = orb->resolve_initial_references ("RootPOA");
+    poa = PortableServer::POA::_narrow (poa_object.in ());
+    poa_manager = poa->the_POAManager ();
+    poa_manager->activate ();
+
+    CORBA::Object_var naming_context_object =
+        orb->resolve_initial_references ("NameService");
+    CosNaming::NamingContext_var naming_context =
+        CosNaming::NamingContext::_narrow (naming_context_object.in ());
+
+    CosNaming::Name name (1);
+    name.length (1);
+    name[0].id = CORBA::string_dup ("CosEventService");
+
+    CORBA::Object_var ec_object =
+        naming_context->resolve (name);
+
+    // Now downcast the object reference to the appropriate type
+    CosEventChannelAdmin::EventChannel_var ec =
+        CosEventChannelAdmin::EventChannel::_narrow (ec_object.in ());
+
+    consumer_i.connect (ec.in ());
+
+    //puts("run client");
+
+    //consumer_i.disconnect ();
+
+
 }
+
+static void s_init_send() {
+    int argc = 1;
+    const char *argv[] = {"server", NULL};
+    orb = CORBA::ORB_init (argc, (char**)argv);
+    poa_object = orb->resolve_initial_references ("RootPOA");
+    poa = PortableServer::POA::_narrow (poa_object.in ());
+    poa_manager = poa->the_POAManager ();
+    poa_manager->activate ();
+
+    // Activate it to obtain the object reference
+    factory = factory_i._this ();
+
+    // Get the Naming Context reference
+    CORBA::Object_var naming_context_object =
+        orb->resolve_initial_references ("NameService");
+    CosNaming::NamingContext_var naming_context =
+        CosNaming::NamingContext::_narrow (naming_context_object.in ());
+
+    // Create and initialize the name.
+    CosNaming::Name name (1);
+    name.length (1);
+    name[0].id = CORBA::string_dup ("Thingy_Factory");
+
+    // Bind the object
+    naming_context->rebind (name, factory.in ());
+
+    // Resolve the Event Service
+    name[0].id = CORBA::string_dup ("CosEventService");
+
+    CORBA::Object_var ec_object = naming_context->resolve (name);
+
+    // Now downcast the object reference to the appropriate type
+    CosEventChannelAdmin::EventChannel_var ec =
+        CosEventChannelAdmin::EventChannel::_narrow (ec_object.in());
+
+    CosEventChannelAdmin::SupplierAdmin_var supplier_admin =
+        ec->for_suppliers ();
+
+    factory_i.load( poa.in (),
+                    poa_manager.in (),
+                    supplier_admin.in ());
+}
+
+static void s_nop_ts(const struct timespec *ts) { (void)ts; }
+
+
+static void s_destroy_recv(void) {
+    poa->destroy (1, 1);
+    orb->destroy ();
+}
+
+static void s_destroy_send(void) {
+    poa->destroy (1, 1);
+    orb->destroy ();
+}
+
+static void s_send( const struct timespec *ts ) {
+    factory_i.obj.set_timespec( ts->tv_sec, ts->tv_nsec );
+}
+
+static void s_send_loop(void) {
+    s_init_send();
+    orb->run ();
+    s_destroy_send();
+}
+
+static void s_recv_loop(int emit) {
+    s_init_recv();
+    orb->run ();
+    s_destroy_recv;
+}
+
+struct ipcbench_vtab ipc_bench_vtab_cos = {
+    NULL, // init
+    s_init_send, // init_send
+    s_init_recv, // init_recv
+    s_send, // send
+    NULL, // recv
+    s_destroy_send, // destroy_send
+    s_destroy_recv, // destroy_recv
+    NULL, // destroy
+    NULL, //send_loop
+    s_recv_loop // recv_loop
+};

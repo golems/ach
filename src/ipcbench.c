@@ -49,7 +49,6 @@
 #include "ipcbench.h"
 #include "util.h"
 
-#define MQ "/ipcbench.latency"
 sig_atomic_t sig_canceled = 0;
 double opt_freq = 1000;
 double opt_sec = 1;
@@ -134,14 +133,12 @@ static void recv(struct ipcbench_vtab *vtab, int emit) {
     while(! sig_canceled ) {
         struct timespec ts;
         vtab->recv(&ts );
-        if( emit ) {
-            struct timespec now = get_ticks();
+        struct timespec now = get_ticks();
+        if( emit && !sig_canceled ) {
             double us = ticks_delta( ts, now ) * 1e6;
-            if( !sig_canceled ) {
-                ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
-                if( sizeof(us) == r )  {
-                    perror("mq send failed \n");
-                }
+            ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+            if( sizeof(us) == r )  {
+                perror("mq send failed \n");
             }
         }
     }
@@ -185,6 +182,7 @@ int main( int argc, char **argv ) {
 #endif
 #ifdef HAVE_TAO_ORB_H
         {"corba", &ipc_bench_vtab_corba, 0},
+        {"cos", &ipc_bench_vtab_cos, 1},
 #endif
         {"pipe", &ipc_bench_vtab_pipe, 0},
         {"mq", &ipc_bench_vtab_mq, 0},

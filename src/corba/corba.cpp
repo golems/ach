@@ -88,7 +88,7 @@ Thingy_Factory_i::get_thingy ()
     return this->obj._this();
 }
 
-int ior_pipe[2];
+static int ior_pipe[2];
 
 static void s_init() {
     if( pipe(ior_pipe) ) {
@@ -97,10 +97,10 @@ static void s_init() {
     }
 }
 
-CORBA::ORB_var orb;
-CORBA::Object_var factory_object;
-ipcbench::Thingy_Factory_var factory;
-ipcbench::Thingy_var thing;
+static CORBA::ORB_var orb;
+static CORBA::Object_var factory_object;
+static ipcbench::Thingy_Factory_var factory;
+static ipcbench::Thingy_var thing;
 static void s_init_recv() {
     printf("init_recv()\n");
     static int k = 1;
@@ -134,10 +134,10 @@ static void s_init_recv() {
     printf("recv init\n");
 }
 
-CORBA::Object_var poa_object;
-PortableServer::POA_var poa;
-PortableServer::POAManager_var poa_manager;
-Thingy_Factory_i factory_i;
+static CORBA::Object_var poa_object;
+static PortableServer::POA_var poa;
+static PortableServer::POAManager_var poa_manager;
+static Thingy_Factory_i factory_i;
 static void s_init_send() {
     // First initialize the ORB, that will remove some arguments...
     int argc=1;
