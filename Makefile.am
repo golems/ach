@@ -12,9 +12,10 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 # rt4_SOURCES = src/main.c
 # rt4_LDADD = librt4kernel.la
 
-bin_PROGRAMS = ipcbench
+bin_PROGRAMS = ipcbench udp_buffer
 
 ipcbench_SOURCES = src/ipcbench.c
+udp_buffer_SOURCES = src/udp_buffer.c
 
 ## POSIX methods ##
 ipcbench_SOURCES += src/pipe.c src/mq.c src/tcp.c src/unix.c src/udp.c src/localdgram.c src/udp_multicast.c
@@ -27,6 +28,11 @@ endif
 
 ## LCM ##
 if HAVE_LCM
+
+bin_PROGRAMS += lcm_buffer
+
+lcm_buffer_SOURCES = src/lcm_buffer.c ipcbench_lcm_timestamp_t.c
+lcm_buffer_LDADD = -llcm
 
 ipcbench_SOURCES += ipcbench_lcm_timestamp_t.c src/lcm.c
 LDADD_LCM = -llcm

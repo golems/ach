@@ -41,3 +41,5 @@
 /ace_server
 /.idlgen.stamp
 /cos_run
+/udp_buffer
+/lcm_buffer
