@@ -45,6 +45,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <string.h>
 #include <sched.h>
 #include <unistd.h>
@@ -52,13 +53,12 @@
 #include <errno.h>
 #include <signal.h>
 #include <sys/mman.h>
+#include <mqueue.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int publish(int argc, char **argv, int freq);
-int subscribe(int argc, char **argv);
 
 
 static double ticks_delta(struct timespec t0, struct timespec t1) {
@@ -67,14 +67,6 @@ static double ticks_delta(struct timespec t0, struct timespec t1) {
     return dsec + dnsec;// - overhead;
 }
 
-
-static inline void get_delta( int64_t sec, int32_t nsec ) {
-    struct timespec ts = {.tv_sec = sec, .tv_nsec = nsec};
-    struct timespec now;
-    clock_gettime( CLOCK_MONOTONIC, &now );
-    double us = ticks_delta(ts,now) * 1e6;
-    printf("%lf\n", us );
-}
 
 
 #define STACK_SIZE (8*1024)
@@ -96,6 +88,14 @@ static void make_realtime( int priority ) {
         abort();
     }
 }
+
+enum rosbench_transport {
+    ROS_TCP,
+    ROS_UDP,
+};
+
+int publish(int argc, char **argv, int freq);
+int subscribe(int argc, char **argv, int num, int emit, enum rosbench_transport t, uint64_t discard, mqd_t mq);
 
 #ifdef __cplusplus
 }

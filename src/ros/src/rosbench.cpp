@@ -71,20 +71,56 @@ int publish(int argc, char **argv, int freq)
     return 0;
 }
 
+static int s_emit;
+static uint64_t s_discarded = 0;
+static uint64_t s_discard = 0;
+static mqd_t s_mq;
 
 void chatterCallback(const ipcbench::ros_timespec::ConstPtr& msg)
 {
-    //ROS_INFO("I heard: [%lu, %u]", msg->sec, msg->nsec );
-    get_delta( msg->sec, msg->nsec );
+    if( s_emit && s_discarded++ > s_discard ) {
+        struct timespec now;
+        clock_gettime( CLOCK_MONOTONIC, &now );
+        struct timespec ts = {.tv_sec = msg->sec, .tv_nsec = msg->nsec};
+        double us = ticks_delta(ts,now) * 1e6;
+        ssize_t r = mq_send(s_mq, (char*)&us, sizeof(us), 0);
+        if( sizeof(us) == r )  {
+            perror("mq send failed \n");
+        }
+    }
 }
 
-int subscribe(int argc, char **argv)
+int subscribe(int argc, char **argv, int num, int emit, enum rosbench_transport t, uint64_t discard, mqd_t mq)
 {
-    ros::init(argc, argv, "listener");
+    s_emit = emit;
+    s_discard = discard;
+    s_mq = mq;
 
-    ros::NodeHandle n;
+    char buf[32]={0};
+    {
+        strcpy(buf, "listener_");
+        size_t n = strlen(buf);
+        snprintf(buf+n, sizeof(buf)-n-1, "%d", num);
+    }
 
-    ros::Subscriber sub = n.subscribe("chatter", 1000, chatterCallback);
+    ros::init(argc, argv, buf );
+
+    ros::NodeHandle node;
+    ros::Subscriber sub;
+
+    switch(t) {
+    case ROS_TCP:
+         sub = node.subscribe("chatter", 1000, chatterCallback,
+                                             ros::TransportHints().tcp());
+        break;
+    case ROS_UDP:
+        sub = node.subscribe("chatter", 1000, chatterCallback,
+                                             ros::TransportHints().udp());
+        break;
+    default:
+        abort();
+    }
+
     ros::spin();
 
     return 0;

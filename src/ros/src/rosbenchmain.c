@@ -40,10 +40,21 @@
  *
  */
 
-#include  <unistd.h>
-#include  <stdlib.h>
-#include  <signal.h>
 #include  "rosbench.h"
+
+struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
+                              .mq_msgsize = sizeof(double),
+                              .mq_flags = 0};
+
+
+static void time_print( mqd_t mq ) {
+    while( 1 ) {
+        double us;
+        ssize_t r = mq_receive( mq, (char*)&us, sizeof(us), NULL );
+        if( sizeof(us) == r ) printf("%lf\n", us );
+    }
+}
+
 
 int main( int argc, char **argv) {
 
@@ -51,7 +62,9 @@ int main( int argc, char **argv) {
     int opt_sec = 1;
     int opt_subscribers = 1;
     int opt_nonrt_subscribers = 0;
+    int opt_discard = 120; // ROS UDP is slow for ~100 messages
     int c;
+    const char *opt_transport = "tcp";
     char *endptr;
     while( (c = getopt( argc, argv, "t:f:s:S:v?V")) != -1 ) {
         switch(c) {
@@ -79,7 +92,6 @@ int main( int argc, char **argv) {
             opt_nonrt_subscribers = (size_t)atoi(optarg);
             break;
         case '?':   /* version     */
-        default:
             puts("Usage: rosbench [OPTION....] \n"
                  "Benchmark IPC\n"
                  "\n"
@@ -91,11 +103,64 @@ int main( int argc, char **argv) {
                  "  -V                Version\n"
                  "  -?                Help\n"
                 );
-            exit( '?' == c ? EXIT_SUCCESS : EXIT_FAILURE);
+            exit( EXIT_SUCCESS );
+        default:
+            opt_transport = optarg;
         }
+    }
+    while( optind < argc ) {
+        opt_transport = argv[optind++];
+    }
+    fprintf(stderr, "transport: %s\n", opt_transport);
+
+    enum rosbench_transport transport;
+    if( 0 == strcasecmp(opt_transport, "tcp") ) {
+        transport = ROS_TCP;
+    } else if( 0 == strcasecmp(opt_transport, "udp") ) {
+        transport = ROS_UDP;
+    } else {
+        fprintf(stderr, "Unknown transport: %s\n", opt_transport );
+        exit(EXIT_FAILURE);
+    }
+
+
+    mqd_t mq;
+    if( (mq = mq_open("/rosmq", O_CREAT | O_RDWR, 0600, &mq_lat_attr )) < 0 ) {
+        perror( "could not open mq" );
+        abort();
+    }
+
+
+    pid_t pid_mq = fork();
+    if( 0 == pid_mq ) {
+        time_print(mq);
+    } else if( 0 > pid_mq ) {
+        perror("printer fork");
+        abort();
     }
 
     make_realtime(30);
+
+    /* Fork subscribers */
+    pid_t pid_listen[opt_subscribers + opt_nonrt_subscribers];
+    {
+        size_t i;
+        for( i = 0; i < opt_subscribers + opt_nonrt_subscribers; i ++ ) {
+            pid_listen[i] = fork();
+            if( 0 == pid_listen[i] ) {
+                int emit = 1;
+                if( i >= opt_subscribers ) {
+                    make_realtime(0);
+                    emit=0;
+                }
+                subscribe( argc, argv, i, i < opt_subscribers, transport, opt_discard, mq );
+                return 0;
+            } else if ( pid_listen[i] < 0 ) {
+                perror("Couldn't fork\n");
+                abort();
+            }
+        }
+    }
 
 
     pid_t pub = fork();
@@ -106,17 +171,19 @@ int main( int argc, char **argv) {
         abort();
     }
 
-    pid_t sub = fork();
-    if( 0 == sub ) {
-        subscribe(argc, argv);
-    } else if( 0 > sub ) {
-        perror("sub fork");
-        abort();
+    sleep(opt_sec);
+
+    {
+        size_t i;
+        for( i = 0; i < opt_subscribers; i ++ ) {
+            kill(pid_listen[i], SIGTERM);
+        }
     }
 
-    sleep(opt_sec);
+
     kill(pub, SIGTERM);
-    kill(sub, SIGTERM);
+    usleep(100e3);
+    kill(pid_mq, SIGTERM);
 
 
 }
