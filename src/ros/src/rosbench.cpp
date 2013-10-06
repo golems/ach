@@ -33,12 +33,7 @@
 #include "std_msgs/String.h"
 
 #include <sstream>
-#include <signal.h>
-#include <time.h>
 
-/**
- * This tutorial demonstrates simple sending of messages over the ROS system.
- */
 int publish(int argc, char **argv, int freq)
 {
     ros::init(argc, argv, "talker");
@@ -50,23 +45,17 @@ int publish(int argc, char **argv, int freq)
     int count = 0;
     while (ros::ok())
     {
-        //std_msgs::String msg;
         struct timespec ts;
         clock_gettime( CLOCK_MONOTONIC, &ts );
         ipcbench::ros_timespec rts;
         rts.sec = ts.tv_sec;
         rts.nsec = ts.tv_nsec;
 
-        // std::stringstream ss;
-        // ss << "hello world " << count;
-        // msg.data = ss.str();
-        // ROS_INFO("%s", msg.data.c_str());
         chatter_pub.publish(rts);
         ros::spinOnce();
         loop_rate.sleep();
         ++count;
     }
-
 
     return 0;
 }
@@ -79,14 +68,7 @@ static mqd_t s_mq;
 void chatterCallback(const ipcbench::ros_timespec::ConstPtr& msg)
 {
     if( s_emit && s_discarded++ > s_discard ) {
-        struct timespec now;
-        clock_gettime( CLOCK_MONOTONIC, &now );
-        struct timespec ts = {.tv_sec = msg->sec, .tv_nsec = msg->nsec};
-        double us = ticks_delta(ts,now) * 1e6;
-        ssize_t r = mq_send(s_mq, (char*)&us, sizeof(us), 0);
-        if( sizeof(us) == r )  {
-            perror("mq send failed \n");
-        }
+        get_delta( msg->sec, msg->nsec, s_mq );
     }
 }
 
@@ -110,12 +92,10 @@ int subscribe(int argc, char **argv, int num, int emit, enum rosbench_transport 
 
     switch(t) {
     case ROS_TCP:
-         sub = node.subscribe("chatter", 1000, chatterCallback,
-                                             ros::TransportHints().tcp());
+        sub = node.subscribe("chatter", 1000, chatterCallback, ros::TransportHints().tcp());
         break;
     case ROS_UDP:
-        sub = node.subscribe("chatter", 1000, chatterCallback,
-                                             ros::TransportHints().udp());
+        sub = node.subscribe("chatter", 1000, chatterCallback, ros::TransportHints().udp());
         break;
     default:
         abort();

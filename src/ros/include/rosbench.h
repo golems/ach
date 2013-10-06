@@ -97,6 +97,19 @@ enum rosbench_transport {
 int publish(int argc, char **argv, int freq);
 int subscribe(int argc, char **argv, int num, int emit, enum rosbench_transport t, uint64_t discard, mqd_t mq);
 
+
+static inline void get_delta( int64_t sec, int32_t nsec, mqd_t mq ) {
+    struct timespec now;
+    clock_gettime( CLOCK_MONOTONIC, &now );
+    struct timespec ts = {.tv_sec = sec, .tv_nsec = nsec};
+    double us = ticks_delta(ts,now) * 1e6;
+    ssize_t r = mq_send(mq, (char*)&us, sizeof(us), 0);
+    if( sizeof(us) == r )  {
+        perror("mq send failed \n");
+    }
+}
+
+
 #ifdef __cplusplus
 }
 #endif
