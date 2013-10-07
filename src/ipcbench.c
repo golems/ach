@@ -60,7 +60,7 @@ struct timespec ipcbench_period;
 double overhead = 0;
 
 #include <mqueue.h>
-struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
+struct mq_attr mq_lat_attr = {.mq_maxmsg = 10,
                               .mq_msgsize = sizeof(double),
                               .mq_flags = 0};
 
@@ -201,9 +201,6 @@ int main( int argc, char **argv ) {
     int c;
     while( (c = getopt( argc, argv, "lt:f:s:S:d:v?V")) != -1 ) {
         switch(c) {
-        case 'V':   /* version     */
-            puts("ipcbench 0.0");
-            exit(EXIT_SUCCESS);
         case 'f':
             opt_freq = strtod(optarg, &endptr);
             if( NULL == endptr )  {
@@ -219,7 +216,7 @@ int main( int argc, char **argv ) {
             }
             break;
         case 'l':
-            for( size_t i = 0; sym_vtabs[i].name; i++ ) {
+            for( size_t i = 0; NULL != sym_vtabs[i].name; i++ ) {
                 puts( sym_vtabs[i].name );
             }
             exit(EXIT_SUCCESS);
@@ -232,7 +229,10 @@ int main( int argc, char **argv ) {
         case 'd':
             opt_discard = (size_t)atoi(optarg);
             break;
-        case '?':   /* version     */
+        case 'V':   /* version     */
+            puts("ipcbench " PACKAGE_VERSION);
+            exit(EXIT_SUCCESS);
+        case '?':
             puts("Usage: ipcbench [OPTION....] TYPE\n"
                  "Benchmark IPC\n"
                  "\n"
@@ -245,6 +245,15 @@ int main( int argc, char **argv ) {
                  "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
+                 "\n"
+                 "Examples:\n"
+                 "  ipcbench -f 1000 -t 60 -s 2 ach     Benchmark Ach at 1000 hertz\n"
+                 "                                      for 60 seconds with 2 subscribers\n"
+                 "  ipcbench -f 1000 -t 120 mq          Benchmark Message Queueus at 1000 hertz\n"
+                 "                                      for 120 seconds\n"
+                 "  ipcbench -l                         List supported IPC methods\n"
+                 "\n"
+                 "Report bugs to <" PACKAGE_BUGREPORT ">"
                 );
             exit(EXIT_SUCCESS);
         default:

@@ -42,7 +42,7 @@
 
 #include  "rosbench.h"
 
-struct mq_attr mq_lat_attr = {.mq_maxmsg = 512,
+struct mq_attr mq_lat_attr = {.mq_maxmsg = 10,
                               .mq_msgsize = sizeof(double),
                               .mq_flags = 0};
 
@@ -125,10 +125,11 @@ int main( int argc, char **argv) {
 
 
     mqd_t mq;
-    if( (mq = mq_open("/rosmq", O_CREAT | O_RDWR, 0600, &mq_lat_attr )) < 0 ) {
+    if( (mq = mq_open("/rosmq", O_CREAT | O_RDWR | O_NONBLOCK, 0600, &mq_lat_attr )) < 0 ) {
         perror( "could not open mq" );
         abort();
     }
+    mq_unlink("/rosmq"); // no need to keep message queue in the namepsace
 
 
     pid_t pid_mq = fork();

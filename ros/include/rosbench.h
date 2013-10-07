@@ -76,16 +76,12 @@ static void make_realtime( int priority ) {
     memset( prefault,0,sizeof(prefault) );
 
     if( mlockall( MCL_CURRENT | MCL_FUTURE ) ) {
-        fprintf(stderr, "Couldn't lock pages in memory: %s\n",
-                strerror(errno) );
-        abort();
+        perror( "Couldn't lock pages in memory");
     }
     struct sched_param sp;
     sp.sched_priority = priority; /* 99 is max priority on linux */
     if( sched_setscheduler( 0, priority ? SCHED_FIFO : SCHED_OTHER, &sp) < 0 ) {
-        fprintf(stderr, "Couldn't set scheduling priority: %s\n",
-                strerror(errno) );
-        abort();
+        perror("Couldn't set scheduling priority");
     }
 }
 
