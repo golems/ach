@@ -57,40 +57,36 @@
 static int sock;
 static struct sockaddr_in addr = {0};
 
-
-static void s_init_send(void) {
+static void s_sock(void) {
     sock = socket( AF_INET, SOCK_DGRAM, 0 );
     if( sock < 0 ) {
         perror( "Could not create socket");
         abort();
     }
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(PORT);
+}
 
+static void s_init_send(void) {
+    s_sock();
     u_int yes = 1;
     if( setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, &yes, sizeof(yes)) ) {
         perror("setsockopt for sender failed\n");
     }
 
-    addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr("224.0.0.1");
-    addr.sin_port = htons(PORT);
 
 }
 
 static void s_init_recv(void) {
-    sock = socket( AF_INET, SOCK_DGRAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
+    s_sock();
 
     u_int yes = 1;
     if( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) {
         perror("setsockopt for receiver failed\n");
     }
 
-    addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(PORT);
 
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {

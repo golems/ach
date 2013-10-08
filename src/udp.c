@@ -71,15 +71,7 @@ static void s_init_send(void) {
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
+    s_init_send();
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("Failed to bind the socket");

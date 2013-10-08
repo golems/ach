@@ -76,14 +76,7 @@ static void s_init_send(void) {
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_UNIX, SOCK_DGRAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, UNIX_PATH_MAX, NAME );
+    s_init_send();
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("Failed to bind the socket");

@@ -97,6 +97,7 @@
     (aref data i)))
 
 (defun analyze (file-name)
+  (format t "~&Reading ~A~&" file-name)
   (let* ((data (sort (parse-strings (split-lines (read-dat file-name)))
                      #'<))
          (n (length data)))
@@ -112,10 +113,10 @@
           (nine-7 (nines-value 6 data))
           (nine-8 (nines-value 6 data))
           (nine-9 (nines-value 6 data)))
-      (format t "~&~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F~&"
-              min median mean
-              nine-2 nine-3 nine-4 nine-5
-              max)
+      ;; (format t "~&~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F & ~,3F~&"
+      ;;         min median mean
+      ;;         nine-2 nine-3 nine-4 nine-5
+      ;;         max)
       (list
        :min min
        :max max
@@ -129,6 +130,8 @@
        :nine-7 nine-7
        :nine-8 nine-8
        :nine-9 nine-9))))
+
+
 
 
 (defun cmp-sloc (file)

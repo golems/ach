@@ -49,6 +49,7 @@
 
 static lcm_t * lcm;
 
+#define CHANNEL "ipcbench"
 
 static void s_init_send(void) {
     lcm = lcm_create(NULL);
@@ -61,7 +62,10 @@ static void s_send( const struct timespec *ts ) {
     ipcbench_lcm_timestamp_t msg;
     msg.secs = ts->tv_sec;
     msg.nsecs = ts->tv_nsec;
-    ipcbench_lcm_timestamp_t_publish(lcm, "EXAMPLE", &msg);
+    if( ipcbench_lcm_timestamp_t_publish(lcm, CHANNEL, &msg) ) {
+        perror("lcm_publish");
+        abort();
+    }
 }
 
 
@@ -81,12 +85,15 @@ listen_handler(const lcm_recv_buf_t *rbuf, const char * channel,
 
 static void s_init_recv(void) {
     s_init_send();
-    ipcbench_lcm_timestamp_t_subscribe(lcm, "EXAMPLE", &listen_handler, NULL);
+    ipcbench_lcm_timestamp_t_subscribe(lcm, CHANNEL, &listen_handler, NULL);
 }
 
 static void s_recv( struct timespec *ts ) {
     s_ts = ts;
-    lcm_handle(lcm);
+    if( lcm_handle(lcm) ) {
+        perror("lcm_handle");
+        abort();
+    }
 }
 
 

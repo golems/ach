@@ -52,37 +52,42 @@ static ach_channel_t channel;
 #define CHAN_NAME "ipcbench"
 
 static void s_init(void) {
-    /* create channel */
-    int r = ach_unlink(CHAN_NAME);               /* delete first */
-    assert( ACH_OK == r || ACH_ENOENT == r);
-    r = ach_create(CHAN_NAME, 10,
-                   sizeof(struct timespec), NULL );
-    assert(ACH_OK == r);
+    ach_status_t r = ach_unlink(CHAN_NAME);               /* delete first */
 
+    if( !( ACH_OK == r || ACH_ENOENT == r) ) {
+        fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r) );
+        abort();
+    }
+    if( ACH_OK != (r = ach_create(CHAN_NAME, 10,
+                                  sizeof(struct timespec), NULL)) ) {
+        fprintf(stderr, "ach_create: %s\n", ach_result_to_string(r) );
+        abort();
+    }
+
+    if( ACH_OK != (r = ach_open(&channel, CHAN_NAME, NULL)) ) {
+        fprintf(stderr, "ach_open: %s\n", ach_result_to_string(r) );
+        abort();
+    }
 }
 
 static void s_destroy(void) {
     ach_unlink(CHAN_NAME);
 }
 
-static void s_init_send_recv(void) {
-    int r = ach_open(&channel, CHAN_NAME, NULL );
-    if( ACH_OK != r ) abort();
-}
-
 static void s_send( const struct timespec *ts ) {
-    int r = ach_put( &channel, ts, sizeof(*ts) );
-    if( ACH_OK != r ) abort();
+    ach_status_t r = ach_put( &channel, ts, sizeof(*ts) );
+    if( ACH_OK != r ) {
+        fprintf(stderr, "ach_put: %s\n", ach_result_to_string(r) );
+        abort();
+    }
 }
-
-
 
 static void s_recv( struct timespec *ts ) {
     size_t fs;
     ach_status_t r = ach_get( &channel, ts, sizeof(*ts),
                               &fs, NULL, ACH_O_WAIT | ACH_O_LAST );
     if( ! (ACH_OK==r || ACH_MISSED_FRAME == r) ) {
-        fprintf(stderr, "error: %s\n", ach_result_to_string(r) );
+        fprintf(stderr, "ach_get: %s\n", ach_result_to_string(r) );
         abort();
     }
     if( sizeof(*ts) != fs ) {
@@ -90,19 +95,9 @@ static void s_recv( struct timespec *ts ) {
     }
 }
 
-
-static void s_destroy_send_recv(void) {
-    ach_close(&channel);
-}
-
-
 struct ipcbench_vtab ipc_bench_vtab_ach = {
     .init = s_init,
-    .init_send = s_init_send_recv,
-    .init_recv = s_init_send_recv,
     .send = s_send,
     .recv = s_recv,
-    .destroy_send = s_destroy_send_recv,
-    .destroy_recv = s_destroy_send_recv,
     .destroy = s_destroy,
 };

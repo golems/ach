@@ -50,11 +50,13 @@
 
 static mqd_t fd;
 
+#define NAME "/ipcbench"
+
 static void s_open(int flag) {
     struct mq_attr attr = {.mq_maxmsg = 10,
                            .mq_msgsize = sizeof(struct timespec),
                            .mq_flags = 0};
-    if( (fd = mq_open("/ipcbench", O_CREAT|flag, 0666, &attr )) < 0 ) {
+    if( (fd = mq_open(NAME, O_CREAT|flag, 0666, &attr )) < 0 ) {
         perror( "could not open mq" );
         abort();
     }
@@ -66,12 +68,6 @@ static void s_init_send(void) {
 
 static void s_init_recv(void) {
     s_open( O_RDONLY );
-}
-
-static void s_destroy_send_recv(void) {
-    if( close(fd) ) {
-        perror( "error closing mq" );
-    }
 }
 
 static void s_send( const struct timespec *ts ) {
@@ -90,7 +86,7 @@ static void s_recv( struct timespec *ts ) {
 }
 
 static void s_destroy( ) {
-    mq_unlink("/ipcbench");
+    mq_unlink(NAME);
 }
 
 struct ipcbench_vtab ipc_bench_vtab_mq = {
@@ -99,7 +95,5 @@ struct ipcbench_vtab ipc_bench_vtab_mq = {
     .init_recv = s_init_recv,
     .send = s_send,
     .recv = s_recv,
-    .destroy_send = s_destroy_send_recv,
-    .destroy_recv = s_destroy_send_recv,
     .destroy = s_destroy
 };

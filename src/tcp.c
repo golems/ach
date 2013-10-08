@@ -61,8 +61,7 @@ static struct sockaddr_in addr = {0};
 static struct sockaddr_in caddr = {0};
 unsigned clen;
 
-
-static void s_init_send(void) {
+static void s_sock(void) {
     sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
     if( sock < 0 ) {
         perror( "Could not create socket");
@@ -72,7 +71,10 @@ static void s_init_send(void) {
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = inet_addr("127.0.0.1");
     addr.sin_port = htons(PORT);
+}
 
+static void s_init_send(void) {
+    s_sock();
     if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("failed to connect");
         abort();
@@ -82,16 +84,7 @@ static void s_init_send(void) {
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
-
+    s_sock();
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("Failed to bind the server socket");

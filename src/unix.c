@@ -59,11 +59,13 @@ static struct sockaddr_un addr = {0};
 static struct sockaddr_un caddr = {0};
 unsigned clen;
 
+#define NAME "/tmp/ipcbench.sock"
+
 static void s_init(void) {
-    unlink("/tmp/ipcbench.sock");
+    unlink( NAME );
 }
 
-static void s_init_send(void) {
+static void s_sock(void) {
     sock = socket( PF_UNIX, SOCK_STREAM, 0 );
     if( sock < 0 ) {
         perror( "Could not create socket");
@@ -71,8 +73,11 @@ static void s_init_send(void) {
     }
 
     addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, UNIX_PATH_MAX, "/tmp/ipcbench.sock");
+    snprintf( addr.sun_path, UNIX_PATH_MAX, NAME );
+}
 
+static void s_init_send(void) {
+    s_sock();
 
     if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("failed to connect");
@@ -83,15 +88,7 @@ static void s_init_send(void) {
 }
 
 static void s_init_recv(void) {
-    sock = socket( PF_UNIX, SOCK_STREAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
-
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, UNIX_PATH_MAX, "/tmp/ipcbench.sock");
-
+    s_sock();
 
     if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
         perror("Failed to bind the server socket");
@@ -114,7 +111,7 @@ static void s_init_recv(void) {
 static void s_send( const struct timespec *ts ) {
     ssize_t r = write(fd, ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
-        perror( "could not send data on pipe" );
+        perror( "could not send data" );
         abort();
     }
 }
@@ -122,7 +119,7 @@ static void s_send( const struct timespec *ts ) {
 static void s_recv( struct timespec *ts ) {
     ssize_t r = read(fd, ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
-        perror( "could not receive data on pipe" );
+        perror( "could not receive data" );
         abort();
     }
 }
