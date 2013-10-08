@@ -71,7 +71,9 @@ int main(int argc, char **argv) {
     lcm_t *lcm_rcv = lcm_create(NULL);
 
     /* Subscribe */
-    ipcbench_lcm_timestamp_t_subscribe(lcm_rcv, "overflow", &listen_handler, NULL);
+    ipcbench_lcm_timestamp_t_subscription_t *lsub =
+        ipcbench_lcm_timestamp_t_subscribe(lcm_rcv, "overflow", &listen_handler, NULL);
+    ipcbench_lcm_timestamp_t_subscription_set_queue_capacity( lsub, 1);
 
     /* Overflow socket buffer */
     ipcbench_lcm_timestamp_t msg = {.secs=0, .nsecs=0};
