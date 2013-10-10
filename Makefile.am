@@ -122,11 +122,11 @@ org/golems/ach/Channel.class: org/golems/ach/Lib.class
 org/golems/ach/Test.class: org/golems/ach/Lib.class
 
 org_golems_ach_Lib.h: $(top_builddir)/org/golems/ach/Lib.class
-	javah org.golems.ach.Lib
+	$(JAVAH) org.golems.ach.Lib
 	touch $@
 
 org.golems.ach.jar: $(JCLASSES)
-	jar cf $@ $(JCLASSES)
+	$(JAR) cf $@ $(JCLASSES)
 
 
 # install the jar file somewhere reasonable

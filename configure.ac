@@ -266,18 +266,38 @@ AS_IF([test "x$with_python" = "xyes"],[
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
 
 # Java
-AX_PROG_JAVA
-AX_PROG_JAVAC
-AX_PROG_JAR
+AS_IF( [test "x$JAVAPREFIX" = x],
+       [
+        AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],  )
+        AS_IF( [test "x$JAVAC" = x], [AC_CHECK_PROGS(JAVAC, javac "gcj -C" jikes guavac)] )
+        AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)] )
+        AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)] )
+       ],
+       [
+        AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],
+               [$JAVAPREFIX] )
+        AS_IF( [test "x$JAVAC" = x], [AC_CHECK_PROGS(JAVAC, javac "gcj -C" jikes guavac)],
+               [$JAVAPREFIX] )
+        AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)],
+               [$JAVAPREFIX] )
+        AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)],
+               [$JAVAPREFIX] )
+       ]
+)
 
-AX_JNI_INCLUDE_DIR
-for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
-do
-    JNICPPFLAGS="$JNICPPFLAGS -I$JNI_INCLUDE_DIR"
-done
+AS_IF([test "x$JAVAC" = "x"],
+      [BUILD_JAVA=no],
+      [
+       BUILD_JAVA=yes
+       AX_JNI_INCLUDE_DIR
+       for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
+       do
+           JNICPPFLAGS="$JNICPPFLAGS -I$JNI_INCLUDE_DIR"
+       done
+      ])
+
 AC_SUBST([JNICPPFLAGS])
-AM_CONDITIONAL([HAVE_JAVAC],   [test x$JAVAC != x])
-AS_IF([test "x$JAVAC" = "x"],[BUILD_JAVA=no],[BUILD_JAVA=yes])
+AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
 
 AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
 
