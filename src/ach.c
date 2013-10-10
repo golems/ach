@@ -68,30 +68,22 @@
 
 #include "ach.h"
 
-/* verbosity output levels */
-/*
-//#define WARN 0  ///< verbosity level for warnings
-//#define INFO 1  ///< verbosity level for info messages
-//#define DEBUG 2 ///< verbosity level for debug messages
 
-// print a debug messages at some level
-//#define DEBUGF(level, fmt, a... )\
-//(((args.verbosity) >= level )?fprintf( stderr, (fmt), ## a ) : 0);
-*/
+#ifdef NDEBUG
 
-/** macro to print debug messages */
-#define DEBUGF(fmt, a... )                      \
-    fprintf(stderr, (fmt), ## a )
+#define IFDEBUG(test, x )
+#define DEBUGF( ... )
+#define DEBUG_PERROR(a)
 
-/** Call perror() when debugging */
-#define DEBUG_PERROR(a)    perror(a)
+#else /* enable debugging */
 
-/** macro to do things when debugging */
-#define IFDEBUG( x ) (x)
+#define IFDEBUG( test, x ) if(test) { (x); }
+#define DEBUGF( ... ) fprintf(stderr, __VA_ARGS__ )
+#define DEBUG_PERROR(a) perror(a)
 
+#endif /* NDEBUG */
 
 size_t ach_channel_size = sizeof(ach_channel_t);
-
 size_t ach_attr_size = sizeof(ach_attr_t);
 
 
@@ -307,10 +299,11 @@ rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime ) {
     return r;
 }
 
-static void unrdlock( ach_header_t *shm ) {
+static enum ach_status unrdlock( ach_header_t *shm ) {
     assert( 0 == shm->sync.dirty );
-    int r = pthread_mutex_unlock( & shm->sync.mutex );
-    assert( 0 == r );
+    if ( pthread_mutex_unlock( & shm->sync.mutex ) )
+        return ACH_FAILED_SYSCALL;
+    else return ACH_OK;
 }
 
 static enum ach_status wrlock( ach_channel_t *chan ) {
@@ -325,19 +318,20 @@ static enum ach_status wrlock( ach_channel_t *chan ) {
     return r;
 }
 
-static void unwrlock( ach_header_t *shm ) {
+static ach_status_t unwrlock( ach_header_t *shm ) {
     /* mark clean */
     assert( 1 == shm->sync.dirty );
     shm->sync.dirty = 0;
 
     /* unlock */
-    int r = pthread_mutex_unlock( & shm->sync.mutex );
-    assert( 0 == r );
+    if( pthread_mutex_unlock( & shm->sync.mutex ) )
+        return ACH_FAILED_SYSCALL;
 
     /* broadcast to wake up waiting readers */
-    r = pthread_cond_broadcast( & shm->sync.cond );
-    assert( 0 == r );
+    if( pthread_cond_broadcast( & shm->sync.cond ) )
+        return ACH_FAILED_SYSCALL;
 
+    return ACH_OK;
 }
 
 
@@ -472,6 +466,7 @@ ach_create( const char *channel_name,
                 return ACH_FAILED_SYSCALL;
             }
 #endif
+#ifndef NDEBUG
 #ifdef HAVE_MUTEX_ERROR_CHECK
             /* Error Checking Mutex */
             if( (r = pthread_mutexattr_settype(&mutex_attr,
@@ -479,7 +474,8 @@ ach_create( const char *channel_name,
                 DEBUG_PERROR("pthread_mutexattr_settype");
                 return ACH_FAILED_SYSCALL;
             }
-#endif
+#endif /* HAVE_MUTEX_ERROR_CHECK */
+#endif /* NDEBUG */
             if( (r = pthread_mutex_init(&shm->sync.mutex, &mutex_attr)) ) {
                 DEBUG_PERROR("pthread_mutexattr_init");
                 return ACH_FAILED_SYSCALL;
@@ -522,7 +518,7 @@ ach_create( const char *channel_name,
         /* close file */
         int i = 0;
         do {
-            IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
+            IFDEBUG( i, DEBUGF("Retrying close()\n") )
             r = close(fd);
         }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
         if( -1 == r ){
@@ -707,7 +703,8 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
     }
 
     /* release read lock */
-    unrdlock( shm );
+    ach_status_t r = unrdlock( shm );
+    if( ACH_OK != r ) return r;
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
@@ -715,15 +712,13 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
 
 enum ach_status
 ach_flush( ach_channel_t *chan ) {
-    /*int r; */
     ach_header_t *shm = chan->shm;
     enum ach_status r = rdlock(chan, 0,  NULL);
-    if( ACH_OK == r ) {
-        chan->seq_num = shm->last_seq;
-        chan->next_index = shm->index_head;
-        unrdlock(shm);
-    }
-    return r;
+    if( ACH_OK != r ) return r;
+
+    chan->seq_num = shm->last_seq;
+    chan->next_index = shm->index_head;
+    return unrdlock(shm);
 }
 
 
@@ -812,8 +807,8 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
     assert( shm->last_seq > 0 );
 
     /* release write lock */
-    unwrlock( shm );
-    return ACH_OK;
+    return unwrlock( shm );
+
 }
 
 enum ach_status
@@ -842,7 +837,7 @@ ach_close( ach_channel_t *chan ) {
         /* close file */
         int i = 0;
         do {
-            IFDEBUG( i ? DEBUGF("Retrying close()\n"):0 );
+            IFDEBUG( i, DEBUGF("Retrying close()\n") )
             r = close(chan->fd);
         }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
         if( -1 == r ){
@@ -946,6 +941,7 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
             if( ACH_OK != chan_lock(chan) ) {
                 /* TODO: pipe to pass error to parent? except, can't
                  * wait in the parent or we risk deadlock */
+                DEBUG_PERROR("ach_cancel chan_lock()");
                 exit(EXIT_FAILURE);
             }
             /* At this point, chan->cancel is TRUE and any waiters
@@ -953,10 +949,12 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
              * variable */
             /* Unlock Mutex */
             if( pthread_mutex_unlock( &chan->shm->sync.mutex ) ) {
+                DEBUG_PERROR("ach_cancel pthread_mutex_unlock()");
                 exit(EXIT_FAILURE);
             }
             /* Condition Broadcast */
             if( pthread_cond_broadcast( &chan->shm->sync.cond ) )  {
+                DEBUG_PERROR("ach_cancel pthread_cond_broadcast()");
                 exit(EXIT_FAILURE);
             }
             exit(EXIT_SUCCESS);
@@ -965,6 +963,7 @@ ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
              * here */
             return ACH_OK;
         } else { /* fork error */
+            DEBUG_PERROR("ach_cancel fork()");
             return ACH_FAILED_SYSCALL;
         }
     }

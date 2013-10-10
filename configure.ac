@@ -11,7 +11,7 @@ AC_CONFIG_MACRO_DIR([m4])
 # Checks for programs.
 AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
-AC_PROG_CC_C89
+AC_PROG_CC_C99
 AC_PROG_CXX
 AC_PROG_LIBTOOL
 
@@ -196,6 +196,26 @@ m4_ifdef([APPEND_CXXFLAG],
           APPEND_CXXFLAG([-Wshadow])
           APPEND_CXXFLAG([-Wwrite-strings])])
 
+# Debugging
+AC_ARG_ENABLE([debug],
+        AS_HELP_STRING([--enable-debug], [Build for debugging]))
+
+AS_IF([test "x$enable_debug" = "xyes"],
+      [
+       AC_LANG([C])
+       APPEND_CFLAG([-fstack-check])
+       AC_LANG([C++])
+       APPEND_CXXFLAG([-fstack-check])
+      ],
+      [
+       enable_debug=no
+       AC_LANG([C])
+       APPEND_CFLAG([-DNDEBUG])
+       AC_LANG([C++])
+       APPEND_CXXFLAG([-DNDEBUG])
+      ]
+)
+
 # Doxygen
 m4_ifdef([DX_INIT_DOXYGEN],
          [DX_HTML_FEATURE(ON)
@@ -268,6 +288,7 @@ AC_OUTPUT
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([CONFIGURATION SUMMARY])
 AC_MSG_NOTICE([=====================])
+AC_MSG_NOTICE([DEBUG:           $enable_debug])
 AC_MSG_NOTICE([PREFIX:          $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])
 AC_MSG_NOTICE([BUILD JAVA LIB:  $BUILD_JAVA])
