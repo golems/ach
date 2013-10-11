@@ -20,7 +20,14 @@ AC_C_INLINE
 AC_C_CONST
 
 
-AC_CHECK_HEADERS( [lcm/lcm.h], [have_lcm=yes] )
+AC_ARG_WITH([lcm], AS_HELP_STRING([--without-lcm], [Disable LCM support]))
+AC_ARG_WITH([ach], AS_HELP_STRING([--without-ach], [Disable Ach support]))
+AC_ARG_WITH([tao], AS_HELP_STRING([--without-tao], [Disable TAO support]))
+
+AS_IF( [test "x$with_lcm" != xno],
+       [AC_CHECK_HEADERS( [lcm/lcm.h], [have_lcm=yes] )] )
+
+AS_IF( [test "x$with_ach" != xno], [
 AC_CHECK_HEADERS( [ach.h], [have_ach=yes], [],
 [
 #include <time.h>
@@ -28,11 +35,13 @@ AC_CHECK_HEADERS( [ach.h], [have_ach=yes], [],
 #include <signal.h>
 #include <sys/stat.h>
 ] )
+])
 
 
 # Check CORBA
 
 # Apply ACE_ROOT Variable
+AS_IF( [test "x$with_tao" != xno], [
 AC_LANG([C++])
 
 AS_IF([test "x$ACE_ROOT" != "x"],
@@ -44,6 +53,7 @@ AS_IF([test "x$ACE_ROOT" != "x"],
 
 AC_SUBST([ACE_ROOT])
 AC_CHECK_HEADERS( [tao/ORB.h],[have_tao=yes] )
+])
 
 AC_LANG([C])
 
