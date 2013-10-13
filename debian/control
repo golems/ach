@@ -1,7 +1,7 @@
 Source: ach
 Priority: extra
 Maintainer: Neil Dantam <ntd@gatech.edu>
-Build-Depends: debhelper (>= 9), autotools-dev, po-debconf
+Build-Depends: debhelper (>= 9), autotools-dev, po-debconf, default-jdk
 Standards-Version: 3.9.4
 Section: libs
 Homepage: http://golems.org/node/1526
@@ -28,6 +28,58 @@ Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
 Depends: ${shlibs:Depends}, ${misc:Depends}, ${misc:Pre-Depends}
+Suggests: ach-utils
+Description: Realtime message bus IPC library, library files
+ Ach is a new Inter-Process Communication (IPC) mechanism and
+ library. It is uniquely suited for coordinating perception, control
+ drivers, and algorithms in real-time systems that sample data from
+ physical processes. Ach eliminates the Head-of-Line Blocking problem
+ for applications that always require access to the newest
+ message. Ach is efficient, robust, and formally verified. It has been
+ tested and demonstrated on a variety of physical robotic
+ systems. Finally, the source code for Ach is available under an Open
+ Source BSD-style license.
+
+
+Package: libachcpp0
+Section: libs
+Architecture: any
+Pre-Depends: multiarch-support
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${misc:Pre-Depends}, libach1
+Suggests: ach-utils
+Description: Realtime message bus IPC library, library files
+ Ach is a new Inter-Process Communication (IPC) mechanism and
+ library. It is uniquely suited for coordinating perception, control
+ drivers, and algorithms in real-time systems that sample data from
+ physical processes. Ach eliminates the Head-of-Line Blocking problem
+ for applications that always require access to the newest
+ message. Ach is efficient, robust, and formally verified. It has been
+ tested and demonstrated on a variety of physical robotic
+ systems. Finally, the source code for Ach is available under an Open
+ Source BSD-style license.
+
+Package: libachj0
+Section: libs
+Architecture: any
+Pre-Depends: multiarch-support
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${misc:Pre-Depends}, libach1
+Suggests: ach-utils
+Description: Realtime message bus IPC library, library files
+ Ach is a new Inter-Process Communication (IPC) mechanism and
+ library. It is uniquely suited for coordinating perception, control
+ drivers, and algorithms in real-time systems that sample data from
+ physical processes. Ach eliminates the Head-of-Line Blocking problem
+ for applications that always require access to the newest
+ message. Ach is efficient, robust, and formally verified. It has been
+ tested and demonstrated on a variety of physical robotic
+ systems. Finally, the source code for Ach is available under an Open
+ Source BSD-style license.
+
+Package: libachj0-java
+Section: java
+Architecture: all
+Pre-Depends: multiarch-support
+Depends: ${misc:Depends}, libach1
 Suggests: ach-utils
 Description: Realtime message bus IPC library, library files
  Ach is a new Inter-Process Communication (IPC) mechanism and

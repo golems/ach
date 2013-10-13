@@ -90,3 +90,14 @@ Makefile.in
 /doc/javadoc/package-list
 /doc/javadoc/resources/inherit.gif
 /cpptest
+/obj-x86_64-linux-gnu
+/config.guess.cdbs-orig
+/config.sub.cdbs-orig
+/debian/stamp-autotools
+/debian/stamp-autotools-files
+/debian/stamp-makefile-build
+/debian/stamp-makefile-install
+/install_manifest.txt
+/debian/libachcpp0
+/debian/libachj0-java
+/debian/libachj0

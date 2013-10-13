@@ -14,7 +14,7 @@ pkgconfig_DATA = ach.pc
 
 TESTS = achtest achtooltest test-achcop canceltest
 
-include_HEADERS = include/ach.h
+include_HEADERS = include/ach.h include/Ach.hpp
 noinst_HEADERS = include/achutil.h include/achd.h
 
 lib_LTLIBRARIES = libach.la
