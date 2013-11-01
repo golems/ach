@@ -196,10 +196,16 @@ int main( int argc, char **argv ) {
         const char *file_stderr;      /**< file name for stderr redirect */
         const char *file_stdout;      /**< file name for stdout redirect */
         const char **child_args;      /**< arguments to pass to child */
+        const char *log_ident;        /**< identifier for openlog() */
+        int log_facility;             /**< facility for openlog() */
         size_t n_child_args;          /**< size of child_args */
         int detach;                   /**< detach (daemonize) flag */
         int restart;                  /**< restart failed processes flag */
     } opt = {0};
+
+    /* Some default arguments */
+    opt.log_ident = "achcop";
+    opt.log_facility = LOG_USER;
 
     /* Global state */
     static struct {
@@ -212,7 +218,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c;
     opterr = 0;
-    while( (c = getopt( argc, argv, "P:p:o:e:rvdhH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "P:p:o:e:rvdhi:f:H?V")) != -1 ) {
         switch(c) {
         case 'P': opt.file_cop_pid = optarg; break;
         case 'p': opt.file_child_pid = optarg; break;
@@ -220,6 +226,17 @@ int main( int argc, char **argv ) {
         case 'e': opt.file_stderr = optarg; break;
         case 'd': opt.detach = 1; break;
         case 'r': opt.restart = 1; break;
+        case 'i': opt.log_ident = optarg; break;
+        case 'f':
+            if( 0 == strcasecmp("user", optarg) ) {
+                opt.log_facility = LOG_USER;
+            } else if ( 0 == strcasecmp("daemon", optarg) ||
+                        0 == strcasecmp("demon", optarg) ) {
+                opt.log_facility = LOG_DAEMON;
+            } else {
+                ACH_DIE("Invalid logging facility: `%s', want user|daemon\n", optarg);
+            }
+            break;
         case 'V':   /* version     */
             ach_print_version("achcop");
             exit(EXIT_SUCCESS);
@@ -239,6 +256,8 @@ int main( int argc, char **argv ) {
                   "                      ("FILE_NOP_NAME" keeps unchanged, no option closes)\n"
                   "  -d,               Detach and run in background\n"
                   "  -r,               Restart failed children\n"
+                  "  -i ident          Log identifier (default: achop)\n"
+                  "  -f facility       Log facility {user|daemon} (default: user)\n"
                   "  -v,               Make output more verbose\n"
                   "  -?,               Give program help list\n"
                   "  -V,               Print program version\n"
