@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     /* process options */
     int c = 0, i = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "dp:t:f:z:qrvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "dp:t:f:z:u:qrvV?")) != -1 ) {
             switch(c) {
             case 'z':
                 cx.cl_opts.remote_chan_name = strdup(optarg);
@@ -129,11 +129,16 @@ int main(int argc, char **argv) {
                 cx.detach = 1;
                 break;
             case 'p':
+                // TODO: error check
                 cx.port = atoi(optarg);
                 if( !optarg ) {
                     ACH_LOG(LOG_ERR, "Invalid port: %s\n", optarg);
                     exit(EXIT_FAILURE);
                 }
+                break;
+            case 'u':
+                // TODO: error check
+                cx.cl_opts.period_ns = 1000 * atoi(optarg);
                 break;
             case 'f':
                 cx.pidfile = strdup(optarg);
@@ -162,6 +167,7 @@ int main(int argc, char **argv) {
                       "  -f FILE,                     TODO: lock FILE and write pid\n"
                       "  -t (tcp|udp),                transport (default tcp)\n"
                       "  -z CHANNEL_NAME,             remote channel name\n"
+                      "  -u microseconds              transmit period in microseconds\n"
                       "  -r,                          reconnect if connection is lost\n"
                       "  -q,                          be quiet\n"
                       "  -v,                          be verbose\n"
@@ -176,16 +182,20 @@ int main(int argc, char **argv) {
                       "Examples:\n"
                       "  achd serve                   Server process reading from stdin/stdout.\n"
                       "                               This can be run from inetd.\n"
+                      "\n"
                       "  achd pull golem state-chan   Forward frames via TCP from remote channel\n"
                       "                               'state-chan' on host 'golem' to local channel\n"
                       "                               (a pull from the remote server).\n"
                       "                               An achd server must be listening on the remote\n"
                       "                               host.\n"
+                      "\n"
                       "  achd -r push golem cmd-chan  Forward frames via TCP from local channel\n"
                       "                               'cmd-chan' to remote channel on host 'golem'\n"
                       "                               (a push to the remote server).\n"
                       "                               Retry dropped connections.\n"
                       "                               An achd server must be listening the remote host.\n"
+                      "\n"
+                      "  achd -u 100000 pull hubo state     Forward frames from remote state channel at 10 Hz\n"
                       "\n"
                       "Report bugs to <ntd@gatech.edu>"
                        );
@@ -506,6 +516,8 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         achd_set_int( &headers->local_port, "local port", val );
     } else if( 0 == strcasecmp(key, "remote-host")) {
         headers->remote_host = strdup(val);
+    } else if( 0 == strcasecmp(key, "period-ns")) {
+        achd_set_int( &headers->period_ns, "period-ns", val );
     } else if( 0 == strcasecmp(key, "transport")) {
         headers->transport = strdup(val);
     } else if( 0 == strcasecmp(key, "tcp-nodelay")) {
@@ -524,7 +536,7 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
     } else if ( 0 == strcasecmp(key, "message") ) {
         headers->message = strdup(val);
     } else {
-        cx.error( ACH_BAD_HEADER, "Invalid header: %s\n", key );
+        cx.error( ACH_BAD_HEADER, "Invalid header: `%s: %s'\n", key, val );
     }
 }
 

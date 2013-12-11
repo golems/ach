@@ -86,6 +86,15 @@ static void put_frame( struct achd_conn *conn );
 
 static void get_frame( struct achd_conn *conn ) {
     int done = 0;
+    long period_ns = conn->send_hdr.period_ns ? conn->send_hdr.period_ns : conn->recv_hdr.period_ns;
+
+    /* maybe delay */
+    if( period_ns &&
+        (conn->ts_last.tv_sec || conn->ts_last.tv_nsec) )
+    {
+        achd_sleep_till( &conn->ts_last, period_ns );
+    }
+
     do {
         size_t frame_size = 0;
         ach_status_t r  = ach_get( &cx.channel, conn->pipeframe->data, conn->pipeframe_size, &frame_size,  NULL,
@@ -105,6 +114,7 @@ static void get_frame( struct achd_conn *conn ) {
         case ACH_MISSED_FRAME:
             ach_pipe_set_size( conn->pipeframe, frame_size );
             done = 1;
+            clock_gettime( ACH_DEFAULT_CLOCK, &conn->ts_last );
         case ACH_CANCELED:
             break;
         default:

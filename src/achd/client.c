@@ -71,8 +71,6 @@
 static int socket_connect(void);
 static int server_connect( struct achd_conn*);
 
-static void sleep_till( const struct timespec *t0, int32_t ns );
-
 void achd_client() {
     /* open log */
     openlog("achd-client", LOG_PID, LOG_DAEMON);
@@ -96,6 +94,8 @@ void achd_client() {
     assert( cx.cl_opts.direction == ACHD_DIRECTION_PUSH ||
             cx.cl_opts.direction == ACHD_DIRECTION_PULL );
     conn.send_hdr.transport = cx.cl_opts.transport;
+
+    conn.send_hdr.period_ns = cx.cl_opts.period_ns;
 
     sighandler_install();
 
@@ -155,7 +155,7 @@ static int server_connect( struct achd_conn *conn) {
     conn->in = conn->out = conn->aux = -1;
 
     /* Note the time */
-    clock_gettime( CLOCK_MONOTONIC, &conn->t0 );
+    clock_gettime( ACH_DEFAULT_CLOCK, &conn->t0 );
 
     /* Connect to server */
     int fd = socket_connect();
@@ -174,10 +174,12 @@ static int server_connect( struct achd_conn *conn) {
             achd_printf(fd,
                         "channel-name: %s\n"
                         "transport: %s\n"
+                        "period-ns: %d\n"
                         "direction: %s\n"
                         ".\n",
                         conn->send_hdr.chan_name,
                         conn->send_hdr.transport,
+                        conn->send_hdr.period_ns,
                         ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
                           "push" : "pull" )
                         /* remote end does the opposite */ );
@@ -246,7 +248,7 @@ int achd_reconnect( struct achd_conn *conn) {
     int fd = -1;
     while( cx.reconnect && fd < 0 && !cx.sig_received ) {
         ACH_LOG(LOG_DEBUG, "Reconnect attempt\n");
-        sleep_till( &conn->t0, ACHD_RECONNECT_NS );
+        achd_sleep_till( &conn->t0, ACHD_RECONNECT_NS );
         fd = server_connect( conn );
     }
 
@@ -295,16 +297,17 @@ static int socket_connect() {
 }
 
 
-static void sleep_till( const struct timespec *t0, int32_t ns ) {
+void achd_sleep_till( const struct timespec *t0, long ns ) {
     int64_t ns1 = t0->tv_nsec + ns;
     struct timespec t = {.tv_sec = t0->tv_sec + ns1 / 1000000000,
                          .tv_nsec = ns1 % 1000000000 };
 
     while(!cx.sig_received) {
-        int r = clock_nanosleep( CLOCK_MONOTONIC, TIMER_ABSTIME,
+        int r = clock_nanosleep( ACH_DEFAULT_CLOCK, TIMER_ABSTIME,
                              &t, NULL );
         if (r && !cx.sig_received && EINTR == errno ) {
             /* signalled */
+            /* TODO: if we should halt, return */
             continue;
         } else if (!r) {
             /* time elapsed */
