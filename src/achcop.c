@@ -555,8 +555,8 @@ static void waitloop( pid_t pid_child, int *exit_status ) {
         *exit_status = WEXITSTATUS(status);
     } else if ( WIFSIGNALED(status) ) { /* child signalled */
         int sig = WTERMSIG(status);
-        ACH_LOG( LOG_NOTICE, "child signalled: %s (%d)\n",
-                 strsignal(sig), sig );
+        ACH_LOG( LOG_NOTICE, "child %d signaled: %s (%d)\n",
+                 pid_child, strsignal(sig), sig );
     } else { /* something weird happened */
         ACH_LOG( LOG_ERR, "Unexpexted wait status: %d\n", status );
     }
