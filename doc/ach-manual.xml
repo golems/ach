@@ -916,6 +916,32 @@ Connection closed by foreign host.
     </cmdsynopsis>
     </example>
 
+    <para>
+      To add both encryption and compression, you can also forward
+      achd over SSH.  This will tunnel the achd TCP connection through
+      the encrypted and compressed SSH connection.
+    </para>
+
+
+    <example><title>Pull channel over compressed SSH connection</title>
+    <cmdsynopsis>
+      <command>ssh</command>
+      <arg choice="plain">-f</arg>
+      <arg choice="plain">-C</arg>
+      <arg choice="plain">-L1234:localhost:8076</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain">sleep 120</arg>
+    </cmdsynopsis>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">-p</arg>
+      <arg choice="plain">1234</arg>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain">localhost</arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
     </sect2>
 
   </sect1>
