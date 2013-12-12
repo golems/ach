@@ -134,7 +134,7 @@ javadir = $(datadir)/java
 java_DATA = org.golems.ach.jar
 
 lib_LTLIBRARIES += libachj.la
-libachj_la_CPPFLAGS = $(CPPFLAGS) $(JNICPPFLAGS)
+libachj_la_CPPFLAGS = $(AM_CPPFLAGS) $(CPPFLAGS) $(JNICPPFLAGS)
 libachj_la_SOURCES = java/achj.c
 libachj_la_LIBADD = libach.la
 
