@@ -120,7 +120,7 @@ int main(int argc, char **argv) {
     /* process options */
     int c = 0, i = 0;
     while( -1 != c ) {
-        while( (c = getopt( argc, argv, "dp:t:f:z:u:qrvV?")) != -1 ) {
+        while( (c = getopt( argc, argv, "dp:t:f:z:u:lqrvV?")) != -1 ) {
             switch(c) {
             case 'z':
                 cx.cl_opts.remote_chan_name = strdup(optarg);
@@ -143,7 +143,9 @@ int main(int argc, char **argv) {
                     ACH_LOG(LOG_ERR, "Invalid period: %s\n", optarg);
                     exit(EXIT_FAILURE);
                 }
-                break;
+                /* fall through to last */
+            case 'l':
+                cx.cl_opts.get_last = 1;
             case 'f':
                 cx.pidfile = strdup(optarg);
                 break;
@@ -171,7 +173,8 @@ int main(int argc, char **argv) {
                       "  -f FILE,                     TODO: lock FILE and write pid\n"
                       "  -t (tcp|udp),                transport (default tcp)\n"
                       "  -z CHANNEL_NAME,             remote channel name\n"
-                      "  -u microseconds              transmit period in microseconds\n"
+                      "  -u microseconds              transmit period in microseconds (implies -l)\n"
+                      "  -l                           transmit latest frames\n"
                       "  -r,                          reconnect if connection is lost\n"
                       "  -q,                          be quiet\n"
                       "  -v,                          be verbose\n"
@@ -532,6 +535,8 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         headers->remote_host = strdup(val);
     } else if( 0 == strcasecmp(key, "period-ns")) {
         achd_set_ul( &headers->period_ns, "period-ns", val );
+    } else if( 0 == strcasecmp(key, "get-last")) {
+        headers->get_last = achd_parse_boolean( val );
     } else if( 0 == strcasecmp(key, "transport")) {
         headers->transport = strdup(val);
     } else if( 0 == strcasecmp(key, "tcp-nodelay")) {

@@ -87,6 +87,7 @@ static void put_frame( struct achd_conn *conn );
 static void get_frame( struct achd_conn *conn ) {
     int done = 0;
     unsigned long period_ns = conn->send_hdr.period_ns ? conn->send_hdr.period_ns : conn->recv_hdr.period_ns;
+    int last = conn->send_hdr.get_last || conn->recv_hdr.get_last;
 
     /* maybe delay */
     if( period_ns &&
@@ -98,8 +99,7 @@ static void get_frame( struct achd_conn *conn ) {
     do {
         size_t frame_size = 0;
         ach_status_t r  = ach_get( &cx.channel, conn->pipeframe->data, conn->pipeframe_size, &frame_size,  NULL,
-                                   ( (conn->recv_hdr.get_last /*|| is_freq*/) ?
-                                     (ACH_O_WAIT | ACH_O_LAST ) : ACH_O_WAIT) );
+                                   ACH_O_WAIT | (last ? ACH_O_LAST : 0) );
         /* check return code */
         switch(r) {
         case ACH_OVERFLOW:

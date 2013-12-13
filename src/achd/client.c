@@ -96,6 +96,7 @@ void achd_client() {
     conn.send_hdr.transport = cx.cl_opts.transport;
 
     conn.send_hdr.period_ns = cx.cl_opts.period_ns;
+    conn.send_hdr.get_last = cx.cl_opts.get_last;
 
     sighandler_install();
 
@@ -175,11 +176,13 @@ static int server_connect( struct achd_conn *conn) {
                         "channel-name: %s\n"
                         "transport: %s\n"
                         "period-ns: %lu\n"
+                        "get-last: %d\n"
                         "direction: %s\n"
                         ".\n",
                         conn->send_hdr.chan_name,
                         conn->send_hdr.transport,
                         conn->send_hdr.period_ns,
+                        conn->send_hdr.get_last,
                         ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
                           "push" : "pull" )
                         /* remote end does the opposite */ );
