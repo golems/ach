@@ -129,16 +129,20 @@ int main(int argc, char **argv) {
                 cx.detach = 1;
                 break;
             case 'p':
-                // TODO: error check
-                cx.port = atoi(optarg);
-                if( !optarg ) {
+                errno = 0;
+                cx.port = (int)strtoul(optarg, NULL, 10);
+                if( errno ) {
                     ACH_LOG(LOG_ERR, "Invalid port: %s\n", optarg);
                     exit(EXIT_FAILURE);
                 }
                 break;
             case 'u':
-                // TODO: error check
-                cx.cl_opts.period_ns = 1000 * atoi(optarg);
+                errno = 0;
+                cx.cl_opts.period_ns = 1000 * strtoul( optarg, NULL, 10 );
+                if( errno ) {
+                    ACH_LOG(LOG_ERR, "Invalid period: %s\n", optarg);
+                    exit(EXIT_FAILURE);
+                }
                 break;
             case 'f':
                 cx.pidfile = strdup(optarg);
@@ -480,6 +484,16 @@ void achd_set_int(int *pint, const char *name, const char *val) {
     *pint = (int) i;
 }
 
+void achd_set_ul(unsigned long *pint, const char *name, const char *val) {
+    errno = 0;
+    unsigned long i = strtoul( val, NULL, 10 );
+    if( errno ) {
+        cx.error( ACH_BAD_HEADER, "Invalid %s %s: %s\n", name, val, strerror(errno) );
+        assert(0);
+    }
+    *pint = i;
+}
+
 void achd_set_status(enum ach_status *pint, const char *name, const char *val) {
     errno = 0;
     long i = strtol( val, NULL, 10 );
@@ -517,7 +531,7 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
     } else if( 0 == strcasecmp(key, "remote-host")) {
         headers->remote_host = strdup(val);
     } else if( 0 == strcasecmp(key, "period-ns")) {
-        achd_set_int( &headers->period_ns, "period-ns", val );
+        achd_set_ul( &headers->period_ns, "period-ns", val );
     } else if( 0 == strcasecmp(key, "transport")) {
         headers->transport = strdup(val);
     } else if( 0 == strcasecmp(key, "tcp-nodelay")) {

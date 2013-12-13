@@ -86,7 +86,7 @@ static void put_frame( struct achd_conn *conn );
 
 static void get_frame( struct achd_conn *conn ) {
     int done = 0;
-    long period_ns = conn->send_hdr.period_ns ? conn->send_hdr.period_ns : conn->recv_hdr.period_ns;
+    unsigned long period_ns = conn->send_hdr.period_ns ? conn->send_hdr.period_ns : conn->recv_hdr.period_ns;
 
     /* maybe delay */
     if( period_ns &&

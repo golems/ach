@@ -174,7 +174,7 @@ static int server_connect( struct achd_conn *conn) {
             achd_printf(fd,
                         "channel-name: %s\n"
                         "transport: %s\n"
-                        "period-ns: %d\n"
+                        "period-ns: %lu\n"
                         "direction: %s\n"
                         ".\n",
                         conn->send_hdr.chan_name,
@@ -297,8 +297,8 @@ static int socket_connect() {
 }
 
 
-void achd_sleep_till( const struct timespec *t0, long ns ) {
-    int64_t ns1 = t0->tv_nsec + ns;
+void achd_sleep_till( const struct timespec *t0, unsigned long ns ) {
+    long ns1 = t0->tv_nsec + (long)ns;
     struct timespec t = {.tv_sec = t0->tv_sec + ns1 / 1000000000,
                          .tv_nsec = ns1 % 1000000000 };
 

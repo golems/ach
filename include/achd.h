@@ -83,7 +83,7 @@ struct achd_headers {
     int retry;
     int get_last;
     int retry_delay_us;
-    int period_ns; // TODO: make this a long
+    unsigned long period_ns;
     const char *remote_host;
     const char *transport;
     enum achd_direction direction;
@@ -135,7 +135,7 @@ enum ach_status achd_parse_headers(int fd, struct achd_headers *headers);
 void achd_serve(void);
 void achd_client(void);
 
-void achd_sleep_till( const struct timespec *t0, long ns );
+void achd_sleep_till( const struct timespec *t0, unsigned long ns );
 
 /* logging and error handlers */
 void achd_log( int level, const char fmt[], ...)          ACHD_ATTR_PRINTF(2,3);
