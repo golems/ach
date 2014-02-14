@@ -149,7 +149,7 @@ Returns -- handle to the channel"
   (let ((handle (make-ach-handle :name name
                                  :open nil
                                  :pointer nil))
-        (ptr (cffi:foreign-alloc 'ach-channel-t)))
+        (ptr (cffi:foreign-alloc '(:struct ach-channel-t))))
     (setf (ach-handle-pointer handle) ptr)
     (sb-ext:finalize handle
                      (lambda ()
@@ -226,6 +226,23 @@ Returns -- (values ach-status frame-size)."
                        (cffi:null-pointer) int-options))
       (setq frame-size (cffi:mem-ref p-frame-size 'size-t)))
     (values r frame-size )))
+
+(defun get-foreign-alloc (channel &key
+                          (length 512)
+                          wait last)
+  "Read from channel into the foreign heap."
+  (let ((pointer (cffi:foreign-alloc :uint8 :count length)))
+    (multiple-value-bind (r frame-size) (get-pointer channel pointer length :wait wait :last last)
+      (cond
+        ((or (eq :ok r) (eq :missed-frame r))
+         ;; TODO: realloc smaller frames
+         (values pointer r frame-size))
+        ((eq :overflow r)
+         (cffi:foreign-free pointer)
+         (get-foreign-alloc channel :length frame-size :wait wait :last last))
+        (t (cffi:foreign-free pointer)
+           (ach-status r "Error reading frame: ~A" r))))))
+
 
 (defun get-buffer (channel &key count buffer wait last)
   "Get frame from CHANNEL.

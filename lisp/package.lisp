@@ -44,4 +44,6 @@
   (:export
    :open-channel :close-channel :flush-channel
    :put-pointer :get-pointer
-   :put-buffer :get-buffer))
+   :get-foreign-alloc
+   :put-buffer :get-buffer
+   :put-object))
