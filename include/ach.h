@@ -220,7 +220,7 @@ extern "C" {
     /** return status codes for ach functions */
     typedef enum ach_status {
         ACH_OK = 0,             /**< Call successful */
-        ACH_OVERFLOW = 1,       /**< buffer to small to hold frame */
+        ACH_OVERFLOW = 1,       /**< destination too small to hold frame */
         ACH_INVALID_NAME = 2,   /**< invalid channel name */
         ACH_BAD_SHM_FILE = 3,   /**< channel file didn't look right */
         ACH_FAILED_SYSCALL = 4, /**< a system call failed */
@@ -406,11 +406,12 @@ extern "C" {
     /** Pulls a message from the channel.
         \pre chan has been opened with ach_open()
 
-        \post If buf is big enough to hold the next frame, buf contains
-        the data for the last frame and chan.seq_num is set to the last
-        frame.  If buf is too small to hold the next frame, no side
-        effects occur.  The seq_num field of chan will be set to the
-        latest sequence number (that of the gotten frame).
+        \post If buf is big enough to hold the next frame, buf
+        contains the data for the last frame and chan.seq_num is set
+        to the last frame.  If buf is too small to hold the next
+        frame, no side effects occur and ACH_OVERFLOW is returned.
+        The seq_num field of chan will be set to the latest sequence
+        number (that of the gotten frame).
 
         \param chan The previously opened channel handle
         \param buf Buffer to store data
@@ -430,15 +431,19 @@ extern "C" {
 
     /** Writes a new message in the channel.
 
-        \pre chan has been opened with ach_open()
+        \pre chan has been opened with ach_open() and is large enough
+        to hold the message.
 
         \post The contents of buf are copied into the channel and the
-        sequence number of the channel is incremented.
+        sequence number of the channel is incremented.  If the channel
+        is too small to hold the message, the message is not copied
+        into the channel as will not be seen by receivers.
 
         \param chan (action) The channel to write to
         \param buf The buffer containing the data to copy into the channel
         \param len number of bytes in buf to copy, len > 0
-        \return ACH_OK on success.
+        \return ACH_OK on success. If the channel is too small to hold
+        the frame, returns ACH_OVERFLOW.
     */
     enum ach_status
     ach_put( ach_channel_t *chan, const void *buf, size_t len );

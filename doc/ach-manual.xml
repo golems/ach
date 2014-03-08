@@ -138,13 +138,14 @@
       </para></listitem>
       </varlistentry>
       <varlistentry><term><constant>ACH_OVERFLOW</constant></term>
-      <listitem><para>Channel or buffer was too small.  Either the
-      channel is too small to hold the message you attempted to send,
-      or the buffer you passed to receive the message was too small to
-      hold the result.  If the channel is too small, you should
-      specify a larger nominal message size when creating the channel.
-      If the buffer is to small, pass in a bigger
-      buffer.</para></listitem>
+      <listitem><para>Destination was too small. If returned from
+      <function>ach_put</function>, the channel is too small to hold
+      the message you attempted to send. If returned from
+      <function>ach_get</function>, the buffer you passed to receive
+      the message was too small to hold the result.  If the channel is
+      too small, you should specify a larger nominal message size when
+      creating the channel.  If the buffer is to small, pass in a
+      bigger buffer.</para></listitem>
       </varlistentry>
       <varlistentry><term><constant>ACH_INVALID_NAME</constant></term>
       <listitem><para>An invalid channel name.
@@ -289,7 +290,9 @@ if( ACH_OK != r ) {
     a new message to the channel.  This will go in the next open space
     in the circular array.  If there is insufficient unused space in
     the circular array, then the oldest entry or entries will be
-    overwritten.</para>
+    overwritten.  If the entire circular array is too small for the
+    new message, the message is not written and
+    <constant>ACH_OVERFLOW</constant> is returned.</para>
 
       <example><title>Opening a Channel</title>
 
