@@ -1,3 +1,9 @@
+Ach 1.2.1
+=========
+* Add experimental C++ and Java bindings
+* Rate limit option for achd
+* Configure-time option to enable debugging
+
 Ach 1.2.0
 =========
 

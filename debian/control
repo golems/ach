@@ -1,7 +1,7 @@
 Source: ach
 Priority: extra
 Maintainer: Neil Dantam <ntd@gatech.edu>
-Build-Depends: debhelper (>= 9), autotools-dev, po-debconf, java-sdk, help2man
+Build-Depends: debhelper (>= 9), autotools-dev, po-debconf, default-jdk, help2man
 Standards-Version: 3.9.4
 Section: libs
 Homepage: http://golems.org/node/1526

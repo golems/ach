@@ -1,3 +1,9 @@
+ach (1.2.1) unstable; urgency=low
+
+  * Add rate limit option for achd
+
+ -- Neil Dantam <ntd@gatech.edu>  Mon, 07 April 2014 14:07:00 -0400
+
 ach (1.2.0) unstable; urgency=low
 
   * Add ach_cancel() function

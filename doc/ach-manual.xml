@@ -26,6 +26,13 @@
      <!-- Most recent revision goes at the top; list in descending order -->
      <revhistory>
        <revision>
+          <revnumber>1.2.1</revnumber>
+          <date>2014-04-07</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>New Release with achd period, SSH example,
+          ACH_OVERFLOW clarification</revremark>
+       </revision>
+       <revision>
           <revnumber>1.2.0</revnumber>
           <date>2013-06-14</date>
           <authorinitials>NTD</authorinitials>

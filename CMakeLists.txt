@@ -22,7 +22,7 @@ endif()
 
 set(CMAKE_BUILD_TYPE Debug)
 
-set(VERSION 1.2.0)
+set(VERSION 1.2.1)
 
 add_definitions(-DPACKAGE_VERSION=\\"${VERSION}\\" -D_XOPEN_SOURCE=600)
 #add_definitions(-Wc++-compat -Wall -Wextra -Wconversion -Wpointer-arith -Wfloat-equal -Wshadow -Wwrite-strings -I.)
@@ -53,7 +53,7 @@ install( TARGETS ach DESTINATION lib )
 # Does not correspond to the package version
 SET_TARGET_PROPERTIES( ach PROPERTIES
                        SOVERSION 1     # Major version
-                       VERSION 1.2.0 ) # Major.minor.patch
+                       VERSION 1.2.1 ) # Major.minor.patch
 
 
 
@@ -99,7 +99,3 @@ install( TARGETS achbench DESTINATION bin )
 ## ach-example ##
 add_executable(ach-example src/ach-example.c)
 target_link_libraries(ach-example ach pthread ${LIBRT} m)
-
-
-
-
