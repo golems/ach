@@ -151,6 +151,36 @@ void achd_client() {
     }
 }
 
+static enum ach_status
+send_headers( int fd, const struct achd_headers *hdr, enum achd_direction dir )
+{
+    enum ach_status r;
+
+    r = achd_printf(fd,
+                    "channel-name: %s\n"
+                    "transport: %s\n"
+                    "get-last: %d\n"
+                    "direction: %s\n",
+                    hdr->chan_name,
+                    hdr->transport,
+                    hdr->get_last,
+                    ( (ACHD_DIRECTION_PULL == dir) ?
+                      "push" : "pull" )
+                    /* remote end does the opposite */ );
+    if( ACH_OK != r ) return r;
+
+    /* maybe send period */
+    if( hdr->period_ns ) {
+        r = achd_printf( fd,
+                         "period-ns: %lu\n",
+                         hdr->period_ns );
+        if( ACH_OK != r ) return r;
+    }
+
+    /* end of headers */
+    return  achd_printf(fd, ".\n");
+}
+
 static int server_connect( struct achd_conn *conn) {
     ACH_LOG( LOG_NOTICE, "Connecting to %s:%d\n", cx.cl_opts.remote_host, cx.port );
     conn->in = conn->out = conn->aux = -1;
@@ -171,21 +201,8 @@ static int server_connect( struct achd_conn *conn) {
         conn->in = conn->out = fd;
         if( conn->vtab->connect ) conn->vtab->connect(conn);
         conn->in = conn->out = -1;
-        enum ach_status r =
-            achd_printf(fd,
-                        "channel-name: %s\n"
-                        "transport: %s\n"
-                        "period-ns: %lu\n"
-                        "get-last: %d\n"
-                        "direction: %s\n"
-                        ".\n",
-                        conn->send_hdr.chan_name,
-                        conn->send_hdr.transport,
-                        conn->send_hdr.period_ns,
-                        conn->send_hdr.get_last,
-                        ( (cx.cl_opts.direction == ACHD_DIRECTION_PULL) ?
-                          "push" : "pull" )
-                        /* remote end does the opposite */ );
+        enum ach_status r = send_headers( fd, &conn->send_hdr, cx.cl_opts.direction );
+
         if( ACH_OK != r ) {
             ACH_LOG(LOG_DEBUG, "couldn't send headers\n");
             close(fd);
