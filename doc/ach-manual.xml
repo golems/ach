@@ -871,6 +871,7 @@ Connection closed by foreign host.
       <arg>-t <replaceable>tcp|udp</replaceable></arg>
       <arg>-p <replaceable>port</replaceable></arg>
       <arg>-z <replaceable>remote_channel_name</replaceable></arg>
+      <arg>-u <replaceable>microseconds</replaceable></arg>
       <arg>-d</arg>
       <arg>-r</arg>
       <arg>-q</arg>
@@ -916,6 +917,16 @@ Connection closed by foreign host.
       <arg choice="plain">push</arg>
       <arg choice="plain"><replaceable>server_name</replaceable></arg>
       <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Pull channel from server at 10Hz</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain"><replaceable>server_name</replaceable></arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+      <arg choice="plain">-u 100000</arg>
     </cmdsynopsis>
     </example>
 
