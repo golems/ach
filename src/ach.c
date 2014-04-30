@@ -627,9 +627,11 @@ ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
             memcpy( (uint8_t*)buf, data_buf + idx->offset, idx->size );
         }else {
             /* wraparound memcpy */
-            size_t end_cnt = shm->data_size - idx->offset;
-            memcpy( (uint8_t*)buf, data_buf + idx->offset, end_cnt );
-            memcpy( (uint8_t*)buf + end_cnt, data_buf, idx->size - end_cnt );
+            assert(0);
+            return ACH_BUG;
+            /* size_t end_cnt = shm->data_size - idx->offset; */
+            /* memcpy( (uint8_t*)buf, data_buf + idx->offset, end_cnt ); */
+            /* memcpy( (uint8_t*)buf + end_cnt, data_buf, idx->size - end_cnt ); */
         }
         *frame_size = idx->size;
         chan->seq_num = idx->seq_num;
@@ -769,13 +771,38 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
 
     assert( shm->index_free > 0 );
 
+    /* Avoid wraparound */
+    if( shm->data_size - shm->data_head < len ) {
+        size_t i;
+        /* clear to end of array */
+        assert( 0 == index_ar[shm->index_head].offset );
+        for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
+            index_ar[i].offset > shm->data_head;
+            i = (i + 1) % shm->index_cnt)
+        {
+            assert( i != shm->index_head );
+            free_index(shm,i);
+        }
+        /* Set counts to beginning of array */
+        if( i == shm->index_head ) {
+            shm->data_free = shm->data_size;
+        } else {
+            shm->data_free = index_ar[oldest_index_i(shm)].offset;
+        }
+        shm->data_head = 0;
+    }
+
     /* clear overlapping entries */
     size_t i;
     for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
         shm->data_free < len;
-        i = (i + 1) % shm->index_cnt) {
-        assert( i != shm->index_head );
-        free_index(shm,i);
+        i = (i + 1) % shm->index_cnt)
+    {
+        if( i == shm->index_head ) {
+            shm->data_free = shm->data_size;
+        } else {
+            free_index(shm,i);
+        }
     }
 
     assert( shm->data_free >= len );
@@ -786,6 +813,7 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
         memcpy( data_ar + shm->data_head, buf, len );
     } else {
         /* wraparound copy */
+        assert(0);
         size_t end_cnt = shm->data_size - shm->data_head;
         memcpy( data_ar + shm->data_head, buf, end_cnt);
         memcpy( data_ar, (uint8_t*)buf + end_cnt, len - end_cnt );
