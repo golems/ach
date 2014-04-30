@@ -12,7 +12,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ach.pc
 
-TESTS = achtest achtooltest test-achcop canceltest
+TESTS = achtest achtooltest test-achcop
 
 include_HEADERS = include/ach.h include/Ach.hpp
 noinst_HEADERS = include/achutil.h include/achd.h
@@ -23,7 +23,7 @@ noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
-noinst_PROGRAMS = achtest ach-example canceltest robusttest
+noinst_PROGRAMS = achtest ach-example robusttest
 
 libach_la_SOURCES = src/ach.c src/pipe.c
 
@@ -48,8 +48,15 @@ achlog_LDADD = libach.la libachutil.la
 achtest_SOURCES = src/test/achtest.c
 achtest_LDADD = libach.la
 
+TESTS += canceltest
+noinst_PROGRAMS += canceltest
 canceltest_SOURCES = src/test/canceltest.c
 canceltest_LDADD = libach.la
+
+TESTS += transfertest
+noinst_PROGRAMS += transfertest
+transfertest_SOURCES = src/test/transfertest.c
+transfertest_LDADD = libach.la
 
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la

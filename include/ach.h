@@ -538,7 +538,7 @@ extern "C" {
      *
      * \returns 0 on success, nonzero on failure
      */
-    typedef int ach_put_fun(void *cx, void *chan_dst, const void *obj_src, size_t dst_size);
+    typedef enum ach_status ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
     /** Function type to transfer data out of the channel.
      *
@@ -547,7 +547,7 @@ extern "C" {
      *
      * \returns 0 on success, nonzero on failure
      */
-    typedef int ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t src_size);
+    typedef enum ach_status ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
 
 
     /** Writes a new message in the channel.
@@ -569,7 +569,7 @@ extern "C" {
     */
     enum ach_status
     ach_xput( ach_channel_t *chan,
-              const ach_put_fun *transfer, void *cx, const void *obj, size_t dst_size );
+              ach_put_fun transfer, void *cx, const void *obj, size_t dst_size );
 
     /** Pull a message from the channel.
      *
@@ -592,7 +592,7 @@ extern "C" {
      */
     enum ach_status
     ach_xget( ach_channel_t *chan,
-              const ach_get_fun *transfer, void *cx, void **pobj,
+              ach_get_fun transfer, void *cx, void **pobj,
               size_t *frame_size,
               const struct timespec *ACH_RESTRICT abstime,
               int options );
