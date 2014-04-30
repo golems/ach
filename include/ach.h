@@ -531,6 +531,72 @@ extern "C" {
      */
     uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
+
+    /** Function type to transfer data into the channel.
+     *
+     * This function could, for example, perform tasks such as serialization.
+     *
+     * \returns 0 on success, nonzero on failure
+     */
+    typedef int ach_put_fun(void *cx, void *chan_dst, const void *obj_src, size_t dst_size);
+
+    /** Function type to transfer data out of the channel.
+     *
+     * This function could, for example, perform tasks such as
+     * de-serialization and memory allocation.
+     *
+     * \returns 0 on success, nonzero on failure
+     */
+    typedef int ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t src_size);
+
+
+    /** Writes a new message in the channel.
+     *
+     *  \pre chan has been opened with ach_open() and is large enough
+     *  to hold the message.
+     *
+     *  Note that transfer() is called while holding the channel lock.
+     *  Expensive computation should thus be avoided during this call.
+     *
+     *  \param [in,out] chan The channel to write to
+     *  \param [in] transfer Function to transfer data into the channel
+     *  \param [in,out] cx Context argument to transfer
+     *  \param [in] obj Source object passed to transfer()
+     *  \param [in] dst_size Number of bytes needed in the channel to hold obj
+     *
+     *  \return ACH_OK on success. If the channel is too small to hold
+     *  the frame, returns ACH_OVERFLOW.
+    */
+    enum ach_status
+    ach_xput( ach_channel_t *chan,
+              const ach_put_fun *transfer, void *cx, const void *obj, size_t dst_size );
+
+    /** Pull a message from the channel.
+     *
+     *  \pre chan has been opened with ach_open()
+     *
+     *  Note that transfer() is called while holding the channel lock.
+     *  Expensive computation should thus be avoided during this call.
+     *
+     *  \param [in,out] chan The previously opened channel handle
+     *  \param [in] transfer Function to transfer data out of the channel
+     *  \param [in,out] cx Context argument to transfer
+     *  \param [in,out] pobj Pointer to object pointer
+     *  \param [out] frame_size The number of bytes occupied by the frame in the channel
+     *  \param [in] abstime An absolute timeout if ACH_O_WAIT is specified.
+     *  Take care that abstime is given in the correct clock.  The
+     *  default is defined by ACH_DEFAULT_CLOCK.
+     *  \param[in] options Option flags
+     *
+     *  \return ACH_OK on success.
+     */
+    enum ach_status
+    ach_xget( ach_channel_t *chan,
+              const ach_get_fun *transfer, void *cx, void **pobj,
+              size_t *frame_size,
+              const struct timespec *ACH_RESTRICT abstime,
+              int options );
+
 #ifdef __cplusplus
 }
 #endif
