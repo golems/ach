@@ -622,7 +622,7 @@ ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
     } else {
         /* good to copy */
         uint8_t *data_buf = ACH_SHM_DATA(shm);
-        if( idx->offset + idx->size < shm->data_size ) {
+        if( idx->offset + idx->size <= shm->data_size ) {
             /* simple memcpy */
             memcpy( (uint8_t*)buf, data_buf + idx->offset, idx->size );
         }else {
