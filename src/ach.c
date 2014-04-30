@@ -587,128 +587,30 @@ ach_open( ach_channel_t *chan, const char *channel_name,
     return ACH_OK;
 }
 
-
-/** Copies frame pointed to by index entry at index_offset.
-
-    \pre hold read lock on the channel
-
-    \pre on success, buf holds the frame seq_num and next_index fields
-    are incremented. The variable pointed to by size_written holds the
-    number of bytes written to buf (0 on failure).
-*/
 static enum ach_status
-ach_get_from_offset( ach_channel_t *chan, size_t index_offset,
-                     char *buf, size_t size, size_t *frame_size ) {
-    ach_header_t *shm = chan->shm;
-    assert( index_offset < shm->index_cnt );
-    ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
-    /* assert( idx->size ); */
-    assert( idx->seq_num );
-    assert( idx->offset < shm->data_size );
-    /* check idx */
-    if( chan->seq_num > idx->seq_num ) {
-        fprintf(stderr,
-                "ach bug: chan->seq_num (%"PRIu64") > idx->seq_num (%"PRIu64")\n"
-                "ach bug: index offset: %"PRIuPTR"\n",
-                chan->seq_num, idx->seq_num,
-                index_offset );
-        return ACH_BUG;
-    }
+get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size )
+{
+    size_t size = *(size_t*)cx;
 
-    if(  idx->size > size ) {
-        /* buffer overflow */
-        *frame_size = idx->size;
+    if( size < frame_size )
         return ACH_OVERFLOW;
-    } else {
-        /* good to copy */
-        uint8_t *data_buf = ACH_SHM_DATA(shm);
-        if( idx->offset + idx->size <= shm->data_size ) {
-            /* simple memcpy */
-            memcpy( (uint8_t*)buf, data_buf + idx->offset, idx->size );
-        }else {
-            /* wraparound memcpy */
-            assert(0);
-            return ACH_BUG;
-            /* size_t end_cnt = shm->data_size - idx->offset; */
-            /* memcpy( (uint8_t*)buf, data_buf + idx->offset, end_cnt ); */
-            /* memcpy( (uint8_t*)buf + end_cnt, data_buf, idx->size - end_cnt ); */
-        }
-        *frame_size = idx->size;
-        chan->seq_num = idx->seq_num;
-        chan->next_index = (index_offset + 1) % shm->index_cnt;
-        return ACH_OK;
-    }
+
+    if( NULL == *obj_dst && 0 != frame_size )
+        return ACH_EINVAL;
+
+    memcpy( *obj_dst, chan_src, frame_size );
+    return ACH_OK;
 }
 
 enum ach_status
 ach_get( ach_channel_t *chan, void *buf, size_t size,
          size_t *frame_size,
          const struct timespec *ACH_RESTRICT abstime,
-         int options ) {
-    ach_header_t *shm = chan->shm;
-    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-
-    /* Check guard bytes */
-    {
-        enum ach_status r = check_guards(shm);
-        if( ACH_OK != r ) return r;
-    }
-
-    const bool o_wait = options & ACH_O_WAIT;
-    const bool o_last = options & ACH_O_LAST;
-    const bool o_copy = options & ACH_O_COPY;
-
-    /* take read lock */
-    {
-        enum ach_status r = rdlock( chan, o_wait, abstime );
-        if( ACH_OK != r ) return r;
-    }
-    assert( chan->seq_num <= shm->last_seq );
-
-    enum ach_status retval = ACH_BUG;
-    bool missed_frame = 0;
-
-    /* get the data */
-    if( (chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq ) {
-        /* no entries */
-        assert(!o_wait);
-        retval = ACH_STALE_FRAMES;
-    } else {
-        /* Compute the index to read */
-        size_t read_index;
-        if( o_last ) {
-            /* normal case, get last */
-            read_index = last_index_i(shm);
-        } else if (!o_last &&
-                   index_ar[chan->next_index].seq_num == chan->seq_num + 1) {
-            /* normal case, get next */
-            read_index = chan->next_index;
-        } else {
-            /* exception case, figure out which frame */
-            if (chan->seq_num == shm->last_seq) {
-                /* copy last */
-                assert(o_copy);
-                read_index = last_index_i(shm);
-            } else {
-                /* copy oldest */
-                read_index = oldest_index_i(shm);
-            }
-        }
-
-        if( index_ar[read_index].seq_num > chan->seq_num + 1 ) { missed_frame = 1; }
-
-        /* read from the index */
-        retval = ach_get_from_offset( chan, read_index, (char*)buf, size,
-                                      frame_size );
-
-        assert( index_ar[read_index].seq_num > 0 );
-    }
-
-    /* release read lock */
-    ach_status_t r = unrdlock( shm );
-    if( ACH_OK != r ) return r;
-
-    return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+         int options )
+{
+    return ach_xget( chan,
+                     get_fun, &size, &buf,
+                     frame_size, abstime, options );
 }
 
 
@@ -736,107 +638,22 @@ static void free_index(ach_header_t *shm, size_t i ) {
     memset( &index_ar[i], 0, sizeof( ach_index_t ) );
 }
 
+
+static enum ach_status
+put_fun(void *cx, void *chan_dst, const void *obj)
+{
+    size_t len = *(size_t*)cx;
+
+    if( NULL == obj && 0 != len ) return ACH_EINVAL;
+
+    memcpy( chan_dst, obj,  len );
+    return ACH_OK;
+}
+
 enum ach_status
-ach_put( ach_channel_t *chan, const void *buf, size_t len ) {
-    if( 0 == len || NULL == buf || NULL == chan->shm ) {
-        return ACH_EINVAL;
-    }
-
-    ach_header_t *shm = chan->shm;
-
-    /* Check guard bytes */
-    {
-        enum ach_status r = check_guards(shm);
-        if( ACH_OK != r ) return r;
-    }
-
-    if( shm->data_size < len ) {
-        return ACH_OVERFLOW;
-    }
-
-    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-    uint8_t *data_ar = ACH_SHM_DATA(shm);
-
-    if( len > shm->data_size ) return ACH_OVERFLOW;
-
-    /* take write lock */
-    wrlock( chan );
-
-    /* find next index entry */
-    ach_index_t *idx = index_ar + shm->index_head;
-
-    /* clear entry used by index */
-    if( 0 == shm->index_free ) { free_index(shm,shm->index_head); }
-    else { assert(0== index_ar[shm->index_head].seq_num);}
-
-    assert( shm->index_free > 0 );
-
-    /* Avoid wraparound */
-    if( shm->data_size - shm->data_head < len ) {
-        size_t i;
-        /* clear to end of array */
-        assert( 0 == index_ar[shm->index_head].offset );
-        for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
-            index_ar[i].offset > shm->data_head;
-            i = (i + 1) % shm->index_cnt)
-        {
-            assert( i != shm->index_head );
-            free_index(shm,i);
-        }
-        /* Set counts to beginning of array */
-        if( i == shm->index_head ) {
-            shm->data_free = shm->data_size;
-        } else {
-            shm->data_free = index_ar[oldest_index_i(shm)].offset;
-        }
-        shm->data_head = 0;
-    }
-
-    /* clear overlapping entries */
-    size_t i;
-    for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
-        shm->data_free < len;
-        i = (i + 1) % shm->index_cnt)
-    {
-        if( i == shm->index_head ) {
-            shm->data_free = shm->data_size;
-        } else {
-            free_index(shm,i);
-        }
-    }
-
-    assert( shm->data_free >= len );
-
-    /* copy buffer */
-    if( shm->data_size - shm->data_head >= len ) {
-        /* simply copy */
-        memcpy( data_ar + shm->data_head, buf, len );
-    } else {
-        /* wraparound copy */
-        assert(0);
-        size_t end_cnt = shm->data_size - shm->data_head;
-        memcpy( data_ar + shm->data_head, buf, end_cnt);
-        memcpy( data_ar, (uint8_t*)buf + end_cnt, len - end_cnt );
-    }
-
-    /* modify counts */
-    shm->last_seq++;
-    idx->seq_num = shm->last_seq;
-    idx->size = len;
-    idx->offset = shm->data_head;
-
-    shm->data_head = (shm->data_head + len) % shm->data_size;
-    shm->data_free -= len;
-    shm->index_head = (shm->index_head + 1) % shm->index_cnt;
-    shm->index_free --;
-
-    assert( shm->index_free <= shm->index_cnt );
-    assert( shm->data_free <= shm->data_size );
-    assert( shm->last_seq > 0 );
-
-    /* release write lock */
-    return unwrlock( shm );
-
+ach_put( ach_channel_t *chan, const void *buf, size_t len )
+{
+    return ach_xput( chan, put_fun, &len, buf, len );
 }
 
 enum ach_status
