@@ -60,6 +60,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include "ach.h"
+#include "ach_impl.h"
 #include "achutil.h"
 
 static struct log_desc {

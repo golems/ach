@@ -67,6 +67,7 @@
 #include <inttypes.h>
 
 #include "ach.h"
+#include "ach_impl.h"
 
 
 #ifdef NDEBUG

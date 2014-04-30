@@ -183,40 +183,6 @@ extern "C" {
 /**  maximum size of a channel name */
 #define ACH_CHAN_NAME_MAX 64ul
 
-/** prefix to apply to channel names to get the shared memory file name */
-#define ACH_CHAN_NAME_PREFIX "/achshm-"
-
-/** Number of times to retry a syscall on EINTR before giving up */
-#define ACH_INTR_RETRY 8
-
-    /** magic number that appears the the beginning of our mmaped files.
-
-        This is just to be used as a check.
-    */
-#define ACH_SHM_MAGIC_NUM 0xb07511f3
-
-
-    /** A separator between different shm sections.
-
-        This one comes after the header.  Should aid debugging by
-        showing we don't overstep and bounds.  64-bit for alignment.
-    */
-#define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8ALLU)
-    /** A separator between different shm sections.
-
-        This ones comes after the index array.  Should aid debugging by
-        showing we don't overstep and bounds.  64-bit for alignment.
-    */
-#define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8BLLU)
-
-    /** A separator between different shm sections.
-
-        This one comes after the data section (at the very end of the
-        file).  Should aid debugging by showing we don't overstep and
-        bounds.  64-bit for alignment.
-    */
-#define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)
-
     /** return status codes for ach functions */
     typedef enum ach_status {
         ACH_OK = 0,             /**< Call successful */
@@ -263,62 +229,27 @@ extern "C" {
         ACH_O_COPY = 0x04
     } ach_get_opts_t;
 
-    /** Header for shared memory area.
-     *
-     * There is no tail pointer here.  Every subscriber that opens the
-     * channel must maintain its own tail pointer.
-     */
-    typedef struct {
-        uint32_t magic;          /**< magic number of ach shm files */
-        size_t len;              /**< length of mmap'ed file */
-        char name[1+ACH_CHAN_NAME_MAX]; /**< Name of this channel */
-        union {
-            struct {
-                size_t index_cnt;        /**< number of entries in index */
-                size_t data_size;        /**< size of data bytes */
-                size_t data_head;        /**< offset to first open byte of data */
-                size_t data_free;        /**< number of free data bytes */
-                size_t index_head;       /**< index into index array of first unused index entry */
-                size_t index_free;       /**< number of unused index entries */
-                int anon;                /**< is channel in the heap? */
-            };
-            uint64_t reserved[16];  /**< Reserve to compatibly add future variables */
-        };
-        struct /* anonymous structure */ {
-            pthread_mutex_t mutex;         /**< mutex for condition variables */
-            pthread_cond_t cond;           /**< condition variable */
-            int dirty;
-        } sync;                   /**< variables for synchronization */
-        /* should force our alignment to 8-bytes... */
-        uint64_t last_seq;        /**< last sequence number written */
-    } ach_header_t;
-
-    /** Entry in shared memory index array
-     */
-    typedef struct {
-        size_t size;      /**< size of frame */
-        size_t offset;    /**< byte offset of entry from beginning of data array */
-        uint64_t seq_num; /**< number of frame */
-    } ach_index_t ;
-
+    /** Type for header in shared memory */
+    struct ach_header;
 
     /** Attributes to pass to ach_open */
     typedef struct {
         union {
             struct{
                 int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
-                ach_header_t *shm;   /**< the memory buffer used by anonymous channels */
+                struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
             };
             uint64_t reserved_size[8]; /**< Reserve space to compatibly add future options */
         };
     } ach_attr_t;
+
 
     /** Attributes to pass to ach_create  */
     typedef struct {
         union {
             struct{
                 int map_anon;      /**< allocate channel in heap, rather than shm */
-                ach_header_t *shm; /**< pointer to channel, set on output of create iff map_anon */
+                struct ach_header *shm; /**< pointer to channel, set on output of create iff map_anon */
                 int truncate;      /**< remove and recreate an existing shm file */
                 int set_clock;     /**< if true, set the clock of the condition variable */
                 clockid_t clock;   /**< Which clock to use if set_clock is true.
@@ -333,7 +264,7 @@ extern "C" {
     typedef struct {
         union {
             struct {
-                ach_header_t *shm;   /**< pointer to mmap'ed block */
+                struct ach_header *shm;   /**< pointer to mmap'ed block */
                 size_t len;          /**< length of memory mapping */
                 int fd;              /**< file descriptor of mmap'ed file */
                 uint64_t seq_num;    /**< last sequence number read */
@@ -349,24 +280,6 @@ extern "C" {
     extern size_t ach_channel_size;
     /** Size of ach_attr_t */
     extern size_t ach_attr_size;
-
-/** Gets pointer to guard uint64 following the header */
-#define ACH_SHM_GUARD_HEADER( shm ) ((uint64_t*)((ach_header_t*)(shm) + 1))
-
-/** Gets the pointer to the index array in the shm block */
-#define ACH_SHM_INDEX( shm ) ((ach_index_t*)(ACH_SHM_GUARD_HEADER(shm) + 1))
-
-/**  gets pointer to the guard following the index section */
-#define ACH_SHM_GUARD_INDEX( shm )                                      \
-    ((uint64_t*)(ACH_SHM_INDEX(shm) + ((ach_header_t*)(shm))->index_cnt))
-
-/** Gets the pointer to the data buffer in the shm block */
-#define ACH_SHM_DATA( shm ) ( (uint8_t*)(ACH_SHM_GUARD_INDEX(shm) + 1) )
-
-/** Gets the pointer to the guard following data buffer in the shm block */
-#define ACH_SHM_GUARD_DATA( shm )                                       \
-    ((uint64_t*)(ACH_SHM_DATA(shm) + ((ach_header_t*)(shm))->data_size))
-
 
     /** Initialize attributes for opening channels. */
     void ach_attr_init( ach_attr_t *attr );
@@ -384,12 +297,6 @@ extern "C" {
     ach_create( const char *channel_name,
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr );
-
-/** Default number of index entries in a channel */
-#define ACH_DEFAULT_FRAME_COUNT 16
-
-/** Default nominal frame size for a channel */
-#define ACH_DEFAULT_FRAME_SIZE 512
 
     /** Opens a handle to channel.
 
@@ -464,17 +371,15 @@ extern "C" {
     enum ach_status
     ach_close( ach_channel_t *chan );
 
-
     /** Converts return code from ach call to a human readable string;
      */
     const char *ach_result_to_string(ach_status_t result);
-
 
     /** Prints information about the channel shm to stderr
 
         This function is mostly for internal debugging.
     */
-    void ach_dump( ach_header_t *shm);
+    void ach_dump( struct ach_header *shm);
 
     /** Sets permissions of chan to specified mode */
     enum ach_status
@@ -483,7 +388,6 @@ extern "C" {
     /** Delete an ach channel */
     enum ach_status
     ach_unlink( const char *name );
-
 
     /** Attributes parameter for ach_cancel */
     typedef struct ach_cancel_attr {
@@ -503,32 +407,6 @@ extern "C" {
     /** Cancel a pending ach_get() on channel */
     enum ach_status
     ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr );
-
-    /** Format for ach frames sent over pipes or stored on disk */
-    typedef struct {
-        char magic[8];         /**< magic number: "achpipe", null terminated */
-        uint8_t size_bytes[8]; /**< size, stored little endian for disk and network transmission */
-        uint8_t data[1];       /**< flexible array */
-    } ach_pipe_frame_t;
-
-    /** Malloc an ach_pipe_frame_t with room for `size' data bytes.
-     *
-     * \return a newly allocated ach_pipe_frame with its magic and
-     * size fields properly filled.
-     */
-    ach_pipe_frame_t *ach_pipe_alloc(size_t size);
-
-    /** Set size field in ach frame, always stored little endian.
-     * \param frame The frame struct
-     * \param size The size in native byte order
-     */
-    void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size);
-
-    /** Set size field in ach frame, always stored little endian.
-     * \param frame The frame struct
-     * \returns The size in native byte order
-     */
-    uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
     /** Function type to transfer data into the channel.
      *

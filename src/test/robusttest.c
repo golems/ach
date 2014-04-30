@@ -55,6 +55,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "ach.h"
+#include "ach_impl.h"
 
 #define OPT_CHAN  "ach-test-robust"
 

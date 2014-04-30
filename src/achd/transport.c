@@ -65,6 +65,7 @@
 #include <poll.h>
 
 #include "ach.h"
+#include "ach_impl.h"
 #include "achutil.h"
 #include "achd.h"
 
