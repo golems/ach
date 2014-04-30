@@ -920,6 +920,14 @@ ach_xput( ach_channel_t *chan,
     return unwrlock( shm );
 }
 
+/** Copies frame pointed to by index entry at index_offset.
+ *
+ *   \pre hold read lock on the channel
+ *
+ *   \post on success, transfer is called. seq_num and next_index fields
+ *   are incremented. The variable pointed to by frame_size holds the
+ *   frame size.
+*/
 static enum ach_status
 ach_xget_from_offset( ach_channel_t *chan, size_t index_offset,
                       ach_get_fun transfer, void *cx, void **pobj,
@@ -940,14 +948,12 @@ ach_xget_from_offset( ach_channel_t *chan, size_t index_offset,
         return ACH_BUG;
     }
 
-    /* good to copy */
-    uint8_t *data_buf = ACH_SHM_DATA(shm);
-
     if( idx->offset + idx->size > shm->data_size ) {
         return ACH_CORRUPT;
     }
 
-    /* simple memcpy */
+    /* good to copy */
+    uint8_t *data_buf = ACH_SHM_DATA(shm);
     *frame_size = idx->size;
     enum ach_status r = transfer(cx, pobj, data_buf + idx->offset, idx->size);
     if( ACH_OK == r ) {
@@ -956,12 +962,6 @@ ach_xget_from_offset( ach_channel_t *chan, size_t index_offset,
     }
     return r;
 }
-
-/* enum ach_status */
-/* ach_get( ach_channel_t *chan, void *buf, size_t size, */
-/*          size_t *frame_size, */
-/*          const struct timespec *ACH_RESTRICT abstime, */
-/*          int options ) { */
 
 enum ach_status
 ach_xget( ach_channel_t *chan,

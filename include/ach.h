@@ -496,7 +496,6 @@ extern "C" {
         };
     } ach_cancel_attr_t;
 
-
     /** Initialize attributes */
     void
     ach_cancel_attr_init( ach_cancel_attr_t *attr );
@@ -531,14 +530,14 @@ extern "C" {
      */
     uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
-
     /** Function type to transfer data into the channel.
      *
      * This function could, for example, perform tasks such as serialization.
      *
      * \returns 0 on success, nonzero on failure
      */
-    typedef enum ach_status ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
+    typedef enum ach_status
+    ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
     /** Function type to transfer data out of the channel.
      *
@@ -547,8 +546,8 @@ extern "C" {
      *
      * \returns 0 on success, nonzero on failure
      */
-    typedef enum ach_status ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
-
+    typedef enum ach_status
+    ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
 
     /** Writes a new message in the channel.
      *
