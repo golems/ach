@@ -67,6 +67,7 @@ size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
 size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
+char *opt_domain = NULL;
 int opt_verbosity = 0;
 int opt_1 = 0;
 int opt_mode = -1;
@@ -94,6 +95,7 @@ int cmd_dump(void);
 int cmd_unlink(void);
 int cmd_create(void);
 int cmd_chmod(void);
+int cmd_search(void);
 
 void cleanup() {
     if(opt_chan_name) free(opt_chan_name);
@@ -123,6 +125,8 @@ static void posarg(int i, const char *arg) {
             set_cmd( cmd_dump );
         } else if( 0 == strcasecmp(arg, "file") ) {
             set_cmd( cmd_file );
+        } else if( 0 == strcasecmp(arg, "search") ) {
+            set_cmd( cmd_search );
         } else {
             goto INVALID;
         }
@@ -137,6 +141,8 @@ static void posarg(int i, const char *arg) {
     case 2:
         if( cmd_chmod == opt_command ) {
             opt_chan_name = strdup( arg );
+        } else if (cmd_search == opt_command ) {
+            opt_domain = strdup(arg);
         } else {
             goto INVALID;
         }
@@ -239,6 +245,8 @@ int main( int argc, char **argv ) {
                   "                            for channel access in order to properly\n"
                   "                            synchronize.\n"
                   "  ach chmod 666 foo         Set permissions of channel 'foo' to '666'\n"
+                  "  ach search foo local      Search DNS for host and port of channel 'foo' \n"
+                  "                            in 'local' domain\n"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
@@ -362,6 +370,33 @@ int cmd_chmod(void) {
     check_status( r, "Error closing channel '%s'", opt_chan_name );
 
     return r;
+}
+
+int cmd_search(void)
+{
+    if( NULL == opt_chan_name ) {
+        fprintf(stderr, "Must specify channel\n");
+        exit(EXIT_FAILURE);
+    }
+    if( NULL == opt_domain ) {
+        fprintf(stderr, "Must specify domain\n");
+        exit(EXIT_FAILURE);
+    }
+
+    char host[512];
+    int port;
+    enum ach_status r = ach_srv_search( opt_chan_name, opt_domain, host, 512, &port );
+    if( ACH_OK == r ) {
+        printf("channel: %s\n"
+               "host: %s\n"
+               "port: %d\n"
+               ".\n",
+               opt_chan_name, host, port );
+    } else {
+        fprintf( stderr, "Could not lookup channel `%s' %s, %s\n",
+                 opt_chan_name, ach_result_to_string(r), ach_errstr() );
+    }
+    return 0;
 }
 
 static void check_status(ach_status_t r, const char fmt[], ...) {
