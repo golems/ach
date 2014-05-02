@@ -173,9 +173,12 @@ ach_srv_search( const char *channel, const char *domain,
     ach_set_errstr( "" );
 
     /* Create Query */
-    const char srv_type[] = "._ach._tcp.";
-    char srvname[strlen(channel) + strlen(srv_type) + strlen(domain) + 1];
-    strcpy(srvname, channel);
+    /* RFC 6763: channel is registered as a service "subtype" */
+    const char srv_type[] = "._sub._ach._tcp.";
+    char srvname[strlen(channel) + strlen(srv_type) + strlen(domain) + 2];
+    srvname[0] = '_';
+    srvname[1] = '\0';
+    strcat(srvname, channel);
     strcat(srvname, srv_type);
     strcat(srvname, domain);
 
