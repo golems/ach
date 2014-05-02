@@ -173,6 +173,9 @@ extern "C" {
      */
     uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
 
+
+    void ach_set_errstr( const char *str );
+
 #ifdef __cplusplus
 }
 #endif

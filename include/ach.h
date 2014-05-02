@@ -375,6 +375,11 @@ extern "C" {
      */
     const char *ach_result_to_string(ach_status_t result);
 
+
+    /** Return a string describing the most recent ach error in detail.
+     */
+    const char *ach_errstr();
+
     /** Prints information about the channel shm to stderr
 
         This function is mostly for internal debugging.
@@ -473,6 +478,12 @@ extern "C" {
               size_t *frame_size,
               const struct timespec *ACH_RESTRICT abstime,
               int options );
+
+
+    enum ach_status
+    ach_srv_search( const char *channel, const char *domain,
+                    char *host, size_t host_len,
+                    int *port );
 
 #ifdef __cplusplus
 }

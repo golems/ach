@@ -1037,3 +1037,25 @@ ach_xget( ach_channel_t *chan,
 
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
+
+
+#ifdef HAVE_THREADS_H
+// First, try the C11 standard
+static _Thread_local const char *ach_errstr_var;
+#elseif defined TLS
+// Next, try some Autoconf magic
+static TLS const char *ach_errstr_var;
+#else
+// Otherwise, pray this works...
+static __thread const char *ach_errstr_var;
+#endif
+
+void ach_set_errstr( const char *str )
+{
+    ach_errstr_var = str;
+}
+
+const char *ach_errstr( void )
+{
+    return ach_errstr_var;
+}

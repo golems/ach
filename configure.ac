@@ -61,6 +61,8 @@ AC_SEARCH_LIBS([pthread_mutex_lock],[pthread])
 AC_SEARCH_LIBS([pthread_mutexattr_setpshared],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 AC_SEARCH_LIBS([shm_open],[rt])
+AC_SEARCH_LIBS([res_search],[resolv])
+AC_SEARCH_LIBS([__res_search],[resolv])
 
 # check process-shared mutex
 AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED],
