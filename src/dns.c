@@ -57,9 +57,16 @@
 #include <netinet/in.h>
 #include <arpa/nameser.h>
 #include <resolv.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 
 #include "ach.h"
 #include "ach_impl.h"
+
+int
+mdns_res_search( const char *dname, int clazz, int type,
+                 unsigned char *answer, int anslen);
 
 /** Wire format of dns packet header */
 struct dns_packet {
@@ -173,23 +180,110 @@ ach_srv_search( const char *channel, const char *domain,
     ach_set_errstr( "" );
 
     /* Create Query */
-    /* RFC 6763: channel is registered as a service "subtype" */
-    const char srv_type[] = "._sub._ach._tcp.";
-    char srvname[strlen(channel) + strlen(srv_type) + strlen(domain) + 2];
-    srvname[0] = '_';
-    srvname[1] = '\0';
+    /* RFC 6763 service "subtype" are bogus */
+    const char srv_type[] = "._ach._tcp.";
+    char srvname[strlen(channel) + strlen(srv_type) + strlen(domain) + 1];
+    srvname[0] = '\0';
     strcat(srvname, channel);
     strcat(srvname, srv_type);
     strcat(srvname, domain);
 
     /* Perform Query */
     unsigned char answer[ANSWER_SIZE] = {0};
-    int len_a = res_search( srvname, C_IN, T_SRV, answer, ANSWER_SIZE );
-    if( len_a < 0 ) {
-        ach_set_errstr( "res_search() failed\n" );
-        return ACH_FAILED_SYSCALL;
+    int len_a;
+    if( 0 == strcasecmp("local", domain) ) {
+        /* Magically do mdns lookup */
+        len_a = mdns_res_search( srvname, C_IN, T_SRV, answer, ANSWER_SIZE );
+        if( len_a < 0 ) {
+            ach_set_errstr( "mdns lookup failed\n" );
+            return ACH_FAILED_SYSCALL;
+        }
+    } else {
+        /* Ye olde fashioned dns lookup */
+        len_a = res_search( srvname, C_IN, T_SRV, answer, ANSWER_SIZE );
+        if( len_a < 0 ) {
+            ach_set_errstr( "res_search() failed\n" );
+            return ACH_FAILED_SYSCALL;
+        }
     }
 
     /* Process Result */
     return parse_dns_srv( answer, (size_t)len_a, host, host_len, port );
+}
+
+
+/* I'd rather reinvent the wheel than link against Avahi. */
+
+/** A trivial MDNS Resolver */
+int
+mdns_res_search( const char *dname, int clazz, int type,
+                 unsigned char *answer, int anslen)
+{
+
+    /* Create request packet */
+    unsigned char q[ANSWER_SIZE];
+    int qlen = res_mkquery( ns_o_query, dname, clazz, type,
+                            NULL, 0, NULL,
+                            q, ANSWER_SIZE );
+    if( qlen < 0 ) {
+        return -1;
+    }
+
+    /* Open Socket */
+    int sock = socket( AF_INET, SOCK_DGRAM, 0 );
+    if( sock < 0 ) {
+        perror( "Could not create socket");
+        return -1;
+    }
+
+    struct sockaddr_in recv_addr = {0};
+    recv_addr.sin_family = AF_INET;
+    recv_addr.sin_port = htons(0);
+    recv_addr.sin_addr.s_addr = INADDR_ANY;
+
+    u_int yes = 1;
+    if( setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP, &yes, sizeof(yes)) ) {
+        perror("setsockopt for sender failed\n");
+        return -1;
+    }
+    if( setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) {
+        perror("setsockopt for receiver failed\n");
+        return -1;
+    }
+
+    if (bind(sock, (struct sockaddr *) &recv_addr, sizeof(recv_addr)) < 0) {
+        perror("Failed to bind the socket");
+        return -1;
+    }
+
+    /* TODO: loop, time, check response IDs */
+
+    /* Send Query */
+    {
+        struct sockaddr_in send_addr = {0};
+        send_addr.sin_port = htons(5353);
+        send_addr.sin_family = AF_INET;
+        send_addr.sin_addr.s_addr = inet_addr("224.0.0.251");
+        ssize_t r = sendto( sock, q, (size_t)qlen, 0,
+                            (struct sockaddr *) &send_addr, sizeof(send_addr) );
+        if( (ssize_t)qlen != r ) {
+            perror( "could not send udp query" );
+            return -1;
+        }
+    }
+
+    /* Get Response */
+    ssize_t rlen;
+    {
+        rlen = recv( sock, answer, (size_t)anslen, 0 );
+        if( rlen < 0 ) {
+            perror( "could not receive udp response" );
+            return -1;
+        }
+    }
+
+    /* Close Socket */
+    close(sock);
+
+    return (int)rlen;
 }
