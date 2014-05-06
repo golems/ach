@@ -965,6 +965,69 @@ Connection closed by foreign host.
 
     </sect2>
 
+    <sect2><title>Locating Channels via mDNS</title>
+    <para>
+      Multicast DNS (mDNS) can be used to browse the Ach channels on
+      the local network and to lookup the hostname for an channel.
+      mDNS names are generally in the <systemitem
+      class="domainname">.local</systemitem> domain To advertise an
+      Ach channel, it is registered as a service with the local mDNS
+      server.
+    </para>
+
+    <note>
+      <para>
+        <ulink url="http://tools.ietf.org/html/rfc6762">mDNS</ulink>
+        is a peer-to-peer variation on DNS that reduces the need for
+        prior configuration by automatically discovering services on
+        the local network.  Each peer runs an mDNS server, and
+        services, e.g., file shares, printers, Ach channels, are
+        located by sending a <ulink
+        url="http://en.wikipedia.org/wiki/Multicast">multicast</ulink>
+        query.  Popular implementations of mDNS are <ulink
+        url="https://www.apple.com/support/bonjour/">Bonjour</ulink>
+        and <ulink url="http://avahi.org/">Avahi</ulink>.
+      </para>
+    </note>
+
+    <example><title>Register a channel using the Avahi mDNS server</title>
+    <cmdsynopsis>
+      <command>avahi-publish </command>
+      <arg choice="plain">-s</arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+      <arg choice="plain">_ach._tcp</arg>
+      <arg choice="plain">8076</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Browse local network channels using Avahi</title>
+    <cmdsynopsis>
+      <command>avahi-browse</command>
+      <arg choice="plain">-r</arg>
+      <arg choice="plain">_ach._tcp</arg>
+    </cmdsynopsis>
+    </example>
+
+    <example><title>Lookup channel origin in achd client</title>
+    <cmdsynopsis>
+      <command>achd</command>
+      <arg choice="plain">pull</arg>
+      <arg choice="plain"><replaceable>channel_name</replaceable></arg>
+    </cmdsynopsis>
+    <para>
+      This performs an mDNS query to determine the origin of the
+      specified channel, then connects to that host.
+    </para>
+    </example>
+
+    <note>
+      <para>Some communication systems, which were generally developed
+      prior to mDNS, use specialized naming services.  For example,
+      ONC RPC uses the port mapper and CORBA has its own naming
+      service.</para>
+    </note>
+
+    </sect2>
   </sect1>
 
   <sect1>
