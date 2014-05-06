@@ -53,6 +53,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <poll.h>
 
 #include <netinet/in.h>
 #include <arpa/nameser.h>
@@ -67,6 +68,11 @@
 int
 mdns_res_search( const char *dname, int clazz, int type,
                  unsigned char *answer, int anslen);
+
+int dns_query(int sock, const struct sockaddr *addr, size_t addr_size,
+              const void *pkt, size_t pkt_len,
+              void *ans, size_t ans_len);
+
 
 /** Wire format of dns packet header */
 struct dns_packet {
@@ -256,34 +262,98 @@ mdns_res_search( const char *dname, int clazz, int type,
         return -1;
     }
 
-    /* TODO: loop, time, check response IDs */
-
-    /* Send Query */
+    int rlen ;
     {
         struct sockaddr_in send_addr = {0};
         send_addr.sin_port = htons(5353);
         send_addr.sin_family = AF_INET;
         send_addr.sin_addr.s_addr = inet_addr("224.0.0.251");
-        ssize_t r = sendto( sock, q, (size_t)qlen, 0,
-                            (struct sockaddr *) &send_addr, sizeof(send_addr) );
-        if( (ssize_t)qlen != r ) {
-            perror( "could not send udp query" );
-            return -1;
-        }
-    }
 
-    /* Get Response */
-    ssize_t rlen;
-    {
-        rlen = recv( sock, answer, (size_t)anslen, 0 );
-        if( rlen < 0 ) {
-            perror( "could not receive udp response" );
-            return -1;
-        }
+        rlen = dns_query( sock, (struct sockaddr *)&send_addr, sizeof(send_addr),
+                          q, (size_t)qlen,
+                          answer, (size_t)anslen);
     }
 
     /* Close Socket */
     close(sock);
 
     return (int)rlen;
+}
+
+
+static inline int
+timespec_cmp( struct timespec t0, struct timespec t1 )
+{
+    if( t0.tv_sec > t1.tv_sec ) return 1;
+    else if( t0.tv_sec == t1.tv_sec ) {
+        if( t0.tv_nsec > t1.tv_nsec ) return 1;
+        else if( t0.tv_nsec == t1.tv_nsec ) return 0;
+        else return 1;
+    } else return -1;
+}
+
+
+#define MDNS_TIMEOUT_SEC 2
+#define MDNS_RETRY_MS 250
+
+int dns_query(int sock, const struct sockaddr *addr, size_t addr_size,
+              const void *pkt, size_t pkt_len,
+              void *ans, size_t ans_len )
+{
+    ssize_t rlen;
+
+    struct timespec t0;
+    clock_gettime(CLOCK_MONOTONIC, &t0);
+    struct timespec t_now = t0;
+    struct timespec t_resend = {0,0};
+    struct timespec t_abort = t0;
+    t_abort.tv_sec += MDNS_TIMEOUT_SEC;
+
+    do {
+        /* Send Query */
+        if( timespec_cmp(t_now, t_resend) > 0 ) {
+            ssize_t r = sendto( sock, pkt, pkt_len, 0,
+                                addr, (socklen_t)addr_size );
+            if( (ssize_t)pkt_len != r ) {
+                perror( "could not send udp query" );
+                return -1;
+            }
+            /* Compute resend time */
+            int64_t resend_ns = t_now.tv_nsec + MDNS_RETRY_MS*1000000;
+            t_resend.tv_nsec = resend_ns % 1000000000;
+            t_resend.tv_sec = t_now.tv_sec + resend_ns / 1000000000;
+        }
+
+        /* Poll */
+        int poll_i;
+        {
+            struct pollfd fd;
+            fd.fd = sock;
+            fd.events = POLLIN;
+            fd.revents = 0;
+            poll_i = poll(&fd, 1, MDNS_RETRY_MS); /* wait in ms */
+        }
+        if( poll_i < 0 ) return poll_i;
+        if( poll_i ) {
+            /* Get Response */
+            rlen = recv( sock, ans, (size_t)ans_len, 0 );
+            if( rlen < 0 ) {
+                perror( "could not receive udp response" );
+                return -1;
+            }
+            /* Check ID */
+            /* We could also check the source address and port, but
+             * since that is easily spoofed, it seems that little
+             * would be gained. */
+            if( rlen >= (ssize_t)sizeof(struct dns_packet) &&
+                ((struct dns_packet*)ans)->id == ((struct dns_packet*)pkt)->id
+                )
+            {
+                return (int)rlen;
+            }
+        }
+        clock_gettime(CLOCK_MONOTONIC, &t_now);
+    } while( timespec_cmp(t_now, t_abort) < 0 );
+
+    return -1;
 }
