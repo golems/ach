@@ -67,7 +67,7 @@ size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
 size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
-char *opt_domain = NULL;
+const char *opt_domain = "local";
 int opt_verbosity = 0;
 int opt_1 = 0;
 int opt_mode = -1;
@@ -245,8 +245,7 @@ int main( int argc, char **argv ) {
                   "                            for channel access in order to properly\n"
                   "                            synchronize.\n"
                   "  ach chmod 666 foo         Set permissions of channel 'foo' to '666'\n"
-                  "  ach search foo local      Search DNS for host and port of channel 'foo' \n"
-                  "                            in 'local' domain\n"
+                  "  ach search foo            Search mDNS for host and port of channel 'foo'\n"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );

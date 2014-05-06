@@ -77,6 +77,7 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context);
 
 /* global data */
 struct achd_cx cx;
+const char *opt_posarg[2] = {0};
 
 static const struct achd_conn_vtab handlers[] = {
     {.transport = "tcp",
@@ -220,14 +221,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    /* Set some other default options */
-    if( !cx.cl_opts.chan_name ) {
-        cx.cl_opts.chan_name  = cx.cl_opts.remote_chan_name;
-    }
-    if( !cx.cl_opts.remote_chan_name ) {
-        cx.cl_opts.remote_chan_name  = cx.cl_opts.chan_name;
-    }
-
     /* dispatch based on mode */
     /* serve */
     if ( ACHD_MODE_SERVE == cx.mode ) {
@@ -287,8 +280,7 @@ int main(int argc, char **argv) {
 }
 
 void achd_posarg(int i, const char *arg) {
-    switch(i) {
-    case 0:
+    if( 0 == i ) {
         ACH_LOG(LOG_DEBUG, "mode %s\n", arg);
         if( 0 == strcasecmp(arg, "serve") ) {
             cx.mode = ACHD_MODE_SERVE;
@@ -301,19 +293,14 @@ void achd_posarg(int i, const char *arg) {
         } else {
             ACH_DIE("Invalid command: %s\n", arg);
         }
-        break;
-    case 1:
-        ACH_LOG(LOG_DEBUG, "host %s\n", arg);
-        cx.cl_opts.remote_host = strdup(arg);
-        break;
-    case 2:
-        ACH_LOG(LOG_DEBUG, "channel %s\n", arg);
-        cx.cl_opts.chan_name = strdup(arg);
-        break;
-    default:
+        return;
+    }
+    i--;
+    if( i > (int)(sizeof(opt_posarg) / sizeof(opt_posarg[0])) ) {
         ACH_LOG(LOG_ERR, "Spurious argument: %s\n", arg);
         exit(EXIT_FAILURE);
     }
+    opt_posarg[i] = strdup(arg);
 }
 
 /*********

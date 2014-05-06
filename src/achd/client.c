@@ -80,16 +80,40 @@ void achd_client() {
     struct achd_conn conn;
     memset(&conn, 0, sizeof(conn));
 
-    /* Create request headers */
-    conn.vtab = achd_get_vtab( cx.cl_opts.transport, cx.cl_opts.direction );
-    assert( conn.vtab && conn.vtab->handler );
-
-    if( cx.cl_opts.remote_chan_name ) {
-        conn.send_hdr.chan_name = cx.cl_opts.remote_chan_name;
+    /* Determine channel name */
+    if( opt_posarg[1] ) {
+        cx.cl_opts.chan_name = opt_posarg[1];
+    } else if( opt_posarg[0] ) {
+        cx.cl_opts.chan_name = opt_posarg[0];
     } else {
         cx.error( ACH_BAD_HEADER, "No channel name given\n");
         assert(0);
     }
+
+    if( cx.cl_opts.remote_chan_name ) {
+        conn.send_hdr.chan_name = cx.cl_opts.remote_chan_name;
+    } else {
+        conn.send_hdr.chan_name = cx.cl_opts.chan_name;
+    }
+
+    /* Determine remote host */
+    if( opt_posarg[1] ) {
+        cx.cl_opts.remote_host = opt_posarg[0];
+    } else {
+        /* DNS Lookup */
+        char host[512];
+        int port;
+        enum ach_status r = ach_srv_search( conn.send_hdr.chan_name, "local", host, 512, &port );
+        if( ACH_OK != r ) {
+            cx.error( r, "Could not find host for channel '%s'\n", conn.send_hdr.chan_name);
+        }
+        // TODO: port
+        cx.cl_opts.remote_host = strdup(host);
+    }
+
+    /* Create request headers */
+    conn.vtab = achd_get_vtab( cx.cl_opts.transport, cx.cl_opts.direction );
+    assert( conn.vtab && conn.vtab->handler );
 
     assert( cx.cl_opts.transport );
     assert( cx.cl_opts.direction == ACHD_DIRECTION_PUSH ||

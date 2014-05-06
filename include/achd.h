@@ -174,5 +174,6 @@ struct achd_cx {
 
 extern struct achd_cx cx;
 void sighandler_install(void);
+extern const char *opt_posarg[2];
 
 #endif //ACHD_H
