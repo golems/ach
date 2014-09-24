@@ -36,8 +36,13 @@ DOCUMENTATION
 * Man Pages: `./doc/man` and
              http://code.golems.org/pkg/ach/man
 * Example Code: `./src/ach-example.c`
-* Tech Report: http://www.golems.org/node/1526
+* Papers: http://www.golems.org/projects/ach.html
 
+MAILING LISTS
+=============
+* Announcements: http://groups.google.com/group/ach-announce
+* General Help: http://groups.google.com/group/ach-help
+* Development: http://groups.google.com/group/ach-devel
 
 LANGUAGE BINDINGS
 =================
