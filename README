@@ -30,13 +30,13 @@ Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT
 
 DOCUMENTATION
 =============
-* Manual: `./doc/manual/ach-manual.html` and
-          http://golems.github.com/ach/manual
-* API docs: http://golems.github.com/ach/api
-* Man Pages: `./doc/man` and
-             http://code.golems.org/pkg/ach/man
-* Example Code: `./src/ach-example.c`
+* Manual: http://code.golems.org/pkg/ach/manual
+          and `./doc/manual/ach-manual.html`
+* API docs: http://code.golems.org/pkg/ach/api
+* Man Pages: http://code.golems.org/pkg/ach/man
+             and `./doc/man`
 * Papers: http://www.golems.org/projects/ach.html
+* Example Code: `./src/ach-example.c`
 
 MAILING LISTS
 =============
@@ -59,7 +59,7 @@ Language bindings are included for Common Lisp, Python, and Java.
 
 * Java bindings via the Java Native Interface (JNI).
   See `./doc/javadoc` or
-       http://golems.github.io/ach/javadoc/
+       http://code.golems.org/pkg/ach/javadoc/
 
 See the INSTALL file for details.
 
