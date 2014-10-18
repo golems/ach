@@ -21,4 +21,4 @@ sync:
 	      --include '*.png'              \
 	      --include '*.gif'              \
 	      --exclude '*'                  \
-	      ./ golems@golems.org:code.golems.org/pkg/ach
+	      ./ code.golems.org:/srv/www/code.golems.org/pkg/ach
