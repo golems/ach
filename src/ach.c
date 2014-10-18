@@ -236,6 +236,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
             pthread_mutex_unlock( &chan->shm->sync.mutex );
         }
         return ACH_TIMEOUT;
+#ifdef HAVE_MUTEX_ROBUST
     case ENOTRECOVERABLE:
         /* Shouldn't actually get this because we always mark the
          * mutex as consistent. */
@@ -248,6 +249,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
          */
         pthread_mutex_consistent( &chan->shm->sync.mutex );
         /* continue to check the dirty bit */
+#endif /* HAVE_MUTEX_ROBUST */
     case 0: /* ok */
         if( chan->shm->sync.dirty ) {
             pthread_mutex_unlock( &chan->shm->sync.mutex );
