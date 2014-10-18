@@ -164,6 +164,10 @@ m4_ifdef([AX_CFLAGS_WARN_ALL],
 dnl APPEND_FLAG( [FLAG] )
 dnl Check if FLAG is supported, and if so, add it
 
+
+AC_DEFUN([APPEND_CFLAG],[])
+AC_DEFUN([APPEND_CXXFLAG],[])
+
 dnl The AX_CHECK_COMPILER_FLAGS maco was renamed to AX_CHECK_COMPILE_FLAG
 dnl Checking for both versions
 m4_ifdef([AX_CHECK_COMPILE_FLAG],
