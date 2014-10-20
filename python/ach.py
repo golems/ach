@@ -54,6 +54,7 @@ from ach_py import \
     ACH_CORRUPT,\
     ACH_BAD_HEADER,\
     ACH_EACCES,\
+    ACH_CANCELED,\
     ACH_O_WAIT,\
     ACH_O_LAST, \
     AchException, \

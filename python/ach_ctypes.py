@@ -80,6 +80,7 @@ ACH_CLOSED         = c_int.in_dll( libach, "ach_closed" ).value
 ACH_BUG            = c_int.in_dll( libach, "ach_bug" ).value
 ACH_EINVAL         = c_int.in_dll( libach, "ach_einval" ).value
 ACH_CORRUPT        = c_int.in_dll( libach, "ach_corrupt" ).value
+ACH_CANCELED       = c_int.in_dll( libach, "ach_canceled" ).value
 ACH_BAD_HEADER     = c_int.in_dll( libach, "ach_bad_header" ).value
 ACH_EACCES         = c_int.in_dll( libach, "ach_eacces" ).value
 ACH_O_WAIT         = c_int.in_dll( libach, "ach_o_wait" ).value
@@ -154,5 +155,3 @@ class channel:
     def get_bytearray(self, obj, wait=False, last=False):
         fs = self.get_ctype( (c_byte*len(obj)).from_buffer(obj), wait, last )
         return obj
-
-

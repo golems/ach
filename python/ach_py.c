@@ -251,6 +251,7 @@ get_buf( PyObject *self, PyObject *args ) {
     case ACH_STALE_FRAMES:
     case ACH_MISSED_FRAME:
     case ACH_TIMEOUT:
+    case ACH_CANCELED:
         return Py_BuildValue("ik", r, frame_size);
 
     case ACH_OVERFLOW:
