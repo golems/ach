@@ -400,6 +400,7 @@ PyMODINIT_FUNC initach_py() {
     PyModule_AddObject( m, "ACH_BUG",              PyInt_FromLong( ACH_BUG ) );
     PyModule_AddObject( m, "ACH_EINVAL",           PyInt_FromLong( ACH_EINVAL ) );
     PyModule_AddObject( m, "ACH_CORRUPT",          PyInt_FromLong( ACH_CORRUPT ) );
+    PyModule_AddObject( m, "ACH_CANCELED",         PyInt_FromLong( ACH_CANCELED ) );
     PyModule_AddObject( m, "ACH_BAD_HEADER",       PyInt_FromLong( ACH_BAD_HEADER ) );
     PyModule_AddObject( m, "ACH_EACCES",           PyInt_FromLong( ACH_EACCES ) );
     PyModule_AddObject( m, "ACH_O_WAIT",           PyInt_FromLong( ACH_O_WAIT ) );
