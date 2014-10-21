@@ -410,7 +410,7 @@ if( ACH_TIMEOUT == r ) {
       <emphasis>defined</emphasis> as discontinous when leap seconds
       occur.  This is bad when one wants to use the clock for periodic
       events as is likely for motion control.
-      <constant>CLOCK_MONTONIC</constant> is not discontinous, but
+      <constant>CLOCK_MONOTONIC</constant> is not discontinous, but
       even it has issues.  The NTP daemon may slew this clock,
       speeding it up or slowing it down on Linux by 0.5ms per second.
       Linux does provide the <constant>CLOCK_MONOTONIC_RAW</constant>
