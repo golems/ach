@@ -718,11 +718,12 @@ c.close()
       can use the <userinput>openbsd-inetd</userinput> package,
       installed with <userinput>apt-get install
       openbsd-inetd</userinput>.  Alternatively, you can install
-      xinetd with with <userinput>apt-get install xinetd</userinput>
+      xinetd with with <userinput>apt-get install xinetd</userinput>.
       </para>
     </tip>
 
     <sect3><title>Traditional Inetd Configuration</title>
+
     <para>You should add the following line to
     <filename>/etc/inetd.conf</filename>, assuming you have installed
     ach under <filename>/usr/local/</filename>:</para>
@@ -730,7 +731,16 @@ c.close()
     <screen>
 #/etc/inetd.conf
 8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
-</screen>
+    </screen>
+
+    <tip>
+      <para>
+        On Debian-based systems where you have installed ach via the
+        package manger, you can enable achd in inetd by running
+        <userinput>dpkg-reconfigure ach-utils</userinput>.
+      </para>
+    </tip>
+
 
     <para>
       You will probably need to restart inetd after editing the
