@@ -11,6 +11,7 @@ sync:
 	      --include 'man'                \
 	      --include 'manual'             \
 	      --include 'api'                \
+	      --include 'images'             \
 	      --include 'javadoc'            \
 	      --include 'javadoc/org'        \
 	      --include 'javadoc/org/golems' \
