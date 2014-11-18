@@ -229,6 +229,13 @@ extern "C" {
         ACH_O_COPY = 0x04
     } ach_get_opts_t;
 
+    typedef enum ach_map {
+	ACH_MAP_USER = 0,     /**< Use shared memory for channels */
+	ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */
+	ACH_MAP_KERNEL = 2,   /**< Use kernel memory for channels - require ach kernel module being loaded */
+    } ach_map_t;
+
+
     /** Type for header in shared memory */
     struct ach_header;
 
@@ -236,19 +243,24 @@ extern "C" {
     typedef struct {
         union {
             struct{
-                int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
+		union {
+		    int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
+		    ach_map_t map;       /** < replaces map_anon */
+		};
                 struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
             };
             uint64_t reserved_size[8]; /**< Reserve space to compatibly add future options */
         };
     } ach_attr_t;
 
-
     /** Attributes to pass to ach_create  */
     typedef struct {
         union {
             struct{
-                int map_anon;      /**< allocate channel in heap, rather than shm */
+		union {
+		    int map_anon;  /**< allocate channel in heap, rather than shm */
+		    ach_map_t map; /**< replaces map_anon */
+		};
                 struct ach_header *shm; /**< pointer to channel, set on output of create iff map_anon */
                 int truncate;      /**< remove and recreate an existing shm file */
                 int set_clock;     /**< if true, set the clock of the condition variable */
@@ -259,6 +271,12 @@ extern "C" {
         };
     } ach_create_attr_t;
 
+    /* Struct containing 'cache' of kernel module data to avoid updating when no changes exist */
+    typedef struct {
+	int options;
+	struct timespec reltime;   /**< kernel use relative time */
+    } achk_opt_t;
+
     /** Descriptor for shared memory area
      */
     typedef struct {
@@ -267,7 +285,10 @@ extern "C" {
                 struct ach_header *shm;   /**< pointer to mmap'ed block */
                 size_t len;          /**< length of memory mapping */
                 int fd;              /**< file descriptor of mmap'ed file */
-                uint64_t seq_num;    /**< last sequence number read */
+		union {
+		    uint64_t seq_num;    /**< last sequence number read */
+		    achk_opt_t k_opts;   /**< Used by kernel devices */
+		};
                 size_t next_index;   /**< next index entry to try get from */
                 ach_attr_t attr;     /**< attributes used to create this channel */
                 volatile sig_atomic_t cancel; /**< cancel a waiting ach_get */
