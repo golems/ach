@@ -52,7 +52,15 @@ extern "C" {
 #endif
 
 /** prefix to apply to channel names to get the shared memory file name */
-#define ACH_CHAN_NAME_PREFIX "/achshm-"
+#define ACH_SHM_CHAN_NAME_PREFIX_PATH "/dev/shm/"
+#define ACH_SHM_CHAN_NAME_PREFIX_NAME "/achshm-"
+
+/** prefix to apply to channel names got get the chardev file name */
+#define ACH_CHAR_CHAN_NAME_PREFIX_PATH "/dev/"
+#define ACH_CHAR_CHAN_NAME_PREFIX_NAME "ach-"
+
+/** Name of chardev channel controlling device */
+#define ACH_CHAR_CHAN_CTRL_NAME "/dev/achctrl"
 
 /** Number of times to retry a syscall on EINTR before giving up */
 #define ACH_INTR_RETRY 8
