@@ -44,7 +44,7 @@ install (FILES include/ach.h include/Ach.hpp DESTINATION include)
 #############
 
 ## libach ##
-add_library(ach SHARED src/ach.c src/pipe.c)
+add_library(ach SHARED src/ach.c src/pipe.c src/dns.c)
 target_link_libraries(ach pthread ${LIBRT})
 install( TARGETS ach DESTINATION lib )
 
