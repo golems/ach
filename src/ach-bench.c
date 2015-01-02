@@ -71,6 +71,7 @@ size_t RECV_RT = 1;
 size_t RECV_NRT = 0;
 size_t SEND_RT = 1;
 int PASS_NO_RT = 0;
+int KERNDEV = 0;
 
 double overhead = 0;
 
@@ -134,10 +135,15 @@ void calibrate(void) {
 
 void init_time_chan(void) {
     /* create channel */
+    ach_create_attr_t cattr;
     int r = ach_unlink("time");               /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
+    if (KERNDEV) {
+        ach_create_attr_init(&cattr);
+        cattr.map = ACH_MAP_KERNEL;
+    }
     r = ach_create("time", (size_t)FREQUENCY*(size_t)SECS*RECV_RT,
-                   sizeof(float), NULL );
+                   sizeof(float), KERNDEV ? &cattr : NULL );
     assert(ACH_OK == r);
 
     /* open channel */
@@ -149,8 +155,14 @@ void print_times(void) {
     while(1) {
         float tm;
         size_t fs;
-        struct timespec then = get_ticks();
-        then.tv_sec += 3;
+        struct timespec then;
+        if (KERNDEV) {
+            then.tv_sec = 3;
+            then.tv_nsec = 0;
+        } else {
+            then = get_ticks();
+            then.tv_sec += 3;
+        }
         int r = ach_get(&time_chan, &tm, sizeof(tm), &fs, &then,
                         ACH_O_WAIT);
         if( ACH_TIMEOUT == r ) break;
@@ -193,8 +205,14 @@ void receiver_ach(int rt) {
     ticks_t ticks = get_ticks();
     while(1) {
         size_t fs;
-        ticks_t then = ticks;
-        then.tv_sec += 1;
+        ticks_t then;
+        if (KERNDEV) {
+            then.tv_sec = 1;
+            then.tv_nsec = 0;
+        } else {
+            then = ticks;
+            then.tv_sec += 1;
+        }
         int r = ach_get(&chan, &ticks, sizeof(ticks), &fs, &then,
                         ACH_O_LAST | ACH_O_WAIT);
         ticks_t now = get_ticks();
@@ -205,14 +223,18 @@ void receiver_ach(int rt) {
             send_time((float)ticks_delta(ticks,now));
         }
     }
-
 }
 
 void setup_ach(void) {
     /* create channel */
     int r = ach_unlink("bench");               /* delete first */
     assert( ACH_OK == r || ACH_ENOENT == r);
-    r = ach_create("bench", 10, 256, NULL );
+    ach_create_attr_t cattr;
+    if (KERNDEV) {
+	ach_create_attr_init(&cattr);
+	cattr.map = ACH_MAP_KERNEL;
+    }
+    r = ach_create("bench", 10, 256, KERNDEV ? &cattr : NULL );
     assert(ACH_OK == r);
 
     /* open channel */
@@ -301,7 +323,7 @@ int main(int argc, char **argv) {
 
     struct vtab *vt = &vtab_ach;
 
-    while( (c = getopt( argc, argv, "f:s:p:r:l:gPhH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "f:s:p:r:l:gPhH?Vk")) != -1 ) {
         switch(c) {
         case 'f':
             FREQUENCY = strtod(optarg, &endptr);
@@ -314,6 +336,9 @@ int main(int argc, char **argv) {
         case 'p':
             SEND_RT = (size_t)atoi(optarg);
             assert(SEND_RT);
+            break;
+        case 'k':
+            KERNDEV = 1;
             break;
         case 'r':
             RECV_RT = (size_t)atoi(optarg);
@@ -347,6 +372,7 @@ int main(int argc, char **argv) {
                  "  -l COUNT,           Non-Real-Time Receivers (0)\n"
                  "  -g,                 Proceed even if real-time setup fails\n"
                  "  -P,                 Benchmark pipes instead of ach\n"
+                 "  -k,                 Use kernel channels\n"
                 );
             exit(EXIT_SUCCESS);
         }

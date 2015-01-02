@@ -68,7 +68,12 @@
 
 #include "ach.h"
 #include "ach_impl.h"
+#include "module/ach.h"
+#include <sys/wait.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
 
 #ifdef NDEBUG
 
@@ -83,6 +88,8 @@
 #define DEBUG_PERROR(a) perror(a)
 
 #endif /* NDEBUG */
+
+#define IS_KERNEL_DEVICE(chan)  (NULL == chan->shm)
 
 size_t ach_channel_size = sizeof(ach_channel_t);
 size_t ach_attr_size = sizeof(ach_attr_t);
@@ -167,12 +174,79 @@ static int channel_name_ok( const char *name ) {
 }
 
 static enum ach_status
+charfile_for_channel_name( const char *name, char *buf, size_t n ) {
+    if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
+    if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
+    strcpy( buf, ACH_CHAR_CHAN_NAME_PREFIX_PATH);
+    strcat( buf, ACH_CHAR_CHAN_NAME_PREFIX_NAME);
+    strncat( buf, name, ACH_CHAN_NAME_MAX );
+    return ACH_OK;
+}
+
+static enum ach_status
 shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
     if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
-    strcpy( buf, ACH_CHAN_NAME_PREFIX );
+    strcpy( buf, ACH_SHM_CHAN_NAME_PREFIX_NAME );
     strncat( buf, name, ACH_CHAN_NAME_MAX );
     return ACH_OK;
+}
+
+static enum ach_status
+channame_to_full_shm_path(const char* channame, char *buf, size_t n) {
+    if (n < ACH_CHAN_NAME_MAX + 32) return ACH_BUG;
+    if (!channel_name_ok(channame) ) return ACH_INVALID_NAME;
+
+    strcpy(buf, ACH_SHM_CHAN_NAME_PREFIX_PATH);
+    strcat(buf, ACH_SHM_CHAN_NAME_PREFIX_NAME );
+    strncat(buf, channame, ACH_CHAN_NAME_MAX);
+    return ACH_OK;
+}
+
+static enum ach_status
+channel_exists_as_shm_device(const char* name)
+{
+    char ach_name[ACH_CHAN_NAME_MAX + 32];
+    int r = channame_to_full_shm_path(name, ach_name, sizeof(ach_name));
+    if (ACH_OK != r) return ACH_BUG;
+
+    struct stat buf;
+    if (stat(ach_name, &buf)) {
+        return ACH_ENOENT;
+    } else {
+        return ACH_OK;
+    }
+}
+
+
+static enum ach_status
+channel_exists_as_kernel_device(const char* name)
+{
+    char ach_name[ACH_CHAN_NAME_MAX + 16];
+    int r = charfile_for_channel_name(name, ach_name, sizeof(ach_name));
+    if (ACH_OK != r) return ACH_BUG;
+
+    struct stat buf;
+    if (stat (ach_name, &buf)) {
+        return ACH_ENOENT;
+    } else {
+        return ACH_OK;
+    }
+}
+
+static int fd_for_kernel_device_channel_name(const char *name,int oflag)
+{
+    char dev_name[ACH_CHAN_NAME_MAX+16];
+    int r = charfile_for_channel_name(name, dev_name, sizeof(dev_name));
+    if (ACH_OK != r) return -ACH_BUG;
+    int fd;
+    int i = 0;
+
+    do {
+        fd = open( dev_name, O_RDWR | oflag, 0666 );
+    } while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
+
+    return fd;
 }
 
 /** Opens shm file descriptor for a channel.
@@ -184,11 +258,178 @@ static int fd_for_channel_name( const char *name, int oflag ) {
     if( 0 != r ) return ACH_BUG;
     int fd;
     int i = 0;
+
     do {
         fd = shm_open( shm_name, O_RDWR | oflag, 0666 );
     }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
     return fd;
 }
+
+/*****************************************************************
+  START charfile / kernel module helpers
+*****************************************************************/
+int charfile_unlink(const char* channel_name)
+{
+    int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
+    if (fd < 0) {
+        DEBUGF ("Failed opening kernel device controller\n");
+        return errno;
+    }
+    struct ach_ctrl_unlink_ch arg;
+    strcpy(arg.name, channel_name);
+
+    int ret = ioctl(fd, ACH_CTRL_UNLINK_CH, &arg);
+    if (ret < 0) {
+        ret = errno;
+        DEBUGF("Failed removing device %s\n", channel_name);
+    }
+
+    close(fd);
+    return ret;
+}
+
+enum ach_status
+achk_create( const char *channel_name,
+	     size_t frame_cnt, size_t frame_size)
+{
+    if (ACH_OK == channel_exists_as_shm_device(channel_name))
+        return ACH_EEXIST;
+
+    int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
+    if (fd < 0) {
+        DEBUGF("Failed opening kernel device controller\n");
+        return ACH_FAILED_SYSCALL;
+    }
+    struct ach_ctrl_create_ch arg;
+    arg.frame_cnt = frame_cnt;
+    arg.frame_size = frame_size;
+    strcpy(arg.name, channel_name);
+
+    enum ach_status ach_stat = ACH_OK;
+    int ret = ioctl(fd, ACH_CTRL_CREATE_CH, &arg);
+    if (ret < 0) {
+        DEBUGF("Failed creating device %s\n", channel_name);
+        ach_stat = check_errno();
+    }
+
+    close(fd);
+    return ach_stat;
+}
+
+static struct timespec relative_time(struct timespec then)
+{
+    struct timespec delta;
+    struct timespec now;
+
+    clock_gettime( ACH_DEFAULT_CLOCK, &now );
+
+    delta.tv_sec = 0;
+    delta.tv_nsec = 0;
+
+    if (now.tv_sec > then.tv_sec)
+        return delta;
+    if (now.tv_sec == then.tv_sec &&
+        now.tv_nsec > then.tv_nsec)
+        return delta;
+    delta.tv_sec = then.tv_sec - now.tv_sec;
+    if (now.tv_nsec > then.tv_nsec) {
+        delta.tv_sec--;
+        then.tv_nsec += 1e9;
+    }
+    delta.tv_nsec = then.tv_nsec - now.tv_sec;
+    return delta;
+}
+
+static enum ach_status
+achk_get( ach_channel_t *chan,
+          void *cx, char **pobj,
+          size_t *frame_size,
+          const struct timespec *ACH_RESTRICT abstime,
+          int options )
+{
+    size_t size = *(size_t*)cx;
+    achk_opt_t opts;
+    opts.options = options;
+    if(abstime)
+        opts.reltime =*abstime;
+    else {
+        opts.reltime.tv_sec = 0;
+        opts.reltime.tv_nsec = 0;
+    }
+
+    if (opts.reltime.tv_sec > 10000) {
+        /* Regard time as abstime - convert to relative time */
+        opts.reltime = relative_time(opts.reltime);
+    }
+    if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
+        struct ach_ch_mode mode;
+        memset(&mode, 0, sizeof(mode));
+
+        if (options & ACH_O_WAIT) mode.mode |= ACH_CH_MODE_WAIT;
+        if (options & ACH_O_LAST) mode.mode |= ACH_CH_MODE_LAST;
+        if (options & ACH_O_COPY) mode.mode |= ACH_CH_MODE_COPY;
+
+        mode.reltime = opts.reltime;
+
+        if (ioctl(chan->fd, ACH_CH_SET_MODE, &mode)) {
+            return ACH_FAILED_SYSCALL;
+        }
+        chan->k_opts = opts;
+    }
+
+    ssize_t ret = read(chan->fd, *pobj, size);
+    if ( ret < 0) {
+        switch (errno) {
+        case EAGAIN: return ACH_STALE_FRAMES; break;
+        case ETIME: return ACH_TIMEOUT; break;
+        case ECANCELED: return ACH_CANCELED; break;
+        default: return ACH_FAILED_SYSCALL; break;
+        }
+    }
+    *frame_size = ret;
+    return ACH_OK;
+}
+
+static enum ach_status
+achk_put( ach_channel_t *chan,
+          void *cx, const char *obj, size_t len )
+{
+    ssize_t size = write(chan->fd, obj, len);
+    if (size < 0)
+	return check_errno();
+    return ACH_OK;
+}
+
+static enum ach_status
+achk_flush( ach_channel_t * chan)
+{
+    unsigned int arg = 0;
+    if (ioctl(chan->fd, ACH_CH_FLUSH, arg)) {
+        return ACH_FAILED_SYSCALL;
+    }
+    return ACH_OK;
+}
+
+enum ach_status
+achk_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr )
+{
+    unsigned int arg;
+
+    if (!attr)
+        arg = 0;
+    else
+        arg = attr->async_unsafe ? ACH_CH_CANCEL_UNSAFE : 0;
+
+    chan->cancel = 1;
+    if (ioctl(chan->fd, ACH_CH_CANCEL, arg)) {
+        return ACH_FAILED_SYSCALL;
+    }
+    return ACH_OK;
+}
+
+/*****************************************************************
+  END charfile / kernel module helpers
+*****************************************************************/
 
 
 
@@ -349,6 +590,21 @@ ach_create( const char *channel_name,
     ach_header_t *shm;
     int fd;
     size_t len;
+
+    if (attr && ACH_MAP_KERNEL == attr->map) {
+        enum ach_status r =  achk_create(channel_name, frame_cnt, frame_size);
+        if (ACH_OK == r) {
+            int retry = 0;
+            /* Wait for device to become ready */
+            r = channel_exists_as_kernel_device(channel_name);
+            while ( (ACH_OK != r) && (retry++ < ACH_INTR_RETRY*10)) {
+                    usleep(1000);
+                    r = channel_exists_as_kernel_device(channel_name);
+            }
+        }
+        return r;
+    }
+
     /* fixme: truncate */
     /* open shm */
     {
@@ -539,6 +795,24 @@ ach_open( ach_channel_t *chan, const char *channel_name,
     size_t len;
     int fd = -1;
 
+    if ((attr && ACH_MAP_KERNEL == attr->map) ||
+        ACH_OK == channel_exists_as_kernel_device(channel_name)) {
+
+        if ( (fd = fd_for_kernel_device_channel_name(channel_name,0)) < 0 ) {
+            return check_errno();
+        }
+
+        /* initialize struct */
+        chan->fd = fd;
+        chan->len = 0;        /* We don't care */
+        chan->shm = NULL;     /* Indicates kernel device */
+        chan->seq_num = 0;    /* Not used */
+        chan->next_index = 0; /* Not used */
+        chan->cancel = 0;
+
+        return ACH_OK;
+    }
+
     if( attr ) memcpy( &chan->attr, attr, sizeof(chan->attr) );
     else memset( &chan->attr, 0, sizeof(chan->attr) );
 
@@ -549,7 +823,6 @@ ach_open( ach_channel_t *chan, const char *channel_name,
         if( ! channel_name_ok( channel_name ) )
             return ACH_INVALID_NAME;
         /* open shm */
-        if( ! channel_name_ok( channel_name ) ) return ACH_INVALID_NAME;
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
             return check_errno();
         }
@@ -611,6 +884,9 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
          const struct timespec *ACH_RESTRICT abstime,
          int options )
 {
+    if (IS_KERNEL_DEVICE(chan)) {
+        return achk_get( chan, &size, (char**)&buf, frame_size, abstime, options);
+    }
     return ach_xget( chan,
                      get_fun, &size, &buf,
                      frame_size, abstime, options );
@@ -619,6 +895,11 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
 
 enum ach_status
 ach_flush( ach_channel_t *chan ) {
+
+    if (IS_KERNEL_DEVICE(chan)) {
+        return achk_flush(chan);
+    }
+
     ach_header_t *shm = chan->shm;
     enum ach_status r = rdlock(chan, 0,  NULL);
     if( ACH_OK != r ) return r;
@@ -656,6 +937,9 @@ put_fun(void *cx, void *chan_dst, const void *obj)
 enum ach_status
 ach_put( ach_channel_t *chan, const void *buf, size_t len )
 {
+    if (IS_KERNEL_DEVICE(chan)) {
+        return achk_put( chan, &len, buf, len);
+    }
     return ach_xput( chan, put_fun, &len, buf, len );
 }
 
@@ -728,14 +1012,23 @@ ach_chmod( ach_channel_t *chan, mode_t mode ) {
     return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno();;
 }
 
-
 enum ach_status
 ach_unlink( const char *name ) {
-    char shm_name[ACH_CHAN_NAME_MAX + 16];
-    enum ach_status r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
+    char ach_name[ACH_CHAN_NAME_MAX + 16];
+    enum ach_status kstat = channel_exists_as_kernel_device(name);
+
+    if (ACH_ENOENT == channel_exists_as_shm_device(name) &&
+        ACH_ENOENT == kstat) {
+        return ACH_ENOENT;
+    }
+    if (ACH_OK == kstat) {
+        enum ach_status r = charfile_unlink(name);
+        return r;
+    }
+
+    enum ach_status r = shmfile_for_channel_name(name, ach_name, sizeof(ach_name));
     if( ACH_OK == r ) {
-        /*r = shm_unlink(name); */
-        int i = shm_unlink(shm_name);
+        int i = shm_unlink(ach_name);
         if( 0 == i ) {
             return  ACH_OK;
         } else {
@@ -757,6 +1050,10 @@ static ach_cancel_attr_t default_cancel_attr = {.async_unsafe = 0};
 enum ach_status
 ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
     if( NULL == attr ) attr = &default_cancel_attr;
+
+    if (IS_KERNEL_DEVICE(chan)) {
+        return achk_cancel(chan, attr);
+    }
 
     if( attr->async_unsafe ) {
         /* Don't be async safe, i.e., called from another thread */
