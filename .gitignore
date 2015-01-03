@@ -102,3 +102,9 @@ Makefile.in
 /debian/libachj0-java
 /debian/libachj0
 /transfertest
+module
+*.ko
+*.mod.c
+*.mod
+Module.symvers
+modules.order

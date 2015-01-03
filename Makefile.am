@@ -25,7 +25,7 @@ libachutil_la_SOURCES = src/achutil.c include/achutil.h
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example robusttest
 
-libach_la_SOURCES = src/ach.c src/pipe.c src/dns.c
+libach_la_SOURCES = src/ach_posix.c src/pipe.c src/dns.c
 
 # This is a libtool version -- CURRENT:REVISION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
@@ -154,10 +154,45 @@ doc/.javadoc.stamp: $(JSOURCES)
 
 endif
 
+
+# Linux Module
+
+module_builddir=$(top_builddir)/module
+
+if HAVE_LINUX_HEADERS
+
+
+ach.ko: $(module_builddir)/ach_linux.c $(module_builddir)/ach_linux.h $(module_builddir)/ach_impl.h $(module_builddir)/Kbuild
+	make -C $(KDIR) M=$(PWD)/$(module_builddir)
+	cp $(module_builddir)/ach.ko .
+
+$(module_builddir)/ach_linux.c: src/module/ach_linux.c
+	mkdir -p $(module_builddir)
+	cp $(top_srcdir)/src/module/ach_linux.c $(module_builddir)/ach_linux.c
+$(module_builddir)/ach_linux.h: src/module/ach_linux.h
+	mkdir -p $(module_builddir)
+	cp $(top_srcdir)/src/module/ach_linux.h $(module_builddir)/ach_linux.h
+$(module_builddir)/ach_impl.h: src/module/ach_impl.h
+	mkdir -p $(module_builddir)
+	cp $(top_srcdir)/src/module/ach_impl.h $(module_builddir)/ach_impl.h
+$(module_builddir)/Kbuild: src/module/Kbuild
+	mkdir -p $(module_builddir)
+	cp $(top_srcdir)/src/module/Kbuild $(module_builddir)/Kbuild
+
+
+linuxmodulesdir=/lib/modules/$(KERNELRELEASE)/extra
+linuxmodules_DATA=ach.ko
+
+install-data-hook:
+	depmod
+endif
+
+
+
 ## LOCAL CLEAN ##
 
 clean-local:
-	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Lib.h org.golems.ach.jar
+	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Lib.h org.golems.ach.jar $(module_builddir)
 
 distclean-local:
 	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake .nfs*

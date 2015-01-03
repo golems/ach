@@ -68,7 +68,7 @@
 
 #include "ach.h"
 #include "ach_impl.h"
-#include "module/ach.h"
+#include "module/ach_linux.h"
 #include <sys/wait.h>
 
 #include <unistd.h>
@@ -290,7 +290,7 @@ int charfile_unlink(const char* channel_name)
 
 enum ach_status
 achk_create( const char *channel_name,
-	     size_t frame_cnt, size_t frame_size)
+             size_t frame_cnt, size_t frame_size)
 {
     if (ACH_OK == channel_exists_as_shm_device(channel_name))
         return ACH_EEXIST;
@@ -396,7 +396,7 @@ achk_put( ach_channel_t *chan,
 {
     ssize_t size = write(chan->fd, obj, len);
     if (size < 0)
-	return check_errno();
+        return check_errno();
     return ACH_OK;
 }
 

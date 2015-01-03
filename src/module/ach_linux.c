@@ -1,10 +1,10 @@
 /*
- * Kernel driver module for ach. 
+ * Kernel driver module for ach.
  *
  * Copyright (C) 2013, Prevas A/S
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
- * 
+ *
  * This file is provided under the following "BSD-style" License:
  *
  *
@@ -52,7 +52,7 @@
 #include <linux/device.h>	/* device_create() */
 #include <linux/cdev.h>
 #include <linux/poll.h>
-#include <linux/ach.h>		/* ACH Kernel API */
+#include <ach_linux.h>		/* ACH Kernel API */
 #include "ach_impl.h"
 
 MODULE_LICENSE("GPL");
@@ -982,7 +982,7 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 			   loff_t * offset)
 {
 	enum ach_status stat;
-	ssize_t retlen;
+	ssize_t retlen = -1;
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 
 	KDEBUG1("In ach_ch_read (minor=%d)\n", ch_file->dev->minor);
@@ -1184,7 +1184,7 @@ static struct miscdevice ach_misc_device = {
 };
 
 /**********************************************************************************
- * MODULE INIT 
+ * MODULE INIT
  **********************************************************************************/
 static int __init ach_init(void)
 {

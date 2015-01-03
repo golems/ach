@@ -4,7 +4,7 @@
 AC_PREREQ([2.65])
 AC_INIT([ach], [1.2.1], [ntd@gatech.edu])
 AM_INIT_AUTOMAKE([-Wall])
-AC_CONFIG_SRCDIR([src/ach.c])
+AC_CONFIG_SRCDIR([include/ach.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -306,6 +306,19 @@ AS_IF([test "x$JAVAC" = "x"],
 AC_SUBST([JNICPPFLAGS])
 AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
 
+
+# Linux
+
+AS_IF([test "x$KERNELRELEASE" = "x"],
+      [KERNELRELEASE=`uname -r`])
+
+AS_IF([test "x$KDIR" = "x" && test -f /lib/modules/$KERNELRELEASE/build]
+      [KDIR="/lib/modules/$KERNELRELEASE/build"])
+
+AC_SUBST([KDIR])
+AC_SUBST([KERNELRELEASE])
+AM_CONDITIONAL([HAVE_LINUX_HEADERS],   [test "x$KDIR" != x])
+
 AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
 
 
@@ -319,3 +332,4 @@ AC_MSG_NOTICE([DEBUG:           $enable_debug])
 AC_MSG_NOTICE([PREFIX:          $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])
 AC_MSG_NOTICE([BUILD JAVA LIB:  $BUILD_JAVA])
+AC_MSG_NOTICE([KDIR:            $KDIR])
