@@ -5,8 +5,9 @@ Under Direction of Prof. Mike Stilman
 
 NAME:                  Email Address:                    Contribution:
 --------------------------------------------------------------------------------
-Neil Dantam              <ntd@gatech.edu>
+Neil Dantam              <ntd@rice.edu>
+Kim Bøndergaard          <kimbp66@gmail.com>               Linux Kernel Module
 Matt Zucker              <mzucker1@swarthmore.edu>         C++ Wrapper
 Jon Scholz               <jkscholz@gatech.edu>             ach_chmod()
 Brian Gerkey             <gerkey@willowgarage.com>         CMake build script
-Saul Reynold-Haertle     <saulrh@gatech.edu>               C++ compatability
+Saul Reynolds-Haertle    <saulrh@gatech.edu>               C++ compatability
