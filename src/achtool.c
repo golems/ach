@@ -65,6 +65,7 @@
 
 size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
+int opt_kernel = 0;
 size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
 const char *opt_domain = "local";
@@ -173,7 +174,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c, i = 0;
     opterr = 0;
-    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1thH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1tkuhH?V")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
             parse_cmd( cmd_create, optarg );
@@ -198,6 +199,12 @@ int main( int argc, char **argv ) {
             break;
         case 't':   /* truncate */
             opt_truncate++;
+            break;
+        case 'k':   /* kernel */
+            opt_kernel++;
+            break;
+        case 'u':   /* user */
+            opt_kernel--;
             break;
         case 'v':   /* verbose  */
             opt_verbosity++;
@@ -226,6 +233,8 @@ int main( int argc, char **argv ) {
                   "  -t,                       Truncate and reinit newly create channel.\n"
                   "                            WARNING: this will clobber processes\n"
                   "                            Currently using the channel.\n"
+                  "  -k,                       Create kernel-mapped channel\n"
+                  "  -u,                       Create user-mapped channel\n"
                   "  -v,                       Make output more verbose\n"
                   "  -?,                       Give program help list\n"
                   "  -V,                       Print program version\n"
@@ -297,6 +306,7 @@ int cmd_create(void) {
         ach_create_attr_t attr;
         ach_create_attr_init(&attr);
         if( opt_truncate ) attr.truncate = 1;
+        if( opt_kernel > 0 ) attr.map = ACH_MAP_KERNEL;
         i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
     }
 
