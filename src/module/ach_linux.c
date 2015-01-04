@@ -127,7 +127,7 @@ static struct ach_ctrl_device ctrl_data;
  **********************************************************************************/
 
 typedef enum ach_status {
-	ACH_OK = 0,	      /**< Call successful */
+	ACH_OK = 0,           /**< Call successful */
 	ACH_OVERFLOW = 1,     /**< destination too small to hold frame */
 	ACH_INVALID_NAME = 2, /**< invalid channel name */
 	ACH_BAD_SHM_FILE = 3, /**< channel file didn't look right */
@@ -136,10 +136,10 @@ typedef enum ach_status {
 	ACH_STALE_FRAMES = 5, /**< no new data in the channel */
 	ACH_MISSED_FRAME = 6, /**< we missed the next frame */
 	ACH_TIMEOUT = 7,      /**< timeout before frame received */
-	ACH_EEXIST = 8,	      /**< channel file already exists */
-	ACH_ENOENT = 9,	      /**< channel file doesn't exist */
+	ACH_EEXIST = 8,               /**< channel file already exists */
+	ACH_ENOENT = 9,               /**< channel file doesn't exist */
 	ACH_CLOSED = 10,      /**< unused */
-	ACH_BUG = 11,	      /**< internal ach error */
+	ACH_BUG = 11,         /**< internal ach error */
 	ACH_EINVAL = 12,      /**< invalid channel */
 	ACH_CORRUPT = 13,     /**< channel memory has been corrupted */
 	ACH_BAD_HEADER = 14,  /**< an invalid header was given */
@@ -326,13 +326,13 @@ static enum ach_status put_fun(void *cx, void *chan_dst, const void *obj)
 	return ACH_OK;
 }
 
-#define ACH_XPUT_ASSERT(cond)   \
-  { \
-     if (! (cond) ) {	       \
-        printk(KERN_ERR "Logic error in ACH\n");   \
-        return ACH_BUG;				   \
-     } \
-  }
+#define ACH_XPUT_ASSERT(cond)						\
+	{								\
+		if (! (cond) ) {					\
+			printk(KERN_ERR "Logic error in ACH\n");	\
+			return ACH_BUG;					\
+		}							\
+	}
 
 static enum ach_status
 ach_xput(ach_channel_t * chan,
@@ -1260,3 +1260,9 @@ static void __exit ach_exit(void)
 
 module_init(ach_init);
 module_exit(ach_exit);
+
+/* Local Variables:    */
+/* mode: C++           */
+/* c-basic-offset: 8   */
+/* indent-tabs-mode: t */
+/* End:                */

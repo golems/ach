@@ -1,5 +1,5 @@
 /*
- * This file replicates some of the structures already defined 
+ * This file replicates some of the structures already defined
  * in ach_impl.h for userspace library - consider joining the two files
  *
  */
@@ -14,28 +14,28 @@
 
     /** magic number that appears the the beginning of our mmaped files.
 
-        This is just to be used as a check.
+	This is just to be used as a check.
     */
 #define ACH_SHM_MAGIC_NUM 0xb07511f3
 
     /** A separator between different shm sections.
 
-        This one comes after the header.  Should aid debugging by
-        showing we don't overstep and bounds.  64-bit for alignment.
+	This one comes after the header.  Should aid debugging by
+	showing we don't overstep and bounds.  64-bit for alignment.
     */
 #define ACH_SHM_GUARD_HEADER_NUM ((uint64_t)0x1A2A3A4A5A6A7A8ALLU)
     /** A separator between different shm sections.
 
-        This ones comes after the index array.  Should aid debugging by
-        showing we don't overstep and bounds.  64-bit for alignment.
+	This ones comes after the index array.  Should aid debugging by
+	showing we don't overstep and bounds.  64-bit for alignment.
     */
 #define ACH_SHM_GUARD_INDEX_NUM ((uint64_t)0x1B2B3B4B5B6B7B8BLLU)
 
     /** A separator between different shm sections.
 
-        This one comes after the data section (at the very end of the
-        file).  Should aid debugging by showing we don't overstep and
-        bounds.  64-bit for alignment.
+	This one comes after the data section (at the very end of the
+	file).  Should aid debugging by showing we don't overstep and
+	bounds.  64-bit for alignment.
     */
 #define ACH_SHM_GUARD_DATA_NUM ((uint64_t)0x1C2C3C4C5C6C7C8CLLU)
 
@@ -45,8 +45,8 @@
      * channel must maintain its own tail pointer.
      */
 typedef struct ach_header {
-	uint32_t magic;		 /**< magic number of ach shm files */
-	size_t len;		 /**< length of mmap'ed file */
+	uint32_t magic;          /**< magic number of ach shm files */
+	size_t len;              /**< length of mmap'ed file */
 	union {
 		struct {
 			size_t index_cnt;/**< number of entries in index */
@@ -70,20 +70,20 @@ typedef struct ach_header {
 	} sync;
 #else
 	struct {		/* anonymous structure */
-		pthread_mutex_t mutex;	   /**< mutex for condition variables */
-		pthread_cond_t cond;	   /**< condition variable */
+		pthread_mutex_t mutex;     /**< mutex for condition variables */
+		pthread_cond_t cond;       /**< condition variable */
 		int dirty;
-	} sync;			  /**< variables for synchronization */
+	} sync;                           /**< variables for synchronization */
 #endif
 	/* should force our alignment to 8-bytes... */
-	uint64_t last_seq;	  /**< last sequence number written */
+	uint64_t last_seq;        /**< last sequence number written */
 } ach_header_t;
 
     /** Entry in shared memory index array
      */
 typedef struct {
-	size_t size;	  /**< size of frame */
-	size_t offset;	  /**< byte offset of entry from beginning of data array */
+	size_t size;      /**< size of frame */
+	size_t offset;    /**< byte offset of entry from beginning of data array */
 	uint64_t seq_num; /**< number of frame */
 } ach_index_t;
 
@@ -109,3 +109,9 @@ typedef struct {
 
 /** Default nominal frame size for a channel */
 #define ACH_DEFAULT_FRAME_SIZE 512
+
+/* Local Variables:    */
+/* mode: C++           */
+/* c-basic-offset: 8   */
+/* indent-tabs-mode: t */
+/* End:                */

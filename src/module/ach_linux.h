@@ -1,13 +1,12 @@
 #ifndef _LINUX_ACH_IPC_H_
 #define _LINUX_ACH_IPC_H
-
 /*
  * Header file for ach_ipc kernel driver
  *
  * Copyright (C) 2013, Prevas A/S
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
- * 
+ *
  * This file is provided under the following "BSD-style" License:
  *
  *
@@ -87,3 +86,9 @@ struct ach_ch_status {
 };
 
 #endif
+
+/* Local Variables:    */
+/* mode: C++           */
+/* c-basic-offset: 8   */
+/* indent-tabs-mode: t */
+/* End:                */
