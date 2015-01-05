@@ -353,7 +353,7 @@ int cmd_file(void) {
     if( opt_verbosity > 0 ) {
         fprintf(stderr, "Printing file for %s\n", opt_chan_name);
     }
-    printf("/dev/shm/" ACH_SHM_CHAN_NAME_PREFIX_PATH "%s\n", opt_chan_name );
+    printf(ACH_SHM_CHAN_NAME_PREFIX_PATH ACH_SHM_CHAN_NAME_PREFIX_NAME  "%s\n", opt_chan_name );
     return 0;
 }
 
