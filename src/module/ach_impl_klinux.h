@@ -1,7 +1,9 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2012, Georgia Tech Research Corporation
+ * Copyright (c) 2008-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Prevas A/S
+ * Copyright (c) 2015, Rice University
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -24,6 +26,10 @@
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
  *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -40,39 +46,21 @@
  *
  */
 
+/** \file ach_impl_linux.h
+ *  \author Neil T. Dantam
+ */
 
-#include <pthread.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <assert.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <string.h>
-#include <time.h>
-#include <errno.h>
-#include <inttypes.h>
-#include "ach.h"
-#include "ach_impl_posix.h"
+#ifndef ACH_IMPL_LINUX_H
+#define ACH_IMPL_LINUX_H
 
-void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size) {
-    size_t i;
-    for( i = 0; i < 8; i ++ )
-        frame->size_bytes[i] = (size >> (8 * i)) & 0xFF;
-}
+#define ACH_KLINUX
 
+#include "ach_impl_common.h"
 
-uint64_t ach_pipe_get_size( const ach_pipe_frame_t *frame ) {
-    uint64_t i;
-    uint64_t size = 0;
-    for( i = 0; i < 8; i ++ )
-        size |= ((unsigned)frame->size_bytes[i] << (8 * i) );
-    return size;
-}
+#endif /* ACH_IMPL_LINUX_H */
 
-ach_pipe_frame_t *ach_pipe_alloc(size_t size) {
-    ach_pipe_frame_t *p = (ach_pipe_frame_t *) malloc( sizeof(ach_pipe_frame_t) - 1 + size );
-    memcpy(p->magic, "achpipe", 8);
-    ach_pipe_set_size( p, size );
-    return p;
-}
+/* Local Variables:    */
+/* mode: C++           */
+/* c-basic-offset: 8   */
+/* indent-tabs-mode: t */
+/* End:                */

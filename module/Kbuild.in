@@ -1,7 +1,7 @@
 obj-m += ach.o
 ach-y := ach_linux.o
 
-CFLAGS_ach_linux.o += -DDEBUG
+CFLAGS_ach_linux.o += -DDEBUG -I.
 
 all:
 	make -C $(KDIR) M=$(PWD)/src/module modules

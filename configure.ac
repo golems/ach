@@ -3,13 +3,14 @@
 
 AC_PREREQ([2.65])
 AC_INIT([ach], [1.2.1], [ntd@gatech.edu])
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([-Wall subdir-objects])
 AC_CONFIG_SRCDIR([include/ach.h])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
 
 # Checks for programs.
 AC_USE_SYSTEM_EXTENSIONS
+AM_PROG_AR
 AC_PROG_CC
 AC_PROG_CC_C99
 AC_PROG_CXX

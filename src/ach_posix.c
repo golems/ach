@@ -41,7 +41,7 @@
  */
 
 
-/** \file ach.c
+/** \file ach_posix.c
  *  \author Neil T. Dantam
  */
 
@@ -67,8 +67,8 @@
 #include <inttypes.h>
 
 #include "ach.h"
-#include "ach_impl.h"
-#include "module/ach_linux.h"
+#include "ach_impl_posix.h"
+#include "module/ach_klinux.h"
 #include <sys/wait.h>
 
 #include <unistd.h>

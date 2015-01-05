@@ -2,7 +2,7 @@
 
 all: ach.ko
 
-module_src = ach_linux.c ach_linux.h ach_impl_linux.h
+module_src = ach_klinux.c ach_klinux.h ach_impl_klinux.h ach_impl_common.h
 
 ach.ko: $(module_src)
 	make -C $(KDIR) M=$(PWD) modules
@@ -22,9 +22,11 @@ clean-local:
 	rm -f $(module_src)
 
 ## Copy files to support out-of-tree builds
-ach_linux.c: $(top_srcdir)/src/module/ach_linux.c
-	cp $(top_srcdir)/src/module/ach_linux.c .
-ach_linux.h: $(top_srcdir)/src/module/ach_linux.h
-	cp $(top_srcdir)/src/module/ach_linux.h .
-ach_impl_linux.h: $(top_srcdir)/src/module/ach_impl_linux.h
-	cp $(top_srcdir)/src/module/ach_impl_linux.h .
+ach_klinux.c: $(top_srcdir)/src/module/ach_klinux.c
+	cp $(top_srcdir)/src/module/ach_klinux.c .
+ach_klinux.h: $(top_srcdir)/src/module/ach_klinux.h
+	cp $(top_srcdir)/src/module/ach_klinux.h .
+ach_impl_klinux.h: $(top_srcdir)/src/module/ach_impl_klinux.h
+	cp $(top_srcdir)/src/module/ach_impl_klinux.h .
+ach_impl_common.h: $(top_srcdir)/include/ach_impl_common.h
+	cp $(top_srcdir)/include/ach_impl_common.h .

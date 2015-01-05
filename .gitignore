@@ -108,3 +108,8 @@ Makefile.in
 Module.symvers
 modules.order
 /module/Makefile
+/module/*.c
+/module/*.h
+/module/*.o.cmd
+/module/*.ko.cmd
+.dirstamp

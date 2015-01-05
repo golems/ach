@@ -52,8 +52,8 @@
 #include <linux/device.h>	/* device_create() */
 #include <linux/cdev.h>
 #include <linux/poll.h>
-#include "ach_linux.h"		/* ACH Kernel API */
-#include "ach_impl_linux.h"
+#include "ach_klinux.h"		/* ACH Kernel API */
+#include "ach_impl_klinux.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kim Bøndergaard <kibo@prevas.dk>");
