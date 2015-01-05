@@ -3,7 +3,7 @@ INSTALLATION INSTRUCTIONS FOR ACH
 CONTENTS
 ========
 
-I.   Autotools Installion Summary
+I.   Autotools Installion
 II.  Alternative CMake Installation Summary
 III. Cross Compiling
 IV.  Language Bindings
@@ -13,13 +13,16 @@ IV.  Language Bindings
     4. Java
 V.   Generic Autotools Instructions
 
-I. AUTOTOOLS INSTALLATION SUMMARY
-=================================
+I. AUTOTOOLS INSTALLATION
+=========================
 
-0 If you have obtained ach from the git repo, you need to initialize
-the autotools build scripts.  This requires the autotools and the
-autoconf macro archive. To install these on Debian or Ubuntu
-GNU/Linux, you can do
+Summary
+-------
+
+0. If you have obtained ach from the git repo, you need to initialize
+   the autotools build scripts.  This requires the autotools and the
+   autoconf macro archive. To install these on Debian or Ubuntu
+   GNU/Linux, you can do
 
     sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html docbook-utils
 
@@ -41,6 +44,32 @@ tarball which already contains the autoconf-generated configure script.
 3. Install:
 
     sudo ./make install
+
+Configuration Options
+---------------------
+
+Some options can be passed to Ach at configure time.  In addition to
+the conventional autotools configuration options, Ach can be
+configured as follows:
+
+* Enable debugging:
+
+    ./configure --enable-debug
+
+By default, debugging is disabled.
+
+* Disable Linux kernel module
+
+    ./configure --disable-linux
+
+By default, the kernel module is built if the headers are present.
+
+* Set Linux Kernel Version:
+
+    ./configure KERNELRELEASE={VERSION}
+
+By default, {VERSION} is set to the current kernel as reported by
+`uname -r`.
 
 II. CMAKE INSTALLATION SUMMARY
 ==============================
@@ -556,4 +585,3 @@ operates.
 
 `configure' also accepts some other, not widely useful, options.  Run
 `configure --help' for more details.
-

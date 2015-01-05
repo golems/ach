@@ -53,7 +53,7 @@
 #include <linux/cdev.h>
 #include <linux/poll.h>
 #include <ach_linux.h>		/* ACH Kernel API */
-#include "ach_impl.h"
+#include "ach_impl_linux.h"
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kim Bøndergaard <kibo@prevas.dk>");

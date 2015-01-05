@@ -307,20 +307,59 @@ AC_SUBST([JNICPPFLAGS])
 AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
 
 
+
 # Linux
 
-AS_IF([test "x$KERNELRELEASE" = "x"],
-      [KERNELRELEASE=`uname -r`])
+AC_ARG_ENABLE([linux],
+              [AS_HELP_STRING([--disable-linux],
+                              [Do not build Linux kernel module])],
+              [enable_linux_force="$enable_linux"],
+              [enable_linux="yes"])
 
-AS_IF([test "x$KDIR" = "x" && test -f /lib/modules/$KERNELRELEASE/build]
-      [KDIR="/lib/modules/$KERNELRELEASE/build"])
+AS_IF([test "x$enable_linux" = xyes],
+[
+
+AS_IF([test "x$KERNELRELEASE" = "x"],
+      [AC_MSG_CHECKING([Linux kernel release])
+       KERNELRELEASE=`uname -r`
+       AC_MSG_RESULT([$KERNELRELEASE])
+       ],
+       [enable_linux_force="yes"])
+
+
+AC_DEFUN([CHECK_KDIR],
+        [
+          AS_IF([test "x$KDIR" = "x"],
+                [
+                  AC_MSG_CHECKING([for kernel headers in $TMPKDIR])
+                  AS_IF([test -f "$TMPKDIR/Makefile"],
+                        [AC_MSG_RESULT([yes])
+                         KDIR=$TMPKDIR],
+                        [AC_MSG_RESULT([no])])
+                ])
+        ])
+
+AS_IF([test "x$KDIR" = "x"],
+      [
+        TMPKDIR=/usr/src/linux-$KERNELRELEASE
+        CHECK_KDIR
+        TMPKDIR=/usr/src/linux-headers-$KERNELRELEASE
+        CHECK_KDIR
+        TMPKDIR=/lib/modules/$KERNELRELEASE/build
+        CHECK_KDIR
+      ])
+
+AS_IF([test "x$KDIR" = "x" ],
+      [AS_IF([test "x$enable_linux_force" = xyes],
+             [AC_MSG_ERROR([Linux kernel headers not found])])])
+])
 
 AC_SUBST([KDIR])
 AC_SUBST([KERNELRELEASE])
-AM_CONDITIONAL([HAVE_LINUX_HEADERS],   [test "x$KDIR" != x])
+AM_CONDITIONAL([HAVE_LINUX_HEADERS],
+               [test "x$enable_linux" = xyes])
 
-AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
-
+AC_CONFIG_FILES([Makefile doc/Makefile module/Makefile module/Kbuild python/setup.py ach.pc])
 
 
 AC_OUTPUT
@@ -328,8 +367,12 @@ AC_OUTPUT
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([CONFIGURATION SUMMARY])
 AC_MSG_NOTICE([=====================])
-AC_MSG_NOTICE([DEBUG:           $enable_debug])
-AC_MSG_NOTICE([PREFIX:          $prefix])
-AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])
-AC_MSG_NOTICE([BUILD JAVA LIB:  $BUILD_JAVA])
-AC_MSG_NOTICE([KDIR:            $KDIR])
+AC_MSG_NOTICE([DEBUG:               $enable_debug])
+AC_MSG_NOTICE([PREFIX:              $prefix])
+AC_MSG_NOTICE([PYTHON VERSION:      $PYTHON_VERSION])
+AC_MSG_NOTICE([BUILD JAVA LIB:      $BUILD_JAVA])
+AC_MSG_NOTICE([BUILD LINUX MODULE:  $enable_linux])
+AS_IF([test "x$enable_linux" = xyes],
+      [
+AC_MSG_NOTICE([KERNEL RELEASE:      $KERNELRELEASE])
+      ])

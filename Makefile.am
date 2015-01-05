@@ -156,35 +156,8 @@ endif
 
 
 # Linux Module
-
-module_builddir=$(top_builddir)/module
-
 if HAVE_LINUX_HEADERS
-
-
-ach.ko: $(module_builddir)/ach_linux.c $(module_builddir)/ach_linux.h $(module_builddir)/ach_impl.h $(module_builddir)/Kbuild
-	make -C $(KDIR) M=$(PWD)/$(module_builddir)
-	cp $(module_builddir)/ach.ko .
-
-$(module_builddir)/ach_linux.c: src/module/ach_linux.c
-	mkdir -p $(module_builddir)
-	cp $(top_srcdir)/src/module/ach_linux.c $(module_builddir)/ach_linux.c
-$(module_builddir)/ach_linux.h: src/module/ach_linux.h
-	mkdir -p $(module_builddir)
-	cp $(top_srcdir)/src/module/ach_linux.h $(module_builddir)/ach_linux.h
-$(module_builddir)/ach_impl.h: src/module/ach_impl.h
-	mkdir -p $(module_builddir)
-	cp $(top_srcdir)/src/module/ach_impl.h $(module_builddir)/ach_impl.h
-$(module_builddir)/Kbuild: src/module/Kbuild
-	mkdir -p $(module_builddir)
-	cp $(top_srcdir)/src/module/Kbuild $(module_builddir)/Kbuild
-
-
-linuxmodulesdir=/lib/modules/$(KERNELRELEASE)/extra
-linuxmodules_DATA=ach.ko
-
-install-data-hook:
-	depmod
+SUBDIRS += module
 endif
 
 
