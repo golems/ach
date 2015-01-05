@@ -48,6 +48,35 @@
 
 #include "ach_generic.h"
 
+/* The struct controlling channel devices a.k.a. /dev/ach-<channelname> */
+struct ach_ch_device {
+	struct ach_ch_device *next;
+	int minor;
+	char *name;
+	struct mutex lock;	/* Protects open_files */
+	struct cdev cdev;
+	int open_files;
+	struct ach_header *ach_data;	/* Has own lock to protect data */
+};
+
+/* The struct controlling the individual channel device file handles */
+struct ach_ch_file {
+	struct ach_ch_device *dev;
+	struct ach_header *shm;	/* equals dev->ach_data - so not really necessary
+				 * but we'll access ach_header using this pointer
+				 */
+	struct ach_ch_mode mode;
+
+	// Stuff from userspace ach.h: ach_channel_t
+	uint64_t seq_num;
+		    /**< last sequence number read */
+	size_t next_index;
+		     /**< next index entry to try get from */
+	unsigned int cancel;
+};
+
+typedef struct ach_ch_file ach_channel_t;
+
 #endif
 
 /* Local Variables:    */

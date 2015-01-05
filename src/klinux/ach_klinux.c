@@ -60,8 +60,8 @@
 #include <linux/cdev.h>
 #include <linux/poll.h>
 
-#include "ach_klinux.h"
 #include "ach_klinux_generic.h"	/* ACH Kernel API, shared with userspace */
+#include "ach_klinux.h"
 #include "ach_private_klinux.h"
 
 
@@ -84,35 +84,6 @@ MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 #define KDEBUG1(xx, arg1)
 #define KDEBUG2(xx, arg1,arg2)
 #endif
-
-/* The struct controlling channel devices a.k.a. /dev/ach-<channelname> */
-struct ach_ch_device {
-	struct ach_ch_device *next;
-	int minor;
-	char *name;
-	struct mutex lock;	/* Protects open_files */
-	struct cdev cdev;
-	int open_files;
-	struct ach_header *ach_data;	/* Has own lock to protect data */
-};
-
-/* The struct controlling the individual channel device file handles */
-struct ach_ch_file {
-	struct ach_ch_device *dev;
-	struct ach_header *shm;	/* equals dev->ach_data - so not really necessary
-				 * but we'll access ach_header using this pointer
-				 */
-	struct ach_ch_mode mode;
-
-	// Stuff from userspace ach.h: ach_channel_t
-	uint64_t seq_num;
-		    /**< last sequence number read */
-	size_t next_index;
-		     /**< next index entry to try get from */
-	unsigned int cancel;
-};
-
-typedef struct ach_ch_file ach_channel_t;
 
 /* The struct controlling /dev/achctrl */
 struct ach_ctrl_device {
@@ -138,18 +109,6 @@ static struct ach_ctrl_device ctrl_data;
 
 
 #include "ach_impl_generic.h"
-
-static enum ach_status check_guards(ach_header_t * shm)
-{
-	if (ACH_SHM_MAGIC_NUM != shm->magic ||
-	    ACH_SHM_GUARD_HEADER_NUM != *ACH_SHM_GUARD_HEADER(shm) ||
-	    ACH_SHM_GUARD_INDEX_NUM != *ACH_SHM_GUARD_INDEX(shm) ||
-	    ACH_SHM_GUARD_DATA_NUM != *ACH_SHM_GUARD_DATA(shm)) {
-		return ACH_CORRUPT;
-	} else {
-		return ACH_OK;
-	}
-}
 
 static enum ach_status
 rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
@@ -253,19 +212,10 @@ ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 typedef enum ach_status
 ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size);
 
-static void free_index(ach_header_t * shm, size_t i)
-{
-	ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-
-	shm->data_free += index_ar[i].size;
-	shm->index_free++;
-	memset(&index_ar[i], 0, sizeof(ach_index_t));
-}
-
 static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 {
 	struct ach_header *shm;
-	int len;
+	int len = ach_create_len(frame_cnt, frame_size);
 
 	len = sizeof(struct ach_header) +
 	    frame_cnt * sizeof(ach_index_t) +
@@ -284,17 +234,7 @@ static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 	init_waitqueue_head(&shm->sync.readq);
 
 	/* initialize counts */
-	shm->index_cnt = frame_cnt;
-	shm->index_head = 0;
-	shm->index_free = frame_cnt;
-	shm->data_head = 0;
-	shm->data_free = frame_cnt * frame_size;
-	shm->data_size = frame_cnt * frame_size;
-
-	*ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
-	*ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
-	*ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
-	shm->magic = ACH_SHM_MAGIC_NUM;
+	ach_create_counts( shm, frame_cnt, frame_size );
 
 	return shm;
 }

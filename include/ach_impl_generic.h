@@ -69,7 +69,8 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *time);
 static enum ach_status unrdlock(struct ach_header *shm);
 
 static enum ach_status
-ach_flush_impl( ach_channel_t *chan ) {
+ach_flush_impl( ach_channel_t *chan )
+{
     ach_header_t *shm = chan->shm;
     enum ach_status r = rdlock(chan, 0,  NULL);
     if( ACH_OK != r ) return r;
@@ -78,5 +79,59 @@ ach_flush_impl( ach_channel_t *chan ) {
     chan->next_index = shm->index_head;
     return unrdlock(shm);
 }
+
+static enum ach_status
+check_guards( ach_header_t *shm )
+{
+    if( ACH_SHM_MAGIC_NUM != shm->magic ||
+        ACH_SHM_GUARD_HEADER_NUM != *ACH_SHM_GUARD_HEADER(shm) ||
+        ACH_SHM_GUARD_INDEX_NUM != *ACH_SHM_GUARD_INDEX(shm) ||
+        ACH_SHM_GUARD_DATA_NUM != *ACH_SHM_GUARD_DATA(shm)  )
+    {
+        return ACH_CORRUPT;
+    } else {
+        return ACH_OK;
+    }
+}
+
+static void free_index(ach_header_t *shm, size_t i )
+{
+    ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+
+#ifdef ACH_POSIX
+    assert( index_ar[i].seq_num ); /* only free used indices */
+    assert( index_ar[i].size );    /* must have some data */
+    assert( shm->index_free < shm->index_cnt ); /* must be some used index */
+#endif
+
+    shm->data_free += index_ar[i].size;
+    shm->index_free ++;
+    memset( &index_ar[i], 0, sizeof( ach_index_t ) );
+}
+
+
+static int ach_create_len( size_t frame_cnt, size_t frame_size )
+{
+    return sizeof(struct ach_header) +
+        frame_cnt * sizeof(ach_index_t) +
+        frame_cnt * frame_size + 3 * sizeof(uint64_t);
+}
+
+static void ach_create_counts( ach_header_t *shm, size_t frame_cnt, size_t frame_size )
+{
+    /* initialize counts */
+    shm->index_cnt = frame_cnt;
+    shm->index_head = 0;
+    shm->index_free = frame_cnt;
+    shm->data_head = 0;
+    shm->data_free = frame_cnt * frame_size;
+    shm->data_size = frame_cnt * frame_size;
+
+    *ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
+    *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
+    *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
+    shm->magic = ACH_SHM_MAGIC_NUM;
+}
+
 
 #endif /* ACH_IMPL_H */
