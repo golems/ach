@@ -1,11 +1,11 @@
+#ifndef ACH_KLINUX_GENERIC_H
+#define ACH_KLINUX_GENERIC_H
 /*
  * Header file for ach_ipc kernel driver
  *
  * Copyright (C) 2013, Prevas A/S
- * Copyright (C) 2015, Rice University
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
- *          Neil T. Dantam <ntd@rice.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *
@@ -21,10 +21,6 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *
- *   * Neither the name of Rice University nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -43,10 +39,51 @@
  *
  */
 
-#ifndef ACH_KLINUX_H
-#define ACH_KLINUX_H
+#define ACH_NAME                    "ach-ipc"
+#define ACH_IOCTL                   'Q'
+#define ACH_MAX_DEVICES             512
 
-#include "ach_generic.h"
+#define ACH_CTRL_CREATE_CH              _IOW(ACH_IOCTL, 1, struct ach_ctrl_create_ch)
+#define ACH_CTRL_UNLINK_CH              _IOW(ACH_IOCTL, 2, struct ach_ctrl_unlink_ch)
+
+#define ACH_CH_MODE_WAIT                0x01
+#define ACH_CH_MODE_LAST                0x02
+#define ACH_CH_MODE_COPY                0x04
+
+#define ACH_CH_CANCEL_UNSAFE            0x01
+
+#define ACH_CH_SET_MODE                 _IOW(ACH_IOCTL, 3, struct ach_ch_mode)
+#define ACH_CH_GET_MODE                 _IOR(ACH_IOCTL, 4, struct ach_ch_mode)
+#define ACH_CH_GET_STATUS               _IOR(ACH_IOCTL, 5, struct ach_ch_status)
+#define ACH_CH_FLUSH                    _IOW(ACH_IOCTL, 6, unsigned int)
+#define ACH_CH_CANCEL                   _IOW(ACH_IOCTL, 7, unsigned int)
+
+/**  maximum size of a channel name */
+#define ACH_CHAN_NAME_MAX 64ul
+
+struct ach_ctrl_create_ch {
+	size_t frame_cnt;
+	size_t frame_size;
+	char name[ACH_CHAN_NAME_MAX + 1];
+};
+
+struct ach_ctrl_unlink_ch {
+	char name[ACH_CHAN_NAME_MAX + 1];
+};
+
+struct ach_ch_mode {
+	unsigned int mode;
+	struct timespec reltime;	/* Relative time - notice ach normally runs abstime */
+};
+
+struct ach_ch_status {
+	unsigned int mode;
+	ssize_t size;		/* Size of queue */
+	ssize_t count;		/* Messages in queue */
+	ssize_t new;		/* Unread messages in queue */
+	unsigned long last_seq;	/* Last sequence in queue */
+	unsigned long last_seq_read;	/* Sequence of last read message */
+};
 
 #endif
 

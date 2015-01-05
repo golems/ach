@@ -59,7 +59,7 @@
 #include <signal.h>
 #include <stdarg.h>
 #include "ach.h"
-#include "ach_impl_posix.h"
+#include "ach_private_posix.h"
 #include "achutil.h"
 #include "achd.h"
 

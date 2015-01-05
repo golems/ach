@@ -53,7 +53,7 @@
 #include <errno.h>
 #include <inttypes.h>
 #include "ach.h"
-#include "ach_impl_posix.h"
+#include "ach_private_posix.h"
 
 void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size) {
     size_t i;

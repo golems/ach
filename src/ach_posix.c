@@ -2,6 +2,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
  * Copyright (c) 2008-2013, Georgia Tech Research Corporation
+ * Copyright (C) 2015, Rice University
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -23,6 +24,10 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -67,8 +72,11 @@
 #include <inttypes.h>
 
 #include "ach.h"
-#include "ach_impl_posix.h"
-#include "ach_klinux.h"
+#include "ach_private_posix.h"
+
+#include "ach_klinux_generic.h"
+#include "ach_impl_generic.h"
+
 #include <sys/wait.h>
 
 #include <unistd.h>
@@ -93,16 +101,6 @@
 
 size_t ach_channel_size = sizeof(ach_channel_t);
 size_t ach_attr_size = sizeof(ach_attr_t);
-
-
-
-static size_t oldest_index_i( ach_header_t *shm ) {
-    return (shm->index_head + shm->index_free)%shm->index_cnt;
-}
-
-static size_t last_index_i( ach_header_t *shm ) {
-    return (shm->index_head + shm->index_cnt -1)%shm->index_cnt;
-}
 
 const char *ach_result_to_string(ach_status_t result) {
 
@@ -900,13 +898,7 @@ ach_flush( ach_channel_t *chan ) {
         return achk_flush(chan);
     }
 
-    ach_header_t *shm = chan->shm;
-    enum ach_status r = rdlock(chan, 0,  NULL);
-    if( ACH_OK != r ) return r;
-
-    chan->seq_num = shm->last_seq;
-    chan->next_index = shm->index_head;
-    return unrdlock(shm);
+    return ach_flush_impl(chan);
 }
 
 

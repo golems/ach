@@ -2,8 +2,11 @@
  * Kernel driver module for ach.
  *
  * Copyright (C) 2013, Prevas A/S
+ * Copyright (C) 2015, Rice University
+ * All rights reserved.
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
+ *          Neil T. Dantam <ntd@rice.edu>
  *
  * This file is provided under the following "BSD-style" License:
  *
@@ -19,6 +22,10 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -52,8 +59,11 @@
 #include <linux/device.h>	/* device_create() */
 #include <linux/cdev.h>
 #include <linux/poll.h>
-#include "ach_klinux.h"		/* ACH Kernel API */
-#include "ach_impl_klinux.h"
+
+#include "ach_klinux.h"
+#include "ach_klinux_generic.h"	/* ACH Kernel API, shared with userspace */
+#include "ach_private_klinux.h"
+
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kim Bøndergaard <kibo@prevas.dk>");
@@ -126,26 +136,8 @@ static struct ach_ctrl_device ctrl_data;
  * ach module stuff - ought be comparable to user space ach.c functions
  **********************************************************************************/
 
-typedef enum ach_status {
-	ACH_OK = 0,           /**< Call successful */
-	ACH_OVERFLOW = 1,     /**< destination too small to hold frame */
-	ACH_INVALID_NAME = 2, /**< invalid channel name */
-	ACH_BAD_SHM_FILE = 3, /**< channel file didn't look right */
-	ACH_FAILED_SYSCALL = 4,
-			      /**< a system call failed */
-	ACH_STALE_FRAMES = 5, /**< no new data in the channel */
-	ACH_MISSED_FRAME = 6, /**< we missed the next frame */
-	ACH_TIMEOUT = 7,      /**< timeout before frame received */
-	ACH_EEXIST = 8,               /**< channel file already exists */
-	ACH_ENOENT = 9,               /**< channel file doesn't exist */
-	ACH_CLOSED = 10,      /**< unused */
-	ACH_BUG = 11,         /**< internal ach error */
-	ACH_EINVAL = 12,      /**< invalid channel */
-	ACH_CORRUPT = 13,     /**< channel memory has been corrupted */
-	ACH_BAD_HEADER = 14,  /**< an invalid header was given */
-	ACH_EACCES = 15,      /**< permission denied */
-	ACH_CANCELED = 16     /**< operation canceled */
-} ach_status_t;
+
+#include "ach_impl_generic.h"
 
 static enum ach_status check_guards(ach_header_t * shm)
 {
@@ -260,16 +252,6 @@ ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
 typedef enum ach_status
 ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size);
-
-static size_t oldest_index_i(ach_header_t * shm)
-{
-	return (shm->index_head + shm->index_free) % shm->index_cnt;
-}
-
-static size_t last_index_i(ach_header_t * shm)
-{
-	return (shm->index_head + shm->index_cnt - 1) % shm->index_cnt;
-}
 
 static void free_index(ach_header_t * shm, size_t i)
 {
@@ -572,14 +554,8 @@ ach_get(ach_channel_t * chan, void *buf, size_t size, size_t * frame_size)
 
 static enum ach_status ach_flush(ach_channel_t * chan)
 {
-	ach_header_t *shm = chan->shm;
-	enum ach_status r = rdlock(chan, 0, NULL);
-	if (ACH_OK != r)
-		return r;
 
-	chan->seq_num = shm->last_seq;
-	chan->next_index = shm->index_head;
-	return unrdlock(shm);
+	return ach_flush_impl(chan);
 }
 
 static enum ach_status ach_cancel(ach_channel_t * chan, unsigned int unsafe)

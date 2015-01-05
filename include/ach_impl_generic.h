@@ -6,6 +6,7 @@
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ *            Kim Boendergaard Poulsen <kibo@prevas.dk>
  * Georgia Tech Humanoid Robotics Lab
  * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
@@ -45,60 +46,37 @@
  *
  */
 
-/** \file ach_impl_posix.h
+/** \file ach_impl.h
  *  \author Neil T. Dantam
  */
 
-#ifndef ACH_IMPL_POSIX_H
-#define ACH_IMPL_POSIX_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#define ACH_POSIX
+#ifndef ACH_IMPL_H
+#define ACH_IMPL_H
 
 
-/** prefix to apply to channel names to get the shared memory file name */
-#define ACH_SHM_CHAN_NAME_PREFIX_PATH "/dev/shm"
-#define ACH_SHM_CHAN_NAME_PREFIX_NAME "/achshm-"
 
-/** Number of times to retry a syscall on EINTR before giving up */
-#define ACH_INTR_RETRY 8
-
-
-#include "ach_impl_common.h"
-
-    /** Format for ach frames sent over pipes or stored on disk */
-    typedef struct {
-        char magic[8];         /**< magic number: "achpipe", null terminated */
-        uint8_t size_bytes[8]; /**< size, stored little endian for disk and network transmission */
-        uint8_t data[1];       /**< flexible array */
-    } ach_pipe_frame_t;
-
-    /** Malloc an ach_pipe_frame_t with room for `size' data bytes.
-     *
-     * \return a newly allocated ach_pipe_frame with its magic and
-     * size fields properly filled.
-     */
-    ach_pipe_frame_t *ach_pipe_alloc(size_t size);
-
-    /** Set size field in ach frame, always stored little endian.
-     * \param frame The frame struct
-     * \param size The size in native byte order
-     */
-    void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size);
-
-    /** Set size field in ach frame, always stored little endian.
-     * \param frame The frame struct
-     * \returns The size in native byte order
-     */
-    uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
-
-    void ach_set_errstr( const char *str );
-
-#ifdef __cplusplus
+static size_t oldest_index_i( ach_header_t *shm ) {
+    return (shm->index_head + shm->index_free)%shm->index_cnt;
 }
-#endif
 
-#endif /* ACH_IMPL_POSIX_H */
+static size_t last_index_i( ach_header_t *shm ) {
+    return (shm->index_head + shm->index_cnt -1)%shm->index_cnt;
+}
+
+static enum ach_status
+rdlock(ach_channel_t * chan, int wait, const struct timespec *time);
+
+static enum ach_status unrdlock(struct ach_header *shm);
+
+static enum ach_status
+ach_flush_impl( ach_channel_t *chan ) {
+    ach_header_t *shm = chan->shm;
+    enum ach_status r = rdlock(chan, 0,  NULL);
+    if( ACH_OK != r ) return r;
+
+    chan->seq_num = shm->last_seq;
+    chan->next_index = shm->index_head;
+    return unrdlock(shm);
+}
+
+#endif /* ACH_IMPL_H */

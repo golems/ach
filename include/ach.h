@@ -2,6 +2,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
  * Copyright (c) 2008-2013, Georgia Tech Research Corporation
+ * Copyright (C) 2015, Rice University
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -23,6 +24,10 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -180,30 +185,10 @@
 extern "C" {
 #endif
 
+#include "ach_generic.h"
+
 /**  maximum size of a channel name */
 #define ACH_CHAN_NAME_MAX 64ul
-
-    /** return status codes for ach functions */
-    typedef enum ach_status {
-        ACH_OK = 0,             /**< Call successful */
-        ACH_OVERFLOW = 1,       /**< destination too small to hold frame */
-        ACH_INVALID_NAME = 2,   /**< invalid channel name */
-        ACH_BAD_SHM_FILE = 3,   /**< channel file didn't look right */
-        ACH_FAILED_SYSCALL = 4, /**< a system call failed */
-        ACH_STALE_FRAMES = 5,   /**< no new data in the channel */
-        ACH_MISSED_FRAME = 6,   /**< we missed the next frame */
-        ACH_TIMEOUT = 7,        /**< timeout before frame received */
-        ACH_EEXIST = 8,         /**< channel file already exists */
-        ACH_ENOENT = 9,         /**< channel file doesn't exist */
-        ACH_CLOSED = 10,        /**< unused */
-        ACH_BUG = 11,           /**< internal ach error */
-        ACH_EINVAL = 12,        /**< invalid channel */
-        ACH_CORRUPT = 13,       /**< channel memory has been corrupted */
-        ACH_BAD_HEADER = 14,    /**< an invalid header was given */
-        ACH_EACCES = 15,        /**< permission denied */
-        ACH_CANCELED = 16       /**< operation canceled */
-    } ach_status_t;
-
 
     /** Option flags for ach_get().
      *

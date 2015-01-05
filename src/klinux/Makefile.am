@@ -3,7 +3,7 @@
 all: ach.ko
 
 hdir = $(top_srcdir)/include
-module_headers = $(hdir)/ach_klinux.h $(hdir)/ach_impl_klinux.h $(hdir)/ach_impl_common.h
+module_headers = $(hdir)/ach_klinux_generic.h $(hdir)/ach_private_klinux.h $(hdir)/ach_private_generic.h $(hdir)/ach_impl_generic.h
 
 ach.ko: ach_klinux.c $(module_headers)
 	if test "x$(builddir)" != "x$(srcdir)"; then cp -v $(srcdir)/ach_klinux.c $(builddir); fi

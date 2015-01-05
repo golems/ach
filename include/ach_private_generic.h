@@ -47,12 +47,12 @@
  *
  */
 
-/** \file ach_impl_common.h
+/** \file ach_private_generic.h
  *  \author Neil T. Dantam, Kim Boendergaard Poulsen
  */
 
-#ifndef ACH_IMPL_COMMON_H
-#define ACH_IMPL_COMMON_H
+#ifndef ACH_PRIVATE_GENERIC_H
+#define ACH_PRIVATE_GENERIC_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -168,4 +168,4 @@ typedef struct ach_index {
 /** Default nominal frame size for a channel */
 #define ACH_DEFAULT_FRAME_SIZE 512
 
-#endif /* ACH_IMPL_COMMON_H */
+#endif
