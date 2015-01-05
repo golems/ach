@@ -52,7 +52,7 @@
 #include <linux/device.h>	/* device_create() */
 #include <linux/cdev.h>
 #include <linux/poll.h>
-#include <ach_linux.h>		/* ACH Kernel API */
+#include "ach_linux.h"		/* ACH Kernel API */
 #include "ach_impl_linux.h"
 
 MODULE_LICENSE("GPL");
