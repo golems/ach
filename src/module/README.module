@@ -1,0 +1,4 @@
+This directory contains source for a Linux kernel module.
+
+This module may be built from the top-level Ach Makefile.  See the module
+subdirectory of the top-level source tree.
