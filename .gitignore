@@ -107,9 +107,8 @@ Makefile.in
 *.mod
 Module.symvers
 modules.order
-/module/Makefile
-/module/*.c
-/module/*.h
-/module/*.o.cmd
-/module/*.ko.cmd
+/src/klinux/*.o.cmd
+/src/klinux/*.ko.cmd
 .dirstamp
+/src/klinux/Kbuild
+/src/klinux/Makefile

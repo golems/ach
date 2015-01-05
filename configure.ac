@@ -360,7 +360,7 @@ AC_SUBST([KERNELRELEASE])
 AM_CONDITIONAL([HAVE_LINUX_HEADERS],
                [test "x$enable_linux" = xyes])
 
-AC_CONFIG_FILES([Makefile doc/Makefile module/Makefile module/Kbuild python/setup.py ach.pc])
+AC_CONFIG_FILES([Makefile doc/Makefile src/klinux/Makefile src/klinux/Kbuild python/setup.py ach.pc])
 
 
 AC_OUTPUT

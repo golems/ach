@@ -157,7 +157,7 @@ endif
 
 # Linux Module
 if HAVE_LINUX_HEADERS
-SUBDIRS += module
+SUBDIRS += src/klinux
 endif
 
 
