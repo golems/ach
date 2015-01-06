@@ -1,0 +1,4 @@
+obj-m += ach.o
+ach-y := ach_klinux.o
+
+CFLAGS_ach_klinux.o += -DDEBUG

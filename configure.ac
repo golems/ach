@@ -310,14 +310,32 @@ AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
 
 
 # Linux
+# TODO: check if we building for linux
+AC_ARG_ENABLE([dkms],
+              [AS_HELP_STRING([--disable-dkms],
+                              [Do not install DKMS sources])],
+              [enable_dkms_force="$enable_dkms"],
+              [enable_dkms="yes"])
 
-AC_ARG_ENABLE([linux],
-              [AS_HELP_STRING([--disable-linux],
+
+AC_ARG_ENABLE([dkms-build],
+              [AS_HELP_STRING([--enable-dkms-build],
+                              [Build kernel module with DKMS (implies --enable-dkms)])],
+              [enable_dkms_force="$enable_dkms_build"
+               enable_dkms="$enable_dkms_build"
+               enable_dkms_build_force="$enable_dkms_build"
+              ],
+              [enable_dkms_build="no"])
+
+AC_ARG_ENABLE([kbuild],
+              [AS_HELP_STRING([--disable-kbuild],
                               [Do not build Linux kernel module])],
-              [enable_linux_force="$enable_linux"],
-              [enable_linux="yes"])
+              [enable_kbuild_force="$enable_kbuild"],
+              [AS_IF([test "x$enable_dkms" != "xyes"],
+                     [enable_kbuild="yes"],
+                     [enable_kbuild="no"])])
 
-AS_IF([test "x$enable_linux" = xyes],
+AS_IF([test "x$enable_kbuild" = xyes],
 [
 
 AS_IF([test "x$KERNELRELEASE" = "x"],
@@ -325,7 +343,7 @@ AS_IF([test "x$KERNELRELEASE" = "x"],
        KERNELRELEASE=`uname -r`
        AC_MSG_RESULT([$KERNELRELEASE])
        ],
-       [enable_linux_force="yes"])
+       [enable_kbuild_force="yes"])
 
 
 AC_DEFUN([CHECK_KDIR],
@@ -351,16 +369,22 @@ AS_IF([test "x$KDIR" = "x"],
       ])
 
 AS_IF([test "x$KDIR" = "x" ],
-      [AS_IF([test "x$enable_linux_force" = xyes],
+      [AS_IF([test "x$enable_kbuild_force" = xyes],
              [AC_MSG_ERROR([Linux kernel headers not found])])])
 ])
 
 AC_SUBST([KDIR])
 AC_SUBST([KERNELRELEASE])
-AM_CONDITIONAL([HAVE_LINUX_HEADERS],
-               [test "x$enable_linux" = xyes])
+AM_CONDITIONAL([BUILD_KBUILD],
+               [test "x$enable_kbuild" = xyes])
 
-AC_CONFIG_FILES([Makefile doc/Makefile src/klinux/Makefile src/klinux/Kbuild python/setup.py ach.pc])
+AM_CONDITIONAL([INSTALL_DKMS],
+               [test "x$enable_dkms" = xyes])
+
+AM_CONDITIONAL([BUILD_DKMS],
+               [test "x$enable_dkms_build" = xyes])
+
+AC_CONFIG_FILES([Makefile doc/Makefile src/klinux/Makefile src/klinux/Kbuild src/klinux/dkms/dkms.conf src/klinux/dkms-pre/Makefile src/klinux/dkms-post/Makefile python/setup.py ach.pc])
 
 
 AC_OUTPUT
@@ -372,8 +396,10 @@ AC_MSG_NOTICE([DEBUG:               $enable_debug])
 AC_MSG_NOTICE([PREFIX:              $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:      $PYTHON_VERSION])
 AC_MSG_NOTICE([BUILD JAVA LIB:      $BUILD_JAVA])
-AC_MSG_NOTICE([BUILD LINUX MODULE:  $enable_linux])
-AS_IF([test "x$enable_linux" = xyes],
+AC_MSG_NOTICE([INSTALL DKMS SOURCE: $enable_dkms])
+AC_MSG_NOTICE([BUILD DKMS MODULE:   $enable_dkms_build])
+AC_MSG_NOTICE([KBUILD LINUX MODULE: $enable_kbuild])
+AS_IF([test "x$enable_kbuild" = xyes],
       [
 AC_MSG_NOTICE([KERNEL RELEASE:      $KERNELRELEASE])
       ])

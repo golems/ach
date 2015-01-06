@@ -112,3 +112,11 @@ modules.order
 .dirstamp
 /src/klinux/Kbuild
 /src/klinux/Makefile
+/src/klinux/dkms/dkms.conf
+/src/klinux/dkms-post/Makefile
+/src/klinux/dkms-pre/Makefile
+/*.log
+/*.trs
+/ar-lib
+/compile
+/test-driver

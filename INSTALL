@@ -56,20 +56,32 @@ configured as follows:
 
     ./configure --enable-debug
 
-By default, debugging is disabled.
+  By default, debugging is disabled.
 
-* Disable Linux kernel module
+* Disable installation DKMS sources for Linux kernel module
 
-    ./configure --disable-linux
+    ./configure --disable-dkms
 
-By default, the kernel module is built if the headers are present.
+  By default, the sources are installed.
 
-* Set Linux Kernel Version:
+* Build Linux kernel module via DKMS (at install time)
+
+    ./configure --enable-dkms-build
+
+  By default, the module is not automatically built via DKMS
+
+* Build Linux kernel module using KBuild
+
+    ./configure --enable-kbuild
+
+  By default, --enable-kbuild is the complement of --enable-dkms.
+
+* Set Linux Kernel Version for KBuild:
 
     ./configure KERNELRELEASE={VERSION}
 
-By default, {VERSION} is set to the current kernel as reported by
-`uname -r`.
+  By default, {VERSION} is set to the current kernel as reported by
+  `uname -r`.
 
 II. CMAKE INSTALLATION SUMMARY
 ==============================

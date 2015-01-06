@@ -19,5 +19,7 @@ linuxmodules_DATA=ach.ko
 install-data-hook:
 	depmod
 
+if BUILD_KBUILD
 clean-local:
 	make -C $(KDIR) M=$(PWD) clean
+endif

@@ -5,7 +5,6 @@ EXTRA_DIST = CMakeLists.txt spin
 
 dist_noinst_SCRIPTS = achtooltest src/run-benchmarks test-achcop
 
-SUBDIRS = . doc
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
 
@@ -154,13 +153,37 @@ doc/.javadoc.stamp: $(JSOURCES)
 
 endif
 
-
-# Linux Module
-if HAVE_LINUX_HEADERS
-SUBDIRS += src/klinux
+# All of life's problems are solveable with recursion.
+if BUILD_DKMS
+# Automake's uninstall-hook runs after the files are uninstalled.
+# DKMS can't removed the ach-klinux module after automake deletes its
+# installed sources.  Use a recursive make to force the correct
+# ordering.
+SUBDIRS = src/klinux/dkms-pre . src/klinux/dkms-post doc
+else
+SUBDIRS = . doc
 endif
 
 
+# Linux Module
+if BUILD_KBUILD
+SUBDIRS += src/klinux
+endif
+
+# DKMS
+if INSTALL_DKMS
+dkmsdir=/usr/src/ach-klinux-@PACKAGE_VERSION@
+dkms_HEADERS = \
+	 include/ach_generic.h \
+	 include/ach_impl_generic.h \
+	 include/ach_klinux_generic.h \
+	 include/ach_klinux.h \
+	 include/ach_klinux_kernel.h \
+	 include/ach_private_generic.h \
+	 include/ach_private_klinux.h
+dkms_DATA = src/klinux/dkms/dkms.conf src/klinux/ach_klinux.c src/klinux/dkms/Kbuild
+
+endif
 
 ## LOCAL CLEAN ##
 
