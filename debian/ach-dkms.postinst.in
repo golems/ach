@@ -1,0 +1,6 @@
+#!/bin/sh -e
+
+dkms add -m ach-klinux -v CVERSION
+dkms build -m ach-klinux -v CVERSION && dkms install -m ach-klinux -v CVERSION || true
+
+#DEBHELPER#

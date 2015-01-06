@@ -1,0 +1,4 @@
+usr/src/ach-klinux-CVERSION/*.c
+usr/src/ach-klinux-CVERSION/*.h
+usr/src/ach-klinux-CVERSION/Kbuild
+usr/src/ach-klinux-CVERSION/dkms.conf

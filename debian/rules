@@ -9,6 +9,20 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+upstreamversion := $(shell dpkg-parsechangelog | sed -n 's/^Version: *\([^-]\+\)/\1/p')
 
 %:
 	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--disable-kbuild \
+		--enable-dkms \
+		--disable-dkms-build
+
+override_dh_auto_install:
+	dh_auto_install
+	sed -e 's/CVERSION/$(upstreamversion)/g' < debian/ach-dkms.dirs.in > debian/ach-dkms.dirs
+	sed -e 's/CVERSION/$(upstreamversion)/g' < debian/ach-dkms.install.in > debian/ach-dkms.install
+	sed -e 's/CVERSION/$(upstreamversion)/g' < debian/ach-dkms.postinst.in > debian/ach-dkms.postinst
+	sed -e 's/CVERSION/$(upstreamversion)/g' < debian/ach-dkms.prerm.in > debian/ach-dkms.prerm

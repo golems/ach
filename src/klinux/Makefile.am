@@ -1,13 +1,15 @@
 # See Also: Kbuild.in
 
-all: ach.ko
+EXTRA_DIST = ach_klinux.c README.module dkms/Kbuild
 
-hdir = $(top_srcdir)/include
-module_headers = $(hdir)/ach_klinux_generic.h $(hdir)/ach_private_klinux.h $(hdir)/ach_private_generic.h $(hdir)/ach_impl_generic.h
+if BUILD_KBUILD
 
 ach.ko: ach_klinux.c $(module_headers)
 	if test "x$(builddir)" != "x$(srcdir)"; then cp -v $(srcdir)/ach_klinux.c $(builddir); fi
 	make -C $(KDIR) M=$(PWD) V=0 modules
+
+hdir = $(top_srcdir)/include
+module_headers = $(hdir)/ach_klinux_generic.h $(hdir)/ach_private_klinux.h $(hdir)/ach_private_generic.h $(hdir)/ach_impl_generic.h
 
 # # linux kbuild can't uninstall, so we install via automake
 #
@@ -16,10 +18,10 @@ ach.ko: ach_klinux.c $(module_headers)
 
 linuxmodulesdir=/lib/modules/$(KERNELRELEASE)/extra
 linuxmodules_DATA=ach.ko
+
 install-data-hook:
 	depmod
 
-if BUILD_KBUILD
 clean-local:
 	make -C $(KDIR) M=$(PWD) clean
 endif

@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+dkms remove -m ach-klinux -v CVERSION --all || true
+
+#DEBHELPER#

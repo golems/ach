@@ -64,6 +64,7 @@ Makefile.in
 /doc/html
 /doc/Makefile
 /debian/ach-utils
+/debian/ach-dkms/
 /achd
 /debian/libach1
 /doc/man/*.html
@@ -120,3 +121,8 @@ modules.order
 /ar-lib
 /compile
 /test-driver
+/doc/javadoc/resources/*.gif
+/debian/ach-dkms.dirs
+/debian/ach-dkms.install
+/debian/ach-dkms.postinst
+/debian/ach-dkms.prerm

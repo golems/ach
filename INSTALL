@@ -24,7 +24,7 @@ Summary
    autoconf macro archive. To install these on Debian or Ubuntu
    GNU/Linux, you can do
 
-    sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html docbook-utils
+    sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html docbook-utils dkms
 
 Then, initialize autotools with
 
@@ -58,21 +58,21 @@ configured as follows:
 
   By default, debugging is disabled.
 
-* Disable installation DKMS sources for Linux kernel module
+* Enable/Disable installation of DKMS sources for Linux kernel module
 
-    ./configure --disable-dkms
+    ./configure --enable-dkms=yes|no
 
-  By default, the sources are installed.
+  By default, this option is enabled if the dkms executable is present.
 
 * Build Linux kernel module via DKMS (at install time)
 
-    ./configure --enable-dkms-build
+    ./configure --enable-dkms-build=yes|no
 
-  By default, the module is not automatically built via DKMS
+  By default, this option is the same as --enable-dkms
 
 * Build Linux kernel module using KBuild
 
-    ./configure --enable-kbuild
+    ./configure --enable-kbuild=yes|no
 
   By default, --enable-kbuild is the complement of --enable-dkms.
 

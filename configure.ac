@@ -311,21 +311,24 @@ AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
 
 # Linux
 # TODO: check if we building for linux
+AC_CHECK_PROGS([DKMS], [dkms], [false], [$PATH:/usr/sbin:/sbin])
+AS_IF([test "x$DKMS" != xfalse], [have_dkms=yes], [have_dkms=no])
+
 AC_ARG_ENABLE([dkms],
               [AS_HELP_STRING([--disable-dkms],
                               [Do not install DKMS sources])],
               [enable_dkms_force="$enable_dkms"],
-              [enable_dkms="yes"])
-
+              [AS_IF([test "x$DKMS" != xfalse], [enable_dkms=yes], [enable_dkms=no])])
 
 AC_ARG_ENABLE([dkms-build],
               [AS_HELP_STRING([--enable-dkms-build],
                               [Build kernel module with DKMS (implies --enable-dkms)])],
               [enable_dkms_force="$enable_dkms_build"
-               enable_dkms="$enable_dkms_build"
                enable_dkms_build_force="$enable_dkms_build"
+               AS_IF([test "x$enable_dkms_build" = xyes],
+                     [enable_dkms=yes])
               ],
-              [enable_dkms_build="no"])
+              [enable_dkms_build="$enable_dkms"])
 
 AC_ARG_ENABLE([kbuild],
               [AS_HELP_STRING([--disable-kbuild],

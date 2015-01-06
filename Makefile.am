@@ -154,15 +154,12 @@ doc/.javadoc.stamp: $(JSOURCES)
 endif
 
 # All of life's problems are solveable with recursion.
-if BUILD_DKMS
+
 # Automake's uninstall-hook runs after the files are uninstalled.
 # DKMS can't removed the ach-klinux module after automake deletes its
 # installed sources.  Use a recursive make to force the correct
 # ordering.
 SUBDIRS = src/klinux/dkms-pre . src/klinux/dkms-post doc
-else
-SUBDIRS = . doc
-endif
 
 
 # Linux Module
@@ -172,7 +169,7 @@ endif
 
 # DKMS
 if INSTALL_DKMS
-dkmsdir=/usr/src/ach-klinux-@PACKAGE_VERSION@
+dkmsdir=@prefix@/src/ach-klinux-@PACKAGE_VERSION@
 dkms_HEADERS = \
 	 include/ach_generic.h \
 	 include/ach_impl_generic.h \
