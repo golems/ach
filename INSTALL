@@ -33,15 +33,31 @@ Then, initialize autotools with
 This whole step is not necessary when you have obtained a distribution
 tarball which already contains the autoconf-generated configure script.
 
-1. Configure for your system:
+1. Install dependencies.  These are not strictly necessary to use ach,
+   but they are needed to build documentation or to enable optional
+   features.
+
+   * Linux Headers: Needed to build the (optional) kernel module
+   * dkms: Needed to recompile the kernel module when new kernels are installed
+   * inetd: Needed to transport channels over the network
+   * help2man: Needed to generate man pages for binaries
+   * man2hml: Needed to generate HTML versions of man pages
+   * docbook-utils: Needed to generate HTML versions of the tutorial-style manual
+
+   On Debian or Ubuntu GNU/Linux, you can install these dependencies with:
+
+    sudo apt-get install linux-headers-generic dkms openbsd-inetd help2man man2html docbook-utils
+
+2. Configure for your system.  See the next section ("Configuration
+   Options") for relevant configuration options.
 
     ./configure
 
-2. Build:
+3. Build:
 
     ./make
 
-3. Install:
+4. Install:
 
     sudo ./make install
 
@@ -51,12 +67,6 @@ Configuration Options
 Some options can be passed to Ach at configure time.  In addition to
 the conventional autotools configuration options, Ach can be
 configured as follows:
-
-* Enable debugging:
-
-    ./configure --enable-debug
-
-  By default, debugging is disabled.
 
 * Enable/Disable installation of DKMS sources for Linux kernel module
 
@@ -70,7 +80,7 @@ configured as follows:
 
   By default, this option is the same as --enable-dkms
 
-* Build Linux kernel module using KBuild
+* Build Linux kernel module using Kbuild
 
     ./configure --enable-kbuild=yes|no
 
@@ -82,6 +92,12 @@ configured as follows:
 
   By default, {VERSION} is set to the current kernel as reported by
   `uname -r`.
+
+* Enable debugging:
+
+    ./configure --enable-debug
+
+  By default, debugging is disabled.
 
 II. CMAKE INSTALLATION SUMMARY
 ==============================
