@@ -331,8 +331,8 @@ AC_ARG_ENABLE([dkms-build],
               [enable_dkms_build="$enable_dkms"])
 
 AC_ARG_ENABLE([kbuild],
-              [AS_HELP_STRING([--disable-kbuild],
-                              [Do not build Linux kernel module])],
+              [AS_HELP_STRING([--enable-kbuild],
+                              [Build Linux kernel module with Kbuild])],
               [enable_kbuild_force="$enable_kbuild"],
               [AS_IF([test "x$enable_dkms" != "xyes"],
                      [enable_kbuild="yes"],

@@ -185,7 +185,7 @@
 extern "C" {
 #endif
 
-#include "ach_generic.h"
+#include "ach/generic.h"
 
 /**  maximum size of a channel name */
 #define ACH_CHAN_NAME_MAX 64ul

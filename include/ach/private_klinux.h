@@ -1,9 +1,15 @@
+/* -*- mode: C; c-basic-offset: 4 -*- */
+/* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Header file for ach_ipc kernel driver
+ * Copyright (c) 2008-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Prevas A/S
+ * Copyright (c) 2015, Rice University
+ * All rights reserved.
  *
- * Copyright (C) 2013, Prevas A/S
+ * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Georgia Tech Humanoid Robotics Lab
+ * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
- * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
  *
  * This file is provided under the following "BSD-style" License:
  *
@@ -20,6 +26,10 @@
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
  *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
@@ -34,15 +44,20 @@
  *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *   POSSIBILITY OF SUCH DAMAGE.
  *
- *
  */
-#ifndef ACH_KLINUX_KERNEL_H
-#define ACH_KLINUX_KERNEL_H
 
-#include "ach_klinux_generic.h"
+/** \file ach_private_linux.h
+ *  \author Neil T. Dantam
+ */
 
-#endif ACH_KLINUX_KERNEL_H
+#ifndef ACH_PRIVATE_KLINUX_H
+#define ACH_PRIVATE_KLINUX_H
 
+#define ACH_KLINUX
+
+#include "private_generic.h"
+
+#endif /* ACH_PRIVATE_KLINUX_H */
 
 /* Local Variables:    */
 /* mode: C             */

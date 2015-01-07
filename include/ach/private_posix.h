@@ -67,7 +67,7 @@ extern "C" {
 #define ACH_INTR_RETRY 8
 
 
-#include "ach_private_generic.h"
+#include "private_generic.h"
 
     /** Format for ach frames sent over pipes or stored on disk */
     typedef struct {

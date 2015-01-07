@@ -60,9 +60,9 @@
 #include <linux/cdev.h>
 #include <linux/poll.h>
 
-#include "ach_klinux_generic.h"	/* ACH Kernel API, shared with userspace */
+#include "ach/klinux_generic.h"	/* ACH Kernel API, shared with userspace */
 #include "ach_klinux.h"
-#include "ach_private_klinux.h"
+#include "ach/private_klinux.h"
 
 
 MODULE_LICENSE("GPL");
@@ -108,7 +108,7 @@ static struct ach_ctrl_device ctrl_data;
  **********************************************************************************/
 
 
-#include "ach_impl_generic.h"
+#include "ach/impl_generic.h"
 
 static enum ach_status
 rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)

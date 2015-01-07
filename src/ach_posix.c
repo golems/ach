@@ -72,10 +72,9 @@
 #include <inttypes.h>
 
 #include "ach.h"
-#include "ach_private_posix.h"
-
-#include "ach_klinux_generic.h"
-#include "ach_impl_generic.h"
+#include "ach/private_posix.h"
+#include "ach/klinux_generic.h"
+#include "ach/impl_generic.h"
 
 #include <sys/wait.h>
 

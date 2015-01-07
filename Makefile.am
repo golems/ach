@@ -14,7 +14,12 @@ pkgconfig_DATA = ach.pc
 TESTS = achtest achtooltest test-achcop
 
 include_HEADERS = include/ach.h include/Ach.hpp
-noinst_HEADERS = include/achutil.h include/achd.h include/ach_private_posix.h
+pkginclude_HEADERS = \
+	include/ach/generic.h \
+	include/ach/klinux_generic.h \
+	include/ach/klinux_user.h
+
+noinst_HEADERS = include/achutil.h include/achd.h include/ach/private_posix.h
 
 lib_LTLIBRARIES = libach.la
 
@@ -170,14 +175,17 @@ endif
 # DKMS
 if INSTALL_DKMS
 dkmsdir=@prefix@/src/ach-klinux-@PACKAGE_VERSION@
-dkms_HEADERS = \
-	 include/ach_generic.h \
-	 include/ach_impl_generic.h \
-	 include/ach_klinux_generic.h \
-	 include/ach_klinux.h \
-	 include/ach_klinux_kernel.h \
-	 include/ach_private_generic.h \
-	 include/ach_private_klinux.h
+dkmsincludedir=$(dkmsdir)
+dkmspkgincludedir=$(dkmsincludedir)/ach
+
+dkmsinclude_HEADERS = include/ach_klinux.h
+dkmspkginclude_HEADERS = \
+	 include/ach/generic.h \
+	 include/ach/impl_generic.h \
+	 include/ach/klinux_generic.h \
+	 include/ach/klinux_kernel.h \
+	 include/ach/private_generic.h \
+	 include/ach/private_klinux.h
 dkms_DATA = src/klinux/dkms/dkms.conf src/klinux/ach_klinux.c src/klinux/dkms/Kbuild
 
 endif

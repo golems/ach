@@ -46,7 +46,7 @@
 #ifndef ACH_KLINUX_H
 #define ACH_KLINUX_H
 
-#include "ach_generic.h"
+#include "ach/generic.h"
 
 /* The struct controlling channel devices a.k.a. /dev/ach-<channelname> */
 struct ach_ch_device {

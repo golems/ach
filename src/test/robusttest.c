@@ -55,7 +55,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "ach.h"
-#include "ach_private_posix.h"
+#include "ach/private_posix.h"
 
 #define OPT_CHAN  "ach-test-robust"
 

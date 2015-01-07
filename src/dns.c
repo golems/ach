@@ -63,7 +63,7 @@
 #include <arpa/inet.h>
 
 #include "ach.h"
-#include "ach_private_posix.h"
+#include "ach/private_posix.h"
 
 int
 mdns_res_search( const char *dname, int clazz, int type,
