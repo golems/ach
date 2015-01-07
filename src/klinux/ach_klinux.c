@@ -1178,7 +1178,7 @@ module_init(ach_init);
 module_exit(ach_exit);
 
 /* Local Variables:    */
-/* mode: C++           */
+/* mode: C             */
 /* c-basic-offset: 8   */
 /* indent-tabs-mode: t */
 /* End:                */

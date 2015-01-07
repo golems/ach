@@ -60,7 +60,7 @@
 #endif /* ACH_PRIVATE_KLINUX_H */
 
 /* Local Variables:    */
-/* mode: C++           */
+/* mode: C             */
 /* c-basic-offset: 8   */
 /* indent-tabs-mode: t */
 /* End:                */
