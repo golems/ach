@@ -60,7 +60,6 @@
 #include <linux/cdev.h>
 #include <linux/poll.h>
 
-#include "ach/klinux_generic.h"	/* ACH Kernel API, shared with userspace */
 #include "ach_klinux.h"
 #include "ach/private_klinux.h"
 
@@ -426,9 +425,9 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
 	struct ach_header *shm;
 	bool missed_frame = 0;
 	enum ach_status retval = ACH_BUG;
-	const bool o_wait = chan->mode.mode & ACH_CH_MODE_WAIT;
-	const bool o_last = chan->mode.mode & ACH_CH_MODE_LAST;
-	const bool o_copy = chan->mode.mode & ACH_CH_MODE_COPY;
+	const bool o_wait = chan->mode.mode & ACH_O_WAIT;
+	const bool o_last = chan->mode.mode & ACH_O_LAST;
+	const bool o_copy = chan->mode.mode & ACH_O_COPY;
 	const struct timespec *reltime = &chan->mode.reltime;
 
 	/* take read lock */
@@ -536,7 +535,7 @@ struct ach_ch_file *ach_ch_file_alloc(struct ach_ch_device *device)
 
 	ch_file->dev = device;
 	ch_file->shm = device->ach_data;
-	ch_file->mode.mode = ACH_CH_MODE_WAIT;	/* Default mode */
+	ch_file->mode.mode = ACH_O_WAIT;	/* Default mode */
 	ch_file->seq_num = 0;
 	ch_file->next_index = ch_file->shm->index_head;
 
@@ -785,12 +784,12 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ch_file->mode.reltime.tv_sec,
 					ch_file->mode.reltime.tv_nsec);
 			KDEBUG("Got cmd ACH_CH_SET_MODE: \n");
-			KDEBUG1("    ACH_CH_MODE_WAIT=%d\n",
-				ch_file->mode.mode & ACH_CH_MODE_WAIT);
-			KDEBUG1("    ACH_CH_MODE_LAST=%d\n",
-				ch_file->mode.mode & ACH_CH_MODE_LAST);
-			KDEBUG1("    ACH_CH_MODE_COPY=%d\n",
-				ch_file->mode.mode & ACH_CH_MODE_COPY);
+			KDEBUG1("    ACH_O_WAIT=%d\n",
+				ch_file->mode.mode & ACH_O_WAIT);
+			KDEBUG1("    ACH_O_LAST=%d\n",
+				ch_file->mode.mode & ACH_O_LAST);
+			KDEBUG1("    ACH_O_COPY=%d\n",
+				ch_file->mode.mode & ACH_O_COPY);
 			goto out;
 			break;
 		}

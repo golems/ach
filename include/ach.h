@@ -187,33 +187,6 @@ extern "C" {
 
 #include "ach/generic.h"
 
-/**  maximum size of a channel name */
-#define ACH_CHAN_NAME_MAX 64ul
-
-    /** Option flags for ach_get().
-     *
-     * Default behavior is to retrieve the oldest unseen frame without
-     * waiting.*/
-    typedef enum {
-        /** Blocks until an unseen message arrives
-         *  or timeout.  If the channel already has data that this subscriber
-         *  has not seen, ach_get() immediately copies the new data.
-         *  Otherwise, it waits for some other process or thread to put data
-         *  into the channel.
-         */
-        ACH_O_WAIT = 0x01,
-        /** Reads the newest message out of the channel.  If the channel
-         * contains multiple messages that this subscriber has not seen,
-         * ach_get() will return the newest of these messages.  The subscriber
-         * will skip past all older messages.
-         */
-        ACH_O_LAST = 0x02,
-        /** Copy the message out of the channel, even if already seen.
-         *  Return code of ach_get() for successful copy will be ACH_OK.
-         */
-        ACH_O_COPY = 0x04
-    } ach_get_opts_t;
-
     typedef enum ach_map {
         ACH_MAP_USER = 0,     /**< Use shared memory for channels */
         ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */

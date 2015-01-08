@@ -46,10 +46,6 @@
 #define ACH_CTRL_CREATE_CH              _IOW(ACH_IOCTL, 1, struct ach_ctrl_create_ch)
 #define ACH_CTRL_UNLINK_CH              _IOW(ACH_IOCTL, 2, struct ach_ctrl_unlink_ch)
 
-#define ACH_CH_MODE_WAIT                0x01
-#define ACH_CH_MODE_LAST                0x02
-#define ACH_CH_MODE_COPY                0x04
-
 #define ACH_CH_CANCEL_UNSAFE            0x01
 
 #define ACH_CH_SET_MODE                 _IOW(ACH_IOCTL, 3, struct ach_ch_mode)
@@ -57,9 +53,6 @@
 #define ACH_CH_GET_STATUS               _IOR(ACH_IOCTL, 5, struct ach_ch_status)
 #define ACH_CH_FLUSH                    _IOW(ACH_IOCTL, 6, unsigned int)
 #define ACH_CH_CANCEL                   _IOW(ACH_IOCTL, 7, unsigned int)
-
-/**  maximum size of a channel name */
-#define ACH_CHAN_NAME_MAX 64ul
 
 struct ach_ctrl_create_ch {
 	size_t frame_cnt;

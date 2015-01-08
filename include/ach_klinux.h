@@ -47,6 +47,7 @@
 #define ACH_KLINUX_H
 
 #include "ach/generic.h"
+#include "ach/klinux_generic.h"	/* ACH Kernel API, shared with userspace */
 
 /* The struct controlling channel devices a.k.a. /dev/ach-<channelname> */
 struct ach_ch_device {

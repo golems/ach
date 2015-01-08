@@ -349,9 +349,7 @@ achk_get( ach_channel_t *chan,
         struct ach_ch_mode mode;
         memset(&mode, 0, sizeof(mode));
 
-        if (options & ACH_O_WAIT) mode.mode |= ACH_CH_MODE_WAIT;
-        if (options & ACH_O_LAST) mode.mode |= ACH_CH_MODE_LAST;
-        if (options & ACH_O_COPY) mode.mode |= ACH_CH_MODE_COPY;
+        mode.mode = options;
 
         mode.reltime = opts.reltime;
 
