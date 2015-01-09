@@ -301,6 +301,7 @@ AS_IF( [test "x$JAVAPREFIX" = x],
         AS_IF( [test "x$JAVAC" = x], [AC_CHECK_PROGS(JAVAC, javac "gcj -C" jikes guavac)] )
         AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)] )
+        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS([JAVADOC], [javadoc])])
        ],
        [
         AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],
@@ -310,6 +311,8 @@ AS_IF( [test "x$JAVAPREFIX" = x],
         AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)],
                [$JAVAPREFIX] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)],
+               [$JAVAPREFIX] )
+        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS(JAVA, javadoc )],
                [$JAVAPREFIX] )
        ])
 
@@ -341,6 +344,8 @@ AS_IF([test "x$JAVAC" = "x" -o "x$HAVE_JNI" != xyes],
 AC_SUBST([JNICPPFLAGS])
 
 AM_CONDITIONAL([BUILD_JAVA],   [test "x$enable_java" = xyes])
+AM_CONDITIONAL([HAVE_JAVADOC],   [test "x$JAVADOC" != x])
+AM_CONDITIONAL([INSTALL_JAVADOC],   [test "x$JAVADOC" != x -o -e "$srcdir/doc/javadoc"])
 
 AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
 

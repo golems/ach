@@ -110,7 +110,7 @@ JSOURCES =                                \
 	$(top_srcdir)/java/Status.java    \
 	$(top_srcdir)/java/Channel.java   \
 	$(top_srcdir)/java/Test.java
-EXTRA_DIST += $(JSOURCES) doc/javadoc
+EXTRA_DIST += $(JSOURCES)
 
 if BUILD_JAVA
 
@@ -146,13 +146,19 @@ libachj_la_CPPFLAGS = $(AM_CPPFLAGS) $(CPPFLAGS) $(JNICPPFLAGS)
 libachj_la_SOURCES = java/achj.c
 libachj_la_LIBADD = libach.la
 
+endif
 
+if INSTALL_JAVADOC
+dist_doc_DATA=doc/javadoc
+endif
+
+if HAVE_JAVADOC
 # Javadocs
+doc/javadoc: doc/.javadoc.stamp
+
 doc/.javadoc.stamp: $(JSOURCES)
 	javadoc -d doc/javadoc $(JSOURCES)
 	touch $@
-
-
 endif
 
 ## LOCAL CLEAN ##
@@ -164,7 +170,7 @@ distclean-local:
 	-rm -rf CMakeFiles CMakeCache.txt cmake_install.cmake .nfs*
 
 maintainer-clean-local:
-	-rm -rf  *.tar.gz
+	-rm -rf  *.tar.gz doc/javadoc doc/.javadoc.stamp
 
 
 
