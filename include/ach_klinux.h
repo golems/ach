@@ -46,6 +46,16 @@
 #ifndef ACH_KLINUX_H
 #define ACH_KLINUX_H
 
+/** \file ach_klinux.h
+ *
+ *  \brief This header file contains definitions for the kernel module
+ *         structs corresponding to the userspace implementation in
+ *         ach.h.
+ *
+ *  \author Kim Boendergaard Poulsen <kibo@prevas.dk>
+ *
+ */
+
 #include "ach/generic.h"
 #include "ach/klinux_generic.h"	/* ACH Kernel API, shared with userspace */
 

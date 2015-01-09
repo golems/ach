@@ -46,7 +46,11 @@
  *
  */
 
-/** \file ach_impl.h
+/** \file impl_generic.h
+ *
+ *  \brief This file contains definitions used by both the POSIX and
+ *         Linux kernel implementations.
+ *
  *  \author Neil T. Dantam
  */
 

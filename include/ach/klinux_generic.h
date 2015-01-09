@@ -39,6 +39,14 @@
  *
  */
 
+/** \file klinux_generic.h
+ *
+ *  \brief This file contains declarations for the kernel
+ *         implementation needed by both user and kernel space.
+ *
+ *  \author Kim Boendergaard Poulsen
+ */
+
 #define ACH_NAME                    "ach-ipc"
 #define ACH_IOCTL                   'Q'
 #define ACH_MAX_DEVICES             512

@@ -16,8 +16,7 @@ TESTS = achtest achtooltest test-achcop
 include_HEADERS = include/ach.h include/Ach.hpp
 pkginclude_HEADERS = \
 	include/ach/generic.h \
-	include/ach/klinux_generic.h \
-	include/ach/klinux_user.h
+	include/ach/klinux_generic.h
 
 noinst_HEADERS = include/achutil.h include/achd.h include/ach/private_posix.h
 
@@ -183,7 +182,6 @@ dkmspkginclude_HEADERS = \
 	 include/ach/generic.h \
 	 include/ach/impl_generic.h \
 	 include/ach/klinux_generic.h \
-	 include/ach/klinux_kernel.h \
 	 include/ach/private_generic.h \
 	 include/ach/private_klinux.h
 dkms_DATA = src/klinux/dkms/dkms.conf src/klinux/ach_klinux.c src/klinux/dkms/Kbuild

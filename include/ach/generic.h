@@ -44,72 +44,15 @@
  *
  */
 
-/** \file ach.h
+/** \file generic.h
+ *
+ *  \brief This file contains declarations needed by both the
+ *         userspace public interface and the Linux kernel
+ *         implementation.
+ *
  *  \author Neil T. Dantam
  */
 
-
-/** \mainpage ACH IPC Library
- *
- * Ach is a library that provides a publish-subscribe or message-bus
- * form of IPC.
- *
- * -----------------------------------------------------
- *
- * A tutorial-style manual is available at
- * http://golems.github.com/ach/manual
- *
- * -----------------------------------------------------
- *
- * Ach differs from other message passing transports with regard to
- * head of line blocking.  In ach, newer messages always supersede old
- * messsages, regardless of whether or not a subscriber has seen the
- * old message.  Old messages will never block new messages.  This
- * behavior is suited to real-time systems where a subscriber is
- * generally interested only in the latest version of a message.
- *
- * Clients may be publishers and or subscribers. Publishers they push
- * data to channels, and subscribers can then poll or wait on the
- * channels for data.
- *
- * Ach deals only with byte arrays.  Any higher level data
- * organization (records, dictionaries, etc) must be handled in the
- * client application.
- *
- * \author Neil T. Dantam
- * \author Developed at the Georgia Tech Humanoid Robotics Lab
- * \author Under Direction of Professor Mike Stilman
- *
- * Copyright (c) 2008-2013, Georgia Tech Research Corporation.
- * All rights reserved.
- *
- *   Redistribution and use in source and binary forms, with or
- *   without modification, are permitted provided that the following
- *   conditions are met:
- *
- *   - Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *
- *   - Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *
- *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
- *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
- *   INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- *   MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- *   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
- *   CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *   SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- *   LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
- *   USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- *   AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *   ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *   POSSIBILITY OF SUCH DAMAGE.
- *
- */
 
 #ifndef ACH_GENERIC_H
 #define ACH_GENERIC_H

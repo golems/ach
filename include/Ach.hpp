@@ -39,6 +39,13 @@
 #ifndef _ACH_HPP_
 #define _ACH_HPP_
 
+/** \file Ach.hpp
+ *
+ * \brief This file contains a C++ convenience interface for ach.
+ *
+ * \author Matt Zucker, Neil T. Dantam
+ */
+
 #include <ach.h>
 #include <vector>
 

@@ -42,6 +42,13 @@
 #ifndef ACHD_H
 #define ACHD_H
 
+/** \file achd.h
+ *
+ * \brief This file contains declarations for the achd utility.
+ *
+ * \author Neil T. Dantam
+ */
+
 #define ACHD_PORT 8076
 #define INIT_BUF_SIZE 512
 

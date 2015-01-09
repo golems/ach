@@ -45,7 +45,13 @@
 
 #include <signal.h>
 
-/* Routines for ach utilities.  Not for external consumption */
+/** \file achutil.h
+ *
+ *  \brief This file declares routines for ach utilities; not for
+ *         external consumption.
+ *
+ *  \author Neil T. Dantam
+ */
 
 
 /** Print version and copyright info */

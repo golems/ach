@@ -2,6 +2,7 @@
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
  * Copyright (c) 2008-2012, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Rice University
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -23,6 +24,10 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *
+ *   * Neither the name of Rice University nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -64,6 +69,20 @@
 
 #include "ach.h"
 #include "libach_private.h"
+
+/** \file libach_private.h
+ *
+ *  \brief This file defines helper functions and variables to be used
+ *         by language bindings; it is used by the Python ctypes
+ *         interface.
+ *
+ *  \author Neil T. Dantam
+ *
+ */
+
+ach_channel_t *ach_channel_alloc(void);
+void  ach_channel_free( ach_channel_t *);
+
 
 ach_channel_t *ach_channel_alloc(void) {
     return (ach_channel_t*)malloc(sizeof(ach_channel_t));

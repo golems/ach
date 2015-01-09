@@ -46,7 +46,11 @@
  */
 
 /** \file ach.h
+ *
+ *  \brief This header file defines the public interface for Ach.
+ *
  *  \author Neil T. Dantam
+ *
  */
 
 
@@ -180,12 +184,12 @@
 #error No valid CLOCKS defined.  Expecting CLOCK_MONOTONIC.
 #endif /* CLOCK_MONOTONIC */
 
+#include "ach/generic.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "ach/generic.h"
 
     typedef enum ach_map {
         ACH_MAP_USER = 0,     /**< Use shared memory for channels */
