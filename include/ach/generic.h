@@ -107,7 +107,11 @@ typedef enum {
     /** Copy the message out of the channel, even if already seen.
      *  Return code of ach_get() for successful copy will be ACH_OK.
      */
-    ACH_O_COPY = 0x04
+    ACH_O_COPY = 0x04,
+
+    /** Timeout is a relative time.
+     */
+    ACH_O_RELTIME = 0x08
 } ach_get_opts_t;
 
 /**  maximum size of a channel name */

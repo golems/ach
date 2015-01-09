@@ -302,6 +302,7 @@ achk_create( const char *channel_name,
 
 static struct timespec relative_time(struct timespec then)
 {
+    // TODO: support alternate clocks
     struct timespec delta;
     struct timespec now;
 
@@ -318,33 +319,46 @@ static struct timespec relative_time(struct timespec then)
     delta.tv_sec = then.tv_sec - now.tv_sec;
     if (now.tv_nsec > then.tv_nsec) {
         delta.tv_sec--;
-        then.tv_nsec += 1e9;
+        then.tv_nsec += 1000000000;
     }
     delta.tv_nsec = then.tv_nsec - now.tv_sec;
     return delta;
 }
 
+static struct timespec abs_time(struct timespec delta)
+{
+    // TODO: support alternate clocks
+    struct timespec then;
+    struct timespec now;
+
+    clock_gettime( ACH_DEFAULT_CLOCK, &now );
+
+    int64_t nsec = delta.tv_nsec + now.tv_nsec;
+
+    then.tv_nsec = nsec % 1000000000;
+    then.tv_sec = delta.tv_sec + now.tv_sec + nsec / 1000000000;
+
+    return then;
+}
+
+
 static enum ach_status
 achk_get( ach_channel_t *chan,
           void *cx, char **pobj,
           size_t *frame_size,
-          const struct timespec *ACH_RESTRICT abstime,
+          const struct timespec *ACH_RESTRICT reltime,
           int options )
 {
     size_t size = *(size_t*)cx;
     achk_opt_t opts;
     opts.options = options;
-    if(abstime)
-        opts.reltime =*abstime;
+    if(reltime)
+        opts.reltime =*reltime;
     else {
         opts.reltime.tv_sec = 0;
         opts.reltime.tv_nsec = 0;
     }
 
-    if (opts.reltime.tv_sec > 10000) {
-        /* Regard time as abstime - convert to relative time */
-        opts.reltime = relative_time(opts.reltime);
-    }
     if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
         struct ach_ch_mode mode;
         memset(&mode, 0, sizeof(mode));
@@ -850,15 +864,26 @@ get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size )
 enum ach_status
 ach_get( ach_channel_t *chan, void *buf, size_t size,
          size_t *frame_size,
-         const struct timespec *ACH_RESTRICT abstime,
+         const struct timespec *ACH_RESTRICT timeout,
          int options )
 {
+    struct timespec *ptime;
+    struct timespec ltime;
     if (IS_KERNEL_DEVICE(chan)) {
-        return achk_get( chan, &size, (char**)&buf, frame_size, abstime, options);
+        if( timeout ) {
+            ltime = relative_time(*timeout);
+            ptime = &ltime;
+        } else ptime = NULL;
+        return achk_get( chan, &size, (char**)&buf, frame_size, ptime, options);
+    } else {
+        if (timeout && options & ACH_O_RELTIME ) {
+            ltime = abs_time(*timeout);
+            ptime = &ltime;
+        } else ptime = timeout;
+        return ach_xget( chan,
+                         get_fun, &size, &buf,
+                         frame_size, ptime, options );
     }
-    return ach_xget( chan,
-                     get_fun, &size, &buf,
-                     frame_size, abstime, options );
 }
 
 
