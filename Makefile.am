@@ -111,7 +111,8 @@ JSOURCES =                                \
 	$(top_srcdir)/java/Channel.java   \
 	$(top_srcdir)/java/Test.java
 EXTRA_DIST += $(JSOURCES) doc/javadoc
-if HAVE_JAVAC
+
+if BUILD_JAVA
 
 BUILT_SOURCES = org_golems_ach_Lib.h
 

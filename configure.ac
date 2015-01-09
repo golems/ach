@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.65])
 AC_INIT([ach], [1.2.1], [ntd@gatech.edu])
-AM_INIT_AUTOMAKE([-Wall])
+AM_INIT_AUTOMAKE([-Wall subdir-objects])
 AC_CONFIG_SRCDIR([src/ach.c])
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_MACRO_DIR([m4])
@@ -13,8 +13,10 @@ AC_USE_SYSTEM_EXTENSIONS
 AC_PROG_CC
 AC_PROG_CC_C99
 AC_PROG_CXX
-AC_PROG_LIBTOOL
 
+AM_PROG_AR
+AM_PROG_CC_C_O
+AC_PROG_LIBTOOL
 
 AC_C_RESTRICT
 AC_C_INLINE
@@ -284,6 +286,15 @@ AS_IF([test "x$with_python" = "xyes"],[
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
 
 # Java
+AC_ARG_ENABLE([java],
+              [AS_HELP_STRING([--disable-java],
+                              [Do not build Java support])],
+              [enable_java_force="$enable_java"],
+              [enable_java="yes"])
+
+
+AS_IF( [test "x$enable_java" = xyes], [
+
 AS_IF( [test "x$JAVAPREFIX" = x],
        [
         AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],  )
@@ -300,22 +311,36 @@ AS_IF( [test "x$JAVAPREFIX" = x],
                [$JAVAPREFIX] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)],
                [$JAVAPREFIX] )
-       ]
-)
+       ])
 
-AS_IF([test "x$JAVAC" = "x"],
-      [BUILD_JAVA=no],
+AS_IF([test "x$JAVAC" != "x"],
       [
-       BUILD_JAVA=yes
        AX_JNI_INCLUDE_DIR
        for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
        do
            JNICPPFLAGS="$JNICPPFLAGS -I$JNI_INCLUDE_DIR"
        done
+       TMPCPPFLAGS="$CPPFLAGS"
+       CPPFLAGS="$CPPFLAGS $JNICPPFLAGS"
+       AC_LANG(C)
+       AC_CHECK_HEADER([jni.h], [HAVE_JNI=yes], [HAVE_JNI=no])
+       CPPFLAGS="$TMPCPPFLAGS"
       ])
 
+AS_IF([test "x$JAVAC" = "x" -a "x$enable_java_force" = xyes],
+      [AC_MSG_ERROR([Could not find javac])])
+
+AS_IF([test "x$HAVE_JNI" != "xyes" -a "x$enable_java_force" = xyes],
+      [AC_MSG_ERROR([Could not find jni.h])])
+
+AS_IF([test "x$JAVAC" = "x" -o "x$HAVE_JNI" != xyes],
+      [enable_java=no])
+
+])
+
 AC_SUBST([JNICPPFLAGS])
-AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
+
+AM_CONDITIONAL([BUILD_JAVA],   [test "x$enable_java" = xyes])
 
 AC_CONFIG_FILES([Makefile doc/Makefile python/setup.py ach.pc])
 
@@ -329,4 +354,4 @@ AC_MSG_NOTICE([=====================])
 AC_MSG_NOTICE([DEBUG:           $enable_debug])
 AC_MSG_NOTICE([PREFIX:          $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])
-AC_MSG_NOTICE([BUILD JAVA LIB:  $BUILD_JAVA])
+AC_MSG_NOTICE([BUILD JAVA LIB:  $enable_java])
