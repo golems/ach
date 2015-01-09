@@ -226,6 +226,31 @@ AS_IF([test "x$enable_debug" = "xyes"],
       ]
 )
 
+AC_ARG_ENABLE([documentation],
+              [AS_HELP_STRING([--disable-documentation], [Do not build documentation])],
+              [],
+              [enable_documentation=yes])
+
+AC_ARG_ENABLE([javadoc],
+              [AS_HELP_STRING([--disable-javadoc], [Do not build Javadoc])],
+              [],
+              [enable_javadoc="$enable_documentation"])
+
+AC_ARG_ENABLE([man],
+              [AS_HELP_STRING([--disable-man], [Do not build man pages])],
+              [],
+              [enable_man="$enable_documentation"])
+
+AC_ARG_ENABLE([manhtml],
+              [AS_HELP_STRING([--disable-manhtml], [Do not build HTML man pages])],
+              [],
+              [enable_manhtml="$enable_documentation"])
+
+AC_ARG_ENABLE([docbook],
+              [AS_HELP_STRING([--disable-docbook], [Do not build Docbook manual])],
+              [],
+              [enable_docbook="$enable_documentation"])
+
 # Doxygen
 m4_ifdef([DX_INIT_DOXYGEN],
          [DX_HTML_FEATURE(ON)
@@ -245,9 +270,15 @@ m4_ifdef([DX_INIT_DOXYGEN],
          ])
 
 # Check for programs to make documentation
-AC_CHECK_PROGS([HELP2MAN], [help2man])
-AC_CHECK_PROGS([MAN2HTML], [man2html])
-AC_CHECK_PROGS([DB2HTML], [db2html])
+AS_IF([test "x$enable_man" = xyes -a "x$build" = "x$host"],
+      [AC_CHECK_PROGS([HELP2MAN], [help2man])])
+
+AS_IF([test "x$enable_manhtml" = xyes],
+      [AC_CHECK_PROGS([MAN2HTML], [man2html])])
+
+AS_IF([test "x$enable_docbook" = xyes],
+      [AC_CHECK_PROGS([DB2HTML], [db2html])])
+
 AM_CONDITIONAL([HAVE_HELP2MAN], [test x$HELP2MAN != x])
 AM_CONDITIONAL([HAVE_MAN2HTML], [test x$MAN2HTML != x])
 AM_CONDITIONAL([HAVE_DB2HTML],  [test x$DB2HTML != x])
@@ -302,7 +333,7 @@ AS_IF( [test "x$JAVAPREFIX" = x],
         AS_IF( [test "x$JAVAC" = x], [AC_CHECK_PROGS(JAVAC, javac "gcj -C" jikes guavac)] )
         AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)] )
-        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS([JAVADOC], [javadoc])])
+        AS_IF( [test "x$JAVADOC" = x -a "x$enable_javadoc" = xyes],  [AC_CHECK_PROGS([JAVADOC], [javadoc])])
        ],
        [
         AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],
@@ -313,7 +344,7 @@ AS_IF( [test "x$JAVAPREFIX" = x],
                [$JAVAPREFIX] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)],
                [$JAVAPREFIX] )
-        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS(JAVA, javadoc )],
+        AS_IF( [test "x$JAVADOC" = x -a "x$enable_javadoc" = xyes],  [AC_CHECK_PROGS(JAVA, javadoc )],
                [$JAVAPREFIX] )
        ])
 
@@ -436,10 +467,12 @@ AC_OUTPUT
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([CONFIGURATION SUMMARY])
 AC_MSG_NOTICE([=====================])
+AC_MSG_NOTICE([BUILD:               $build])
+AC_MSG_NOTICE([HOST:                $host])
 AC_MSG_NOTICE([DEBUG:               $enable_debug])
 AC_MSG_NOTICE([PREFIX:              $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:      $PYTHON_VERSION])
-AC_MSG_NOTICE([BUILD JAVA LIB:  $enable_java])
+AC_MSG_NOTICE([BUILD JAVA LIB:      $enable_java])
 AC_MSG_NOTICE([INSTALL DKMS SOURCE: $enable_dkms])
 AC_MSG_NOTICE([BUILD DKMS MODULE:   $enable_dkms_build])
 AC_MSG_NOTICE([KBUILD LINUX MODULE: $enable_kbuild])
