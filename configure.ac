@@ -14,8 +14,10 @@ AM_PROG_AR
 AC_PROG_CC
 AC_PROG_CC_C99
 AC_PROG_CXX
-AC_PROG_LIBTOOL
 
+AM_PROG_AR
+AM_PROG_CC_C_O
+AC_PROG_LIBTOOL
 
 AC_C_RESTRICT
 AC_C_INLINE
@@ -285,12 +287,22 @@ AS_IF([test "x$with_python" = "xyes"],[
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
 
 # Java
+AC_ARG_ENABLE([java],
+              [AS_HELP_STRING([--disable-java],
+                              [Do not build Java support])],
+              [enable_java_force="$enable_java"],
+              [enable_java="yes"])
+
+
+AS_IF( [test "x$enable_java" = xyes], [
+
 AS_IF( [test "x$JAVAPREFIX" = x],
        [
         AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],  )
         AS_IF( [test "x$JAVAC" = x], [AC_CHECK_PROGS(JAVAC, javac "gcj -C" jikes guavac)] )
         AS_IF( [test "x$JAVAH" = x], [AC_CHECK_PROGS(JAVAH, javah)] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)] )
+        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS([JAVADOC], [javadoc])])
        ],
        [
         AS_IF( [test "x$JAVA" = x],  [AC_CHECK_PROGS(JAVA, java kaffe)],
@@ -301,22 +313,40 @@ AS_IF( [test "x$JAVAPREFIX" = x],
                [$JAVAPREFIX] )
         AS_IF( [test "x$JAR" = x],   [AC_CHECK_PROGS(JAR, jar)],
                [$JAVAPREFIX] )
-       ]
-)
+        AS_IF( [test "x$JAVADOC" = x],  [AC_CHECK_PROGS(JAVA, javadoc )],
+               [$JAVAPREFIX] )
+       ])
 
-AS_IF([test "x$JAVAC" = "x"],
-      [BUILD_JAVA=no],
+AS_IF([test "x$JAVAC" != "x"],
       [
-       BUILD_JAVA=yes
        AX_JNI_INCLUDE_DIR
        for JNI_INCLUDE_DIR in $JNI_INCLUDE_DIRS
        do
            JNICPPFLAGS="$JNICPPFLAGS -I$JNI_INCLUDE_DIR"
        done
+       TMPCPPFLAGS="$CPPFLAGS"
+       CPPFLAGS="$CPPFLAGS $JNICPPFLAGS"
+       AC_LANG(C)
+       AC_CHECK_HEADER([jni.h], [HAVE_JNI=yes], [HAVE_JNI=no])
+       CPPFLAGS="$TMPCPPFLAGS"
       ])
 
+AS_IF([test "x$JAVAC" = "x" -a "x$enable_java_force" = xyes],
+      [AC_MSG_ERROR([Could not find javac])])
+
+AS_IF([test "x$HAVE_JNI" != "xyes" -a "x$enable_java_force" = xyes],
+      [AC_MSG_ERROR([Could not find jni.h])])
+
+AS_IF([test "x$JAVAC" = "x" -o "x$HAVE_JNI" != xyes],
+      [enable_java=no])
+
+])
+
 AC_SUBST([JNICPPFLAGS])
-AM_CONDITIONAL([HAVE_JAVAC],   [test "x$JAVAC" != x])
+
+AM_CONDITIONAL([BUILD_JAVA],   [test "x$enable_java" = xyes])
+AM_CONDITIONAL([HAVE_JAVADOC],   [test "x$JAVADOC" != x])
+AM_CONDITIONAL([INSTALL_JAVADOC],   [test "x$JAVADOC" != x -o -e "$srcdir/doc/javadoc"])
 
 
 
@@ -409,7 +439,7 @@ AC_MSG_NOTICE([=====================])
 AC_MSG_NOTICE([DEBUG:               $enable_debug])
 AC_MSG_NOTICE([PREFIX:              $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:      $PYTHON_VERSION])
-AC_MSG_NOTICE([BUILD JAVA LIB:      $BUILD_JAVA])
+AC_MSG_NOTICE([BUILD JAVA LIB:  $enable_java])
 AC_MSG_NOTICE([INSTALL DKMS SOURCE: $enable_dkms])
 AC_MSG_NOTICE([BUILD DKMS MODULE:   $enable_dkms_build])
 AC_MSG_NOTICE([KBUILD LINUX MODULE: $enable_kbuild])
