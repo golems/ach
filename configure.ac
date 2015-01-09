@@ -269,7 +269,7 @@ m4_ifdef([DX_INIT_DOXYGEN],
          ])
 
 # Check for programs to make documentation
-AS_IF([test "x$enable_man" = xyes],
+AS_IF([test "x$enable_man" = xyes -a "x$build" = "x$host"],
       [AC_CHECK_PROGS([HELP2MAN], [help2man])])
 
 AS_IF([test "x$enable_manhtml" = xyes],
@@ -387,6 +387,8 @@ AC_OUTPUT
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([CONFIGURATION SUMMARY])
 AC_MSG_NOTICE([=====================])
+AC_MSG_NOTICE([BUILD:           $build])
+AC_MSG_NOTICE([HOST:            $host])
 AC_MSG_NOTICE([DEBUG:           $enable_debug])
 AC_MSG_NOTICE([PREFIX:          $prefix])
 AC_MSG_NOTICE([PYTHON VERSION:  $PYTHON_VERSION])
