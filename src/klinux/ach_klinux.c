@@ -822,9 +822,9 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				stat.count = shm->index_cnt - shm->index_free;
 
 				if (oldest_seq > ch_file->seq_num) {
-					stat.new = shm->last_seq - oldest_seq;
+					stat.new_msgs = shm->last_seq - oldest_seq;
 				} else {
-					stat.new =
+					stat.new_msgs =
 					    shm->last_seq - ch_file->seq_num;
 				}
 
@@ -838,7 +838,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				printk(KERN_INFO "           count: %zu\n",
 				       stat.count);
 				printk(KERN_INFO "           new  : %zu\n",
-				       stat.new);
+				       stat.new_msgs);
 				printk(KERN_INFO "  last_seq      : %lu\n",
 				       stat.last_seq);
 				printk(KERN_INFO "  last_seq_read : %lu\n",

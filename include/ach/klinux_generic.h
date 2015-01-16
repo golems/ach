@@ -81,7 +81,7 @@ struct ach_ch_status {
 	unsigned int mode;
 	ssize_t size;		/* Size of queue */
 	ssize_t count;		/* Messages in queue */
-	ssize_t new;		/* Unread messages in queue */
+	ssize_t new_msgs;	/* Unread messages in queue */
 	unsigned long last_seq;	/* Last sequence in queue */
 	unsigned long last_seq_read;	/* Sequence of last read message */
 };
