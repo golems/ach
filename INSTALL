@@ -99,6 +99,15 @@ configured as follows:
 
   By default, debugging is disabled.
 
+Linux Kernel Support
+--------------------
+
+A Linux kernel module will optionally be built based on the options
+given to ./configure.
+
+To properly set file permissions for kernel-based channels, an example
+udev rules file is included in doc/ach-klinux.rules.
+
 II. CMAKE INSTALLATION SUMMARY
 ==============================
 
