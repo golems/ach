@@ -149,16 +149,24 @@ libachj_la_LIBADD = libach.la
 endif
 
 if INSTALL_JAVADOC
-dist_doc_DATA=doc/javadoc
+EXTRA_DIST += doc/javadoc
+
+# TODO: What's the best way to install javadoc?  The following line
+# doesn't work:
+#
+# doc_DATA=doc/javadoc
+#
+# and install hooks that cp break distcheck
+
 endif
 
 if HAVE_JAVADOC
 # Javadocs
-doc/javadoc: doc/.javadoc.stamp
-
-doc/.javadoc.stamp: $(JSOURCES)
+doc/javadoc/index.html: $(JSOURCES)
 	javadoc -d doc/javadoc $(JSOURCES)
 	touch $@
+
+all: doc/javadoc
 endif
 
 ## LOCAL CLEAN ##
