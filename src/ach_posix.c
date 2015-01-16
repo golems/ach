@@ -96,7 +96,14 @@
 
 #endif /* NDEBUG */
 
-#define IS_KERNEL_DEVICE(chan)  (NULL == chan->shm)
+static inline int IS_KERNEL_DEVICE(ach_channel_t *chan)
+{
+    enum ach_map i;
+    enum ach_status r = ach_channel_mapping(chan, &i);
+    if( ACH_OK == r ) {
+        return (ACH_MAP_KERNEL == i);
+    } else return 0;
+}
 
 size_t ach_channel_size = sizeof(ach_channel_t);
 size_t ach_attr_size = sizeof(ach_attr_t);
@@ -783,6 +790,9 @@ ach_open( ach_channel_t *chan, const char *channel_name,
     size_t len;
     int fd = -1;
 
+    if( attr ) memcpy( &chan->attr, attr, sizeof(chan->attr) );
+    else memset( &chan->attr, 0, sizeof(chan->attr) );
+
     if ((attr && ACH_MAP_KERNEL == attr->map) ||
         ACH_OK == channel_exists_as_kernel_device(channel_name)) {
 
@@ -792,17 +802,11 @@ ach_open( ach_channel_t *chan, const char *channel_name,
 
         /* initialize struct */
         chan->fd = fd;
-        chan->len = 0;        /* We don't care */
-        chan->shm = NULL;     /* Indicates kernel device */
-        chan->seq_num = 0;    /* Not used */
-        chan->next_index = 0; /* Not used */
-        chan->cancel = 0;
+        chan->attr.map = ACH_MAP_KERNEL; /* Indicates kernel device */
+        /* other fields don't matter */
 
         return ACH_OK;
     }
-
-    if( attr ) memcpy( &chan->attr, attr, sizeof(chan->attr) );
-    else memset( &chan->attr, 0, sizeof(chan->attr) );
 
     if( attr && attr->map_anon ) {
         shm = attr->shm;
@@ -1338,4 +1342,18 @@ void ach_set_errstr( const char *str )
 const char *ach_errstr( void )
 {
     return ach_errstr_var;
+}
+
+enum ach_status
+ach_channel_fd( const struct ach_channel *channel, int *file_descriptor )
+{
+    *file_descriptor = channel->fd;
+    return ACH_OK;
+}
+
+enum ach_status
+ach_channel_mapping( const struct ach_channel *channel, enum ach_map *mapping )
+{
+    *mapping = channel->attr.map;
+    return ACH_OK;
 }

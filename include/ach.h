@@ -239,9 +239,12 @@ extern "C" {
         struct timespec reltime;   /**< kernel use relative time */
     } achk_opt_t;
 
-    /** Descriptor for shared memory area
+    /** Handle for an Ach channel.
+     *
+     * Direct access of this structure by library clients is
+     * discouraged; its fields may change in future library version.
      */
-    typedef struct {
+    typedef struct ach_channel {
         union {
             struct {
                 struct ach_header *shm;   /**< pointer to mmap'ed block */
@@ -258,6 +261,14 @@ extern "C" {
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
     } ach_channel_t;
+
+    /** Return the file descriptor associated with this channel */
+    enum ach_status
+    ach_channel_fd( const struct ach_channel *channel, int *file_descriptor );
+
+    /** Return the mapping of the channel. */
+    enum ach_status
+    ach_channel_mapping( const struct ach_channel *channel, enum ach_map *mapping );
 
     /** Size of ach_channel_t */
     extern size_t ach_channel_size;
