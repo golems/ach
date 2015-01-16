@@ -310,15 +310,16 @@ int cmd_create(void) {
         i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
     }
 
-    if( ! (opt_1 && i == ACH_EEXIST) ) {
+    if( opt_1 && i == ACH_EEXIST ) {
+        i = ACH_OK;
+    } else {
         check_status( i, "Error creating channel '%s'", opt_chan_name );
-    } else i = ACH_OK;
-
-    if( opt_mode > 0 ) {
-        i = cmd_chmod();
     }
 
-    return i;
+    if( opt_mode > 0 ) {
+        return cmd_chmod();
+    } else
+        return 0;
 }
 int cmd_unlink(void) {
     if( opt_verbosity > 0 ) {
@@ -378,7 +379,7 @@ int cmd_chmod(void) {
     r = ach_close( &chan );
     check_status( r, "Error closing channel '%s'", opt_chan_name );
 
-    return r;
+    return (ACH_OK==r) ? 0 : -1;
 }
 
 int cmd_search(void)

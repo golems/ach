@@ -48,7 +48,6 @@
 #include <errno.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -79,15 +78,15 @@ double now() {
 /* simple integrator, x = dt * dx */
 void robot(void) {
     int r = ach_open(&chan_feedback, "feedback", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     r = ach_open(&chan_control, "control", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     x_t X = {now(),0,0};
     while(1) {
         u_t U;
         size_t fs;
         r = ach_get( &chan_control, U, sizeof(U), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
-        assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(U) == fs );
+        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(U) == fs ) ) abort();
         double tm = now();
         X[2] = U[0];               /*  dx = u       */
         X[1] = (tm - X[0]) * X[2]; /*  x = dt * dx  */
@@ -100,12 +99,12 @@ void robot(void) {
 /* print samples periodically */
 void periodic_logger(void) {
     int r = ach_open(&chan_feedback, "feedback", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     while(1) {
         x_t X;
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
-        assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
+        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs) ) abort();
         printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
         usleep((int) (1e6 * 0.1)); /* 10 Hertz */
     }
@@ -115,14 +114,14 @@ void periodic_logger(void) {
 /* log all samples to a file */
 void full_logger(void) {
     int r = ach_open(&chan_feedback, "feedback", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     FILE *fp = fopen("ach-example.dat", "w");
-    assert(fp);
+    if(NULL == fp) abort();
     while(1) {
         x_t X;
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT );
-        assert( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs );
+        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs) ) abort();
         fprintf(fp,"%f\t%f\t%f\n", X[0], X[1], X[2]);
     }
     fclose(fp);
@@ -132,7 +131,7 @@ void full_logger(void) {
 /* sinusoidal input */
 void controller(void) {
     int r = ach_open(&chan_control, "control", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     while(1){
         double tm = now();
         u_t U = {sin(tm)};
@@ -147,29 +146,29 @@ int main(int argc, char **argv) {
     int r;
     /* create channels */
     r = ach_unlink("control");               /* delete first */
-    assert( ACH_OK == r || ACH_ENOENT == r);
+    if( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
     r = ach_unlink("feedback");              /* delete first */
-    assert( ACH_OK == r || ACH_ENOENT == r);
+    if( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
     r = ach_create("control", 10ul, 256ul, NULL );
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
     r = ach_create("feedback", 10ul, 256ul, NULL );
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 
     /* fork processes */
     int pid_ctrl = fork();
-    assert(pid_ctrl >= 0);
+    if(pid_ctrl < 0) abort();
     if(!pid_ctrl) controller();
 
     int pid_bot = fork();
-    assert(pid_bot >= 0);
+    if(pid_bot < 0) abort();
     if(!pid_bot) robot();
 
     int pid_periodic = fork();
-    assert(pid_periodic >= 0);
+    if(pid_periodic < 0) abort();
     if(!pid_periodic) periodic_logger();
 
     int pid_full = fork();
-    assert(pid_full >= 0);
+    if(pid_full < 0) abort();
     if(!pid_full) full_logger();
 
     /* wait for a signal */

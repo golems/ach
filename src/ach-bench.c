@@ -99,6 +99,7 @@ static double ticks_delta(ticks_t t0, ticks_t t1) {
 static void send_time(float t) {
     int r = ach_put(&time_chan, &t, sizeof(t));
     assert(ACH_OK == r);
+    if( ACH_OK != r ) exit(EXIT_FAILURE);
 }
 
 void make_realtime( int priority ) {
@@ -137,18 +138,18 @@ void init_time_chan(void) {
     /* create channel */
     ach_create_attr_t cattr;
     int r = ach_unlink("time");               /* delete first */
-    assert( ACH_OK == r || ACH_ENOENT == r);
+    if( !(ACH_OK == r || ACH_ENOENT == r)) abort();
     if (KERNDEV) {
         ach_create_attr_init(&cattr);
         cattr.map = ACH_MAP_KERNEL;
     }
     r = ach_create("time", (size_t)FREQUENCY*(size_t)SECS*RECV_RT,
                    sizeof(float), KERNDEV ? &cattr : NULL );
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 
     /* open channel */
     r = ach_open(&time_chan, "time", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 }
 
 void print_times(void) {
@@ -184,7 +185,7 @@ void sender_ach(void) {
     for( i = 0; i < SECS*FREQUENCY; i ++) {
         ticks_t ticks = get_ticks();
         int r = ach_put(&chan, &ticks, sizeof(ticks));
-        assert(ACH_OK == r);
+        if(ACH_OK != r) abort();
         usleep((useconds_t)(1e6/FREQUENCY));
     }
 }
@@ -228,23 +229,23 @@ void receiver_ach(int rt) {
 void setup_ach(void) {
     /* create channel */
     int r = ach_unlink("bench");               /* delete first */
-    assert( ACH_OK == r || ACH_ENOENT == r);
+    if ( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
     ach_create_attr_t cattr;
     if (KERNDEV) {
-	ach_create_attr_init(&cattr);
-	cattr.map = ACH_MAP_KERNEL;
+        ach_create_attr_init(&cattr);
+        cattr.map = ACH_MAP_KERNEL;
     }
     r = ach_create("bench", 10, 256, KERNDEV ? &cattr : NULL );
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 
     /* open channel */
     r = ach_open(&chan, "bench", NULL);
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 }
 
 void destroy_ach(void) {
     int r = ach_unlink("bench");
-    assert(ACH_OK == r);
+    if(ACH_OK != r) abort();
 }
 
 /*****************/
@@ -258,7 +259,7 @@ void sender_pipe(void) {
     for(i = 0; i < SECS*FREQUENCY; i ++) {
         ticks_t ticks = get_ticks();
         ssize_t r = write(fd[1], &ticks, sizeof(ticks));
-        assert(sizeof(ticks) == r);
+        if(sizeof(ticks) != r) abort();
         usleep((useconds_t)(1e6/FREQUENCY));
     }
 }
@@ -272,22 +273,22 @@ void receiver_pipe(int rt) {
     for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
         ssize_t r = read(fd[0], &ticks, sizeof(ticks));
-        assert(sizeof(ticks) == r);
+        if(sizeof(ticks) != r) abort();
     }
     /* now the good stuff */
     while(1) {
         ticks_t ticks;
         ssize_t r = read(fd[0], &ticks, sizeof(ticks));
         ticks_t now = get_ticks();
-        assert(sizeof(ticks) == r);
+        if(sizeof(ticks) != r) abort();
         send_time((float)ticks_delta(ticks,now));
     }
 }
 
 void setup_pipe(void) {
     /* create channel */
-    int r = pipe(fd);
-    assert( !r );
+    if( pipe(fd) )
+        abort();
 }
 void destroy_pipe(void) {
 }

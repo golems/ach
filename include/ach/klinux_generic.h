@@ -73,12 +73,12 @@ struct ach_ctrl_unlink_ch {
 };
 
 struct ach_ch_mode {
-	unsigned int mode;
+	int mode;
 	struct timespec reltime;	/* Relative time - notice ach normally runs abstime */
 };
 
 struct ach_ch_status {
-	unsigned int mode;
+	int mode;
 	ssize_t size;		/* Size of queue */
 	ssize_t count;		/* Messages in queue */
 	ssize_t new_msgs;	/* Unread messages in queue */

@@ -145,6 +145,7 @@ static void check_malloc() {
 /* --- Main ---*/
 
 int main( int argc, char **argv ){
+    (void) argc; (void) argv;
 
     /* unlink */
     ach_status_t r = ach_unlink(OPT_CHAN);

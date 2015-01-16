@@ -252,24 +252,30 @@ static int fd_for_channel_name( const char *name, int oflag ) {
 /*****************************************************************
   START charfile / kernel module helpers
 *****************************************************************/
-int charfile_unlink(const char* channel_name)
+enum ach_status charfile_unlink(const char* channel_name)
 {
     int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
     if (fd < 0) {
         DEBUGF ("Failed opening kernel device controller\n");
-        return errno;
+        return ACH_FAILED_SYSCALL;
     }
     struct ach_ctrl_unlink_ch arg;
-    strcpy(arg.name, channel_name);
+    strncpy( arg.name, channel_name, ACH_CHAN_NAME_MAX );
 
-    int ret = ioctl(fd, ACH_CTRL_UNLINK_CH, &arg);
-    if (ret < 0) {
-        ret = errno;
+    int ioctl_ret = ioctl(fd, ACH_CTRL_UNLINK_CH, &arg);
+    enum ach_status ach_ret;
+    if (ioctl_ret < 0) {
+        ach_ret = ACH_FAILED_SYSCALL;
         DEBUGF("Failed removing device %s\n", channel_name);
+    } else {
+        ach_ret = ACH_OK;
     }
 
-    close(fd);
-    return ret;
+    if( close(fd) ) {
+        ach_ret = ACH_FAILED_SYSCALL;
+    }
+
+    return ach_ret;
 }
 
 enum ach_status
@@ -382,13 +388,12 @@ achk_get( ach_channel_t *chan,
         default: return ACH_FAILED_SYSCALL; break;
         }
     }
-    *frame_size = ret;
+    *frame_size = (size_t)ret;
     return ACH_OK;
 }
 
 static enum ach_status
-achk_put( ach_channel_t *chan,
-          void *cx, const char *obj, size_t len )
+achk_put( ach_channel_t *chan, const void *obj, size_t len )
 {
     ssize_t size = write(chan->fd, obj, len);
     if (size < 0)
@@ -861,13 +866,14 @@ get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size )
     return ACH_OK;
 }
 
+
 enum ach_status
 ach_get( ach_channel_t *chan, void *buf, size_t size,
          size_t *frame_size,
          const struct timespec *ACH_RESTRICT timeout,
          int options )
 {
-    struct timespec *ptime;
+    const struct timespec *ptime;
     struct timespec ltime;
     if (IS_KERNEL_DEVICE(chan)) {
         if( timeout ) {
@@ -913,7 +919,7 @@ enum ach_status
 ach_put( ach_channel_t *chan, const void *buf, size_t len )
 {
     if (IS_KERNEL_DEVICE(chan)) {
-        return achk_put( chan, &len, buf, len);
+        return achk_put( chan, buf, len);
     }
     return ach_xput( chan, put_fun, &len, buf, len );
 }

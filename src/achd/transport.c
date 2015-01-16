@@ -334,8 +334,8 @@ static int udp_poll( struct pollfd pfd[2] ) {
 }
 
 void achd_push_udp( struct achd_conn *conn ) {
-    struct udp_cx *ucx = (struct udp_cx*)conn->cx;
-    assert(ucx);
+    /* struct udp_cx *ucx = (struct udp_cx*)conn->cx; */
+    /* assert(ucx); */
 
     int warned_mtu_eth = 0;
     int warned_mtu_udp = 0;
@@ -406,8 +406,8 @@ void achd_push_udp( struct achd_conn *conn ) {
 }
 
 void achd_pull_udp( struct achd_conn *conn ) {
-    struct udp_cx *ucx = (struct udp_cx*)conn->cx;
-    assert(ucx);
+    /* struct udp_cx *ucx = (struct udp_cx*)conn->cx; */
+    /* assert(ucx); */
 
     /* Find peer address */
     struct sockaddr_in addr_peer;

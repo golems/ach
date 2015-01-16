@@ -208,10 +208,11 @@ int main( int argc, char **argv ) {
         /*attr.map_anon = opt_pub && opt_sub;*/
         if( opt_pub && ! opt_sub ) {
             r = ach_open( &pub, opt_chan_name, &attr );
-            assert( 0 == r );
+            if( ACH_OK != r ) abort();
         } else if( opt_sub && !opt_pub ) {
             r = ach_open( &sub, opt_chan_name, &attr );
             assert( 0 == r );
+            if( ACH_OK != r ) abort();
         }else if (opt_pub && opt_sub ) {
             ach_create_attr_t cattr;
             ach_create_attr_init( &cattr );
@@ -221,9 +222,9 @@ int main( int argc, char **argv ) {
             attr.map_anon = 1;
             attr.shm = cattr.shm;
             r = ach_open( &sub, opt_chan_name, &attr );
-            assert( 0 == r );
+            if( ACH_OK != r ) abort();
             r = ach_open( &pub, opt_chan_name, &attr );
-            assert( 0 == r );
+            if( ACH_OK != r ) abort();
         } else {
             assert(0);
         }

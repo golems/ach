@@ -114,7 +114,7 @@ static void free_index(ach_header_t *shm, size_t i )
 }
 
 
-static int ach_create_len( size_t frame_cnt, size_t frame_size )
+static size_t ach_create_len( size_t frame_cnt, size_t frame_size )
 {
     return sizeof(struct ach_header) +
         frame_cnt * sizeof(ach_index_t) +

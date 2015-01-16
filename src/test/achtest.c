@@ -340,8 +340,8 @@ int test_multi() {
     r = ach_create(opt_channel_name, 32ul, 64ul, NULL );
 
 
-    pid_t sub_pid[opt_n_sub];
-    pid_t pub_pid[opt_n_pub];
+    /* pid_t sub_pid[opt_n_sub]; */
+    /* pid_t pub_pid[opt_n_pub]; */
     int i;
 
     /* create subscribers */
@@ -349,8 +349,7 @@ int test_multi() {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return subscriber(i);
-        else sub_pid[i] = p;
-
+        /* else sub_pid[i] = p; */
     }
 
     /* create publishers */
@@ -358,7 +357,7 @@ int test_multi() {
         pid_t p = fork();
         if( p < 0 ) exit(-1);
         else if( 0 == p ) return publisher(i);
-        else pub_pid[i] = p;
+        /* else pub_pid[i] = p; */
     }
 
     /* wait */

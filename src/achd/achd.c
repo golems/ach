@@ -505,7 +505,7 @@ int achd_parse_boolean( const char *value ) {
     for( s = no; *s; s++ )
         if( 0 == strcasecmp(*s, value) ) return 0;
     cx.error(ACH_BAD_HEADER, "Invalid boolean: %s\n", value);
-    assert(0);
+    abort();
 }
 
 void achd_set_header (const char *key, const char *val, struct achd_headers *headers) {
@@ -536,7 +536,7 @@ void achd_set_header (const char *key, const char *val, struct achd_headers *hea
         else if( 0 == strcasecmp(val, "pull") ) headers->direction = ACHD_DIRECTION_PULL;
         else {
             cx.error( ACH_BAD_HEADER, "Invalid direction: %s\n", val);
-            assert(0);
+            abort();
         }
     } else if ( 0 == strcasecmp(key, "status") ) {
         achd_set_status( &headers->status, "status", val );
@@ -553,10 +553,10 @@ const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_dir
     /* check transport headers */
     if( ! transport ) {
         cx.error( ACH_BAD_HEADER, "No transport header\n");
-        assert(0);
+        abort();
     } else if( ! direction ) {
         cx.error( ACH_BAD_HEADER, "No direction header\n");
-        assert(0);
+        abort();
     } else {
         int i = 0;
         for( i = 0; handlers[i].transport; i ++ ) {
@@ -569,7 +569,7 @@ const struct achd_conn_vtab *achd_get_vtab( const char *transport, enum achd_dir
     }
     /* Couldn't find handler */
     cx.error( ACH_BAD_HEADER, "Requested transport or direction not found\n");
-    assert(0);
+    abort();
 }
 
 
@@ -722,7 +722,9 @@ static void sighandler(int sig, siginfo_t *siginfo, void *context) {
             if( ACH_OK != r ) { /* try to log failure, write() is async-safe */
                 static const char msg[] = "error on ach_cancel()\n";
                 /* if strlen is not async-safe, you deserve to lose */
-                write( STDERR_FILENO, msg, strlen(msg) );
+                ssize_t wr = write( STDERR_FILENO, msg, strlen(msg) );
+                /* can we do anything reasonable  at this point? */
+                (void) wr;
             }
         }
         break;

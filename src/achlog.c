@@ -71,7 +71,7 @@ static struct log_desc {
     FILE *fout;
 } *log_desc = NULL;
 static size_t n_log = 0;
-static double opt_freq = 0;
+/* static double opt_freq = 0; */
 static int opt_last = 0;
 static int opt_gzip = 0;
 
