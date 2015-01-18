@@ -473,11 +473,48 @@ extern "C" {
               const struct timespec *ACH_RESTRICT abstime,
               int options );
 
+    /** Control structure for event handling loop
+     */
+    struct ach_evhandler {
+        /** Channel to get messages from
+         */
+        struct ach_channel *channel;
+
+        /** Context argument for handler
+         */
+        void *context;
+
+        /** Handler function.
+         *
+         *  Called whenever there is new data in the channel.
+         */
+        enum ach_status (*handler)
+        ( void *context, struct ach_channel *channel );
+    };
 
     enum ach_status
     ach_srv_search( const char *channel, const char *domain,
                     char *host, size_t host_len,
                     int *port );
+
+
+/* Options for event handler */
+
+/** Execute the periodic function after the period expires.
+ */
+#define ACH_EV_O_PERIODIC_TIMEOUT 0x01
+
+/** Execute the periodic function every time new messages are received.
+ */
+#define ACH_EV_O_PERIODIC_INPUT 0x02
+
+    enum ach_status
+    ach_evhandle( struct ach_evhandler *handlers,
+                  size_t n,
+                  const struct timespec *period,
+                  enum ach_status (*periodic_handler)(void *context),
+                  void *periodic_context,
+                  int options );
 
 #ifdef __cplusplus
 }
