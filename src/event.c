@@ -31,18 +31,18 @@
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
+#define _GNU_SOURCE
+#include <poll.h>
 #include <time.h>
 #include <stdint.h>
 #include <fcntl.h>
-#include <ach.h>
 #include <errno.h>
-
+#include <assert.h>
 #include <unistd.h>
 #include <sys/epoll.h>
-
 #include <stdio.h>
 
+#include "ach.h"
 
 enum ach_status
 ach_evhandle( struct ach_evhandler *handlers,
@@ -51,6 +51,113 @@ ach_evhandle( struct ach_evhandler *handlers,
               enum ach_status (*periodic_handler)(void *context),
               void *periodic_context,
               int options )
+{
+    enum ach_status r;
+
+    size_t n_kernel = 0;
+    enum ach_map map[n];
+    int efd = -1;
+
+    _Bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
+    _Bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
+
+    /* Count kernel channels */
+    for( size_t i = 0; i < n; i ++ ) {
+        if( ACH_OK != (r = ach_channel_mapping(handlers[i].channel, map+i)) )
+            return r;
+        if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
+    }
+
+    /* TODO: support user channels via polling at the requested period */
+    if (n_kernel != n ) return ACH_EINVAL;
+
+    struct pollfd pfd[n_kernel];
+    /* Initialize poll */
+    if( n_kernel ) {
+        errno = 0;
+        for( size_t i = 0; i < n; i ++ ) {
+            if( ACH_MAP_KERNEL == map[i] ) {
+                if( ACH_OK != (r = ach_channel_fd(handlers[i].channel, &pfd[i].fd))) goto END;
+                pfd[i].events = POLLIN;
+            }
+        }
+    }
+
+    /* Initialize timeouts */
+    struct timespec now, then, remaining, *premaining;
+    uint64_t period_ns; /* periods greater than 14,000 years can lose */
+    if( period ) {
+        remaining = *period;
+        period_ns = (uint64_t)(period->tv_sec * 1000000000 + period->tv_nsec);
+        clock_gettime(ACH_DEFAULT_CLOCK, &then);
+        premaining = &remaining;
+    } else {
+        premaining = NULL;
+    }
+
+    /* Event loop */
+    do {
+        int r_poll = ppoll(pfd, n_kernel, premaining, NULL);
+        if( r_poll < 0 ) {
+            r = ACH_FAILED_SYSCALL;
+        } else if( r_poll > 0 ) {
+            /* get the input */
+            for( size_t i=0, j=0;  i < n; i++ ) {
+                if( ACH_MAP_KERNEL == map[i] ) {
+                    assert( j < n_kernel );
+                    if( pfd[j++].revents & POLLIN ) {
+                        struct ach_evhandler *handler =  handlers+i;
+                        r = handler->handler(handler->context, handler->channel);
+                    }
+                }
+            }
+            /* periodic handler on input */
+            if( ACH_OK == r && periodic_handler && periodic_input ) {
+                r = periodic_handler(periodic_context);
+            }
+        }
+
+        /* Update timeout */
+        if( r == ACH_OK && period ) {
+            clock_gettime(ACH_DEFAULT_CLOCK, &now);
+            uint64_t elapsed_ns = (uint64_t) ((now.tv_sec - then.tv_sec)*1000000000 + (now.tv_nsec - then.tv_nsec));
+            if( elapsed_ns >= period_ns  ) {
+                /* periodic handler on timeout */
+                if( periodic_handler && periodic_timeout ) {
+                    r = periodic_handler(periodic_context);
+                }
+                remaining = *period;
+                then = now;
+            } else {
+                uint64_t remaining_ns = period_ns - elapsed_ns;
+                remaining.tv_sec = (time_t)(remaining_ns / 1000000000);
+                remaining.tv_nsec = (long)(remaining_ns % 1000000000);
+            }
+        }
+    } while( ACH_OK == r );
+END:
+    if( efd > 0 ) {
+        if( errno ) {
+            /* Keep the original errno */
+            int tmp = errno;
+            close(efd);
+            errno = tmp;
+        } else {
+            close(efd);
+        }
+    }
+    return r;
+}
+
+
+
+enum ach_status
+ach_evhandle_epoll( struct ach_evhandler *handlers,
+                    size_t n,
+                    const struct timespec *period,
+                    enum ach_status (*periodic_handler)(void *context),
+                    void *periodic_context,
+                    int options )
 {
     enum ach_status r;
 
