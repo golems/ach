@@ -68,13 +68,13 @@ ach_evhandle( struct ach_evhandler *handlers,
         if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
     }
 
-    /* TODO: support user channels via polling at the requested period */
-    if (n_kernel != n ) return ACH_EINVAL;
+    /* Need a polling period if handling userspace channels */
+    if( !(n_kernel == n || period) ) return ACH_EINVAL;
 
-    struct pollfd pfd[n_kernel];
     /* Initialize poll */
+    struct pollfd pfd[n_kernel];
+    errno = 0;
     if( n_kernel ) {
-        errno = 0;
         for( size_t i = 0; i < n; i ++ ) {
             if( ACH_MAP_KERNEL == map[i] ) {
                 if( ACH_OK != (r = ach_channel_fd(handlers[i].channel, &pfd[i].fd))) goto END;
@@ -85,7 +85,7 @@ ach_evhandle( struct ach_evhandler *handlers,
 
     /* Initialize timeouts */
     struct timespec now, then, remaining, *premaining;
-    uint64_t period_ns; /* periods greater than 14,000 years can lose */
+    uint64_t period_ns = 0; /* periods greater than 14,000 years can lose */
     if( period ) {
         remaining = *period;
         period_ns = (uint64_t)(period->tv_sec * 1000000000 + period->tv_nsec);
@@ -97,29 +97,50 @@ ach_evhandle( struct ach_evhandler *handlers,
 
     /* Event loop */
     do {
-        int r_poll = ppoll(pfd, n_kernel, premaining, NULL);
-        if( r_poll < 0 ) {
-            r = ACH_FAILED_SYSCALL;
-        } else if( r_poll > 0 ) {
-            /* get the input */
-            for( size_t i=0, j=0;  i < n; i++ ) {
-                if( ACH_MAP_KERNEL == map[i] ) {
-                    assert( j < n_kernel );
-                    if( pfd[j++].revents & POLLIN ) {
-                        struct ach_evhandler *handler =  handlers+i;
-                        r = handler->handler(handler->context, handler->channel);
-                    }
+        int r_poll = 0;
+        /* Wait */
+        if( n_kernel ) {
+            /* Have kernel channels, do ppoll() */
+            r_poll = ppoll(pfd, n_kernel, premaining, NULL);
+            if( r_poll < 0 ) {
+                r = ACH_FAILED_SYSCALL;
+                goto END;
+            }
+        } else {
+            /* All user channels, just sleep() */
+            /* TODO: check if we are overshooting the period, and then
+             * do something appropriate */
+            assert(period);
+            uint64_t ns = (uint64_t)then.tv_nsec + period_ns;
+            struct timespec absleep = { (time_t)(then.tv_sec + (time_t)(ns/1000000000)),
+                                        (long)(ns % 1000000000) };
+            if( clock_nanosleep( ACH_DEFAULT_CLOCK, TIMER_ABSTIME, &absleep, NULL ) )
+                goto END;
+        }
+        if( period ) clock_gettime(ACH_DEFAULT_CLOCK, &now);
+
+        /* get the input */
+        int updated = 0;
+        for( size_t i=0, j=0;  i < n; i++ ) {
+            struct ach_evhandler *handler = handlers+i;
+            if( (ACH_MAP_USER == map[i] || ACH_MAP_ANON == map[i]) ||
+                (r_poll > 0 && ACH_MAP_KERNEL == map[i] && pfd[j++].revents & POLLIN) )
+            {
+                switch(r = handler->handler(handler->context, handler->channel)) {
+                case ACH_OK: updated = 1;
+                case ACH_STALE_FRAMES: r = ACH_OK; break;
+                default: goto END;
                 }
             }
-            /* periodic handler on input */
-            if( ACH_OK == r && periodic_handler && periodic_input ) {
-                r = periodic_handler(periodic_context);
-            }
+            assert( j <= n_kernel );
+        }
+        /* periodic handler on input */
+        if( updated && periodic_handler && periodic_input ) {
+            r = periodic_handler(periodic_context);
         }
 
         /* Update timeout */
         if( r == ACH_OK && period ) {
-            clock_gettime(ACH_DEFAULT_CLOCK, &now);
             uint64_t elapsed_ns = (uint64_t) ((now.tv_sec - then.tv_sec)*1000000000 + (now.tv_nsec - then.tv_nsec));
             if( elapsed_ns >= period_ns  ) {
                 /* periodic handler on timeout */

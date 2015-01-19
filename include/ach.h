@@ -487,6 +487,10 @@ extern "C" {
         /** Handler function.
          *
          *  Called whenever there is new data in the channel.
+         *
+         *  Handler should return ACH_OK when new frames are read, or
+         *  ACH_STALE_FRAMES if no new frames are read.  Any other
+         *  return value will terminate the event loop.
          */
         enum ach_status (*handler)
         ( void *context, struct ach_channel *channel );
