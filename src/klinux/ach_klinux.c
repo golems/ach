@@ -63,6 +63,11 @@
 #include "ach_klinux.h"
 #include "ach/private_klinux.h"
 
+#include "ach/impl_generic.h"
+
+/** Default number for max ach devices */
+#define ACH_MAX_DEVICES             512
+
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Kim Bøndergaard <kibo@prevas.dk>");
@@ -107,7 +112,6 @@ static struct ach_ctrl_device ctrl_data;
  **********************************************************************************/
 
 
-#include "ach/impl_generic.h"
 
 static enum ach_status
 rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
@@ -1127,7 +1131,7 @@ static int __init ach_init(void)
 	{
 		dev_t dev_num;
 
-		ctrl_data.ach_ch_class = class_create(THIS_MODULE, "ach_ch");
+		ctrl_data.ach_ch_class = class_create(THIS_MODULE, ACH_CH_SUBSYSTEM);
 		if (IS_ERR(ctrl_data.ach_ch_class)) {
 			ret = PTR_ERR(ctrl_data.ach_ch_class);
 			printk(KERN_ERR "ach: Failed to create class\n");
@@ -1136,7 +1140,7 @@ static int __init ach_init(void)
 
 		/* Allocate major */
 		dev_num = 0;
-		ret = alloc_chrdev_region(&dev_num, 0, max_devices, "ach_ch");
+		ret = alloc_chrdev_region(&dev_num, 0, max_devices, ACH_CH_SUBSYSTEM);
 		if (ret < 0) {
 			printk(KERN_ERR
 			       "ach: Failed to allocate major number with %u minor numbers\n",

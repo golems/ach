@@ -191,6 +191,9 @@ extern "C" {
 #endif
 
 
+     /** Options to specify the mapping for a channels backing memory
+     *   buffer.
+     */
     typedef enum ach_map {
         ACH_MAP_USER = 0,     /**< Use shared memory for channels */
         ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */
@@ -233,9 +236,10 @@ extern "C" {
         };
     } ach_create_attr_t;
 
-    /* Struct containing 'cache' of kernel module data to avoid updating when no changes exist */
+   /** Struct containing 'cache' of kernel module data to avoid
+    *  updating when no changes exist. */
     typedef struct {
-        int options;
+        int options;               /**< get options used by the kernel */
         struct timespec reltime;   /**< kernel use relative time */
     } achk_opt_t;
 
@@ -496,9 +500,29 @@ extern "C" {
         ( void *context, struct ach_channel *channel );
     };
 
+    /** Lookup the host providing specified channel via DNS/mDNS SRV
+     *  records.
+     *
+     *
+     *
+     *  \param[in] channel Name of the channel
+     *
+     *  \param[in] domain  DNS domain, e.g., "local", "golems.org".
+     *                     The domain "local" is treated specially and
+     *                     searched via mDNS.  All other domains are
+     *                     searched via the convential hierarchical
+     *                     DNS.
+     *
+     * \param[out] host    the name of the host providing the channel.
+     *
+     * \param[out] hostlen length of the host parameter
+     *
+     * \param[out] port    the port on host from which channel is
+     *                     provided
+     */
     enum ach_status
     ach_srv_search( const char *channel, const char *domain,
-                    char *host, size_t host_len,
+                    char *host, size_t hostlen,
                     int *port );
 
 
@@ -512,6 +536,26 @@ extern "C" {
  */
 #define ACH_EV_O_PERIODIC_INPUT 0x02
 
+
+    /** Event loop for handling multiple channels.
+    *
+    *  \param[in,out]              handlers array of handler descriptors
+    *
+    *  \param[in] n                size of handlers array
+    *
+    *  \param[in] period           timeout to wait between execution of periodic
+    *                              function when requested in flags.
+    *
+    *  \param[in] periodic_handler function to executre periodicly,
+    *                              i.e., when timeout occurs or when
+    *                              new messages are received.
+    *
+    *  \param[in] periodic_context context argument to the periodic_handler
+    *
+    * \param[in] options           bit flags, may include
+    *                              ACH_EV_O_PERIODIC_INPUT and
+    *                              ACH_EV_O_PERIODIC_TIMEOUT
+    */
     enum ach_status
     ach_evhandle( struct ach_evhandler *handlers,
                   size_t n,

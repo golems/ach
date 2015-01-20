@@ -77,7 +77,7 @@ typedef enum ach_status {
     ACH_ENOENT = 9,         /**< channel file doesn't exist */
     ACH_CLOSED = 10,        /**< unused */
     ACH_BUG = 11,           /**< internal ach error */
-    ACH_EINVAL = 12,        /**< invalid channel */
+    ACH_EINVAL = 12,        /**< invalid parameter */
     ACH_CORRUPT = 13,       /**< channel memory has been corrupted */
     ACH_BAD_HEADER = 14,    /**< an invalid header was given */
     ACH_EACCES = 15,        /**< permission denied */

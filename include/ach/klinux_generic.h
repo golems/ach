@@ -47,43 +47,57 @@
  *  \author Kim Boendergaard Poulsen
  */
 
-#define ACH_NAME                    "ach-ipc"
-#define ACH_IOCTL                   'Q'
-#define ACH_MAX_DEVICES             512
+/** Kernel device subsystem name for ach channel devices */
+#define ACH_CH_SUBSYSTEM            "ach_ch"
 
+/** ioctl type for ach control and channel devices */
+#define ACH_IOCTL                   'Q'
+
+/** ioctl request code to create a channel */
 #define ACH_CTRL_CREATE_CH              _IOW(ACH_IOCTL, 1, struct ach_ctrl_create_ch)
+
+/** ioctl request code to unlink a channel */
 #define ACH_CTRL_UNLINK_CH              _IOW(ACH_IOCTL, 2, struct ach_ctrl_unlink_ch)
 
 #define ACH_CH_CANCEL_UNSAFE            0x01
 
+/** ioctl request set channel mode options */
 #define ACH_CH_SET_MODE                 _IOW(ACH_IOCTL, 3, struct ach_ch_mode)
+/** ioctl request get channel mode options */
 #define ACH_CH_GET_MODE                 _IOR(ACH_IOCTL, 4, struct ach_ch_mode)
+/** ioctl request get channel status */
 #define ACH_CH_GET_STATUS               _IOR(ACH_IOCTL, 5, struct ach_ch_status)
+/** ioctl request flush channel */
 #define ACH_CH_FLUSH                    _IOW(ACH_IOCTL, 6, unsigned int)
+/** ioctl request cancel channel reads */
 #define ACH_CH_CANCEL                   _IOW(ACH_IOCTL, 7, unsigned int)
 
+/** ioctl argument to create channel */
 struct ach_ctrl_create_ch {
-	size_t frame_cnt;
-	size_t frame_size;
-	char name[ACH_CHAN_NAME_MAX + 1];
+	size_t frame_cnt;                   /**< Number of entries in index array */
+	size_t frame_size;                  /**< Nominal size of each message */
+	char name[ACH_CHAN_NAME_MAX + 1];   /**< Name of the channel */
 };
 
+/** ioctl argument unlink channel */
 struct ach_ctrl_unlink_ch {
-	char name[ACH_CHAN_NAME_MAX + 1];
+	char name[ACH_CHAN_NAME_MAX + 1];   /**< Name of the channel */
 };
 
+/** ioctl argument get and set channel mode. */
 struct ach_ch_mode {
-	int mode;
-	struct timespec reltime;	/* Relative time - notice ach normally runs abstime */
+	int mode;                       /**< Get options for the channel */
+	struct timespec reltime;	/**< Relative time - notice ach normally runs abstime */
 };
 
+/** ioctl argument get channel status. */
 struct ach_ch_status {
-	int mode;
-	ssize_t size;		/* Size of queue */
-	ssize_t count;		/* Messages in queue */
-	ssize_t new_msgs;	/* Unread messages in queue */
-	unsigned long last_seq;	/* Last sequence in queue */
-	unsigned long last_seq_read;	/* Sequence of last read message */
+	int mode;               /**< Get options for the channel */
+	ssize_t size;		/**< Size of queue */
+	ssize_t count;		/**< Messages in queue */
+	ssize_t new_msgs;	/**< Unread messages in queue */
+	unsigned long last_seq;	/**< Last sequence in queue */
+	unsigned long last_seq_read;	/**< Sequence of last read message */
 };
 
 #endif

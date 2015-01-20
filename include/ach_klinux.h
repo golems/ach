@@ -79,10 +79,8 @@ struct ach_ch_file {
 	struct ach_ch_mode mode;
 
 	// Stuff from userspace ach.h: ach_channel_t
-	uint64_t seq_num;
-		    /**< last sequence number read */
-	size_t next_index;
-		     /**< next index entry to try get from */
+	uint64_t seq_num;         /**< last sequence number read */
+	size_t next_index;        /**< next index entry to try get from */
 	unsigned int cancel;
 };
 
