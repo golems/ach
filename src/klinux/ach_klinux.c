@@ -391,76 +391,10 @@ get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size)
 }
 
 static enum ach_status
-ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
-	 size_t * frame_size)
-{
-	struct ach_header *shm;
-	bool missed_frame = 0;
-	enum ach_status retval = ACH_BUG;
-	const bool o_wait = chan->mode.mode & ACH_O_WAIT;
-	const bool o_last = chan->mode.mode & ACH_O_LAST;
-	const bool o_copy = chan->mode.mode & ACH_O_COPY;
-	const struct timespec *reltime = &chan->mode.reltime;
-
-	/* take read lock */
-	{
-		enum ach_status r = rdlock(chan, o_wait, reltime);
-		if (ACH_OK != r)
-			return r;
-	}
-
-	shm = chan->shm;
-	/* get the data */
-	if ((chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq) {
-		/* no entries */
-		retval = ACH_STALE_FRAMES;
-	} else {
-		/* Compute the index to read */
-		size_t read_index;
-		ach_index_t *index_ar = ACH_SHM_INDEX(shm);
-		if (o_last) {
-			/* normal case, get last */
-			read_index = last_index_i(shm);
-		} else if (!o_last &&
-			   index_ar[chan->next_index].seq_num ==
-			   chan->seq_num + 1) {
-			/* normal case, get next */
-			read_index = chan->next_index;
-		} else {
-			/* exception case, figure out which frame */
-			if (chan->seq_num == shm->last_seq) {
-				/* copy last */
-				read_index = last_index_i(shm);
-			} else {
-				/* copy oldest */
-				read_index = oldest_index_i(shm);
-			}
-		}
-
-		if (index_ar[read_index].seq_num > chan->seq_num + 1) {
-			missed_frame = 1;
-		}
-
-		/* read from the index */
-		retval =
-		    ach_xget_from_offset(chan, read_index, transfer, cx, pobj,
-					 frame_size);
-	}
-
-	/* relase read lock */
-	{
-		ach_status_t r = unrdlock(shm);
-		if (ACH_OK != r)
-			return r;
-	}
-
-	return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
-}
-
-static enum ach_status
 ach_get(ach_channel_t * chan, void *buf, size_t size, size_t * frame_size)
 {
-	return ach_xget(chan, get_fun, &size, &buf, frame_size);
+	return ach_xget(chan, get_fun, &size, &buf, frame_size,
+			&chan->mode.reltime, chan->mode.mode);
 }
 
 static enum ach_status ach_flush(ach_channel_t * chan)

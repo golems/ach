@@ -441,32 +441,6 @@ extern "C" {
     ach_xput( ach_channel_t *chan,
               ach_put_fun transfer, void *cx, const void *obj, size_t dst_size );
 
-    /** Pull a message from the channel.
-     *
-     *  \pre chan has been opened with ach_open()
-     *
-     *  Note that transfer() is called while holding the channel lock.
-     *  Expensive computation should thus be avoided during this call.
-     *
-     *  \param [in,out] chan The previously opened channel handle
-     *  \param [in] transfer Function to transfer data out of the channel
-     *  \param [in,out] cx Context argument to transfer
-     *  \param [in,out] pobj Pointer to object pointer
-     *  \param [out] frame_size The number of bytes occupied by the frame in the channel
-     *  \param [in] abstime An absolute timeout if ACH_O_WAIT is specified.
-     *  Take care that abstime is given in the correct clock.  The
-     *  default is defined by ACH_DEFAULT_CLOCK.
-     *  \param[in] options Option flags
-     *
-     *  \return ACH_OK on success.
-     */
-    enum ach_status
-    ach_xget( ach_channel_t *chan,
-              ach_get_fun transfer, void *cx, void **pobj,
-              size_t *frame_size,
-              const struct timespec *ACH_RESTRICT abstime,
-              int options );
-
     /** Control structure for event handling loop
      */
     struct ach_evhandler {

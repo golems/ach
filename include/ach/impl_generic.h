@@ -57,6 +57,18 @@
 #ifndef ACH_IMPL_H
 #define ACH_IMPL_H
 
+/** Lock the channel for reading */
+static enum ach_status
+rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime );
+
+/** Lock the channel for writing */
+static enum ach_status wrlock( ach_channel_t *chan );
+
+/** Unlock the channel from a read lock */
+static enum ach_status unrdlock(struct ach_header *shm);
+
+/** Unlock the channel from a write lock lock */
+static enum ach_status unwrlock(struct ach_header *shm);
 
 
 static size_t oldest_index_i( ach_header_t *shm ) {
@@ -184,6 +196,99 @@ ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
         return r;
     }
 }
+
+/** Pull a message from the channel.
+ *
+ *  \pre chan has been opened with ach_open()
+ *
+ *  Note that transfer() is called while holding the channel lock.
+ *  Expensive computation should thus be avoided during this call.
+ *
+ *  We could expose this function to reduce copying.  However, it
+ *  would be complicated and risky for kernel channels, requiring the
+ *  data buffer be mapped into userspace.  It could also deadlock
+ *  usermode channels if the transfer function exits the program.
+ *
+ *  \param [in,out] chan The previously opened channel handle
+ *  \param [in] transfer Function to transfer data out of the channel
+ *  \param [in,out] cx Context argument to transfer
+ *  \param [in,out] pobj Pointer to object pointer
+ *  \param [out] frame_size The number of bytes occupied by the frame in the channel
+ *  \param [in] abstime An absolute timeout if ACH_O_WAIT is specified.
+ *  Take care that abstime is given in the correct clock.  The
+ *  default is defined by ACH_DEFAULT_CLOCK.
+ *  \param[in] options Option flags
+ *
+ *  \return ACH_OK on success.
+ */
+static enum ach_status
+ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
+         size_t * frame_size,
+         const struct timespec *timeout,
+         int options )
+{
+    struct ach_header *shm = chan->shm;
+    bool missed_frame = 0;
+    enum ach_status retval = ACH_BUG;
+    const bool o_wait = options & ACH_O_WAIT;
+    const bool o_last = options & ACH_O_LAST;
+    const bool o_copy =  options & ACH_O_COPY;
+    const struct timespec *reltime = timeout;
+    enum ach_status r;
+
+    /* Check guard bytes */
+    if( ACH_OK != (r=check_guards(shm)) ) return r;
+
+    /* Take read lock */
+    if ( ACH_OK != (r=rdlock(chan, o_wait, reltime)) ) return r;
+
+    /* get the data */
+    if ((chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq) {
+        /* no entries */
+        retval = ACH_STALE_FRAMES;
+    } else {
+        /* Compute the index to read */
+        size_t read_index;
+        ach_index_t *index_ar = ACH_SHM_INDEX(shm);
+        if (o_last) {
+            /* normal case, get last */
+            /* assert(!o_wait); */
+            read_index = last_index_i(shm);
+        } else if (!o_last &&
+                   index_ar[chan->next_index].seq_num ==
+                   chan->seq_num + 1) {
+            /* normal case, get next */
+            read_index = chan->next_index;
+        } else {
+            /* exception case, figure out which frame */
+            if (chan->seq_num == shm->last_seq) {
+                /* copy last */
+                /* assert(o_copy); */
+                read_index = last_index_i(shm);
+            } else {
+                /* copy oldest */
+                read_index = oldest_index_i(shm);
+            }
+        }
+
+        if (index_ar[read_index].seq_num > chan->seq_num + 1) {
+            missed_frame = 1;
+        }
+
+        /* read from the index */
+        retval =
+            ach_xget_from_offset(chan, read_index, transfer, cx, pobj,
+                                 frame_size);
+
+        /* assert( index_ar[read_index].seq_num > 0 ); */
+    }
+
+    /* relase read lock */
+    if ( ACH_OK != (r=unrdlock(shm)) ) return r;
+
+    return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
+}
+
 
 
 #endif /* ACH_IMPL_H */

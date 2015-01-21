@@ -56,10 +56,10 @@ noinst_PROGRAMS += canceltest
 canceltest_SOURCES = src/test/canceltest.c
 canceltest_LDADD = libach.la
 
-TESTS += transfertest
-noinst_PROGRAMS += transfertest
-transfertest_SOURCES = src/test/transfertest.c
-transfertest_LDADD = libach.la
+# TESTS += transfertest
+# noinst_PROGRAMS += transfertest
+# transfertest_SOURCES = src/test/transfertest.c
+# transfertest_LDADD = libach.la
 
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la
