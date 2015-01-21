@@ -57,9 +57,13 @@
 #ifndef ACH_IMPL_H
 #define ACH_IMPL_H
 
-/** Lock the channel for reading */
+/** Lock the channel for reading.
+ *
+ * \param[in] timeout In user-mode this is an absolute timeout.  In
+ *                    kernel mode, it is a relative timeout.
+ */
 static enum ach_status
-rdlock( ach_channel_t *chan, int wait, const struct timespec *abstime );
+rdlock( ach_channel_t *chan, int wait, const struct timespec *timeout );
 
 /** Lock the channel for writing */
 static enum ach_status wrlock( ach_channel_t *chan );
@@ -78,11 +82,6 @@ static size_t oldest_index_i( ach_header_t *shm ) {
 static size_t last_index_i( ach_header_t *shm ) {
     return (shm->index_head + shm->index_cnt -1)%shm->index_cnt;
 }
-
-static enum ach_status
-rdlock(ach_channel_t * chan, int wait, const struct timespec *time);
-
-static enum ach_status unrdlock(struct ach_header *shm);
 
 static enum ach_status
 ach_flush_impl( ach_channel_t *chan )
@@ -210,13 +209,21 @@ ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
  *  usermode channels if the transfer function exits the program.
  *
  *  \param [in,out] chan The previously opened channel handle
+ *
  *  \param [in] transfer Function to transfer data out of the channel
+ *
  *  \param [in,out] cx Context argument to transfer
+ *
  *  \param [in,out] pobj Pointer to object pointer
+ *
  *  \param [out] frame_size The number of bytes occupied by the frame in the channel
- *  \param [in] abstime An absolute timeout if ACH_O_WAIT is specified.
- *  Take care that abstime is given in the correct clock.  The
- *  default is defined by ACH_DEFAULT_CLOCK.
+ *
+ *  \param [in] timeout A timeout if ACH_O_WAIT is specified.  Take
+ *              care that abstime is given in the correct clock.  The
+ *              default is defined by ACH_DEFAULT_CLOCK.  In user-mode
+ *              this is an absolute timeout.  In kernel mode, it is a
+ *              relative timeout.
+ *
  *  \param[in] options Option flags
  *
  *  \return ACH_OK on success.
@@ -233,14 +240,13 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
     const bool o_wait = options & ACH_O_WAIT;
     const bool o_last = options & ACH_O_LAST;
     const bool o_copy =  options & ACH_O_COPY;
-    const struct timespec *reltime = timeout;
     enum ach_status r;
 
     /* Check guard bytes */
     if( ACH_OK != (r=check_guards(shm)) ) return r;
 
     /* Take read lock */
-    if ( ACH_OK != (r=rdlock(chan, o_wait, reltime)) ) return r;
+    if ( ACH_OK != (r=rdlock(chan, o_wait, timeout)) ) return r;
 
     /* get the data */
     if ((chan->seq_num == shm->last_seq && !o_copy) || 0 == shm->last_seq) {

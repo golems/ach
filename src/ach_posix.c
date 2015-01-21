@@ -882,21 +882,32 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
 {
     const struct timespec *ptime;
     struct timespec ltime;
+    _Bool o_rel = options & ACH_O_RELTIME;
+
     if (IS_KERNEL_DEVICE(chan)) {
-        if( timeout ) {
+        if( timeout && !o_rel ) {
+            /* timeout given as absolute time */
+            /* Would it be find the relative time in the kernel? */
             ltime = relative_time(*timeout);
             ptime = &ltime;
-        } else ptime = NULL;
-        return achk_get( chan, &size, (char**)&buf, frame_size, ptime, options);
-    } else {
-        if (timeout && options & ACH_O_RELTIME ) {
-            ltime = abs_time(*timeout);
-            ptime = &ltime;
-        } else ptime = timeout;
-        return ach_xget( chan,
-                         get_fun, &size, &buf,
-                         frame_size, ptime, options );
+        } else {
+            /* timeout is relative or NULL */
+            ptime = timeout;
+        }
+        return achk_get(chan, &size, (char**)&buf, frame_size, ptime, options);
     }
+
+    if (timeout && o_rel) {
+        /* timeout given as relative time */
+        ltime = abs_time(*timeout);
+        ptime = &ltime;
+    } else {
+        /* timeout is absolute or NULL */
+        ptime = timeout;
+    }
+    return ach_xget( chan,
+                     get_fun, &size, &buf,
+                     frame_size, ptime, options );
 }
 
 
