@@ -63,6 +63,9 @@
 #include "ach_klinux.h"
 #include "ach/private_klinux.h"
 
+
+#define ACH_ERRF( ... ) printk(KERN_ERR __VA_ARGS__ )
+
 #include "ach/impl_generic.h"
 
 /** Default number for max ach devices */
@@ -88,6 +91,8 @@ MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 #define KDEBUG1(xx, arg1)
 #define KDEBUG2(xx, arg1,arg2)
 #endif
+
+
 
 /* The struct controlling /dev/achctrl */
 struct ach_ctrl_device {
@@ -211,9 +216,6 @@ static enum ach_status unwrlock(struct ach_header *shm)
 
 typedef enum ach_status
 ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
-
-typedef enum ach_status
-ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size);
 
 static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 {
@@ -386,40 +388,6 @@ get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size)
 		return ACH_FAILED_SYSCALL;
 
 	return ACH_OK;
-}
-
-static enum ach_status
-ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
-		     ach_get_fun transfer, void *cx, void **pobj,
-		     size_t * frame_size)
-{
-	struct ach_header *shm;
-	ach_index_t *idx;
-
-	shm = chan->shm;
-	idx = ACH_SHM_INDEX(shm) + index_offset;
-
-	if (chan->seq_num > idx->seq_num) {
-		printk(KERN_ERR "ach bug: seq_num mismatch\n");
-		return ACH_BUG;
-	}
-
-	if (idx->offset + idx->size > shm->data_size) {
-		return ACH_CORRUPT;
-	}
-
-	/* good to copy */
-	{
-		enum ach_status r;
-		unsigned char *data_buf = ACH_SHM_DATA(shm);
-		*frame_size = idx->size;
-		r = transfer(cx, pobj, data_buf + idx->offset, idx->size);
-		if (ACH_OK == r) {
-			chan->seq_num = idx->seq_num;
-			chan->next_index = (index_offset + 1) % shm->index_cnt;
-		}
-		return r;
-	}
 }
 
 static enum ach_status

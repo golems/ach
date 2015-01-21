@@ -118,6 +118,16 @@ typedef enum {
 #define ACH_CHAN_NAME_MAX 64ul
 
 
+/** Function type to transfer data out of the channel.
+ *
+ * This function could, for example, perform tasks such as
+ * de-serialization and memory allocation.
+ *
+ * \returns 0 on success, nonzero on failure
+ */
+typedef enum ach_status
+ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
+
 #ifdef __cplusplus
 }
 #endif

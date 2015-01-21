@@ -74,7 +74,6 @@
 #include "ach.h"
 #include "ach/private_posix.h"
 #include "ach/klinux_generic.h"
-#include "ach/impl_generic.h"
 
 #include <sys/wait.h>
 
@@ -91,10 +90,14 @@
 #else /* enable debugging */
 
 #define IFDEBUG( test, x ) if(test) { (x); }
-#define DEBUGF( ... ) fprintf(stderr, __VA_ARGS__ )
+#define ACH_ERRF( ... ) fprintf(stderr, __VA_ARGS__ )
 #define DEBUG_PERROR(a) perror(a)
 
 #endif /* NDEBUG */
+
+
+#include "ach/impl_generic.h"
+
 
 static inline int IS_KERNEL_DEVICE(ach_channel_t *chan)
 {
@@ -263,7 +266,7 @@ enum ach_status charfile_unlink(const char* channel_name)
 {
     int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
     if (fd < 0) {
-        DEBUGF ("Failed opening kernel device controller\n");
+        ACH_ERRF ("Failed opening kernel device controller\n");
         return ACH_FAILED_SYSCALL;
     }
     struct ach_ctrl_unlink_ch arg;
@@ -273,7 +276,7 @@ enum ach_status charfile_unlink(const char* channel_name)
     enum ach_status ach_ret;
     if (ioctl_ret < 0) {
         ach_ret = ACH_FAILED_SYSCALL;
-        DEBUGF("Failed removing device %s\n", channel_name);
+        ACH_ERRF("Failed removing device %s\n", channel_name);
     } else {
         ach_ret = ACH_OK;
     }
@@ -294,7 +297,7 @@ achk_create( const char *channel_name,
 
     int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
     if (fd < 0) {
-        DEBUGF("Failed opening kernel device controller\n");
+        ACH_ERRF("Failed opening kernel device controller\n");
         return ACH_FAILED_SYSCALL;
     }
     struct ach_ctrl_create_ch arg;
@@ -305,7 +308,7 @@ achk_create( const char *channel_name,
     enum ach_status ach_stat = ACH_OK;
     int ret = ioctl(fd, ACH_CTRL_CREATE_CH, &arg);
     if (ret < 0) {
-        DEBUGF("Failed creating device %s\n", channel_name);
+        ACH_ERRF("Failed creating device %s\n", channel_name);
         ach_stat = check_errno();
     }
 
@@ -652,7 +655,7 @@ ach_create( const char *channel_name,
                                              MAP_SHARED, fd, 0) )
                 == MAP_FAILED ) {
                 DEBUG_PERROR("mmap");
-                DEBUGF("mmap failed %s, len: %"PRIuPTR", fd: %d\n", strerror(errno), len, fd);
+                ACH_ERRF("mmap failed %s, len: %"PRIuPTR", fd: %d\n", strerror(errno), len, fd);
                 return ACH_FAILED_SYSCALL;
             }
 
@@ -772,7 +775,7 @@ ach_create( const char *channel_name,
         /* close file */
         int i = 0;
         do {
-            IFDEBUG( i, DEBUGF("Retrying close()\n") )
+            IFDEBUG( i, ACH_ERRF("Retrying close()\n") )
             r = close(fd);
         }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
         if( -1 == r ){
@@ -946,7 +949,7 @@ ach_close( ach_channel_t *chan ) {
         /* remove mapping */
         int r = munmap(chan->shm, chan->len);
         if( 0 != r ){
-            DEBUGF("Failed to munmap channel\n");
+            ACH_ERRF("Failed to munmap channel\n");
             return ACH_FAILED_SYSCALL;
         }
         chan->shm = NULL;
@@ -954,11 +957,11 @@ ach_close( ach_channel_t *chan ) {
         /* close file */
         int i = 0;
         do {
-            IFDEBUG( i, DEBUGF("Retrying close()\n") )
+            IFDEBUG( i, ACH_ERRF("Retrying close()\n") )
             r = close(chan->fd);
         }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
         if( -1 == r ){
-            DEBUGF("Failed to close() channel fd\n");
+            ACH_ERRF("Failed to close() channel fd\n");
             return ACH_FAILED_SYSCALL;
         }
     }
@@ -1203,49 +1206,6 @@ ach_xput( ach_channel_t *chan,
 
     /* release write lock */
     return unwrlock( shm );
-}
-
-/** Copies frame pointed to by index entry at index_offset.
- *
- *   \pre hold read lock on the channel
- *
- *   \post on success, transfer is called. seq_num and next_index fields
- *   are incremented. The variable pointed to by frame_size holds the
- *   frame size.
-*/
-static enum ach_status
-ach_xget_from_offset( ach_channel_t *chan, size_t index_offset,
-                      ach_get_fun transfer, void *cx, void **pobj,
-                      size_t *frame_size ) {
-    ach_header_t *shm = chan->shm;
-    assert( index_offset < shm->index_cnt );
-    ach_index_t *idx = ACH_SHM_INDEX(shm) + index_offset;
-    /* assert( idx->size ); */
-    assert( idx->seq_num );
-    assert( idx->offset < shm->data_size );
-    /* check idx */
-    if( chan->seq_num > idx->seq_num ) {
-        fprintf(stderr,
-                "ach bug: chan->seq_num (%"PRIu64") > idx->seq_num (%"PRIu64")\n"
-                "ach bug: index offset: %"PRIuPTR"\n",
-                chan->seq_num, idx->seq_num,
-                index_offset );
-        return ACH_BUG;
-    }
-
-    if( idx->offset + idx->size > shm->data_size ) {
-        return ACH_CORRUPT;
-    }
-
-    /* good to copy */
-    uint8_t *data_buf = ACH_SHM_DATA(shm);
-    *frame_size = idx->size;
-    enum ach_status r = transfer(cx, pobj, data_buf + idx->offset, idx->size);
-    if( ACH_OK == r ) {
-        chan->seq_num = idx->seq_num;
-        chan->next_index = (index_offset + 1) % shm->index_cnt;
-    }
-    return r;
 }
 
 enum ach_status

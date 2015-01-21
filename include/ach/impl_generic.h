@@ -137,5 +137,53 @@ static void ach_create_counts( ach_header_t *shm, size_t frame_cnt, size_t frame
     shm->magic = ACH_SHM_MAGIC_NUM;
 }
 
+/** Copies frame pointed to by index entry at index_offset.
+ *
+ *   \pre hold read lock on the channel
+ *
+ *   \post on success, transfer is called. seq_num and next_index fields
+ *   are incremented. The variable pointed to by frame_size holds the
+ *   frame size.
+*/
+static enum ach_status
+ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
+                     ach_get_fun transfer, void *cx, void **pobj,
+                     size_t * frame_size)
+{
+    struct ach_header *shm;
+    ach_index_t *idx;
+
+    shm = chan->shm;
+    idx = ACH_SHM_INDEX(shm) + index_offset;
+
+    if (idx->offset >= shm->data_size ) {
+        ACH_ERRF("ach bug: overflow data array on ach_get()\n");
+        return ACH_BUG;
+    }
+
+    /* Is there any possibility to overflow seq_num? Probably not */
+    if (chan->seq_num > idx->seq_num) {
+        ACH_ERRF("ach bug: seq_num mismatch\n");
+        return ACH_BUG;
+    }
+
+    if (idx->offset + idx->size > shm->data_size) {
+        return ACH_CORRUPT;
+    }
+
+    /* good to copy */
+    {
+        enum ach_status r;
+        unsigned char *data_buf = ACH_SHM_DATA(shm);
+        *frame_size = idx->size;
+        r = transfer(cx, pobj, data_buf + idx->offset, idx->size);
+        if (ACH_OK == r) {
+            chan->seq_num = idx->seq_num;
+            chan->next_index = (index_offset + 1) % shm->index_cnt;
+        }
+        return r;
+    }
+}
+
 
 #endif /* ACH_IMPL_H */

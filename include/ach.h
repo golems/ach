@@ -420,16 +420,6 @@ extern "C" {
     typedef enum ach_status
     ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
-    /** Function type to transfer data out of the channel.
-     *
-     * This function could, for example, perform tasks such as
-     * de-serialization and memory allocation.
-     *
-     * \returns 0 on success, nonzero on failure
-     */
-    typedef enum ach_status
-    ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
-
     /** Writes a new message in the channel.
      *
      *  \pre chan has been opened with ach_open() and is large enough
