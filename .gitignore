@@ -3,7 +3,7 @@
 /build/ach-example
 /build/achcat
 /build/achpipe.bin
-/.deps
+.deps
 /build/achtest
 /lisp/grovel
 /lisp/grovel.c

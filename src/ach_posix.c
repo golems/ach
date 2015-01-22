@@ -131,19 +131,10 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_BAD_HEADER: return "ACH_BAD_HEADER";
     case ACH_EACCES: return "ACH_EACCES";
     case ACH_CANCELED: return "ACH_CANCELED";
+    case ACH_EFAULT: return "ACH_EFAULT";
     }
     return "UNKNOWN";
 
-}
-
-static enum ach_status
-check_errno() {
-    switch(errno) {
-    case EEXIST: return ACH_EEXIST;
-    case ENOENT: return ACH_ENOENT;
-    case EACCES: return ACH_EACCES;
-    default: return ACH_FAILED_SYSCALL;
-    }
 }
 
 
@@ -309,7 +300,7 @@ achk_create( const char *channel_name,
     int ret = ioctl(fd, ACH_CTRL_CREATE_CH, &arg);
     if (ret < 0) {
         ACH_ERRF("Failed creating device %s\n", channel_name);
-        ach_stat = check_errno();
+        ach_stat = check_errno(errno);
     }
 
     close(fd);
@@ -390,14 +381,9 @@ achk_get( ach_channel_t *chan,
     }
 
     ssize_t ret = read(chan->fd, *pobj, size);
-    if ( ret < 0) {
-        switch (errno) {
-        case EAGAIN: return ACH_STALE_FRAMES; break;
-        case ETIME: return ACH_TIMEOUT; break;
-        case ECANCELED: return ACH_CANCELED; break;
-        default: return ACH_FAILED_SYSCALL; break;
-        }
-    }
+
+    if ( ret < 0) return check_errno(errno);
+
     *frame_size = (size_t)ret;
     return ACH_OK;
 }
@@ -407,7 +393,7 @@ achk_put( ach_channel_t *chan, const void *obj, size_t len )
 {
     ssize_t size = write(chan->fd, obj, len);
     if (size < 0)
-        return check_errno();
+        return check_errno(errno);
     return ACH_OK;
 }
 
@@ -634,7 +620,7 @@ ach_create( const char *channel_name,
                 if( attr->truncate ) oflag &= ~O_EXCL;
             }
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 ) {
-                return check_errno();;
+                return check_errno(errno);;
             }
 
             { /* make file proper size */
@@ -800,7 +786,7 @@ ach_open( ach_channel_t *chan, const char *channel_name,
         ACH_OK == channel_exists_as_kernel_device(channel_name)) {
 
         if ( (fd = fd_for_kernel_device_channel_name(channel_name,0)) < 0 ) {
-            return check_errno();
+            return check_errno(errno);
         }
 
         /* initialize struct */
@@ -819,7 +805,7 @@ ach_open( ach_channel_t *chan, const char *channel_name,
             return ACH_INVALID_NAME;
         /* open shm */
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
-            return check_errno();
+            return check_errno(errno);
         }
         if( (shm = (ach_header_t*) mmap (NULL, sizeof(ach_header_t),
                                          PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0ul) )
@@ -833,12 +819,12 @@ ach_open( ach_channel_t *chan, const char *channel_name,
 
         /* remap */
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
-            return check_errno();
+            return check_errno(errno);
 
         if( (shm = (ach_header_t*) mmap( NULL, len, PROT_READ|PROT_WRITE,
                                          MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
-            return check_errno();
+            return check_errno(errno);
     }
 
     /* Check guard bytes */
@@ -1008,7 +994,7 @@ void ach_attr_init( ach_attr_t *attr ) {
 
 enum ach_status
 ach_chmod( ach_channel_t *chan, mode_t mode ) {
-    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno();;
+    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno(errno);;
 }
 
 enum ach_status
@@ -1031,7 +1017,7 @@ ach_unlink( const char *name ) {
         if( 0 == i ) {
             return  ACH_OK;
         } else {
-            return check_errno();
+            return check_errno(errno);
         }
     } else {
         return r;

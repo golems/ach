@@ -411,15 +411,6 @@ extern "C" {
     enum ach_status
     ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr );
 
-    /** Function type to transfer data into the channel.
-     *
-     * This function could, for example, perform tasks such as serialization.
-     *
-     * \returns 0 on success, nonzero on failure
-     */
-    typedef enum ach_status
-    ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
-
     /** Writes a new message in the channel.
      *
      *  \pre chan has been opened with ach_open() and is large enough

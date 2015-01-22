@@ -295,6 +295,59 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
 
+#ifdef ACH_POSIX
+static enum ach_status
+check_errno(int err) {
+    switch(err) {
+    case 0:                   return ACH_OK;
+    case EMSGSIZE:            return ACH_OVERFLOW;
+    case ENAMETOOLONG:        return ACH_INVALID_NAME;
+    case EBADSLT:             return ACH_BAD_SHM_FILE;
+    case EIO:                 return ACH_FAILED_SYSCALL;
+    case EAGAIN:              return ACH_STALE_FRAMES;
+    case EREMOTEIO:           return ACH_MISSED_FRAME;
+    case ETIME:               return ACH_TIMEOUT;
+    case EEXIST:              return ACH_EEXIST;
+    case ENOENT:              return ACH_ENOENT;
+    case ESHUTDOWN:           return ACH_CLOSED;
+    case EPERM:               return ACH_BUG;
+    case EINVAL:              return ACH_EINVAL;
+    case EUCLEAN:             return ACH_CORRUPT;
+    case EPROTO:              return ACH_BAD_HEADER;
+    case EACCES:              return ACH_EACCES;
+    case ECANCELED:           return ACH_CANCELED;
+    case EFAULT:              return ACH_EFAULT;
+    default:
+        return ACH_FAILED_SYSCALL;
+    }
+}
+#endif /* ACH_POSIX */
 
+#ifdef ACH_KLINUX
+static int
+get_errno(enum ach_status r) {
+    switch(r) {
+    case ACH_OK:              return 0;
+    case ACH_OVERFLOW:        return EMSGSIZE;
+    case ACH_INVALID_NAME:    return ENAMETOOLONG;
+    case ACH_BAD_SHM_FILE:    return EBADSLT;
+    case ACH_FAILED_SYSCALL:  return EIO;
+    case ACH_STALE_FRAMES:    return EAGAIN;
+    case ACH_MISSED_FRAME:    return EREMOTEIO;
+    case ACH_TIMEOUT:         return ETIME;
+    case ACH_EEXIST:          return EEXIST;
+    case ACH_ENOENT:          return ENOENT;
+    case ACH_CLOSED:          return ESHUTDOWN;
+    case ACH_BUG:             return EPERM;
+    case ACH_EINVAL:          return EINVAL;
+    case ACH_CORRUPT:         return EUCLEAN;
+    case ACH_BAD_HEADER:      return EPROTO;
+    case ACH_EACCES:          return EACCES;
+    case ACH_CANCELED:        return ECANCELED;
+    case ACH_EFAULT:          return EFAULT;
+    }
+    return get_errno(ACH_BUG);
+}
+#endif
 
 #endif /* ACH_IMPL_H */

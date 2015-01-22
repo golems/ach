@@ -81,7 +81,8 @@ typedef enum ach_status {
     ACH_CORRUPT = 13,       /**< channel memory has been corrupted */
     ACH_BAD_HEADER = 14,    /**< an invalid header was given */
     ACH_EACCES = 15,        /**< permission denied */
-    ACH_CANCELED = 16       /**< operation canceled */
+    ACH_CANCELED = 16,      /**< operation canceled */
+    ACH_EFAULT = 17         /**< bad address for data copy */
 } ach_status_t;
 
 
@@ -127,6 +128,16 @@ typedef enum {
  */
 typedef enum ach_status
 ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
+
+
+/** Function type to transfer data into the channel.
+ *
+ * This function could, for example, perform tasks such as serialization.
+ *
+ * \returns 0 on success, nonzero on failure
+ */
+typedef enum ach_status
+ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
 #ifdef __cplusplus
 }

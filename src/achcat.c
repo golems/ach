@@ -60,6 +60,7 @@
 #include <stdlib.h>
 #include <fcntl.h>
 #include <inttypes.h>
+#include <errno.h>
 #include "ach.h"
 #include "achutil.h"
 
@@ -71,7 +72,7 @@ int pub_chan(ach_channel_t *, ach_attr_t *);
 int sub_chan(ach_channel_t *, ach_attr_t *);
 
 char pbuffer[4096];
-char sbuffer[4096];
+char sbuffer[8];
 
 
 /* options */
@@ -121,23 +122,20 @@ int subscribe( ach_channel_t *chan) {
         size_t frame_size = 0;
         size_t fr;
         r = ach_get( chan, sbuffer, sizeof(sbuffer), &frame_size, NULL, 0 );
-        if( ACH_OK != r )  {
-            if( ACH_STALE_FRAMES == r ) {
-                usleep(1000);
-            } else {
-                if( ! (t0 && r == ACH_MISSED_FRAME) )
-                    if( ACH_CLOSED != r ) {
-                        fprintf(stderr, "sub: ach_error: %s\n",
-                                ach_result_to_string(r));
-                    }
-                if( !  ( ACH_MISSED_FRAME == r ||
-                         ACH_STALE_FRAMES == r ) ) break;
-            }
-
+        switch(r) {
+        case ACH_OK:
+        case ACH_MISSED_FRAME:
+            break;
+        case ACH_STALE_FRAMES:
+            usleep(1000);
+            continue;
+        default:
+            fprintf(stderr, "sub: ach_error: %s, %s\n",
+                    ach_result_to_string(r), strerror(errno));
+            exit(-1);
         }
         /*fprintf(stderr, "sub: got %d bytes\n", frame_size);*/
         /*fprintf(stderr, "sub: %s\n", sbuffer);*/
-
         fr = fwrite( sbuffer, sizeof(char), frame_size, fout );
         if ( fr != frame_size )  {
             r = ACH_OK;

@@ -214,9 +214,6 @@ static enum ach_status unwrlock(struct ach_header *shm)
 	return ACH_OK;
 }
 
-typedef enum ach_status
-ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
-
 static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 {
 	struct ach_header *shm;
@@ -247,8 +244,8 @@ static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 static enum ach_status put_fun(void *cx, void *chan_dst, const void *obj)
 {
 	size_t len = *(size_t *) cx;
-	if (-EFAULT == copy_from_user(chan_dst, obj, len)) {
-		return -ACH_FAILED_SYSCALL;
+	if (copy_from_user(chan_dst, obj, len)) {
+		return ACH_EFAULT;
 	}
 	return ACH_OK;
 }
@@ -384,8 +381,8 @@ get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size)
 		return ACH_OVERFLOW;
 	if (NULL == *obj_dst && 0 != frame_size)
 		return ACH_EINVAL;
-	if (-EFAULT == copy_to_user(*obj_dst, chan_src, frame_size))
-		return ACH_FAILED_SYSCALL;
+	if (copy_to_user(*obj_dst, chan_src, frame_size))
+		return ACH_EFAULT;
 
 	return ACH_OK;
 }
@@ -750,9 +747,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				printk(KERN_INFO "  last_seq_read : %lu\n",
 				       stat.last_seq_read);
 
-				if (-EFAULT ==
-				    copy_to_user((void *)arg, &stat,
-						 sizeof(stat))) {
+				if (copy_to_user((void *)arg, &stat, sizeof(stat))) {
 					ret = -EFAULT;
 				}
 			}
@@ -789,12 +784,13 @@ static ssize_t ach_ch_write(struct file *file, const char *buffer, size_t len,
 			    loff_t * offset)
 {
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
+	enum ach_status r;
 
 	KDEBUG1("In ach_ch_write (minor=%d)\n", ch_file->dev->minor);
 
-	if (ACH_OK != ach_put(ch_file, buffer, len)) {
-		return -EFAULT;
-	}
+	if ( ACH_OK != (r = ach_put(ch_file, buffer, len)) )
+		return -get_errno(r)
+
 	KDEBUG2("wrote@%d %d bytes\n", ch_file->dev->minor, len);
 	return len;
 }
@@ -810,18 +806,12 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 
 	stat = ach_get(ch_file, buffer, len, &retlen);
 	switch (stat) {
+	case ACH_MISSED_FRAME:
+		/* TODO: how can we return this this? */
 	case ACH_OK:
 		break;
-	case ACH_TIMEOUT:
-		return -ETIME;
-	case ACH_MISSED_FRAME:
-		break;
-	case ACH_CANCELED:
-		return -ECANCELED;
-	case ACH_STALE_FRAMES:
-		return -EAGAIN;
 	default:
-		return -ERESTARTSYS;
+		return -get_errno(stat);
 	}
 
 	KDEBUG2("read@%d %d bytes\n", ch_file->dev->minor, retlen);
@@ -947,7 +937,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 				struct ach_ch_device *dev;
 				dev = ach_ch_device_find(unlink_arg->name);
 				if (!dev) {
-					ret = -ENOSTR;
+					ret = -ENOENT;
 					goto out_unlock;
 				}
 
