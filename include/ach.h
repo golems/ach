@@ -309,25 +309,63 @@ extern "C" {
               ach_attr_t *attr );
 
     /** Pulls a message from the channel.
-        \pre chan has been opened with ach_open()
-
-        \post If buf is big enough to hold the next frame, buf
-        contains the data for the last frame and chan.seq_num is set
-        to the last frame.  If buf is too small to hold the next
-        frame, no side effects occur and ACH_OVERFLOW is returned.
-        The seq_num field of chan will be set to the latest sequence
-        number (that of the gotten frame).
-
-        \param chan The previously opened channel handle
-        \param buf Buffer to store data
-        \param size Length of buffer in bytes
-        \param frame_size The number of bytes copied to buf, or the
-        size of the desired frame if buf is too small.
-        \param abstime An absolute timeout if ACH_O_WAIT is specified.
-        Take care that abstime is given in the correct clock.  The
-        default is defined by ACH_DEFAULT_CLOCK.
-        \param options Option flags
-    */
+     *
+     *  If a signal is delivered to a thread executing or waiting in
+     *  ach_get, the thread will resume ach_get after the signal
+     *  handler completes.
+     *
+     *  To interrupt a call to ach_get before a new message is
+     *  received, use ach_cancel.
+     *
+     *  \pre chan has been opened with ach_open()
+     *
+     *  \post If buf is big enough to hold the next frame, buf
+     *  contains the data for the last frame and chan.seq_num is set
+     *  to the last frame.  If buf is too small to hold the next
+     *  frame, no side effects occur and ACH_OVERFLOW is returned.
+     *  The seq_num field of chan will be set to the latest sequence
+     *  number (that of the gotten frame).
+     *
+     *  \param[in,out] chan The previously opened channel handle
+     *
+     *  \param[out] buf Buffer to store data
+     *
+     *  \param[in] size Length of buffer in bytes
+     *
+     *  \param[out] frame_size The number of bytes copied to buf, or
+     *                         the size of the desired frame if buf is
+     *                         too small.
+     *
+     *  \param[in] abstime An absolute timeout if ::ACH_O_WAIT is
+     *                     specified.  Take care that abstime is given
+     *                     in the correct clock.  The default is
+     *                     defined by ACH_DEFAULT_CLOCK.
+     *
+     *  \param[in] options Option flags
+     *
+     *  \return On success, returns ACH_OK.  Otherwise, returns an
+     *          error code indication the failure:
+     *
+     *  - ::ACH_OK: On success, returns ::ACH_OK and the location pointed
+     *            to by frame_size contains the number of bytes copied
+     *            to buf.
+     *
+     *  - ::ACH_MISSED_FRAME: If any frames were skipped in the buffer,
+     *                      the ::ACH_MISSED_FRAME may be returned.  The
+     *                      data is still copied and frame_size set as
+     *                      on ::ACH_OK.
+     *
+     *  - ::ACH_STALE_FRAMES
+     *  - ::ACH_TIMEOUT
+     *  - ::ACH_CANCELED
+     *  - ::ACH_OVERFLOW
+     *  - ::ACH_CORRUPT
+     *  - ::ACH_EINVAL
+     *  - ::ACH_EFAULT
+     *
+     * \sa ach_get_opts_t, ach_status
+     *
+     */
     enum ach_status
     ach_get( ach_channel_t *chan, void *buf, size_t size,
              size_t *frame_size,
