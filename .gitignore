@@ -126,3 +126,4 @@ modules.order
 /debian/ach-dkms.install
 /debian/ach-dkms.postinst
 /debian/ach-dkms.prerm
+/klinuxtest

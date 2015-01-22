@@ -61,6 +61,11 @@ canceltest_LDADD = libach.la
 # transfertest_SOURCES = src/test/transfertest.c
 # transfertest_LDADD = libach.la
 
+
+noinst_PROGRAMS += klinuxtest
+klinuxtest_SOURCES = src/test/klinuxtest.c
+klinuxtest_LDADD = libach.la
+
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la
 
