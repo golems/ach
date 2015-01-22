@@ -1,0 +1,18 @@
+TODO list for Ach
+
+* TODO Use specified clocks for klinux channels.
+** Copy clock given during ach_create() into the kernel struct
+** Retrieve during ach_open()
+
+* TODO Handle signals in klinux channels
+** Add test case
+** Return suitable status codes
+** Retry system calls when appropriate
+
+* TODO Avoid race in klinux ach_cancel()
+
+* TODO Refactor ach_put() to combine user and klinux definitions
+
+# Local Variables:
+# mode: org
+# End:
