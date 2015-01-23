@@ -116,74 +116,43 @@ static struct ach_ctrl_device ctrl_data;
  * ach module stuff - ought be comparable to user space ach.c functions
  **********************************************************************************/
 
-
+static enum ach_status
+chan_lock( ach_channel_t *chan )
+{
+	int i = mutex_lock_interruptible(&chan->shm->sync.mutex);
+	if( -EINTR == i ) return ACH_EINTR;
+	if( i ) return ACH_BUG;
+	if( chan->cancel ) {
+		mutex_unlock(&chan->shm->sync.mutex);
+		return ACH_CANCELED;
+	}
+	return ACH_OK;
+}
 
 static enum ach_status
 rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 {
-	// TODO: Missing a lot compared to userspace ach.c
 	struct ach_header *shm = chan->shm;
+	uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
+	unsigned int *cancel = &chan->cancel;
+	int res;
 
-	if (mutex_lock_interruptible(&shm->sync.mutex)) {
-		return ACH_BUG;
+	if( !wait ) return chan_lock(chan);
+
+	if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
+		res = wait_event_interruptible_timeout( shm->sync. readq,
+							((*c_seq != *s_seq) || *cancel),
+							timespec_to_jiffies (reltime) );
+		if (0 == res) return ACH_TIMEOUT;
+	} else {
+		res = wait_event_interruptible( shm->sync.readq,
+						((*c_seq != *s_seq) || *cancel) );
+
 	}
+	if (-ERESTARTSYS == res) return ACH_EINTR;
+	if( res < 0 ) return ACH_BUG;
 
-	{
-		enum ach_status r = ACH_BUG;
-
-		while (ACH_BUG == r) {
-			if (!wait) {
-				r = ACH_OK;
-			} else if (chan->seq_num != shm->last_seq) {
-				r = ACH_OK;
-			} else if (reltime->tv_sec != 0
-				   || reltime->tv_nsec != 0) {
-				int res;
-				mutex_unlock(&shm->sync.mutex);
-				res =
-				    wait_event_interruptible_timeout(shm->sync.
-								     readq,
-								     ((chan->
-								       seq_num
-								       !=
-								       shm->
-								       last_seq)
-								      || chan->
-								      cancel),
-								     timespec_to_jiffies
-								     (reltime));
-				if (chan->cancel)
-					return ACH_CANCELED;
-				if (0 == res) {
-					/* Timeout */
-					return ACH_TIMEOUT;
-				}
-				if (0 > res) {
-					/* SIGNAL received */
-					return ACH_CANCELED;
-				}
-				/* > 0 => Condition is true */
-				if (mutex_lock_interruptible(&shm->sync.mutex)) {
-					return ACH_BUG;
-				}
-			} else {
-				mutex_unlock(&shm->sync.mutex);
-				if (wait_event_interruptible
-				    (shm->sync.readq,
-				     ((chan->seq_num != shm->last_seq)
-				      || chan->cancel))) {
-					return ACH_BUG;
-				}
-				if (chan->cancel) {
-					return ACH_CANCELED;
-				}
-				if (mutex_lock_interruptible(&shm->sync.mutex)) {
-					return ACH_BUG;
-				}
-			}
-		}
-	}
-	return ACH_OK;
+	return chan_lock(chan);
 }
 
 static enum ach_status unrdlock(struct ach_header *shm)
@@ -194,13 +163,9 @@ static enum ach_status unrdlock(struct ach_header *shm)
 
 static enum ach_status wrlock(ach_channel_t * chan)
 {
-	struct ach_header *shm = chan->shm;
-
-	if (mutex_lock_interruptible(&shm->sync.mutex)) {
-		return ACH_FAILED_SYSCALL;
-	}
+	enum ach_status r = chan_lock(chan) ;
+	if( ACH_OK != r ) return r;
 	chan->shm->sync.dirty = 1;
-
 	return ACH_OK;
 }
 
@@ -208,9 +173,7 @@ static enum ach_status unwrlock(struct ach_header *shm)
 {
 	shm->sync.dirty = 0;
 	mutex_unlock(&shm->sync.mutex);
-
 	wake_up(&shm->sync.readq);
-
 	return ACH_OK;
 }
 
@@ -678,8 +641,8 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	KDEBUG("In ach_ch_ioctl\n");
 	switch (cmd) {
 
-	case ACH_CH_SET_MODE:{
-
+	case ACH_CH_SET_MODE: {
+		/* TODO: this is not threasafe */
 			ch_file->mode = *(struct ach_ch_mode *)arg;
 			if (ch_file->mode.reltime.tv_sec != 0
 			    || ch_file->mode.reltime.tv_nsec != 0)
@@ -756,16 +719,13 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ACH_CH_FLUSH:
 		KDEBUG("Got cmd ACH_CH_FLUSH\n");
-		if (ACH_OK != ach_flush(ch_file))
-			ret = -ERESTARTSYS;
+		ret = -get_errno( ach_flush(ch_file) );
 		break;
 
 	case ACH_CH_CANCEL:{
 			unsigned int unsafe = (unsigned int)arg;
 			KDEBUG("Got cmd ACH_CH_CANCEL\n");
-
-			if (ACH_OK != ach_cancel(ch_file, unsafe))
-				ret = -ERESTARTSYS;
+			ret = -get_errno(ach_cancel(ch_file, unsafe));
 			break;
 		}
 
@@ -810,6 +770,8 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 		/* TODO: how can we return this this? */
 	case ACH_OK:
 		break;
+	case ACH_EINTR:
+		return -ERESTARTSYS;
 	default:
 		return -get_errno(stat);
 	}
@@ -893,17 +855,15 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 {
 	int ret = 0;
 
+	if (mutex_lock_interruptible(&ctrl_data.lock)) {
+		return -ERESTARTSYS;
+	}
+
 	switch (cmd) {
 
 	case ACH_CTRL_CREATE_CH:{
 			struct ach_ctrl_create_ch *create_arg =
 			    (struct ach_ctrl_create_ch *)arg;
-
-			if (mutex_lock_interruptible(&ctrl_data.lock)) {
-				ret = -ERESTARTSYS;
-				goto out;
-			}
-
 			ret = ach_ch_device_alloc(create_arg->name);
 			if (ret) {
 				goto out_unlock;
@@ -927,11 +887,6 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	case ACH_CTRL_UNLINK_CH:{
 			struct ach_ctrl_unlink_ch *unlink_arg =
 			    (struct ach_ctrl_unlink_ch *)arg;
-
-			if (mutex_lock_interruptible(&ctrl_data.lock)) {
-				ret = -ERESTARTSYS;
-				goto out;
-			}
 
 			{
 				struct ach_ch_device *dev;
@@ -972,8 +927,6 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 
  out_unlock:
 	mutex_unlock(&ctrl_data.lock);
-
- out:
 	return ret;
 }
 

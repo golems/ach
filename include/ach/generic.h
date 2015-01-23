@@ -82,7 +82,10 @@ typedef enum ach_status {
     ACH_BAD_HEADER = 14,    /**< an invalid header was given */
     ACH_EACCES = 15,        /**< permission denied */
     ACH_CANCELED = 16,      /**< operation canceled */
-    ACH_EFAULT = 17         /**< bad address for data copy */
+    ACH_EFAULT = 17,        /**< bad address for data copy */
+    ACH_EINTR = 18          /**< operation interrupted.  Only used
+                             *   internally and not returned to
+                             *   library callers. */
 } ach_status_t;
 
 

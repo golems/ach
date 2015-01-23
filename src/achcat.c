@@ -86,6 +86,37 @@ int opt_sub = 0;
 FILE *fin;
 FILE *fout;
 
+
+
+static void sighandler(int sig, siginfo_t *siginfo, void *context) {
+    (void)sig; (void)siginfo; (void)context;
+}
+
+/** setup the signal handler */
+void sighandler_install() {
+    struct sigaction act;
+    memset(&act, 0, sizeof(act));
+
+    act.sa_sigaction = &sighandler;
+
+    /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field,
+       not sa_handler. */
+    act.sa_flags = SA_SIGINFO;
+
+    if (sigaction(SIGTERM, &act, NULL) < 0) {
+        fprintf( stderr, "Couldn't install signal handler: %s", strerror(errno) );
+    }
+
+    if (sigaction(SIGINT, &act, NULL) < 0) {
+        fprintf( stderr, "Couldn't install signal handler: %s", strerror(errno) );
+    }
+
+    if( SIG_ERR == signal(SIGPIPE, SIG_IGN) ) {
+        fprintf( stderr, "Couldn't ignore SIGPIPE: %s", strerror(errno) );
+    }
+}
+
+
 void *publish_loop(void* pub) {
     publish((ach_channel_t*)pub);
     exit(0);
@@ -116,8 +147,11 @@ int publish( ach_channel_t *chan) {
 
 
 int subscribe( ach_channel_t *chan) {
+
+
+    sighandler_install();
+
     ach_status_t r;
-    int t0 = 1;
     while(1) {
         size_t frame_size = 0;
         size_t fr;
@@ -130,8 +164,8 @@ int subscribe( ach_channel_t *chan) {
             usleep(1000);
             continue;
         default:
-            fprintf(stderr, "sub: ach_error: %s, %s\n",
-                    ach_result_to_string(r), strerror(errno));
+            fprintf(stderr, "sub: ach_error: %s (%d), %s (%d)\n",
+                    ach_result_to_string(r), r, strerror(errno), errno);
             exit(-1);
         }
         /*fprintf(stderr, "sub: got %d bytes\n", frame_size);*/
@@ -227,6 +261,7 @@ int main( int argc, char **argv ) {
             assert(0);
         }
     }
+
 
     /* check for io case */
     if(  opt_pub &&  opt_sub ) {

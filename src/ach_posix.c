@@ -132,6 +132,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_EACCES: return "ACH_EACCES";
     case ACH_CANCELED: return "ACH_CANCELED";
     case ACH_EFAULT: return "ACH_EFAULT";
+    case ACH_EINTR: return "ACH_EINTR";
     }
     return "UNKNOWN";
 
@@ -382,7 +383,7 @@ achk_get( ach_channel_t *chan,
 
     ssize_t ret = read(chan->fd, *pobj, size);
 
-    if ( ret < 0) return check_errno(errno);
+    if (ret < 0) return check_errno(errno);
 
     *frame_size = (size_t)ret;
     return ACH_OK;

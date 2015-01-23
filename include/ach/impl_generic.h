@@ -317,6 +317,7 @@ check_errno(int err) {
     case EACCES:              return ACH_EACCES;
     case ECANCELED:           return ACH_CANCELED;
     case EFAULT:              return ACH_EFAULT;
+    case EINTR:               return ACH_EINTR;
     default:
         return ACH_FAILED_SYSCALL;
     }
@@ -345,6 +346,7 @@ get_errno(enum ach_status r) {
     case ACH_EACCES:          return EACCES;
     case ACH_CANCELED:        return ECANCELED;
     case ACH_EFAULT:          return EFAULT;
+    case ACH_EINTR:           return EINTR;
     }
     return get_errno(ACH_BUG);
 }
