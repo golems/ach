@@ -297,8 +297,8 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
 
 #ifdef ACH_POSIX
 static enum ach_status
-check_errno(int err) {
-    switch(err) {
+check_errno(void) {
+    switch(errno) {
     case 0:                   return ACH_OK;
     case EMSGSIZE:            return ACH_OVERFLOW;
     case ENAMETOOLONG:        return ACH_INVALID_NAME;
@@ -321,6 +321,11 @@ check_errno(int err) {
     default:
         return ACH_FAILED_SYSCALL;
     }
+}
+static enum ach_status
+check_ret_errno(int ret) {
+    if( ret < 0 ) return check_errno();
+    else return ACH_OK;
 }
 #endif /* ACH_POSIX */
 

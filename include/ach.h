@@ -245,8 +245,10 @@ extern "C" {
 
     /** Handle for an Ach channel.
      *
-     * Direct access of this structure by library clients is
-     * discouraged; its fields may change in future library version.
+     *  Library users are strongly discourged from directly accessing
+     *  members of this structure; its fields may change in future
+     *  library versions.  All access should be through the provided
+     *  library functions.
      */
     typedef struct ach_channel {
         union {

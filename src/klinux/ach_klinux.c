@@ -642,7 +642,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 
 	case ACH_CH_SET_MODE: {
-		/* TODO: this is not threasafe */
+		/* TODO: this is not threadsafe */
 			ch_file->mode = *(struct ach_ch_mode *)arg;
 			if (ch_file->mode.reltime.tv_sec != 0
 			    || ch_file->mode.reltime.tv_nsec != 0)

@@ -98,6 +98,15 @@
 
 #include "ach/impl_generic.h"
 
+#define SYSCALL_RETRY( expr, test )                     \
+    {                                                   \
+        int ach_intr_cnt = 0;                           \
+        do { (expr); }                                  \
+        while( (test) &&                                \
+               EINTR == errno &&                        \
+               ach_intr_cnt++  < ACH_INTR_RETRY         \
+            );                                          \
+    }
 
 static inline int IS_KERNEL_DEVICE(ach_channel_t *chan)
 {
@@ -225,12 +234,10 @@ static int fd_for_kernel_device_channel_name(const char *name,int oflag)
     char dev_name[ACH_CHAN_NAME_MAX+16];
     int r = charfile_for_channel_name(name, dev_name, sizeof(dev_name));
     if (ACH_OK != r) return -ACH_BUG;
-    int fd;
-    int i = 0;
 
-    do {
-        fd = open( dev_name, O_RDWR | oflag, 0666 );
-    } while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
+    int fd;
+    SYSCALL_RETRY( fd = open( dev_name, O_RDWR | oflag, 0666 ),
+                   fd < 0 );
 
     return fd;
 }
@@ -242,42 +249,64 @@ static int fd_for_channel_name( const char *name, int oflag ) {
     char shm_name[ACH_CHAN_NAME_MAX + 16];
     int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
     if( 0 != r ) return ACH_BUG;
-    int fd;
-    int i = 0;
 
-    do {
-        fd = shm_open( shm_name, O_RDWR | oflag, 0666 );
-    }while( -1 == fd && EINTR == errno && i++ < ACH_INTR_RETRY);
+    int fd;
+    SYSCALL_RETRY( fd = shm_open( shm_name, O_RDWR | oflag, 0666 ),
+                   fd < 0 )
     return fd;
 }
 
 /*****************************************************************
   START charfile / kernel module helpers
 *****************************************************************/
-enum ach_status charfile_unlink(const char* channel_name)
+
+static int
+ctrl_open(void)
 {
-    int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
+    int fd;
+    SYSCALL_RETRY( fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND),
+                   fd < 0 );
+    return fd;
+}
+
+static enum ach_status
+char_close(int fd)
+{
+    int r;
+
+    SYSCALL_RETRY( r = close(fd),
+                   r < 0 );
+    if( r ) return check_errno();
+    else return ACH_OK;
+}
+
+enum ach_status achk_unlink(const char* channel_name)
+{
+    int ioctl_ret;
+    int fd = ctrl_open();
+
     if (fd < 0) {
         ACH_ERRF ("Failed opening kernel device controller\n");
-        return ACH_FAILED_SYSCALL;
+        return check_errno();;
     }
+
     struct ach_ctrl_unlink_ch arg;
     strncpy( arg.name, channel_name, ACH_CHAN_NAME_MAX );
 
-    int ioctl_ret = ioctl(fd, ACH_CTRL_UNLINK_CH, &arg);
+    SYSCALL_RETRY( ioctl_ret = ioctl(fd, ACH_CTRL_UNLINK_CH, &arg),
+                   ioctl_ret < 0 )
+
     enum ach_status ach_ret;
     if (ioctl_ret < 0) {
-        ach_ret = ACH_FAILED_SYSCALL;
+        ach_ret = check_errno();
         ACH_ERRF("Failed removing device %s\n", channel_name);
     } else {
         ach_ret = ACH_OK;
     }
 
-    if( close(fd) ) {
-        ach_ret = ACH_FAILED_SYSCALL;
-    }
-
-    return ach_ret;
+    enum ach_status cr = char_close(fd);
+    if( ach_ret ) return ach_ret;
+    else return cr;
 }
 
 enum ach_status
@@ -286,8 +315,8 @@ achk_create( const char *channel_name,
 {
     if (ACH_OK == channel_exists_as_shm_device(channel_name))
         return ACH_EEXIST;
+    int fd = ctrl_open();
 
-    int fd = open(ACH_CHAR_CHAN_CTRL_NAME, O_WRONLY|O_APPEND);
     if (fd < 0) {
         ACH_ERRF("Failed opening kernel device controller\n");
         return ACH_FAILED_SYSCALL;
@@ -298,55 +327,61 @@ achk_create( const char *channel_name,
     strcpy(arg.name, channel_name);
 
     enum ach_status ach_stat = ACH_OK;
-    int ret = ioctl(fd, ACH_CTRL_CREATE_CH, &arg);
-    if (ret < 0) {
+    int ioctl_ret;
+    SYSCALL_RETRY( ioctl_ret = ioctl(fd, ACH_CTRL_CREATE_CH, &arg),
+                   ioctl_ret < 0 );
+    if (ioctl_ret < 0) {
         ACH_ERRF("Failed creating device %s\n", channel_name);
-        ach_stat = check_errno(errno);
+        ach_stat = check_errno();
     }
 
-    close(fd);
-    return ach_stat;
+    enum ach_status cr = char_close(fd);
+    if( ach_stat ) return ach_stat;
+    else return cr;
 }
 
-static struct timespec relative_time(struct timespec then)
+
+static struct timespec
+ts_mk( time_t s, long ns )
+{
+    long b = (long)1e9;
+    /* actual modulus, not remaninder ala % */
+    long ns1 = ((ns % b) + b) % b;
+    struct timespec ts = { s + (ns-ns1)/b,
+                           ns1 };
+    return ts;
+}
+
+static struct timespec
+ts_sub(struct timespec t1, struct timespec t0)
+{
+    struct timespec delta = {0,0};
+    /* bound at zero */
+    if (t0.tv_sec > t1.tv_sec)
+        return delta;
+    if (t0.tv_sec == t0.tv_sec &&
+        t0.tv_nsec > t1.tv_nsec)
+        return delta;
+
+    return ts_mk( t1.tv_sec - t0.tv_sec,
+                  t1.tv_nsec - t0.tv_nsec );
+}
+
+static struct timespec
+ts_add(struct timespec a, struct timespec b)
+{
+    return ts_mk( a.tv_sec + b.tv_sec,
+                  a.tv_nsec + b.tv_nsec );
+}
+
+static struct timespec
+abs_time(struct timespec delta)
 {
     // TODO: support alternate clocks
-    struct timespec delta;
     struct timespec now;
 
     clock_gettime( ACH_DEFAULT_CLOCK, &now );
-
-    delta.tv_sec = 0;
-    delta.tv_nsec = 0;
-
-    if (now.tv_sec > then.tv_sec)
-        return delta;
-    if (now.tv_sec == then.tv_sec &&
-        now.tv_nsec > then.tv_nsec)
-        return delta;
-    delta.tv_sec = then.tv_sec - now.tv_sec;
-    if (now.tv_nsec > then.tv_nsec) {
-        delta.tv_sec--;
-        then.tv_nsec += 1000000000;
-    }
-    delta.tv_nsec = then.tv_nsec - now.tv_sec;
-    return delta;
-}
-
-static struct timespec abs_time(struct timespec delta)
-{
-    // TODO: support alternate clocks
-    struct timespec then;
-    struct timespec now;
-
-    clock_gettime( ACH_DEFAULT_CLOCK, &now );
-
-    int64_t nsec = delta.tv_nsec + now.tv_nsec;
-
-    then.tv_nsec = nsec % 1000000000;
-    then.tv_sec = delta.tv_sec + now.tv_sec + nsec / 1000000000;
-
-    return then;
+    return ts_add( now, delta );
 }
 
 
@@ -354,64 +389,98 @@ static enum ach_status
 achk_get( ach_channel_t *chan,
           void *cx, char **pobj,
           size_t *frame_size,
-          const struct timespec *ACH_RESTRICT reltime,
+          const struct timespec *ACH_RESTRICT timeout,
           int options )
 {
+
     size_t size = *(size_t*)cx;
     achk_opt_t opts;
+    _Bool o_rel = options & ACH_O_RELTIME;
+    struct timespec t_end;
+
     opts.options = options;
-    if(reltime)
-        opts.reltime =*reltime;
-    else {
+
+    if( timeout ) {
+        struct timespec t_begin;
+        clock_gettime( ACH_DEFAULT_CLOCK, &t_begin );
+        if( o_rel ) {
+            t_end = ts_add( t_begin, *timeout );
+            opts.reltime = *timeout;
+        } else { /* abstime */
+            t_end = *timeout;
+            opts.reltime = ts_sub( t_end, t_begin );
+        }
+    } else {
         opts.reltime.tv_sec = 0;
         opts.reltime.tv_nsec = 0;
     }
 
-    if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
-        struct ach_ch_mode mode;
-        memset(&mode, 0, sizeof(mode));
+    int cnt = 0;
+    /* Retry loop to handle interrupts */
+    for(;;) {
+        /* set mode */
+        if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
+            struct ach_ch_mode mode;
+            int ioctl_ret;
+            memset(&mode, 0, sizeof(mode));
+            mode.mode = options;
+            mode.reltime = opts.reltime;
 
-        mode.mode = options;
-
-        mode.reltime = opts.reltime;
-
-        if (ioctl(chan->fd, ACH_CH_SET_MODE, &mode)) {
-            return ACH_FAILED_SYSCALL;
+            SYSCALL_RETRY( ioctl_ret = ioctl(chan->fd, ACH_CH_SET_MODE, &mode),
+                           ioctl_ret < 0 );
+            if ( ioctl_ret < 0 ) return check_errno();
+            chan->k_opts = opts;
         }
-        chan->k_opts = opts;
+
+        ssize_t ret = read(chan->fd, *pobj, size);
+
+        if( ret >= 0 ) { /* Success! */
+            *frame_size = (size_t)ret;
+            return ACH_OK;
+        }
+
+        /* Failure */
+        if( errno != EINTR || cnt++ > ACH_INTR_RETRY ) {
+            return check_errno();
+        }
+
+        /* We were interrupted, lets go again */
+        if(timeout) { /* recompute the relative timeout */
+            struct timespec now;
+            clock_gettime( ACH_DEFAULT_CLOCK, &now );
+            opts.reltime = ts_sub(t_end, now);
+        }
     }
-
-    ssize_t ret = read(chan->fd, *pobj, size);
-
-    if (ret < 0) return check_errno(errno);
-
-    *frame_size = (size_t)ret;
-    return ACH_OK;
 }
 
 static enum ach_status
 achk_put( ach_channel_t *chan, const void *obj, size_t len )
 {
-    ssize_t size = write(chan->fd, obj, len);
-    if (size < 0)
-        return check_errno(errno);
-    return ACH_OK;
+    ssize_t size;
+    SYSCALL_RETRY( size = write(chan->fd, obj, len),
+                   size < 0 );
+    if (size < 0) return check_errno();
+    else if ((size_t)size != len) return ACH_BUG;
+    else return ACH_OK;
 }
 
 static enum ach_status
 achk_flush( ach_channel_t * chan)
 {
     unsigned int arg = 0;
-    if (ioctl(chan->fd, ACH_CH_FLUSH, arg)) {
-        return ACH_FAILED_SYSCALL;
-    }
-    return ACH_OK;
+    int r;
+
+    SYSCALL_RETRY( r = ioctl(chan->fd, ACH_CH_FLUSH, arg),
+                   r < 0 );
+
+    return check_ret_errno(r);
 }
 
 enum ach_status
 achk_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 {
     unsigned int arg;
+    int r;
 
     if (!attr)
         arg = 0;
@@ -419,10 +488,10 @@ achk_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr )
         arg = attr->async_unsafe ? ACH_CH_CANCEL_UNSAFE : 0;
 
     chan->cancel = 1;
-    if (ioctl(chan->fd, ACH_CH_CANCEL, arg)) {
-        return ACH_FAILED_SYSCALL;
-    }
-    return ACH_OK;
+
+    SYSCALL_RETRY( r = ioctl(chan->fd, ACH_CH_CANCEL, arg),
+                   r < 0 );
+    return check_ret_errno(r);
 }
 
 /*****************************************************************
@@ -621,7 +690,7 @@ ach_create( const char *channel_name,
                 if( attr->truncate ) oflag &= ~O_EXCL;
             }
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 ) {
-                return check_errno(errno);;
+                return check_errno();;
             }
 
             { /* make file proper size */
@@ -787,7 +856,7 @@ ach_open( ach_channel_t *chan, const char *channel_name,
         ACH_OK == channel_exists_as_kernel_device(channel_name)) {
 
         if ( (fd = fd_for_kernel_device_channel_name(channel_name,0)) < 0 ) {
-            return check_errno(errno);
+            return check_errno();
         }
 
         /* initialize struct */
@@ -806,7 +875,7 @@ ach_open( ach_channel_t *chan, const char *channel_name,
             return ACH_INVALID_NAME;
         /* open shm */
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
-            return check_errno(errno);
+            return check_errno();
         }
         if( (shm = (ach_header_t*) mmap (NULL, sizeof(ach_header_t),
                                          PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0ul) )
@@ -820,12 +889,12 @@ ach_open( ach_channel_t *chan, const char *channel_name,
 
         /* remap */
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )
-            return check_errno(errno);
+            return check_errno();
 
         if( (shm = (ach_header_t*) mmap( NULL, len, PROT_READ|PROT_WRITE,
                                          MAP_SHARED, fd, 0ul) )
             == MAP_FAILED )
-            return check_errno(errno);
+            return check_errno();
     }
 
     /* Check guard bytes */
@@ -867,34 +936,25 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
          const struct timespec *ACH_RESTRICT timeout,
          int options )
 {
-    const struct timespec *ptime;
-    struct timespec ltime;
-    _Bool o_rel = options & ACH_O_RELTIME;
-
     if (IS_KERNEL_DEVICE(chan)) {
-        if( timeout && !o_rel ) {
-            /* timeout given as absolute time */
-            /* Would it be find the relative time in the kernel? */
-            ltime = relative_time(*timeout);
+        return achk_get(chan, &size, (char**)&buf, frame_size, timeout, options);
+    }  else {
+        const struct timespec *ptime;
+        struct timespec ltime;
+        _Bool o_rel = options & ACH_O_RELTIME;
+
+        if (timeout && o_rel) {
+            /* timeout given as relative time */
+            ltime = abs_time(*timeout);
             ptime = &ltime;
         } else {
-            /* timeout is relative or NULL */
+            /* timeout is absolute or NULL */
             ptime = timeout;
         }
-        return achk_get(chan, &size, (char**)&buf, frame_size, ptime, options);
+        return ach_xget( chan,
+                         get_fun, &size, &buf,
+                         frame_size, ptime, options );
     }
-
-    if (timeout && o_rel) {
-        /* timeout given as relative time */
-        ltime = abs_time(*timeout);
-        ptime = &ltime;
-    } else {
-        /* timeout is absolute or NULL */
-        ptime = timeout;
-    }
-    return ach_xget( chan,
-                     get_fun, &size, &buf,
-                     frame_size, ptime, options );
 }
 
 
@@ -932,38 +992,30 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len )
 enum ach_status
 ach_close( ach_channel_t *chan ) {
 
-    /* Check guard bytes */
+    switch( chan->attr.map )  {
+    case ACH_MAP_ANON: return ACH_OK;  /* FIXME: What to do here? */
+    case ACH_MAP_USER:
     {
-        enum ach_status r = check_guards(chan->shm);
-        if( ACH_OK != r ) return r;
-    }
-
-    /* fprintf(stderr, "Closing\n"); */
-    /* note the close in the channel */
-    if( chan->attr.map_anon ) {
-        /* FIXME: what to do here?? */
-        ;
-    } else {
-        /* remove mapping */
-        int r = munmap(chan->shm, chan->len);
-        if( 0 != r ){
+        enum ach_status r;
+        if( ACH_OK != (r = check_guards(chan->shm)) ) return r;
+        if( munmap(chan->shm, chan->len) ) {
             ACH_ERRF("Failed to munmap channel\n");
-            return ACH_FAILED_SYSCALL;
+            return check_errno();
         }
         chan->shm = NULL;
-
-        /* close file */
-        int i = 0;
-        do {
-            IFDEBUG( i, ACH_ERRF("Retrying close()\n") )
-            r = close(chan->fd);
-        }while( -1 == r && EINTR == errno && i++ < ACH_INTR_RETRY );
-        if( -1 == r ){
+    }
+    /* fall through to close file */
+    case ACH_MAP_KERNEL:
+    {   /* close file */
+        int i;
+        SYSCALL_RETRY( i = close(chan->fd),
+                       i < 0 );
+        if( i < 0 ) {
             ACH_ERRF("Failed to close() channel fd\n");
-            return ACH_FAILED_SYSCALL;
+            return check_errno();
         }
     }
-
+    }
     return ACH_OK;
 }
 
@@ -995,7 +1047,7 @@ void ach_attr_init( ach_attr_t *attr ) {
 
 enum ach_status
 ach_chmod( ach_channel_t *chan, mode_t mode ) {
-    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno(errno);;
+    return (0 == fchmod(chan->fd, mode)) ? ACH_OK : check_errno();;
 }
 
 enum ach_status
@@ -1008,7 +1060,7 @@ ach_unlink( const char *name ) {
         return ACH_ENOENT;
     }
     if (ACH_OK == kstat) {
-        enum ach_status r = charfile_unlink(name);
+        enum ach_status r = achk_unlink(name);
         return r;
     }
 
@@ -1018,7 +1070,7 @@ ach_unlink( const char *name ) {
         if( 0 == i ) {
             return  ACH_OK;
         } else {
-            return check_errno(errno);
+            return check_errno();
         }
     } else {
         return r;
