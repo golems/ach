@@ -333,7 +333,7 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len )
         return ach_put_klinux( chan, buf, len);
     case ACH_MAP_ANON:
     case ACH_MAP_USER:
-        return ach_xput_posix( chan, put_fun_posix, &len, buf, len );
+        return ach_xput( chan, put_fun_posix, &len, buf, len );
     default:
         return ACH_EINVAL;
     }

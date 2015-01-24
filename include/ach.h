@@ -458,27 +458,6 @@ extern "C" {
     enum ach_status
     ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr );
 
-    /** Writes a new message in the channel.
-     *
-     *  \pre chan has been opened with ach_open() and is large enough
-     *  to hold the message.
-     *
-     *  Note that transfer() is called while holding the channel lock.
-     *  Expensive computation should thus be avoided during this call.
-     *
-     *  \param [in,out] chan The channel to write to
-     *  \param [in] transfer Function to transfer data into the channel
-     *  \param [in,out] cx Context argument to transfer
-     *  \param [in] obj Source object passed to transfer()
-     *  \param [in] dst_size Number of bytes needed in the channel to hold obj
-     *
-     *  \return ACH_OK on success. If the channel is too small to hold
-     *  the frame, returns ACH_OVERFLOW.
-    */
-    enum ach_status
-    ach_xput( ach_channel_t *chan,
-              ach_put_fun transfer, void *cx, const void *obj, size_t dst_size );
-
     /** Control structure for event handling loop
      */
     struct ach_evhandler {

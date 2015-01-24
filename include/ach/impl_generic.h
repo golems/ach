@@ -295,6 +295,147 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
     return (ACH_OK == retval && missed_frame) ? ACH_MISSED_FRAME : retval;
 }
 
+
+/* #define ACH_XPUT_ASSERT(cond)						\ */
+/*      {								\ */
+/*              if (! (cond) ) {					\ */
+/*                      printk(KERN_ERR "Logic error in ACH\n");	\ */
+/*                      return ACH_BUG;					\ */
+/*              }							\ */
+/*      } */
+
+
+/** Writes a new message in the channel.
+ *
+ *  \pre chan has been opened with ach_open() and is large enough
+ *  to hold the message.
+ *
+ *  Note that transfer() is called while holding the channel lock.
+ *  Expensive computation should thus be avoided during this call.
+ *
+ *  \param [in,out] chan The channel to write to
+ *  \param [in] transfer Function to transfer data into the channel
+ *  \param [in,out] cx Context argument to transfer
+ *  \param [in] obj Source object passed to transfer()
+ *  \param [in] dst_size Number of bytes needed in the channel to hold obj
+ *
+ *  \return ACH_OK on success. If the channel is too small to hold
+ *  the frame, returns ACH_OVERFLOW.
+ */
+static enum ach_status
+ach_xput( ach_channel_t *chan,
+          ach_put_fun transfer, void *cx, const void *obj, size_t len )
+{
+
+    struct ach_header *shm = chan->shm;
+    ach_index_t *index_ar;
+    unsigned char *data_ar;
+    ach_index_t *idx;
+
+    if( 0 == len || NULL == transfer || NULL == chan->shm ) {
+        return ACH_EINVAL;
+    }
+
+    /* Check guard bytes */
+    {
+        enum ach_status r = check_guards(shm);
+        if( ACH_OK != r ) return r;
+    }
+
+    if( shm->data_size < len ) {
+        return ACH_OVERFLOW;
+    }
+
+    index_ar = ACH_SHM_INDEX(shm);
+    data_ar = ACH_SHM_DATA(shm);
+
+    if( len > shm->data_size ) return ACH_OVERFLOW;
+
+    /* take write lock */
+    wrlock( chan );
+
+    /* find next index entry */
+    idx = index_ar + shm->index_head;
+
+    /* clear entry used by index */
+    if( 0 == shm->index_free ) { free_index(shm,shm->index_head); }
+    /* else { assert(0== index_ar[shm->index_head].seq_num);} */
+
+    /* assert( shm->index_free > 0 ); */
+
+    /* Avoid wraparound */
+    if( shm->data_size - shm->data_head < len ) {
+        size_t i;
+        /* clear to end of array */
+        /* assert( 0 == index_ar[shm->index_head].offset ); */
+        for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
+            index_ar[i].offset > shm->data_head;
+            i = (i + 1) % shm->index_cnt)
+        {
+            /* assert( i != shm->index_head ); */
+            free_index(shm,i);
+        }
+        /* Set counts to beginning of array */
+        if( i == shm->index_head ) {
+            shm->data_free = shm->data_size;
+        } else {
+            shm->data_free = index_ar[oldest_index_i(shm)].offset;
+        }
+        shm->data_head = 0;
+    }
+
+    /* clear overlapping entries */
+    {
+        size_t i;
+        for(i = (shm->index_head + shm->index_free) % shm->index_cnt;
+            shm->data_free < len;
+            i = (i + 1) % shm->index_cnt)
+        {
+            if( i == shm->index_head ) {
+                shm->data_free = shm->data_size;
+            } else {
+                free_index(shm,i);
+            }
+        }
+    }
+
+    /* assert( shm->data_free >= len ); */
+
+    if( shm->data_size - shm->data_head < len ) {
+        unwrlock( shm );
+        /* assert(0); */
+        return ACH_BUG;
+    }
+
+    /* transfer */
+    {
+        enum ach_status r = transfer(cx, data_ar + shm->data_head, obj);
+        if( ACH_OK != r ) {
+            unwrlock(shm);
+            return r;
+        }
+    }
+
+    /* modify counts */
+    shm->last_seq++;
+    idx->seq_num = shm->last_seq;
+    idx->size = len;
+    idx->offset = shm->data_head;
+
+    shm->data_head = (shm->data_head + len) % shm->data_size;
+    shm->data_free -= len;
+    shm->index_head = (shm->index_head + 1) % shm->index_cnt;
+    shm->index_free --;
+
+    /* assert( shm->index_free <= shm->index_cnt ); */
+    /* assert( shm->data_free <= shm->data_size ); */
+    /* assert( shm->last_seq > 0 ); */
+
+    /* release write lock */
+    return unwrlock( shm );
+}
+
+
 #ifdef ACH_POSIX
 static enum ach_status
 check_errno(void) {
