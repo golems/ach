@@ -195,9 +195,10 @@ extern "C" {
      *   buffer.
      */
     typedef enum ach_map {
-        ACH_MAP_USER = 0,     /**< Use shared memory for channels */
+        ACH_MAP_DEFAULT = 0,  /**< Use the default mapping for channels */
         ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */
-        ACH_MAP_KERNEL = 2,   /**< Use kernel memory for channels - require ach kernel module being loaded */
+        ACH_MAP_USER = 2,     /**< Use shared memory for channels */
+        ACH_MAP_KERNEL = 3,   /**< Use kernel memory for channels - require ach kernel module being loaded */
     } ach_map_t;
 
 
