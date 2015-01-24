@@ -421,7 +421,7 @@ ach_create_posix( const char *channel_name,
             shm->index_free * sizeof( ach_index_t ) +
             shm->data_free + 3*sizeof(uint64_t) ==  len );
 
-    if( ACH_MAP_ANON == attr->map_anon ) {
+    if( ACH_MAP_ANON == attr->map ) {
         attr->shm = shm;
     } else {
         int r;

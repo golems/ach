@@ -210,8 +210,8 @@ extern "C" {
         union {
             struct{
                 union {
-                    int map_anon;        /**< anonymous channel (put it in process heap, not shm) */
-                    ach_map_t map;       /** < replaces map_anon */
+                    int map_anon ACH_DEPRECATED;  /**< anonymous channel (put it in process heap, not shm) */
+                    ach_map_t map;       /**< replaces map_anon */
                 };
                 struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
             };

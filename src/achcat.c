@@ -251,7 +251,7 @@ int main( int argc, char **argv ) {
             cattr.map_anon = 1;
             ach_create( opt_chan_name, 10ul, 512ul, &cattr );
             assert( cattr.shm );
-            attr.map_anon = 1;
+            attr.map = ACH_MAP_ANON;
             attr.shm = cattr.shm;
             r = ach_open( &sub, opt_chan_name, &attr );
             if( ACH_OK != r ) abort();
