@@ -127,3 +127,4 @@ modules.order
 /debian/ach-dkms.postinst
 /debian/ach-dkms.prerm
 /klinuxtest
+/clocktest

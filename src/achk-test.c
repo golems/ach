@@ -45,7 +45,7 @@ int createdevice(const char* name)
 
   close (fd);
   return ret;
-    
+
 }
 
 int removedevice(const char* name)
@@ -94,7 +94,7 @@ int readdata(int fd, unsigned int flag)
   int res = 0;
 
   printf ("In readdata: fd=%d, flag=0x%02x\n", fd, flag);
-  struct ach_ch_mode mode;
+  struct achk_opt mode;
   mode.mode = flag;
   if (0 > ioctl(fd, ACH_CH_SET_MODE, &flag)) {
     printf("Failed setting mode\n");
@@ -126,7 +126,7 @@ int readdata(int fd, unsigned int flag)
   }
   buf[len] = '\0';
   printf("Data read (%d bytes): %s\n", len, buf);
-  
+
  out:
   return res;
 }
@@ -176,7 +176,7 @@ int getolddata(const char* channel)
     printf ("Error opening %s\n", channel);
     return -1;
   }
-  
+
   unsigned int flag = 0;
 
   res = readdata(fd, flag);
@@ -196,7 +196,7 @@ int getnewdata(const char* channel)
     printf ("Error opening %s\n", channel);
     return -1;
   }
-  
+
   unsigned int flag = ACH_CH_MODE_LAST;
 
   res = readdata(fd, flag);
@@ -220,7 +220,7 @@ int selecttest(const char* ch1, const char* ch2)
     return -1;
   }
 
-  int cnt = 5; 
+  int cnt = 5;
   while (cnt) {
     fd_set readset;
     FD_ZERO(&readset);
@@ -236,10 +236,10 @@ int selecttest(const char* ch1, const char* ch2)
     if (res > 0) {
       cnt--;
       if (FD_ISSET(fd1, &readset)) {
-	readdata(fd1, 0);
+        readdata(fd1, 0);
       }
       if (FD_ISSET(fd2, &readset)) {
-	readdata(fd2, 0);
+        readdata(fd2, 0);
       }
     }
   }
@@ -274,7 +274,7 @@ int main(int argc, char ** argv)
   }
   else if (0 == strcmp(argv[1], "-g")) {
     if (argc < 4)
-	goto usage;
+        goto usage;
 
     if (0 == strcmp(argv[3], "new")) {
       getnewdata(argv[2]);
@@ -288,7 +288,7 @@ int main(int argc, char ** argv)
   } else if (0 == strcmp(argv[1], "-gb")) {
     getwithwait(argv[2]);
   } else if (0 == strcmp(argv[1], "-s")) {
-    if (argc < 4) 
+    if (argc < 4)
       goto usage;
     selecttest(argv[2], argv[3]);
   } else {

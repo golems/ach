@@ -177,7 +177,7 @@ static enum ach_status unwrlock(struct ach_header *shm)
 	return ACH_OK;
 }
 
-static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
+static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size, clockid_t clock)
 {
 	struct ach_header *shm;
 	int len = ach_create_len(frame_cnt, frame_size);
@@ -197,6 +197,8 @@ static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size)
 	/* initialize mutex */
 	mutex_init(&shm->sync.mutex);
 	init_waitqueue_head(&shm->sync.readq);
+
+	shm->clock = clock;
 
 	/* initialize counts */
 	ach_create_counts( shm, frame_cnt, frame_size );
@@ -354,7 +356,7 @@ static enum ach_status
 ach_get(ach_channel_t * chan, void *buf, size_t size, size_t * frame_size)
 {
 	return ach_xget(chan, get_fun, &size, &buf, frame_size,
-			&chan->mode.reltime, chan->mode.mode);
+			&chan->mode.reltime, chan->mode.options);
 }
 
 static enum ach_status ach_flush(ach_channel_t * chan)
@@ -401,7 +403,9 @@ struct ach_ch_file *ach_ch_file_alloc(struct ach_ch_device *device)
 
 	ch_file->dev = device;
 	ch_file->shm = device->ach_data;
-	ch_file->mode.mode = ACH_O_WAIT;	/* Default mode */
+	ch_file->mode.options = ACH_O_WAIT;	/* Default mode */
+	ch_file->mode.reltime.tv_sec = 0;
+	ch_file->mode.reltime.tv_nsec = 0;
 	ch_file->seq_num = 0;
 	ch_file->next_index = ch_file->shm->index_head;
 
@@ -447,11 +451,11 @@ static struct ach_ch_device *ach_ch_devices_alloc(void)
 }
 
 static int ach_ch_device_init(struct ach_ch_device *dev,
-			      size_t frame_cnt, size_t frame_size)
+			      struct ach_ctrl_create_ch *arg )
 {
 	int ret = 0;
 
-	dev->ach_data = ach_create(frame_cnt, frame_size);
+	dev->ach_data = ach_create(arg->frame_cnt, arg->frame_size, arg->clock);
 	if (unlikely(!dev->ach_data)) {
 		printk(KERN_ERR "Unable to allocate buffer memory\n");
 		return -ENOBUFS;
@@ -643,7 +647,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ACH_CH_SET_MODE: {
 		/* TODO: this is not threadsafe */
-			ch_file->mode = *(struct ach_ch_mode *)arg;
+			ch_file->mode = *(struct achk_opt *)arg;
 			if (ch_file->mode.reltime.tv_sec != 0
 			    || ch_file->mode.reltime.tv_nsec != 0)
 				KDEBUG2("Setting wait time to %ld.%09ld\n",
@@ -662,7 +666,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ACH_CH_GET_MODE:{
 			KDEBUG1("Got cmd ACH_CH_GET_MODE: %ld\n", arg);
-			*(struct ach_ch_mode *)arg = ch_file->mode;
+			*(struct achk_opt *)arg = ch_file->mode;
 			goto out;
 			break;
 		}
@@ -683,7 +687,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				uint64_t oldest_seq =
 				    index_ar[oldest_index].seq_num;
 
-				stat.mode = ch_file->mode.mode;
+				stat.mode = ch_file->mode.options;
 				stat.size = shm->len;
 				stat.count = shm->index_cnt - shm->index_free;
 
@@ -728,7 +732,13 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = -get_errno(ach_cancel(ch_file, unsafe));
 			break;
 		}
-
+	case ACH_CH_GET_OPTIONS:
+	{
+		struct ach_ch_options *opt = (struct ach_ch_options *) arg;
+		opt->mode = ch_file->mode;
+		opt->clock = ch_file->shm->clock;
+		break;
+	}
 	default:
 		printk(KERN_INFO "Unknown ioctl option: %d\n", cmd);
 		ret = -ENOSYS;
@@ -861,28 +871,17 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 
 	switch (cmd) {
 
-	case ACH_CTRL_CREATE_CH:{
-			struct ach_ctrl_create_ch *create_arg =
-			    (struct ach_ctrl_create_ch *)arg;
-			ret = ach_ch_device_alloc(create_arg->name);
-			if (ret) {
-				goto out_unlock;
-			}
-
-			{
-				// newest is first in queue
-				struct ach_ch_device *dev = ctrl_data.in_use;
-
-				ret =
-				    ach_ch_device_init(dev,
-						       create_arg->frame_cnt,
-						       create_arg->frame_size);
-				if (ret) {
-					ach_ch_device_free(dev);
-				}
-			}
-			break;
+	case ACH_CTRL_CREATE_CH: {
+		struct ach_ctrl_create_ch *create_arg =
+			(struct ach_ctrl_create_ch *)arg;
+		if ( 0 == (ret=ach_ch_device_alloc(create_arg->name)) ) {
+			// newest is first in queue
+			struct ach_ch_device *dev = ctrl_data.in_use;
+			if ( (ret = ach_ch_device_init(dev, create_arg)) )
+				ach_ch_device_free(dev);
 		}
+		break;
+	}
 
 	case ACH_CTRL_UNLINK_CH:{
 			struct ach_ctrl_unlink_ch *unlink_arg =

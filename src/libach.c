@@ -25,7 +25,7 @@
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
  *
- *   * Neither the name of Rice University nor the names of its
+ *   * Neither the name of the copyright holder nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -122,7 +122,7 @@ static struct timespec
 ts_sub(struct timespec a, struct timespec b);
 
 static struct timespec
-abs_time(struct timespec delta);
+abs_time(clockid_t clock, struct timespec delta);
 
 static int
 channel_name_ok( const char *name );
@@ -226,12 +226,12 @@ ts_add(struct timespec a, struct timespec b)
 }
 
 static struct timespec
-abs_time(struct timespec delta)
+abs_time(clockid_t clock, struct timespec delta)
 {
     // TODO: support alternate clocks
     struct timespec now;
 
-    clock_gettime( ACH_DEFAULT_CLOCK, &now );
+    clock_gettime( clock, &now );
     return ts_add( now, delta );
 }
 
@@ -251,10 +251,12 @@ ach_create( const char *channel_name,
             ach_create_attr_t *attr)
 {
     if( NULL == attr ) attr = &default_create_attr;
+    if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
+    if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
 
     switch( attr->map ) {
     case ACH_MAP_KERNEL:
-        return ach_create_klinux(channel_name, frame_cnt, frame_size);
+        return ach_create_klinux( channel_name, frame_cnt, frame_size, attr );
     case ACH_MAP_ANON:
     case ACH_MAP_USER:
     case ACH_MAP_DEFAULT:
@@ -297,7 +299,7 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
          const struct timespec *ACH_RESTRICT timeout,
          int options )
 {
-    switch( chan->attr.map ) {
+    switch( chan->map ) {
     case ACH_MAP_KERNEL:
         return ach_get_klinux(chan, &size, (char**)&buf, frame_size, timeout, options);
     case ACH_MAP_ANON:
@@ -312,7 +314,7 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
 enum ach_status
 ach_flush( ach_channel_t *chan )
 {
-    switch( chan->attr.map ) {
+    switch( chan->map ) {
     case ACH_MAP_KERNEL:
         return ach_flush_klinux(chan);
     case ACH_MAP_ANON:
@@ -326,7 +328,7 @@ ach_flush( ach_channel_t *chan )
 enum ach_status
 ach_put( ach_channel_t *chan, const void *buf, size_t len )
 {
-    switch( chan->attr.map ) {
+    switch( chan->map ) {
     case ACH_MAP_KERNEL:
         return ach_put_klinux( chan, buf, len);
     case ACH_MAP_ANON:
@@ -340,7 +342,7 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len )
 enum ach_status
 ach_close( ach_channel_t *chan ) {
 
-    switch( chan->attr.map )  {
+    switch( chan->map )  {
     case ACH_MAP_ANON: return ACH_OK;  /* FIXME: What to do here? */
     case ACH_MAP_USER:
     {
@@ -432,7 +434,7 @@ static ach_cancel_attr_t default_cancel_attr = {.async_unsafe = 0};
 enum ach_status
 ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
     if( NULL == attr ) attr = &default_cancel_attr;
-    switch( chan->attr.map ) {
+    switch( chan->map ) {
     case ACH_MAP_KERNEL:
         return ach_cancel_klinux(chan, attr);
     case ACH_MAP_USER:
@@ -472,8 +474,37 @@ ach_channel_fd( const struct ach_channel *channel, int *file_descriptor )
 }
 
 enum ach_status
-ach_channel_mapping( const struct ach_channel *channel, enum ach_map *mapping )
+ach_channel_map( const struct ach_channel *channel, enum ach_map *mapping )
 {
-    *mapping = channel->attr.map;
+    *mapping = channel->map;
     return ACH_OK;
+}
+
+enum ach_status
+ach_channel_clock( const struct ach_channel *channel, clockid_t *clock )
+{
+    *clock = channel->clock;
+    return ACH_OK;
+}
+
+enum ach_status
+ach_create_attr_set_clock( ach_create_attr_t *attr, clockid_t clock )
+{
+    attr->clock = clock;
+    attr->set_clock = 1;
+    return ACH_OK;
+}
+
+enum ach_status
+ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map )
+{
+    switch(map) {
+        case ACH_MAP_DEFAULT:
+        case ACH_MAP_USER:
+        case ACH_MAP_ANON:
+        case ACH_MAP_KERNEL:
+            attr->map = map;
+            return ACH_OK;
+    }
+    return ACH_EINVAL;
 }

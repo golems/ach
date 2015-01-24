@@ -142,6 +142,14 @@ ach_get_fun(void *cx, void **obj_dst, const void *chan_src, size_t frame_size );
 typedef enum ach_status
 ach_put_fun(void *cx, void *chan_dst, const void *obj_src);
 
+/** Struct containing 'cache' of kernel module data to avoid
+ *  updating when no changes exist. */
+typedef struct achk_opt {
+    int options;               /**< get options used by the kernel */
+    struct timespec reltime;   /**< kernel use relative time */
+} achk_opt_t;
+
+
 #ifdef __cplusplus
 }
 #endif

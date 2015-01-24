@@ -60,39 +60,12 @@
 #include <stdio.h>
 #include <errno.h>
 #include "ach.h"
+#include "achtest.h"
 
 #define OPT_CHAN  "ach-test"
 
 size_t opt_msg_cnt = 10;
 size_t opt_msg_size = 16;
-
-
-static void fail_errno( const char *thing )
-{
-    fprintf( stderr, "%s: %s\n",
-             thing, strerror(errno) );
-    exit(EXIT_FAILURE);
-}
-
-static void fail_ach( const char *thing, enum ach_status r )
-{
-    fprintf( stderr, "%s: %s\n",
-             thing, ach_result_to_string(r) );
-    exit(EXIT_FAILURE);
-}
-
-static void check_ach(ach_status_t r, const char *thing)
-{
-    if( ACH_OK != r ) {
-        fail_ach(thing,r);
-    }
-}
-
-static void check_errno(int r, const char *thing) {
-    if( r < 0 ) {
-        fail_errno(thing);
-    }
-}
 
 volatile sig_atomic_t count_sigusr1 = 0;
 
@@ -117,24 +90,32 @@ static void sighandler_install() {
     }
 }
 
+static int testsig_gp(pid_t pid_p)
+{
+    int status;
+    pid_t wp = wait(&status);
+    if( wp != pid_p ) fail_errno("Wait 0");
+    if( WIFEXITED(status) && (0 == WEXITSTATUS(status)) ) {
+        /* This is the end */
+        /* Unlink kernel channel */
+        check_ach( "unlink end", ach_unlink(OPT_CHAN) );
+        return 0;
+    } else {
+        fprintf(stderr, "Child 0 failed\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
 static int testsig(void)
 {
     enum ach_status r;
     /* Fork 0 */
     pid_t pid_p = fork();
-    check_errno( pid_p, "Fork 0" );
+    check_errno( "Fork 0", pid_p );
 
     /* GP: wait */
     if( pid_p ) {
-        int status;
-        pid_t wp = wait(&status);
-        if( wp != pid_p ) fail_errno("Wait 0");
-        if( WIFEXITED(status) && (0 == WEXITSTATUS(status)) ) {
-            return 0;
-        } else {
-            fprintf(stderr, "Child 0 failed\n");
-            exit(EXIT_FAILURE);
-        }
+        return testsig_gp(pid_p);
     }
 
     /* Parent */
@@ -151,8 +132,8 @@ static int testsig(void)
         r = ach_unlink(OPT_CHAN);
         if( ACH_ENOENT != r ) fail_ach( "unlink noent", r );
 
-        r = ach_create( OPT_CHAN, opt_msg_cnt, opt_msg_size, &attr );
-        check_ach( r, "ach_create" );
+        check_ach( "ach_create",
+                   ach_create( OPT_CHAN, opt_msg_cnt, opt_msg_size, &attr ) );
     }
     /* Open Kernel Channel */
     struct ach_channel chan;
@@ -172,16 +153,16 @@ static int testsig(void)
 
     /* fork 1 */
     pid_t pid_c = fork();
-    check_errno( pid_c, "fork 1" );
+    check_errno( "fork 1", pid_c );
 
     if( pid_c ) {
         /* Parent: */
         for(;;) {
             usleep(10000); /* Racy... */
-            check_errno( kill( pid_c, SIGUSR1), "kill child");
+            check_errno( "kill child", kill( pid_c, SIGUSR1) );
             usleep(10000);
             int i = 42;
-            check_ach( ach_put( &chan, &i, sizeof(i) ), "put to child" );
+            check_ach( "put to child",  ach_put( &chan, &i, sizeof(i) ) );
             int status;
             pid_t wp = waitpid( pid_c, &status, WNOHANG );
             if( wp ) {
@@ -204,15 +185,11 @@ static int testsig(void)
             s0 = count_sigusr1;
             r = ach_get(&chan, &i, sizeof(i), &frame_size, NULL, ACH_O_WAIT  );
             s1 = count_sigusr1;
-            check_ach(r, "child sig get");
+            check_ach("child sig get", r);
         } while( s1 == s0 || s1 < 10 ); /* This is racy... */
         printf("done: %s, %d,%d,%d\n", ach_result_to_string(r), s0, s1, i);
         exit(EXIT_SUCCESS);
     }
-
-    /* Unlink kernel channel */
-    r = ach_unlink(OPT_CHAN);
-    check_ach( r, "unlink end" );
 
     return 0;
 }

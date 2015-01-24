@@ -347,23 +347,18 @@ ach_create_posix( const char *channel_name,
                 }
             }
             /* Clock */
-            if( attr->set_clock ) {
-                if( (r = pthread_condattr_setclock(&cond_attr, attr->clock)) ) {
-                    DEBUG_PERROR("pthread_condattr_setclock");
-                    return ACH_FAILED_SYSCALL;
-                }
-            } else {
-                if( (r = pthread_condattr_setclock(&cond_attr, ACH_DEFAULT_CLOCK)) ) {
-                    DEBUG_PERROR("pthread_condattr_setclock");
-                    return ACH_FAILED_SYSCALL;
-                }
+            shm->clock = attr->set_clock ? attr->clock : ACH_DEFAULT_CLOCK;
+            if( (r = pthread_condattr_setclock(&cond_attr, shm->clock)) ) {
+                DEBUG_PERROR("pthread_condattr_setclock");
+                return ACH_FAILED_SYSCALL;
             }
-
+            /* Cond init */
             if( (r = pthread_cond_init(&shm->sync.cond, &cond_attr)) ) {
                 DEBUG_PERROR("pthread_cond_init");
                 return ACH_FAILED_SYSCALL;
             }
 
+            /* Attr destroy */
             if( (r = pthread_condattr_destroy(&cond_attr)) ) {
                 DEBUG_PERROR("pthread_condattr_destroy");
                 return ACH_FAILED_SYSCALL;
@@ -462,7 +457,7 @@ ach_get_posix( ach_channel_t *chan, void *buf, size_t size,
 
     if (timeout && o_rel) {
         /* timeout given as relative time */
-        ltime = abs_time(*timeout);
+        ltime = abs_time(chan->clock, *timeout);
         ptime = &ltime;
     } else {
         /* timeout is absolute or NULL */
@@ -650,11 +645,13 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
     size_t len;
     int fd = -1;
     enum ach_map map;
+    clockid_t clock;
 
     if( ACH_MAP_ANON == attr->map ) {
         map = ACH_MAP_ANON;
         shm = attr->shm;
         len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+        clock = ACH_DEFAULT_CLOCK;
     } else {
         map = ACH_MAP_USER;
         if( ! channel_name_ok( channel_name ) )
@@ -684,6 +681,7 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
             return check_errno();
         }
 
+        clock = shm->clock;
     }
 
     enum ach_status r = check_guards(shm);
@@ -694,7 +692,8 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
         chan->seq_num = 0;
         chan->next_index = 1;
         chan->cancel = 0;
-        chan->attr.map = map;
+        chan->map = map;
+        chan->clock = clock;
     }
 
     return r;

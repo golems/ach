@@ -131,10 +131,14 @@ ach_unlink_klinux(const char* channel_name)
 
 static enum ach_status
 ach_create_klinux( const char *channel_name,
-                   size_t frame_cnt, size_t frame_size)
+                   size_t frame_cnt, size_t frame_size,
+                   ach_create_attr_t *attr )
 {
     if (ACH_OK == channel_exists_as_shm_device(channel_name))
         return ACH_EEXIST;
+    if( ! channel_name_ok( channel_name ) )
+            return ACH_INVALID_NAME;
+
     int fd = ctrl_open();
 
     if (fd < 0) {
@@ -144,6 +148,7 @@ ach_create_klinux( const char *channel_name,
     struct ach_ctrl_create_ch arg;
     arg.frame_cnt = frame_cnt;
     arg.frame_size = frame_size;
+    arg.clock = attr->set_clock ? attr->clock : ACH_DEFAULT_CLOCK;
     strcpy(arg.name, channel_name);
 
     enum ach_status ach_stat = ACH_OK;
@@ -189,7 +194,7 @@ ach_get_klinux( ach_channel_t *chan,
 
     if( timeout ) {
         struct timespec t_begin;
-        clock_gettime( ACH_DEFAULT_CLOCK, &t_begin );
+        clock_gettime( chan->clock, &t_begin );
         if( o_rel ) {
             t_end = ts_add( t_begin, *timeout );
             opts.reltime = *timeout;
@@ -207,10 +212,10 @@ ach_get_klinux( ach_channel_t *chan,
     for(;;) {
         /* set mode */
         if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
-            struct ach_ch_mode mode;
+            struct achk_opt mode;
             int ioctl_ret;
             memset(&mode, 0, sizeof(mode));
-            mode.mode = options;
+            mode.options = options;
             mode.reltime = opts.reltime;
 
             SYSCALL_RETRY( ioctl_ret = ioctl(chan->fd, ACH_CH_SET_MODE, &mode),
@@ -234,7 +239,7 @@ ach_get_klinux( ach_channel_t *chan,
         /* We were interrupted, lets go again */
         if(timeout) { /* recompute the relative timeout */
             struct timespec now;
-            clock_gettime( ACH_DEFAULT_CLOCK, &now );
+            clock_gettime( chan->clock, &now );
             opts.reltime = ts_sub(t_end, now);
         }
     }
@@ -306,8 +311,16 @@ ach_open_klinux( ach_channel_t *chan, const char *channel_name,
 
     /* initialize struct */
     chan->fd = fd;
-    chan->attr.map = ACH_MAP_KERNEL; /* Indicates kernel device */
-    /* other fields don't matter */
+    chan->map = ACH_MAP_KERNEL; /* Indicates kernel device */
+
+    /* get other fields */
+    {
+        struct ach_ch_options arg;
+        int ioctl_ret;
+        SYSCALL_RETRY( ioctl_ret = ioctl(fd, ACH_CH_GET_OPTIONS, &arg),
+                       ioctl_ret < 0 );
+        chan->k_opts = arg.mode;
+    }
 
     return ACH_OK;
 }

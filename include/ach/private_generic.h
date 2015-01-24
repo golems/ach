@@ -112,6 +112,7 @@ typedef struct ach_header {
             size_t data_free;        /**< number of free data bytes */
             size_t index_head;       /**< index into index array of first unused index entry */
             size_t index_free;       /**< number of unused index entries */
+            clockid_t clock;         /**< clock used for this channel */
 #ifdef ACH_POSIX
             int anon;                /**< is channel in the heap? */
 #endif

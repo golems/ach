@@ -63,7 +63,7 @@ ach_evhandle( struct ach_evhandler *handlers,
 
     /* Count kernel channels */
     for( size_t i = 0; i < n; i ++ ) {
-        if( ACH_OK != (r = ach_channel_mapping(handlers[i].channel, map+i)) )
+        if( ACH_OK != (r = ach_channel_map(handlers[i].channel, map+i)) )
             return r;
         if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
     }
@@ -191,7 +191,7 @@ ach_evhandle_epoll( struct ach_evhandler *handlers,
 
     /* Count kernel channels */
     for( size_t i = 0; i < n; i ++ ) {
-        if( ACH_OK != (r = ach_channel_mapping(handlers[i].channel, map+i)) )
+        if( ACH_OK != (r = ach_channel_map(handlers[i].channel, map+i)) )
             return r;
         if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
     }

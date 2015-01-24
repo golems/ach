@@ -62,32 +62,29 @@
 #define ACH_CH_CANCEL_UNSAFE            0x01
 
 /** ioctl request set channel mode options */
-#define ACH_CH_SET_MODE                 _IOW(ACH_IOCTL, 3, struct ach_ch_mode)
+#define ACH_CH_SET_MODE                 _IOW(ACH_IOCTL, 3, struct achk_opt)
 /** ioctl request get channel mode options */
-#define ACH_CH_GET_MODE                 _IOR(ACH_IOCTL, 4, struct ach_ch_mode)
+#define ACH_CH_GET_MODE                 _IOR(ACH_IOCTL, 4, struct achk_opt)
 /** ioctl request get channel status */
 #define ACH_CH_GET_STATUS               _IOR(ACH_IOCTL, 5, struct ach_ch_status)
 /** ioctl request flush channel */
 #define ACH_CH_FLUSH                    _IOW(ACH_IOCTL, 6, unsigned int)
 /** ioctl request cancel channel reads */
 #define ACH_CH_CANCEL                   _IOW(ACH_IOCTL, 7, unsigned int)
+/** ioctl request cancel channel reads */
+#define ACH_CH_GET_OPTIONS              _IOW(ACH_IOCTL, 8, struct ach_ch_options)
 
 /** ioctl argument to create channel */
 struct ach_ctrl_create_ch {
 	size_t frame_cnt;                   /**< Number of entries in index array */
 	size_t frame_size;                  /**< Nominal size of each message */
+	clockid_t clock;                    /**< Clock to use for the channel */
 	char name[ACH_CHAN_NAME_MAX + 1];   /**< Name of the channel */
 };
 
 /** ioctl argument unlink channel */
 struct ach_ctrl_unlink_ch {
 	char name[ACH_CHAN_NAME_MAX + 1];   /**< Name of the channel */
-};
-
-/** ioctl argument get and set channel mode. */
-struct ach_ch_mode {
-	int mode;                       /**< Get options for the channel */
-	struct timespec reltime;	/**< Relative time - notice ach normally runs abstime */
 };
 
 /** ioctl argument get channel status. */
@@ -98,6 +95,12 @@ struct ach_ch_status {
 	ssize_t new_msgs;	/**< Unread messages in queue */
 	unsigned long last_seq;	/**< Last sequence in queue */
 	unsigned long last_seq_read;	/**< Sequence of last read message */
+};
+
+/** ioctl argument get channel mode and clock */
+struct ach_ch_options {
+	struct achk_opt mode; /* channel mode */
+	clockid_t clock;         /* channel clock */
 };
 
 #endif

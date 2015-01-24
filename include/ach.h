@@ -237,13 +237,6 @@ extern "C" {
         };
     } ach_create_attr_t;
 
-   /** Struct containing 'cache' of kernel module data to avoid
-    *  updating when no changes exist. */
-    typedef struct {
-        int options;               /**< get options used by the kernel */
-        struct timespec reltime;   /**< kernel use relative time */
-    } achk_opt_t;
-
     /** Handle for an Ach channel.
      *
      *  Library users are strongly discourged from directly accessing
@@ -261,8 +254,9 @@ extern "C" {
                     uint64_t seq_num;    /**< last sequence number read */
                     achk_opt_t k_opts;   /**< Used by kernel devices */
                 };
-                size_t next_index;   /**< next index entry to try get from */
-                ach_attr_t attr;     /**< attributes used to create this channel */
+                size_t next_index;    /**< next index entry to try get from */
+                enum ach_map map;     /**< attributes used to create this channel */
+                clockid_t clock;      /**< attributes used to create this channel */
                 volatile sig_atomic_t cancel; /**< cancel a waiting ach_get */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
@@ -275,7 +269,11 @@ extern "C" {
 
     /** Return the mapping of the channel. */
     enum ach_status
-    ach_channel_mapping( const struct ach_channel *channel, enum ach_map *mapping );
+    ach_channel_map( const struct ach_channel *channel, enum ach_map *map );
+
+    /** Return the clock used by the channel. */
+    enum ach_status
+    ach_channel_clock( const struct ach_channel *channel, clockid_t *clock );
 
     /** Size of ach_channel_t */
     extern size_t ach_channel_size;
@@ -287,6 +285,14 @@ extern "C" {
 
     /** Initialize attributes for creating channels. */
     void ach_create_attr_init( ach_create_attr_t *attr );
+
+    /** Set the clockid */
+    enum ach_status
+    ach_create_attr_set_clock( ach_create_attr_t *attr, clockid_t clock );
+
+    /** Set the mapping */
+    enum ach_status
+    ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map );
 
     /** Creates a new channel.
         \param channel_name Name of the channel

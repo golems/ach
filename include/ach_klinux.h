@@ -76,7 +76,7 @@ struct ach_ch_file {
 	struct ach_header *shm;	/* equals dev->ach_data - so not really necessary
 				 * but we'll access ach_header using this pointer
 				 */
-	struct ach_ch_mode mode;
+	struct achk_opt mode;
 
 	// Stuff from userspace ach.h: ach_channel_t
 	uint64_t seq_num;         /**< last sequence number read */

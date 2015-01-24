@@ -11,7 +11,6 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = ach.pc
 
-TESTS = achtest achtooltest test-achcop
 
 include_HEADERS = include/ach.h include/Ach.hpp
 pkginclude_HEADERS = \
@@ -24,6 +23,7 @@ lib_LTLIBRARIES = libach.la
 
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
+
 
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example robusttest
@@ -48,13 +48,25 @@ achcop_LDADD = libachutil.la
 achlog_SOURCES = src/achlog.c
 achlog_LDADD = libach.la libachutil.la
 
+
+TESTS = achtooltest test-achcop
+
+noinst_LTLIBRARIES += libachtest.la
+libachtest_la_SOURCES = src/test/test.c
+
+TESTS += achtest
 achtest_SOURCES = src/test/achtest.c
-achtest_LDADD = libach.la
+achtest_LDADD = libach.la libachtest.la
 
 TESTS += canceltest
 noinst_PROGRAMS += canceltest
 canceltest_SOURCES = src/test/canceltest.c
 canceltest_LDADD = libach.la
+
+TESTS += clocktest
+noinst_PROGRAMS += clocktest
+clocktest_SOURCES = src/test/clocktest.c
+clocktest_LDADD = libach.la libachtest.la
 
 # TESTS += transfertest
 # noinst_PROGRAMS += transfertest
@@ -64,7 +76,7 @@ canceltest_LDADD = libach.la
 
 noinst_PROGRAMS += klinuxtest
 klinuxtest_SOURCES = src/test/klinuxtest.c
-klinuxtest_LDADD = libach.la
+klinuxtest_LDADD = libach.la libachtest.la
 
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la
