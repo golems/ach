@@ -236,14 +236,18 @@ abs_time(clockid_t clock, struct timespec delta)
 }
 
 
+ach_create_attr_t default_create_attr =
+{{{
+    .map = ACH_MAP_USER,
+    .clock = ACH_DEFAULT_CLOCK,
+    .truncate = 0,
+    .set_clock = 0
+}}};
+
 void ach_create_attr_init( ach_create_attr_t *attr ) {
-    memset( attr, 0, sizeof( ach_create_attr_t ) );
+    *attr = default_create_attr;
 }
 
-ach_create_attr_t default_create_attr = {
-    .map = ACH_MAP_USER,
-    .clock = ACH_DEFAULT_CLOCK
-};
 
 enum ach_status
 ach_create( const char *channel_name,
@@ -507,4 +511,20 @@ ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map )
             return ACH_OK;
     }
     return ACH_EINVAL;
+}
+
+enum ach_status
+ach_create_attr_get_shm( ach_create_attr_t *attr, struct ach_header **shm )
+{
+    if( ACH_MAP_ANON != attr->map ) return ACH_EINVAL;
+    *shm = attr->shm;
+    return ACH_OK;
+}
+
+enum ach_status
+ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm )
+{
+    attr->map = ACH_MAP_ANON;
+    attr->shm = shm;
+    return ACH_OK;
 }

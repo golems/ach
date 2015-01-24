@@ -194,48 +194,84 @@ extern "C" {
      /** Options to specify the mapping for a channels backing memory
      *   buffer.
      */
-    typedef enum ach_map {
+    enum ach_map {
         ACH_MAP_DEFAULT = 0,  /**< Use the default mapping for channels */
         ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */
         ACH_MAP_USER = 2,     /**< Use shared memory for channels */
         ACH_MAP_KERNEL = 3,   /**< Use kernel memory for channels - require ach kernel module being loaded */
-    } ach_map_t;
+    };
 
 
     /** Type for header in shared memory */
     struct ach_header;
 
     /** Attributes to pass to ach_open */
-    typedef struct {
+    struct ach_attr {
         union {
             struct{
                 union {
                     int map_anon ACH_DEPRECATED;  /**< anonymous channel (put it in process heap, not shm) */
-                    ach_map_t map;       /**< replaces map_anon */
+                    enum ach_map map;            /**< Where to put channel backing memory.
+                                                  *   Replaces map_anon */
                 };
                 struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
             };
             uint64_t reserved_size[8]; /**< Reserve space to compatibly add future options */
         };
-    } ach_attr_t;
+    };
+
+    typedef struct ach_attr ach_attr_t;
+
+    /** Initialize attributes for opening channels. */
+    void ach_attr_init( ach_attr_t *attr );
+
+    /** Set shared memory area for anonymous channels */
+    enum ach_status
+    ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm );
+
+    typedef struct ach_attr ach_attr_t;
 
     /** Attributes to pass to ach_create  */
-    typedef struct {
+    struct ach_create_attr {
         union {
             struct{
                 union {
-                    int map_anon;  /**< allocate channel in heap, rather than shm */
-                    ach_map_t map; /**< replaces map_anon */
+                    int map_anon;            /**< allocate channel in heap, rather than shm */
+                    enum ach_map map;        /**< replaces map_anon */
                 };
-                struct ach_header *shm; /**< pointer to channel, set on output of create iff map_anon */
-                int truncate;      /**< remove and recreate an existing shm file */
-                int set_clock;     /**< if true, set the clock of the condition variable */
-                clockid_t clock;   /**< Which clock to use if set_clock is true.
-                                    *   The default is defined by ACH_DEFAULT_CLOCK. */
+                struct ach_header *shm;      /**< pointer to channel, set on output of create iff map_anon */
+                clockid_t clock;             /**< Which clock to use if set_clock is true.
+                                              *   The default is defined by ACH_DEFAULT_CLOCK. */
+                unsigned int truncate  : 1;  /**< remove and recreate an existing shm file */
+                unsigned int set_clock : 1;  /**< if true, set the clock of the condition variable */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
-    } ach_create_attr_t;
+    };
+
+    typedef struct ach_create_attr ach_create_attr_t;
+
+    /** Initialize attributes for creating channels. */
+    void ach_create_attr_init( ach_create_attr_t *attr );
+
+    /** Set the clockid */
+    enum ach_status
+    ach_create_attr_set_clock( ach_create_attr_t *attr, clockid_t clock );
+
+    /** Set the mapping */
+    enum ach_status
+    ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map );
+
+    /** Set to truncate */
+    enum ach_status
+    ach_create_attr_set_truncate( ach_create_attr_t *attr, int truncate );
+
+    /** Get backing memory for anonymous channel */
+    enum ach_status
+    ach_create_attr_get_shm( ach_create_attr_t *attr, struct ach_header **shm );
+
+    /** Virtual Method Table for handling different channel mappings */
+    struct ach_channel_vtab;
 
     /** Handle for an Ach channel.
      *
@@ -247,17 +283,18 @@ extern "C" {
     typedef struct ach_channel {
         union {
             struct {
-                struct ach_header *shm;   /**< pointer to mmap'ed block */
-                size_t len;          /**< length of memory mapping */
-                int fd;              /**< file descriptor of mmap'ed file */
+                struct ach_header *shm;         /**< pointer to mmap'ed block */
+                size_t len;                     /**< length of memory mapping */
+                int fd;                         /**< file descriptor of mmap'ed file */
                 union {
-                    uint64_t seq_num;    /**< last sequence number read */
-                    achk_opt_t k_opts;   /**< Used by kernel devices */
+                    uint64_t seq_num;           /**< last sequence number read */
+                    achk_opt_t k_opts;          /**< Used by kernel devices */
                 };
-                size_t next_index;    /**< next index entry to try get from */
-                enum ach_map map;     /**< attributes used to create this channel */
-                clockid_t clock;      /**< attributes used to create this channel */
-                volatile sig_atomic_t cancel; /**< cancel a waiting ach_get */
+                size_t next_index;               /**< next index entry to try get from */
+                enum ach_map map;                /**< attributes used to create this channel */
+                clockid_t clock;                 /**< attributes used to create this channel */
+                volatile sig_atomic_t cancel;    /**< cancel a waiting ach_get */
+                struct ach_channel_vtab *vtable; /**< virtual method table */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
@@ -274,25 +311,6 @@ extern "C" {
     /** Return the clock used by the channel. */
     enum ach_status
     ach_channel_clock( const struct ach_channel *channel, clockid_t *clock );
-
-    /** Size of ach_channel_t */
-    extern size_t ach_channel_size;
-    /** Size of ach_attr_t */
-    extern size_t ach_attr_size;
-
-    /** Initialize attributes for opening channels. */
-    void ach_attr_init( ach_attr_t *attr );
-
-    /** Initialize attributes for creating channels. */
-    void ach_create_attr_init( ach_create_attr_t *attr );
-
-    /** Set the clockid */
-    enum ach_status
-    ach_create_attr_set_clock( ach_create_attr_t *attr, clockid_t clock );
-
-    /** Set the mapping */
-    enum ach_status
-    ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map );
 
     /** Creates a new channel.
         \param channel_name Name of the channel

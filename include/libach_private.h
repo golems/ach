@@ -87,6 +87,12 @@ extern const int ach_eacces;
 extern const int ach_o_wait;
 extern const int ach_o_last;
 
+
+/** Size of ach_channel_t */
+extern size_t ach_channel_size;
+/** Size of ach_attr_t */
+extern size_t ach_attr_size;
+
 #ifdef __cplusplus
 }
 #endif

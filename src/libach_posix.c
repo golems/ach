@@ -289,6 +289,7 @@ ach_create_posix( const char *channel_name,
 
         if( ACH_MAP_ANON == attr->map ) {
             /* anonymous (heap) */
+            /* TODO: free this if something fails later */
             shm = (ach_header_t *) malloc( len );
             fd = -1;
         }else {
