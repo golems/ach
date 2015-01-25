@@ -63,12 +63,17 @@
 struct ach_ch_device {
 	struct ach_ch_device *next;
 	int minor;
-	char *name;
 	struct mutex lock;	/* Protects open_files */
 	struct cdev cdev;
-	int open_files;
+	struct device *device;
 	struct ach_header *ach_data;	/* Has own lock to protect data */
 };
+
+static inline const char *
+ach_ch_device_name ( struct ach_ch_device *ch_dev )
+{
+	return ch_dev->device->kobj.name;
+}
 
 /* The struct controlling the individual channel device file handles */
 struct ach_ch_file {

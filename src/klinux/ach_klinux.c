@@ -98,15 +98,15 @@ MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 struct ach_ctrl_device {
 	wait_queue_head_t some_queue_if_needed;
 	struct mutex lock;
-	struct ach_ch_device *devices;
-	struct ach_ch_device *free;
-	struct ach_ch_device *in_use;
+	struct ach_ch_device *devices;   /* array of all channel devices */
+	struct ach_ch_device *free;      /* linked list of unused channel devices */
+	struct ach_ch_device *in_use;    /* linked list of currently used channel devices */
 	int in_use_cnt;
 	int major;		/* Major number assigned to ach channel devices */
 	struct class *ach_ch_class;
 };
 
-static int ach_ch_setup_cdev(struct ach_ch_device *dev);
+static int ach_ch_setup_cdev(struct ach_ch_device *dev, const char *name);
 static int ach_ch_remove_cdev(struct ach_ch_device *dev);
 
 /* The static entry to all objects used by the module */
@@ -282,21 +282,26 @@ struct ach_ch_file *ach_ch_file_alloc(struct ach_ch_device *device)
 	ch_file->seq_num = 0;
 	ch_file->next_index = ch_file->shm->index_head;
 
-	device->open_files++;
-
 	return ch_file;
 }
 
 /* Expects device to be locked */
 void ach_ch_file_free(struct ach_ch_file *ch_file)
 {
-	ch_file->dev->open_files--;
 	kfree(ch_file);
 }
 
 /**********************************************************************************
  * ach channel device object
  **********************************************************************************/
+
+static void
+ach_ch_make_device_name( const char *channel_name, char *device_name )
+{
+	strcpy( device_name, ACH_CHAR_CHAN_NAME_PREFIX_NAME);
+	strcat( device_name, channel_name );
+}
+
 static struct ach_ch_device *ach_ch_devices_alloc(void)
 {
 	int i;
@@ -312,7 +317,6 @@ static struct ach_ch_device *ach_ch_devices_alloc(void)
 		struct ach_ch_device *device = &devs[i];
 		mutex_init(&device->lock);
 		device->minor = i;
-		device->name = NULL;
 		device->next = device + 1;	/* Form list of free devices */
 	}
 	devs[max_devices - 1].next = NULL;	/* Terminate free list */
@@ -334,7 +338,7 @@ static int ach_ch_device_init(struct ach_ch_device *dev,
 		return -ENOBUFS;
 	}
 
-	ret = ach_ch_setup_cdev(dev);
+	ret = ach_ch_setup_cdev(dev, arg->name);
 	if (ret < 0) {
 		printk(KERN_INFO "Failed creating char device\n");
 		goto out_err;
@@ -348,12 +352,15 @@ static int ach_ch_device_init(struct ach_ch_device *dev,
 	return ret;
 }
 
-static struct ach_ch_device *ach_ch_device_find(const char *name)
+static struct ach_ch_device *ach_ch_device_find(const char *channel_name)
 {
 	struct ach_ch_device *dev = ctrl_data.in_use;
 
+	char device_name[ACH_CHAN_NAME_MAX + 16];
+	ach_ch_make_device_name( channel_name, device_name );
+
 	while (dev) {
-		if (0 == strcmp(name, dev->name))
+		if (0 == strncmp(device_name, ach_ch_device_name(dev), sizeof(device_name)))
 			return dev;
 		dev = dev->next;
 	}
@@ -383,45 +390,29 @@ static int ach_ch_device_free(struct ach_ch_device *dev)
 	dev->next = ctrl_data.free;
 	ctrl_data.free = dev;
 
-	/* Cleanup */
-	kfree(dev->name);
-	dev->name = NULL;
-
 	return 0;
 }
 
 /* ctrl_data is expected to be locked */
-static int ach_ch_device_alloc(const char *name)
+static int ach_ch_device_alloc(const char *channel_name)
 {
 	struct ach_ch_device *dev;
+	char device_name[ACH_CHAN_NAME_MAX + 16];
 
 	if (!ctrl_data.free) {
 		return -ENOSR;
 	}
 
+	ach_ch_make_device_name( channel_name, device_name );
+
 	/* Check for name clashes */
-	dev = ctrl_data.in_use;
-	while (dev) {
-		if (0 == strcmp(name, dev->name)) {
-			return -EEXIST;
-		}
-		dev = dev->next;
-	}
+	dev = ach_ch_device_find( channel_name );
+	if( dev ) return -EEXIST;
 
 	/* So far -> Name is unique */
 	/* Take first free from free list ... */
 	dev = ctrl_data.free;
 	ctrl_data.free = dev->next;
-
-	dev->name = kzalloc(strlen(name) + 1, GFP_KERNEL);
-	if (unlikely(!dev->name)) {
-		printk(KERN_ERR "Couldn't alloc space for device name\n");
-
-		//TODO: Put object back on free list
-		return -ENOBUFS;
-	}
-
-	strcpy(dev->name, name);
 
 	/* .. and put in start of in_use list */
 	dev->next = ctrl_data.in_use;
@@ -505,6 +496,8 @@ static int ach_ch_open(struct inode *inode, struct file *file)
  out_unlock:
 	mutex_unlock(&device->lock);
 
+
+	printk( KERN_INFO "opened device %s\n", ach_ch_device_name(device) );
  out:
 	return ret;
 }
@@ -687,9 +680,8 @@ static const struct file_operations ach_ch_fops = {
 	.poll = ach_ch_poll,
 };
 
-static int ach_ch_setup_cdev(struct ach_ch_device *dev)
+static int ach_ch_setup_cdev(struct ach_ch_device *dev, const char *channel_name)
 {
-	struct device *ret_dev;
 	int ret = 0;
 
 	cdev_init(&dev->cdev, &ach_ch_fops);
@@ -703,14 +695,16 @@ static int ach_ch_setup_cdev(struct ach_ch_device *dev)
 		return ret;
 	}
 
-	ret_dev = device_create(ctrl_data.ach_ch_class, NULL,
-				MKDEV(ctrl_data.major, dev->minor),
-				NULL, "%s%s",
-				ACH_CHAR_CHAN_NAME_PREFIX_NAME, dev->name);
-	if (IS_ERR(ret_dev)) {
+	dev->device = device_create(ctrl_data.ach_ch_class, NULL,
+				    MKDEV(ctrl_data.major, dev->minor),
+				    NULL, ACH_CHAR_CHAN_NAME_PREFIX_NAME "%s",
+				    channel_name);
+	if (IS_ERR(dev->device)) {
 		printk(KERN_ERR "device_create failed\n");
-		return PTR_ERR(ret_dev);
+		return PTR_ERR(dev->device);
 	}
+
+	printk( KERN_INFO "created device %s\n", ach_ch_device_name(dev) );
 
 	return ret;
 }
@@ -722,6 +716,12 @@ static int ach_ch_remove_cdev(struct ach_ch_device *dev)
 	cdev_del(&dev->cdev);
 
 	return 0;
+}
+
+static void
+ach_ch_dev_release( struct device *device )
+{
+	printk(KERN_INFO "Called dev release\n");
 }
 
 /**********************************************************************************
@@ -741,6 +741,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	case ACH_CTRL_CREATE_CH: {
 		struct ach_ctrl_create_ch *create_arg =
 			(struct ach_ctrl_create_ch *)arg;
+		// TODO: validate argument
 		if ( 0 == (ret=ach_ch_device_alloc(create_arg->name)) ) {
 			// newest is first in queue
 			struct ach_ch_device *dev = ctrl_data.in_use;
@@ -753,6 +754,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	case ACH_CTRL_UNLINK_CH:{
 			struct ach_ctrl_unlink_ch *unlink_arg =
 			    (struct ach_ctrl_unlink_ch *)arg;
+			// TODO: validate argument
 
 			{
 				struct ach_ch_device *dev;
@@ -848,6 +850,7 @@ static int __init ach_init(void)
 			printk(KERN_ERR "ach: Failed to create class\n");
 			goto out_deregister;
 		}
+		ctrl_data.ach_ch_class->dev_release = ach_ch_dev_release;
 
 		/* Allocate major */
 		dev_num = 0;
