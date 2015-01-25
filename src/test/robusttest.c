@@ -54,6 +54,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
 #include "ach.h"
 #include "ach/private_posix.h"
 

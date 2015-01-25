@@ -57,6 +57,32 @@
 
 #include "private_generic.h"
 
+static int
+get_errno(enum ach_status r) {
+    switch(r) {
+    case ACH_OK:              return 0;
+    case ACH_OVERFLOW:        return EMSGSIZE;
+    case ACH_INVALID_NAME:    return ENAMETOOLONG;
+    case ACH_BAD_SHM_FILE:    return EBADSLT;
+    case ACH_FAILED_SYSCALL:  return EIO;
+    case ACH_STALE_FRAMES:    return EAGAIN;
+    case ACH_MISSED_FRAME:    return EREMOTEIO;
+    case ACH_TIMEOUT:         return ETIME;
+    case ACH_EEXIST:          return EEXIST;
+    case ACH_ENOENT:          return ENOENT;
+    case ACH_CLOSED:          return ESHUTDOWN;
+    case ACH_BUG:             return EPERM;
+    case ACH_EINVAL:          return EINVAL;
+    case ACH_CORRUPT:         return EUCLEAN;
+    case ACH_BAD_HEADER:      return EPROTO;
+    case ACH_EACCES:          return EACCES;
+    case ACH_CANCELED:        return ECANCELED;
+    case ACH_EFAULT:          return EFAULT;
+    case ACH_EINTR:           return EINTR;
+    }
+    return get_errno(ACH_BUG);
+}
+
 #endif /* ACH_PRIVATE_KLINUX_H */
 
 /* Local Variables:    */

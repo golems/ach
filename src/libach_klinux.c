@@ -50,12 +50,43 @@
  *  \author Neil T. Dantam
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <time.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <sys/stat.h>
+
+#include <string.h>
+#include <inttypes.h>
+
+#include "ach.h"
+#include "ach/private_posix.h"
+#include "ach/klinux_generic.h"
+#include "libach_private.h"
+
+#include <sys/wait.h>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
 
 
 static enum ach_status
-charfile_for_channel_name( const char *name, char *buf, size_t n ) {
+ach_filename_klinux( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
-    if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
     strcpy( buf, ACH_CHAR_CHAN_NAME_PREFIX_PATH);
     strcat( buf, ACH_CHAR_CHAN_NAME_PREFIX_NAME);
     strncat( buf, name, ACH_CHAN_NAME_MAX );
@@ -64,10 +95,10 @@ charfile_for_channel_name( const char *name, char *buf, size_t n ) {
 
 
 static enum ach_status
-channel_exists_as_kernel_device(const char* name)
+ach_exists_klinux(const char* name)
 {
     char ach_name[ACH_CHAN_NAME_MAX + 16];
-    int r = charfile_for_channel_name(name, ach_name, sizeof(ach_name));
+    int r = ach_filename_klinux(name, ach_name, sizeof(ach_name));
     if (ACH_OK != r) return ACH_BUG;
 
     struct stat buf;
@@ -134,10 +165,8 @@ ach_create_klinux( const char *channel_name,
                    size_t frame_cnt, size_t frame_size,
                    ach_create_attr_t *attr )
 {
-    if (ACH_OK == channel_exists_as_shm_device(channel_name))
+    if (ACH_OK == ach_vtab_user.exists(channel_name))
         return ACH_EEXIST;
-    if( ! channel_name_ok( channel_name ) )
-            return ACH_INVALID_NAME;
 
     int fd = ctrl_open();
 
@@ -165,11 +194,11 @@ ach_create_klinux( const char *channel_name,
     if( ACH_OK == ach_stat && ACH_OK == cr ) {
         int retry = 0;
         /* Wait for device to become ready */
-        enum ach_status r = channel_exists_as_kernel_device(channel_name);
+        enum ach_status r = ach_exists_klinux(channel_name);
         /* TODO: is there any point to waiting? */
         while ( (ACH_OK != r) && (retry++ < ACH_INTR_RETRY*10)) {
             usleep(1000);
-            r = channel_exists_as_kernel_device(channel_name);
+            r = ach_exists_klinux(channel_name);
         }
     }
 
@@ -179,13 +208,11 @@ ach_create_klinux( const char *channel_name,
 
 static enum ach_status
 ach_get_klinux( ach_channel_t *chan,
-                void *cx, char **pobj,
-                size_t *frame_size,
+                void * buf, size_t size, size_t *frame_size,
                 const struct timespec *ACH_RESTRICT timeout,
                 int options )
 {
 
-    size_t size = *(size_t*)cx;
     achk_opt_t opts;
     _Bool o_rel = options & ACH_O_RELTIME;
     struct timespec t_end;
@@ -224,7 +251,7 @@ ach_get_klinux( ach_channel_t *chan,
             chan->k_opts = opts;
         }
 
-        ssize_t ret = read(chan->fd, *pobj, size);
+        ssize_t ret = read(chan->fd, buf, size);
 
         if( ret >= 0 ) { /* Success! */
             *frame_size = (size_t)ret;
@@ -289,7 +316,7 @@ ach_cancel_klinux( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 static int fd_for_kernel_device_channel_name(const char *name,int oflag)
 {
     char dev_name[ACH_CHAN_NAME_MAX+16];
-    int r = charfile_for_channel_name(name, dev_name, sizeof(dev_name));
+    int r = ach_filename_klinux(name, dev_name, sizeof(dev_name));
     if (ACH_OK != r) return -ACH_BUG;
 
     int fd;
@@ -324,3 +351,30 @@ ach_open_klinux( ach_channel_t *chan, const char *channel_name,
 
     return ACH_OK;
 }
+
+
+enum ach_status
+ach_close_klinux( ach_channel_t *chan ) {
+    int i;
+    SYSCALL_RETRY( i = close(chan->fd),
+                   i < 0 );
+    if( i < 0 ) {
+        ACH_ERRF("Failed to close() channel fd\n");
+        return check_errno();
+    }
+    return ACH_OK;
+}
+
+const struct ach_channel_vtab
+ach_vtab_klinux = {
+    .create = ach_create_klinux,
+    .open = ach_open_klinux,
+    .flush = ach_flush_klinux,
+    .put = ach_put_klinux,
+    .get = ach_get_klinux,
+    .cancel = ach_cancel_klinux,
+    .close = ach_close_klinux,
+    .unlink = ach_unlink_klinux,
+    .exists = ach_exists_klinux,
+    .filename = ach_filename_klinux
+};

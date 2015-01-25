@@ -50,6 +50,43 @@
  *  \author Neil T. Dantam
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
+#include <time.h>
+#include <stdlib.h>
+#include <errno.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <assert.h>
+#include <string.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <sys/stat.h>
+
+#include <string.h>
+#include <inttypes.h>
+
+#include "ach.h"
+#include "ach/private_posix.h"
+#include "libach_private.h"
+
+
+#include <sys/wait.h>
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+
+
+
+#include "ach/impl_generic.h"
+
+
 /*! \page synchronization Synchronization
  *
  * Synchronization currently uses a simple mutex+condition variable
@@ -197,9 +234,8 @@ static ach_status_t unwrlock( ach_header_t *shm ) {
 
 
 static enum ach_status
-channame_to_full_shm_path(const char* channame, char *buf, size_t n) {
+ach_filename_user(const char* channame, char *buf, size_t n) {
     if (n < ACH_CHAN_NAME_MAX + 32) return ACH_BUG;
-    if (!channel_name_ok(channame) ) return ACH_INVALID_NAME;
 
     strcpy(buf, ACH_SHM_CHAN_NAME_PREFIX_PATH);
     strcat(buf, ACH_SHM_CHAN_NAME_PREFIX_NAME );
@@ -208,10 +244,10 @@ channame_to_full_shm_path(const char* channame, char *buf, size_t n) {
 }
 
 static enum ach_status
-channel_exists_as_shm_device(const char* name)
+ach_exists_user(const char* name)
 {
     char ach_name[ACH_CHAN_NAME_MAX + 32];
-    int r = channame_to_full_shm_path(name, ach_name, sizeof(ach_name));
+    int r = ach_filename_user(name, ach_name, sizeof(ach_name));
     if (ACH_OK != r) return ACH_BUG;
 
     struct stat buf;
@@ -251,7 +287,6 @@ put_fun_posix(void *cx, void *chan_dst, const void *obj)
 static enum ach_status
 shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
-    if( !channel_name_ok(name)   ) return ACH_INVALID_NAME;
     strcpy( buf, ACH_SHM_CHAN_NAME_PREFIX_NAME );
     strncat( buf, name, ACH_CHAN_NAME_MAX );
     return ACH_OK;
@@ -295,8 +330,6 @@ ach_create_posix( const char *channel_name,
         }else {
             int oflag = O_EXCL | O_CREAT;
             /* shm */
-            if( ! channel_name_ok( channel_name ) )
-                return ACH_INVALID_NAME;
             if( attr->truncate ) oflag &= ~O_EXCL;
             if( (fd = fd_for_channel_name( channel_name, oflag )) < 0 ) {
                 return check_errno();;
@@ -446,7 +479,7 @@ ach_create_posix( const char *channel_name,
     return ACH_OK;
 }
 
-enum ach_status
+static enum ach_status
 ach_get_posix( ach_channel_t *chan, void *buf, size_t size,
                size_t *frame_size,
                const struct timespec *ACH_RESTRICT timeout,
@@ -549,8 +582,6 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
         clock = ACH_DEFAULT_CLOCK;
     } else {
         map = ACH_MAP_USER;
-        if( ! channel_name_ok( channel_name ) )
-            return ACH_INVALID_NAME;
 
         /* open shm */
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
@@ -595,7 +626,7 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
 }
 
 static enum ach_status
-ach_unlink_posix( const char *name )
+ach_unlink_user( const char *name )
 {
     char ach_name[ACH_CHAN_NAME_MAX + 16];
     enum ach_status r = shmfile_for_channel_name(name, ach_name, sizeof(ach_name));
@@ -606,3 +637,97 @@ ach_unlink_posix( const char *name )
         return r;
     }
 }
+
+static enum ach_status
+ach_put_posix( ach_channel_t *chan, const void *buf, size_t len )
+{
+    return ach_xput( chan, put_fun_posix, &len, buf, len );
+}
+
+
+static enum ach_status
+ach_flush_posix( ach_channel_t *chan )
+{
+    return ach_flush_impl(chan);
+}
+
+
+static enum ach_status
+ach_close_anon( ach_channel_t *chan )
+{
+    (void) chan;
+    /* TODO: anything here? */
+    return ACH_OK;
+}
+
+
+static enum ach_status
+ach_close_user( ach_channel_t *chan ) {
+
+    enum ach_status r;
+    int i;
+
+    if( ACH_OK != (r = check_guards(chan->shm)) ) return r;
+    if( munmap(chan->shm, chan->len) ) {
+        ACH_ERRF("Failed to munmap channel\n");
+        return check_errno();
+    }
+    chan->shm = NULL;
+
+    SYSCALL_RETRY( i = close(chan->fd),
+                   i < 0 );
+    if( i < 0 ) {
+        ACH_ERRF("Failed to close() channel fd\n");
+        return check_errno();
+    }
+    return ACH_OK;
+}
+
+static enum ach_status
+ach_exists_anon( const char *name )
+{
+    (void) name;
+    return ACH_EINVAL;
+}
+
+static enum ach_status
+ach_filename_anon( const char *name, char *buf, size_t n )
+{
+    (void) name; (void) buf; (void) n;
+    return ACH_EINVAL;
+}
+
+static enum ach_status
+ach_unlink_anon( const char *name )
+{
+    (void) name;
+    return ACH_EINVAL;
+}
+
+const struct ach_channel_vtab
+ach_vtab_user = {
+    .create = ach_create_posix,
+    .open = ach_open_posix,
+    .flush = ach_flush_posix,
+    .put = ach_put_posix,
+    .get = ach_get_posix,
+    .cancel = ach_cancel_posix,
+    .close = ach_close_user,
+    .unlink = ach_unlink_user,
+    .exists = ach_exists_user,
+    .filename = ach_filename_user
+};
+
+const struct ach_channel_vtab
+ach_vtab_anon = {
+    .create = ach_create_posix,
+    .open = ach_open_posix,
+    .flush = ach_flush_posix,
+    .put = ach_put_posix,
+    .get = ach_get_posix,
+    .cancel = ach_cancel_posix,
+    .close = ach_close_anon,
+    .unlink = ach_unlink_anon,
+    .exists = ach_exists_anon,
+    .filename = ach_filename_anon,
+};

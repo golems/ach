@@ -28,7 +28,12 @@ libachutil_la_SOURCES = src/achutil.c include/achutil.h
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example robusttest
 
-libach_la_SOURCES = src/libach.c src/pipe.c src/dns.c src/event.c
+libach_la_SOURCES = \
+	src/libach.c \
+	src/libach_posix.c \
+	src/libach_klinux.c \
+	src/pipe.c src/dns.c \
+	src/event.c
 
 # This is a libtool version -- CURRENT:REVISION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial

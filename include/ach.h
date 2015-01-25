@@ -283,18 +283,18 @@ extern "C" {
     typedef struct ach_channel {
         union {
             struct {
-                struct ach_header *shm;         /**< pointer to mmap'ed block */
-                size_t len;                     /**< length of memory mapping */
-                int fd;                         /**< file descriptor of mmap'ed file */
+                struct ach_header *shm;                /**< pointer to mmap'ed block */
+                size_t len;                            /**< length of memory mapping */
+                int fd;                                /**< file descriptor of mmap'ed file */
                 union {
-                    uint64_t seq_num;           /**< last sequence number read */
-                    achk_opt_t k_opts;          /**< Used by kernel devices */
+                    uint64_t seq_num;                  /**< last sequence number read */
+                    achk_opt_t k_opts;                 /**< Used by kernel devices */
                 };
-                size_t next_index;               /**< next index entry to try get from */
-                enum ach_map map;                /**< attributes used to create this channel */
-                clockid_t clock;                 /**< attributes used to create this channel */
-                volatile sig_atomic_t cancel;    /**< cancel a waiting ach_get */
-                struct ach_channel_vtab *vtable; /**< virtual method table */
+                size_t next_index;                     /**< next index entry to try get from */
+                enum ach_map map;                      /**< attributes used to create this channel */
+                clockid_t clock;                       /**< attributes used to create this channel */
+                volatile sig_atomic_t cancel;          /**< cancel a waiting ach_get */
+                const struct ach_channel_vtab *vtab;   /**< virtual method table */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };

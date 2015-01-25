@@ -2,8 +2,6 @@ TODO list for Ach
 
 * TODO Avoid race in klinux ach_cancel()
 
-* TODO Refactor ach_put() to combine user and klinux definitions
-
 * TODO Don't free backing memory for chardev until all filehandles are closed
 
 # Local Variables:

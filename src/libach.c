@@ -73,7 +73,6 @@
 
 #include "ach.h"
 #include "ach/private_posix.h"
-#include "ach/klinux_generic.h"
 
 #include <sys/wait.h>
 
@@ -81,66 +80,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
-#ifdef NDEBUG
 
-#define IFDEBUG(test, x )
-#define DEBUGF( ... )
-#define DEBUG_PERROR(a)
-
-#else /* enable debugging */
-
-#define IFDEBUG( test, x ) if(test) { (x); }
-#define ACH_ERRF( ... ) fprintf(stderr, __VA_ARGS__ )
-#define DEBUG_PERROR(a) perror(a)
-
-#endif /* NDEBUG */
-
-
-#include "ach/impl_generic.h"
-
-#define SYSCALL_RETRY( expr, test )                     \
-    {                                                   \
-        int ach_intr_cnt = 0;                           \
-        do { (expr); }                                  \
-        while( (test) &&                                \
-               EINTR == errno &&                        \
-               ach_intr_cnt++  < ACH_INTR_RETRY         \
-            );                                          \
-    }
-
-
-static enum ach_status
-channel_exists_as_shm_device(const char* name);
-
-static struct timespec
-ts_mk( time_t s, long ns );
-
-static struct timespec
-ts_add(struct timespec a, struct timespec b);
-
-static struct timespec
-ts_sub(struct timespec a, struct timespec b);
-
-static struct timespec
-abs_time(clockid_t clock, struct timespec delta);
-
-static int
-channel_name_ok( const char *name );
-
-static enum ach_status
-channel_exists_as_kernel_device(const char* name);
-
-static enum ach_status
-channel_exists_as_shm_device(const char* name);
-
-static enum ach_status
-shmfile_for_channel_name( const char *name, char *buf, size_t n );
-
-static enum ach_status
-charfile_for_channel_name( const char *name, char *buf, size_t n );
-
-#include "libach_posix.c"
-#include "libach_klinux.c"
 
 size_t ach_channel_size = sizeof(ach_channel_t);
 size_t ach_attr_size = sizeof(ach_attr_t);
@@ -173,13 +113,14 @@ const char *ach_result_to_string(ach_status_t result) {
 }
 
 /* returns 0 if channel name is bad */
-static int channel_name_ok( const char *name ) {
+static enum ach_status
+channel_name_ok( const char *name ) {
     size_t len;
     /* check size */
     if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
-        return 0;
+        return ACH_INVALID_NAME;
     /* check hidden file */
-    if( name[0] == '.' ) return 0;
+    if( name[0] == '.' ) return ACH_INVALID_NAME;
     /* check bad characters */
     size_t i;
     for( i = 0; i < len; i ++ ) {
@@ -187,53 +128,11 @@ static int channel_name_ok( const char *name ) {
                 || (name[i] == '-' )
                 || (name[i] == '_' )
                 || (name[i] == '.' ) ) )
-            return 0;
+            return ACH_INVALID_NAME;
     }
-    return 1;
+    return ACH_OK;
 }
 
-static struct timespec
-ts_mk( time_t s, long ns )
-{
-    long b = (long)1e9;
-    /* actual modulus, not remaninder ala % */
-    long ns1 = ((ns % b) + b) % b;
-    struct timespec ts = { s + (ns-ns1)/b,
-                           ns1 };
-    return ts;
-}
-
-static struct timespec
-ts_sub(struct timespec t1, struct timespec t0)
-{
-    struct timespec delta = {0,0};
-    /* bound at zero */
-    if (t0.tv_sec > t1.tv_sec)
-        return delta;
-    if (t0.tv_sec == t0.tv_sec &&
-        t0.tv_nsec > t1.tv_nsec)
-        return delta;
-
-    return ts_mk( t1.tv_sec - t0.tv_sec,
-                  t1.tv_nsec - t0.tv_nsec );
-}
-
-static struct timespec
-ts_add(struct timespec a, struct timespec b)
-{
-    return ts_mk( a.tv_sec + b.tv_sec,
-                  a.tv_nsec + b.tv_nsec );
-}
-
-static struct timespec
-abs_time(clockid_t clock, struct timespec delta)
-{
-    // TODO: support alternate clocks
-    struct timespec now;
-
-    clock_gettime( clock, &now );
-    return ts_add( now, delta );
-}
 
 
 ach_create_attr_t default_create_attr =
@@ -254,20 +153,32 @@ ach_create( const char *channel_name,
             size_t frame_cnt, size_t frame_size,
             ach_create_attr_t *attr)
 {
+    const struct ach_channel_vtab *vtab;
+    enum ach_status r;
+
     if( NULL == attr ) attr = &default_create_attr;
     if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
     if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
 
     switch( attr->map ) {
     case ACH_MAP_KERNEL:
-        return ach_create_klinux( channel_name, frame_cnt, frame_size, attr );
+        vtab = &ach_vtab_klinux;
+        goto check_name;
     case ACH_MAP_ANON:
+        vtab = &ach_vtab_anon;
+        goto create;
     case ACH_MAP_USER:
     case ACH_MAP_DEFAULT:
-        return ach_create_posix( channel_name, frame_cnt, frame_size, attr );
+        vtab = &ach_vtab_user;
+        goto check_name;
     default:
         return ACH_EINVAL;
     }
+check_name:
+    r = channel_name_ok( channel_name );
+    if( ACH_OK != r ) return r;
+create:
+    return vtab->create( channel_name, frame_cnt, frame_size, attr );
 }
 
 static ach_attr_t default_ach_attr = {
@@ -278,23 +189,32 @@ enum ach_status
 ach_open( ach_channel_t *chan, const char *channel_name,
           ach_attr_t *attr )
 {
+    enum ach_status r = channel_name_ok( channel_name );
+    if( ACH_OK != r ) return r;
+
     if( NULL == attr ) attr = &default_ach_attr;
     enum ach_map map = attr->map;
 
     if( ACH_MAP_DEFAULT == map ) {
-        map = (ACH_OK == channel_exists_as_kernel_device(channel_name)) ?
+        map = (ACH_OK == ach_vtab_klinux.exists(channel_name)) ?
             ACH_MAP_KERNEL : ACH_MAP_USER;
     }
 
     switch( map ) {
     case ACH_MAP_ANON:
+        chan->vtab = &ach_vtab_anon;
+        break;
     case ACH_MAP_USER:
-        return ach_open_posix( chan, channel_name, attr );
+        chan->vtab = &ach_vtab_user;
+        break;
     case ACH_MAP_KERNEL:
-        return ach_open_klinux( chan, channel_name, attr );
+        chan->vtab = &ach_vtab_klinux;
+        break;
     default:
         return ACH_EINVAL;
     }
+
+    return chan->vtab->open( chan, channel_name, attr );
 }
 
 enum ach_status
@@ -303,77 +223,26 @@ ach_get( ach_channel_t *chan, void *buf, size_t size,
          const struct timespec *ACH_RESTRICT timeout,
          int options )
 {
-    switch( chan->map ) {
-    case ACH_MAP_KERNEL:
-        return ach_get_klinux(chan, &size, (char**)&buf, frame_size, timeout, options);
-    case ACH_MAP_ANON:
-    case ACH_MAP_USER:
-        return ach_get_posix( chan, buf, size, frame_size, timeout, options );
-    default:
-        return ACH_EINVAL;
-    }
+    return chan->vtab->get( chan, buf, size, frame_size, timeout, options );
 }
 
 
 enum ach_status
 ach_flush( ach_channel_t *chan )
 {
-    switch( chan->map ) {
-    case ACH_MAP_KERNEL:
-        return ach_flush_klinux(chan);
-    case ACH_MAP_ANON:
-    case ACH_MAP_USER:
-        return ach_flush_impl(chan);
-    default:
-        return ACH_EINVAL;
-    }
+    return chan->vtab->flush( chan );
 }
 
 enum ach_status
 ach_put( ach_channel_t *chan, const void *buf, size_t len )
 {
-    switch( chan->map ) {
-    case ACH_MAP_KERNEL:
-        return ach_put_klinux( chan, buf, len);
-    case ACH_MAP_ANON:
-    case ACH_MAP_USER:
-        return ach_xput( chan, put_fun_posix, &len, buf, len );
-    default:
-        return ACH_EINVAL;
-    }
+    return chan->vtab->put( chan, buf, len );
 }
 
 enum ach_status
-ach_close( ach_channel_t *chan ) {
-
-    switch( chan->map )  {
-    case ACH_MAP_ANON: return ACH_OK;  /* FIXME: What to do here? */
-    case ACH_MAP_USER:
-    {
-        enum ach_status r;
-        if( ACH_OK != (r = check_guards(chan->shm)) ) return r;
-        if( munmap(chan->shm, chan->len) ) {
-            ACH_ERRF("Failed to munmap channel\n");
-            return check_errno();
-        }
-        chan->shm = NULL;
-    }
-    /* fall through to close file */
-    case ACH_MAP_KERNEL:
-    {   /* close file */
-        int i;
-        SYSCALL_RETRY( i = close(chan->fd),
-                       i < 0 );
-        if( i < 0 ) {
-            ACH_ERRF("Failed to close() channel fd\n");
-            return check_errno();
-        }
-        return ACH_OK;
-    }
-    default:
-        return ACH_EINVAL;
-    }
-    return ACH_OK;
+ach_close( ach_channel_t *chan )
+{
+    return chan->vtab->close(chan);
 }
 
 void ach_dump( ach_header_t *shm ) {
@@ -409,18 +278,24 @@ ach_chmod( ach_channel_t *chan, mode_t mode ) {
 
 enum ach_status
 ach_unlink( const char *name ) {
-    _Bool k_exists = (ACH_OK == channel_exists_as_kernel_device(name));
-    _Bool s_exists = (ACH_OK == channel_exists_as_shm_device(name));
+
+    enum ach_status r;
+
+    r = channel_name_ok( name );
+    if( ACH_OK != r ) return r;
+
+    _Bool k_exists = (ACH_OK == ach_vtab_klinux.exists(name));
+    _Bool s_exists = (ACH_OK == ach_vtab_user.exists(name));
 
     if( ! (k_exists||s_exists) ) return ACH_ENOENT;
 
     if (k_exists) {
-        enum ach_status r = ach_unlink_klinux(name);
+        r = ach_vtab_klinux.unlink(name);
         if( ACH_OK != r ) return r;
     }
 
     if (s_exists) {
-        enum ach_status r = ach_unlink_posix(name);
+        r = ach_vtab_user.unlink(name);
         if( ACH_OK != r ) return r;
     }
 
@@ -438,15 +313,7 @@ static ach_cancel_attr_t default_cancel_attr = {.async_unsafe = 0};
 enum ach_status
 ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr ) {
     if( NULL == attr ) attr = &default_cancel_attr;
-    switch( chan->map ) {
-    case ACH_MAP_KERNEL:
-        return ach_cancel_klinux(chan, attr);
-    case ACH_MAP_USER:
-    case ACH_MAP_ANON:
-        return ach_cancel_posix(chan, attr);
-    default:
-        return ACH_EINVAL;
-    }
+    return chan->vtab->cancel( chan, attr );
 }
 
 #ifdef HAVE_THREADS_H
