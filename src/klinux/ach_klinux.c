@@ -533,14 +533,12 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				ch_file->mode.mode & ACH_O_LAST);
 			KDEBUG1("    ACH_O_COPY=%d\n",
 				ch_file->mode.mode & ACH_O_COPY);
-			goto out;
 			break;
 		}
 
 	case ACH_CH_GET_MODE:{
 			KDEBUG1("Got cmd ACH_CH_GET_MODE: %ld\n", arg);
 			*(struct achk_opt *)arg = ch_file->mode;
-			goto out;
 			break;
 		}
 
@@ -549,7 +547,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			// TODO: Lock shm instead
 			if (mutex_lock_interruptible(&dev->lock)) {
 				ret = -ERESTARTSYS;
-				goto out;
+				break;
 			}
 
 			{
@@ -591,14 +589,12 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ret = -EFAULT;
 				}
 			}
-			break;
+			mutex_unlock(&dev->lock);
 		}
-
 	case ACH_CH_FLUSH:
 		KDEBUG("Got cmd ACH_CH_FLUSH\n");
 		ret = -get_errno( ach_flush(ch_file) );
 		break;
-
 	case ACH_CH_CANCEL:{
 			unsigned int unsafe = (unsigned int)arg;
 			KDEBUG("Got cmd ACH_CH_CANCEL\n");
@@ -618,8 +614,6 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 
-	mutex_unlock(&dev->lock);
- out:
 	return ret;
 }
 
