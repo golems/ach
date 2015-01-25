@@ -403,7 +403,7 @@ static int ach_ch_device_alloc(const char *name)
 	dev = ctrl_data.in_use;
 	while (dev) {
 		if (0 == strcmp(name, dev->name)) {
-			return -EADDRINUSE;
+			return -EEXIST;
 		}
 		dev = dev->next;
 	}
