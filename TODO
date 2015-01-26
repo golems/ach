@@ -2,6 +2,12 @@ TODO list for Ach
 
 * TODO Return ACH_MISSED_FRAME from kernel-space
 
+* TODO Test for resource leaks
+  - See kmemleak
+  - open/close seem fine
+  - init (upstart) memory consumption grows with repeated device
+    creation and unlinking.  Probably an upstart bug.
+
 # Local Variables:
 # mode: org
 # End:

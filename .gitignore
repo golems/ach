@@ -128,3 +128,4 @@ modules.order
 /debian/ach-dkms.prerm
 /klinuxtest
 /clocktest
+/holedigger
