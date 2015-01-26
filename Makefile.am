@@ -39,7 +39,7 @@ libach_la_SOURCES = \
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
 # Does not correspond to the package version
 # The cmake versioning needs to be updated when this line changes
-libach_la_LDFLAGS = -version-info 3:1:2
+libach_la_LDFLAGS = -version-info 4:0:0
 
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la libachutil.la
