@@ -275,27 +275,33 @@ ach_chmod( ach_channel_t *chan, mode_t mode ) {
 enum ach_status
 ach_unlink( const char *name ) {
 
-    enum ach_status r;
+    enum ach_status r_name, r_s, r_k;
 
-    r = channel_name_ok( name );
-    if( ACH_OK != r ) return r;
+    r_name = channel_name_ok( name );
+    if( ACH_OK != r_name ) return r_name;
 
-    _Bool k_exists = (ACH_OK == libach_vtab_klinux.exists(name));
-    _Bool s_exists = (ACH_OK == libach_vtab_user.exists(name));
+    r_s = libach_vtab_user.unlink(name);
+    r_k = libach_vtab_klinux.unlink(name);
 
-    if( ! (k_exists||s_exists) ) return ACH_ENOENT;
-
-    if (k_exists) {
-        r = libach_vtab_klinux.unlink(name);
-        if( ACH_OK != r ) return r;
+    switch(r_s) {
+    case ACH_OK:
+        break;
+    case ACH_ENOENT:
+        return r_k;
+    default: /* something went wrong */
+        return r_s;
     }
 
-    if (s_exists) {
-        r = libach_vtab_user.unlink(name);
-        if( ACH_OK != r ) return r;
-    }
+    /* r_s equals ACH_OK */
 
-    return ACH_OK;
+    switch(r_k) {
+    case ACH_OK:     /* We removed a kernel channel too, */
+    case ACH_ENOENT: /* or it wasn't there, */
+    case ACH_EACCES: /* or we didnt have permission to touch it */
+        return r_s;
+    default:         /* something went wrong with the kernel channel */
+        return r_k;
+    }
 }
 
 

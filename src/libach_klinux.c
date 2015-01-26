@@ -137,7 +137,7 @@ libach_unlink_klinux(const char* channel_name)
     int fd = ctrl_open();
 
     if (fd < 0) {
-        ACH_ERRF ("Failed opening kernel device controller\n");
+        /* ACH_ERRF ("Failed opening kernel device controller\n"); */
         return check_errno();;
     }
 
@@ -150,7 +150,7 @@ libach_unlink_klinux(const char* channel_name)
     enum ach_status ach_ret;
     if (ioctl_ret < 0) {
         ach_ret = check_errno();
-        ACH_ERRF("Failed removing device %s\n", channel_name);
+        /* ACH_ERRF("Failed removing device %s\n", channel_name); */
     } else {
         ach_ret = ACH_OK;
     }

@@ -297,11 +297,11 @@ shmfile_for_channel_name( const char *name, char *buf, size_t n ) {
     \pre name is a valid channel name
 */
 static int fd_for_channel_name( const char *name, int oflag ) {
-    char shm_name[ACH_CHAN_NAME_MAX + 16];
-    int r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
-    if( 0 != r ) return ACH_BUG;
-
     int fd;
+    char shm_name[ACH_CHAN_NAME_MAX + 16];
+    enum ach_status r = shmfile_for_channel_name( name, shm_name, sizeof(shm_name) );
+    if( ACH_OK != r ) return r;
+
     SYSCALL_RETRY( fd = shm_open( shm_name, O_RDWR | oflag, 0666 ),
                    fd < 0 )
     return fd;
