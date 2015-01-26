@@ -194,9 +194,20 @@ static int testsig(void)
     return 0;
 }
 
+static int testfault(void)
+{
+    if( ACH_OK == ach_create( NULL, opt_msg_cnt, opt_msg_size, NULL ) ) {
+        fprintf(stderr, "Error on ach_create with null channel\n");
+        exit(EXIT_FAILURE);
+    }
+    return 0;
+}
+
 int main( int argc, char **argv ){
     (void) argc; (void) argv;
 
     testsig();
+
+    testfault();
     return 0;
 }

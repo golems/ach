@@ -499,26 +499,34 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	switch (cmd) {
 
 	case ACH_CH_SET_MODE: {
-		/* TODO: this is not threadsafe */
-			ch_file->mode = *(struct achk_opt *)arg;
-			if (ch_file->mode.reltime.tv_sec != 0
-			    || ch_file->mode.reltime.tv_nsec != 0)
-				KDEBUG("ach: Setting wait time to %ld.%09ld\n",
-				       ch_file->mode.reltime.tv_sec,
-				       ch_file->mode.reltime.tv_nsec);
-			KDEBUG("ach: Got cmd ACH_CH_SET_MODE: \n");
+		struct achk_opt opt;
+		if (copy_from_user(&opt, (void*)arg, sizeof(opt)) ) {
+			ret = -EFAULT;
+		} else {
+			/* This is not threadsafe */
+			ch_file->mode = opt;
+			/* if (ch_file->mode.reltime.tv_sec != 0 */
+			/*     || ch_file->mode.reltime.tv_nsec != 0) */
+			/*	KDEBUG("ach: Setting wait time to %ld.%09ld\n", */
+			/*	       ch_file->mode.reltime.tv_sec, */
+			/*	       ch_file->mode.reltime.tv_nsec); */
+			/* KDEBUG("ach: Got cmd ACH_CH_SET_MODE: \n"); */
 			/* KDEBUG1("    ACH_O_WAIT=%d\n", */
 			/*	ch_file->mode.mode & ACH_O_WAIT); */
 			/* KDEBUG1("    ACH_O_LAST=%d\n", */
 			/*	ch_file->mode.mode & ACH_O_LAST); */
 			/* KDEBUG1("    ACH_O_COPY=%d\n", */
 			/*	ch_file->mode.mode & ACH_O_COPY); */
+			ret = 0;
 			break;
 		}
-
+	}
 	case ACH_CH_GET_MODE:{
 			KDEBUG("ach: Got cmd ACH_CH_GET_MODE: %ld\n", arg);
-			*(struct achk_opt *)arg = ch_file->mode;
+			if( copy_to_user((void*)arg, &ch_file->mode, sizeof(ch_file->mode)) )
+				ret = -EFAULT;
+			else
+				ret = 0;
 			break;
 		}
 
@@ -580,11 +588,14 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ret = -get_errno(ach_cancel(ch_file, unsafe));
 			break;
 		}
-	case ACH_CH_GET_OPTIONS:
-	{
-		struct ach_ch_options *opt = (struct ach_ch_options *) arg;
-		opt->mode = ch_file->mode;
-		opt->clock = ch_file->shm->clock;
+	case ACH_CH_GET_OPTIONS: {
+		struct ach_ch_options retval;
+		retval.mode = ch_file->mode;
+		retval.clock = ch_file->shm->clock;
+		if( copy_to_user( (void*)arg, &retval, sizeof(retval) ) )
+			ret = -EFAULT;
+		else
+			ret = 0;
 		break;
 	}
 	default:
@@ -743,37 +754,46 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	switch (cmd) {
 
 	case ACH_CTRL_CREATE_CH: {
+		struct ach_ctrl_create_ch create_arg;
 		KDEBUG("ach: Control command create\n");
-		ret = ctrl_create( (struct ach_ctrl_create_ch *)arg );
+		if (copy_from_user(&create_arg, (void*)arg, sizeof(create_arg)) ) {
+			ret = -EFAULT;
+		} else if ( strnlen(create_arg.name,ACH_CHAN_NAME_MAX)
+			    >= ACH_CHAN_NAME_MAX ) {
+			ret = -ENAMETOOLONG;
+		} else {
+			ret = ctrl_create( &create_arg );
+		}
 		break;
 	}
-
 	case ACH_CTRL_UNLINK_CH:{
-			struct ach_ctrl_unlink_ch *unlink_arg =
-				(struct ach_ctrl_unlink_ch *)arg;
-
-			KDEBUG("ach: Control command unlink\n");
-			{
-				/* Find the device */
-				struct ach_ch_device *dev;
-				dev = ach_ch_device_find(unlink_arg->name);
-				if (!dev) {
-					ret = -ENOENT;
-					goto out_unlock;
-				}
-				/* Free the device.  The channel
-				 * backing memory is ref-counted, and
-				 * won't be freed until all files are
-				 * closed.*/
-				if (ach_ch_device_free(dev)) {
-					ret = -ERESTARTSYS;
-					goto out_unlock;
-				}
-				printk( KERN_INFO "ach: unlinked channel %s\n", unlink_arg->name );
+		struct ach_ctrl_unlink_ch unlink_arg;
+		KDEBUG("ach: Control command unlink\n");
+		if (copy_from_user(&unlink_arg, (void*)arg, sizeof(unlink_arg)) ) {
+			ret = -EFAULT;
+		} else if ( strnlen(unlink_arg.name,ACH_CHAN_NAME_MAX)
+			    >= ACH_CHAN_NAME_MAX ) {
+			ret = -ENAMETOOLONG;
+		} else {
+			/* Find the device */
+			struct ach_ch_device *dev;
+			dev = ach_ch_device_find(unlink_arg.name);
+			if (!dev) {
+				ret = -ENOENT;
+				goto out_unlock;
 			}
-			break;
+			/* Free the device.  The channel
+			 * backing memory is ref-counted, and
+			 * won't be freed until all files are
+			 * closed.*/
+			if (ach_ch_device_free(dev)) {
+				ret = -ERESTARTSYS;
+				goto out_unlock;
+			}
+			printk( KERN_INFO "ach: unlinked channel %s\n", unlink_arg.name );
 		}
-
+		break;
+	}
 	default:
 		printk(KERN_ERR "ach: Unknown ioctl option: %d\n", cmd);
 		ret = -ENOSYS;

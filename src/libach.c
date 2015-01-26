@@ -156,6 +156,7 @@ ach_create( const char *channel_name,
     const struct ach_channel_vtab *vtab;
     enum ach_status r;
 
+    if( NULL == channel_name ) return ACH_EINVAL;
     if( NULL == attr ) attr = &default_create_attr;
     if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
     if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
