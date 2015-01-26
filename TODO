@@ -1,8 +1,6 @@
 TODO list for Ach
 
-* TODO Avoid race in klinux ach_cancel()
-
-* TODO Don't free backing memory for chardev until all filehandles are closed
+* TODO Return ACH_MISSED_FRAME from kernel-space
 
 # Local Variables:
 # mode: org

@@ -63,7 +63,6 @@
 struct ach_ch_device {
 	struct ach_ch_device *next;
 	int minor;
-	struct mutex lock;	/* Protects open_files */
 	struct cdev cdev;
 	struct device *device;
 	struct ach_header *ach_data;	/* Has own lock to protect data */
@@ -77,10 +76,7 @@ ach_ch_device_name ( struct ach_ch_device *ch_dev )
 
 /* The struct controlling the individual channel device file handles */
 struct ach_ch_file {
-	struct ach_ch_device *dev;
-	struct ach_header *shm;	/* equals dev->ach_data - so not really necessary
-				 * but we'll access ach_header using this pointer
-				 */
+	struct ach_header *shm;
 	struct achk_opt mode;
 
 	// Stuff from userspace ach.h: ach_channel_t

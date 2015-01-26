@@ -101,9 +101,7 @@ extern "C" {
 typedef struct ach_header {
     uint32_t magic;          /**< magic number of ach shm files */
     size_t len;              /**< length of mmap'ed file */
-#ifdef ACH_POSIX
     char name[1+ACH_CHAN_NAME_MAX]; /**< Name of this channel */
-#endif
     union {
         struct {
             size_t index_cnt;        /**< number of entries in index */
@@ -130,6 +128,10 @@ typedef struct ach_header {
 #endif
         int dirty;
     } sync;                   /**< variables for synchronization */
+#ifdef ACH_KLINUX
+    struct kref refcount;
+    struct mutex ref_mutex;
+#endif
     /* should force our alignment to 8-bytes... */
     uint64_t last_seq;        /**< last sequence number written */
 } ach_header_t;

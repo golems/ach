@@ -234,7 +234,7 @@ int main( int argc, char **argv ) {
     memset( &pub, 0, sizeof(pub));
     memset( &sub, 0, sizeof(sub));
     {
-        int r;
+        enum ach_status r;
         ach_attr_t attr;
         ach_attr_init( &attr );
         /*attr.map_anon = opt_pub && opt_sub;*/
@@ -243,8 +243,10 @@ int main( int argc, char **argv ) {
             if( ACH_OK != r ) abort();
         } else if( opt_sub && !opt_pub ) {
             r = ach_open( &sub, opt_chan_name, &attr );
-            assert( 0 == r );
-            if( ACH_OK != r ) abort();
+            if( ACH_OK != r ) {
+                fprintf(stderr, "Could not sub channel: %s\n", ach_result_to_string(r) );
+                abort();
+            }
         }else if (opt_pub && opt_sub ) {
             ach_create_attr_t cattr;
             ach_create_attr_init( &cattr );

@@ -447,10 +447,8 @@ ach_create_posix( const char *channel_name,
             }
         }
     }
-    /* initialize name */
-    strncpy( shm->name, channel_name, ACH_CHAN_NAME_MAX );
     /* initialize counts */
-    ach_create_counts( shm, frame_cnt, frame_size );
+    ach_create_counts( shm, channel_name, frame_cnt, frame_size );
     assert( sizeof( ach_header_t ) +
             shm->index_free * sizeof( ach_index_t ) +
             shm->data_free + 3*sizeof(uint64_t) ==  len );

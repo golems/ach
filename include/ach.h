@@ -353,6 +353,10 @@ extern "C" {
      *  The seq_num field of chan will be set to the latest sequence
      *  number (that of the gotten frame).
      *
+     *  \bug Linux kernel channels will return ACH_OK when they should
+     *  return ACH_MISSED_FRAME.  The data is still retrieved, but
+     *  library clients are not notified of the skipped messages.
+     *
      *  \param[in,out] chan The previously opened channel handle
      *
      *  \param[out] buf Buffer to store data

@@ -132,8 +132,9 @@ static size_t ach_create_len( size_t frame_cnt, size_t frame_size )
         frame_cnt * frame_size + 3 * sizeof(uint64_t);
 }
 
-static void ach_create_counts( ach_header_t *shm, size_t frame_cnt, size_t frame_size )
+static void ach_create_counts( ach_header_t *shm, const char *name, size_t frame_cnt, size_t frame_size )
 {
+
     /* initialize counts */
     shm->index_cnt = frame_cnt;
     shm->index_head = 0;
@@ -142,10 +143,15 @@ static void ach_create_counts( ach_header_t *shm, size_t frame_cnt, size_t frame
     shm->data_free = frame_cnt * frame_size;
     shm->data_size = frame_cnt * frame_size;
 
+    /* magic numbers */
     *ACH_SHM_GUARD_HEADER(shm) = ACH_SHM_GUARD_HEADER_NUM;
     *ACH_SHM_GUARD_INDEX(shm) = ACH_SHM_GUARD_INDEX_NUM;
     *ACH_SHM_GUARD_DATA(shm) = ACH_SHM_GUARD_DATA_NUM;
     shm->magic = ACH_SHM_MAGIC_NUM;
+
+    /* copy name */
+    strncpy( shm->name, name, ACH_CHAN_NAME_MAX );
+    shm->name[ACH_CHAN_NAME_MAX] = '\0';
 }
 
 /** Copies frame pointed to by index entry at index_offset.

@@ -23,7 +23,7 @@
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
  *
- *   * Neither the name of Rice University nor the names of its
+ *   * Neither the name of the copyright holder nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -83,13 +83,10 @@ MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 //#define KDEBUG_ENABLED
 
 #ifdef KDEBUG_ENABLED
-#define KDEBUG(xx) {printk (KERN_INFO xx); }
-#define KDEBUG1(xx, arg1) {printk(KERN_INFO xx, (arg1));}
-#define KDEBUG2(xx, arg1,arg2) {printk(KERN_INFO xx, (arg1), (arg2));}
+
+#define KDEBUG(...) {printk (KERN_INFO __VA_ARGS__); }
 #else
-#define KDEBUG(xx)
-#define KDEBUG1(xx, arg1)
-#define KDEBUG2(xx, arg1,arg2)
+#define KDEBUG(...)
 #endif
 
 
@@ -105,9 +102,6 @@ struct ach_ctrl_device {
 	int major;		/* Major number assigned to ach channel devices */
 	struct class *ach_ch_class;
 };
-
-static int ach_ch_setup_cdev(struct ach_ch_device *dev, const char *name);
-static int ach_ch_remove_cdev(struct ach_ch_device *dev);
 
 /* The static entry to all objects used by the module */
 static struct ach_ctrl_device ctrl_data;
@@ -177,7 +171,15 @@ static enum ach_status unwrlock(struct ach_header *shm)
 	return ACH_OK;
 }
 
-static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size, clockid_t clock)
+static void
+ach_shm_release ( struct kref *ref )
+{
+	struct ach_header *shm = container_of( ref, struct ach_header, refcount );
+	printk( KERN_INFO "ach: released channel %s\n", shm->name );
+	kfree( shm );
+}
+
+static struct ach_header *ach_create(const char *name, size_t frame_cnt, size_t frame_size, clockid_t clock)
 {
 	struct ach_header *shm;
 	int len = ach_create_len(frame_cnt, frame_size);
@@ -188,7 +190,7 @@ static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size, clocki
 
 	shm = (struct ach_header *)kzalloc(len, GFP_KERNEL);
 	if (unlikely(!shm)) {
-		printk(KERN_ERR "Unable to allocate buffer memory\n");
+		printk(KERN_ERR "ach: Unable to allocate buffer memory\n");
 		return NULL;
 	}
 
@@ -198,10 +200,14 @@ static struct ach_header *ach_create(size_t frame_cnt, size_t frame_size, clocki
 	mutex_init(&shm->sync.mutex);
 	init_waitqueue_head(&shm->sync.readq);
 
+	/* set up refcounting  */
+	kref_init(&shm->refcount);
+	mutex_init(&shm->ref_mutex);
+
 	shm->clock = clock;
 
 	/* initialize counts */
-	ach_create_counts( shm, frame_cnt, frame_size );
+	ach_create_counts( shm, name, frame_cnt, frame_size );
 
 	return shm;
 }
@@ -270,11 +276,11 @@ struct ach_ch_file *ach_ch_file_alloc(struct ach_ch_device *device)
 
 	ch_file = kzalloc(sizeof(struct ach_ch_file), GFP_KERNEL);
 	if (unlikely(!ch_file)) {
-		printk(KERN_ERR "Failed alloc'ing\n");
+		printk(KERN_ERR "ach: Failed alloc'ing\n");
 		return NULL;
 	}
 
-	ch_file->dev = device;
+	kref_get(&device->ach_data->refcount);
 	ch_file->shm = device->ach_data;
 	ch_file->mode.options = ACH_O_WAIT;	/* Default mode */
 	ch_file->mode.reltime.tv_sec = 0;
@@ -283,12 +289,6 @@ struct ach_ch_file *ach_ch_file_alloc(struct ach_ch_device *device)
 	ch_file->next_index = ch_file->shm->index_head;
 
 	return ch_file;
-}
-
-/* Expects device to be locked */
-void ach_ch_file_free(struct ach_ch_file *ch_file)
-{
-	kfree(ch_file);
 }
 
 /**********************************************************************************
@@ -309,15 +309,15 @@ static struct ach_ch_device *ach_ch_devices_alloc(void)
 
 	devs = kzalloc(sizeof(struct ach_ch_device) * max_devices, GFP_KERNEL);
 	if (unlikely(!devs)) {
-		printk(KERN_ERR "Failed alloc'ing device memory\n");
+		printk(KERN_ERR "ach: Failed alloc'ing device memory\n");
 		goto out;
 	}
 
 	for (i = 0; i < max_devices; i++) {
 		struct ach_ch_device *device = &devs[i];
-		mutex_init(&device->lock);
 		device->minor = i;
 		device->next = device + 1;	/* Form list of free devices */
+		device->ach_data = NULL;
 	}
 	devs[max_devices - 1].next = NULL;	/* Terminate free list */
 
@@ -325,31 +325,6 @@ static struct ach_ch_device *ach_ch_devices_alloc(void)
 
  out:
 	return NULL;
-}
-
-static int ach_ch_device_init(struct ach_ch_device *dev,
-			      struct ach_ctrl_create_ch *arg )
-{
-	int ret = 0;
-
-	dev->ach_data = ach_create(arg->frame_cnt, arg->frame_size, arg->clock);
-	if (unlikely(!dev->ach_data)) {
-		printk(KERN_ERR "Unable to allocate buffer memory\n");
-		return -ENOBUFS;
-	}
-
-	ret = ach_ch_setup_cdev(dev, arg->name);
-	if (ret < 0) {
-		printk(KERN_INFO "Failed creating char device\n");
-		goto out_err;
-	}
-
-	return 0;
-
- out_err:
-	kfree(dev->ach_data);
-
-	return ret;
 }
 
 static struct ach_ch_device *ach_ch_device_find(const char *channel_name)
@@ -372,6 +347,14 @@ static int ach_ch_device_free(struct ach_ch_device *dev)
 {
 	struct ach_ch_device *prev = ctrl_data.in_use;
 
+	/* destroy devices */
+	if( dev->device && dev->minor >= 0 ) {
+		device_destroy(ctrl_data.ach_ch_class,
+			       MKDEV(ctrl_data.major, dev->minor));
+		cdev_del(&dev->cdev);
+	}
+	dev->device = NULL;
+
 	/* Remove from in_use list */
 	if (prev == dev) {
 		ctrl_data.in_use = dev->next;
@@ -385,6 +368,12 @@ static int ach_ch_device_free(struct ach_ch_device *dev)
 		prev->next = dev->next;
 	}
 	ctrl_data.in_use_cnt--;
+
+	/* dec refcount */
+	if( dev->ach_data ) {
+		kref_put( &dev->ach_data->refcount, ach_shm_release );
+		dev->ach_data = NULL;
+	}
 
 	/* Insert in to free list */
 	dev->next = ctrl_data.free;
@@ -419,7 +408,7 @@ static int ach_ch_device_alloc(const char *channel_name)
 	ctrl_data.in_use = dev;
 	ctrl_data.in_use_cnt++;
 
-	KDEBUG2("Alocated device %d for channel %s\n", dev->minor, dev->name);
+	//KDEBUG2("Alocated device %d for channel %s\n", dev->minor, dev->name);
 	return 0;
 }
 
@@ -431,8 +420,6 @@ static int ach_ch_devices_free_all(void)
 	while (device) {
 		struct ach_ch_device *next = device->next;
 		ach_ch_device_free(device);
-		ach_ch_remove_cdev(device);
-
 		device = next;
 	}
 
@@ -447,68 +434,68 @@ static int ach_ch_devices_free_all(void)
 static int ach_ch_close(struct inode *inode, struct file *file)
 {
 	struct ach_ch_file *ch_file;
-	struct ach_ch_device *device;
-
 	int ret = 0;
 
-	KDEBUG1("In ach_ch_close (inode %d)\n", iminor(inode));
+	KDEBUG("ach: in ach_ch_close (inode %d)\n", iminor(inode));
 
-	ch_file = (struct ach_ch_file *)file->private_data;
-	device = ch_file->dev;
-
-	if (mutex_lock_interruptible(&device->lock)) {
+	/* Synchronize to protect refcounting */
+	if (mutex_lock_interruptible(&ctrl_data.lock)) {
 		ret = -ERESTARTSYS;
 		goto out;
 	}
 
-	ach_ch_file_free(ch_file);
+	ch_file = (struct ach_ch_file *)file->private_data;
+	kref_put( &ch_file->shm->refcount, ach_shm_release );
+	kfree(ch_file);
 
-	mutex_unlock(&device->lock);
+	mutex_unlock(&ctrl_data.lock);
 
- out:
+  out:
 	return ret;
 }
 
 static int ach_ch_open(struct inode *inode, struct file *file)
 {
-	struct ach_ch_device *device;
 	int ret = 0;
+	struct ach_ch_device *device;
 
-	device = &ctrl_data.devices[iminor(inode)];
-	if (unlikely(device->minor != iminor(inode))) {
-		printk(KERN_ERR "Internal data problem\n");
-		return -ERESTARTSYS;
-	}
-
-	if (mutex_lock_interruptible(&device->lock)) {
+	/* Synchronize to protect refcounting */
+	if (mutex_lock_interruptible(&ctrl_data.lock)) {
 		ret = -ERESTARTSYS;
 		goto out;
+	}
+
+	device = &ctrl_data.devices[iminor(inode)];
+
+	if (unlikely(device->minor != iminor(inode))) {
+		printk(KERN_ERR "ach: Internal data problem\n");
+		ret = -ERESTARTSYS;
+		goto out_unlock;
 	}
 
 	file->private_data = ach_ch_file_alloc(device);
 
 	if (!file->private_data) {
-		printk(KERN_INFO "Failed allocating file data\n");
+		printk(KERN_ERR "ach: Failed allocating file data\n");
 		ret = -ENOBUFS;
 		goto out_unlock;
 	}
 
+	KDEBUG( "ach: opened device %s\n", ach_ch_device_name(device) );
+
  out_unlock:
-	mutex_unlock(&device->lock);
-
-
-	printk( KERN_INFO "opened device %s\n", ach_ch_device_name(device) );
+	mutex_unlock(&ctrl_data.lock);
  out:
 	return ret;
 }
 
 static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
+	/* TODO: Validate argument */
 	int ret = 0;
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
-	struct ach_ch_device *dev = ch_file->dev;
 
-	KDEBUG("In ach_ch_ioctl\n");
+	KDEBUG("ach: In ach_ch_ioctl\n");
 	switch (cmd) {
 
 	case ACH_CH_SET_MODE: {
@@ -516,29 +503,28 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 			ch_file->mode = *(struct achk_opt *)arg;
 			if (ch_file->mode.reltime.tv_sec != 0
 			    || ch_file->mode.reltime.tv_nsec != 0)
-				KDEBUG2("Setting wait time to %ld.%09ld\n",
-					ch_file->mode.reltime.tv_sec,
-					ch_file->mode.reltime.tv_nsec);
-			KDEBUG("Got cmd ACH_CH_SET_MODE: \n");
-			KDEBUG1("    ACH_O_WAIT=%d\n",
-				ch_file->mode.mode & ACH_O_WAIT);
-			KDEBUG1("    ACH_O_LAST=%d\n",
-				ch_file->mode.mode & ACH_O_LAST);
-			KDEBUG1("    ACH_O_COPY=%d\n",
-				ch_file->mode.mode & ACH_O_COPY);
+				KDEBUG("ach: Setting wait time to %ld.%09ld\n",
+				       ch_file->mode.reltime.tv_sec,
+				       ch_file->mode.reltime.tv_nsec);
+			KDEBUG("ach: Got cmd ACH_CH_SET_MODE: \n");
+			/* KDEBUG1("    ACH_O_WAIT=%d\n", */
+			/*	ch_file->mode.mode & ACH_O_WAIT); */
+			/* KDEBUG1("    ACH_O_LAST=%d\n", */
+			/*	ch_file->mode.mode & ACH_O_LAST); */
+			/* KDEBUG1("    ACH_O_COPY=%d\n", */
+			/*	ch_file->mode.mode & ACH_O_COPY); */
 			break;
 		}
 
 	case ACH_CH_GET_MODE:{
-			KDEBUG1("Got cmd ACH_CH_GET_MODE: %ld\n", arg);
+			KDEBUG("ach: Got cmd ACH_CH_GET_MODE: %ld\n", arg);
 			*(struct achk_opt *)arg = ch_file->mode;
 			break;
 		}
 
 	case ACH_CH_GET_STATUS:{
-			KDEBUG("Got cmd ACH_CH_GET_STATUS\n");
-			// TODO: Lock shm instead
-			if (mutex_lock_interruptible(&dev->lock)) {
+			KDEBUG("ach: Got cmd ACH_CH_GET_STATUS\n");
+			if (mutex_lock_interruptible(&ch_file->shm->sync.mutex)) {
 				ret = -ERESTARTSYS;
 				break;
 			}
@@ -564,33 +550,33 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 				stat.last_seq = shm->last_seq;
 				stat.last_seq_read = ch_file->seq_num;
-				printk(KERN_INFO "Status:\n");
-				printk(KERN_INFO "           mode : %02x\n",
+				printk(KERN_INFO "ach: Status:\n");
+				printk(KERN_INFO "ach:            mode : %02x\n",
 				       stat.mode);
-				printk(KERN_INFO "           size : %zu\n",
+				printk(KERN_INFO "ach:            size : %zu\n",
 				       stat.size);
-				printk(KERN_INFO "           count: %zu\n",
+				printk(KERN_INFO "ach:            count: %zu\n",
 				       stat.count);
-				printk(KERN_INFO "           new  : %zu\n",
+				printk(KERN_INFO "ach:            new  : %zu\n",
 				       stat.new_msgs);
-				printk(KERN_INFO "  last_seq      : %lu\n",
+				printk(KERN_INFO "ach:   last_seq      : %lu\n",
 				       stat.last_seq);
-				printk(KERN_INFO "  last_seq_read : %lu\n",
+				printk(KERN_INFO "ach:   last_seq_read : %lu\n",
 				       stat.last_seq_read);
 
 				if (copy_to_user((void *)arg, &stat, sizeof(stat))) {
 					ret = -EFAULT;
 				}
 			}
-			mutex_unlock(&dev->lock);
+			mutex_unlock(&ch_file->shm->sync.mutex);
 		}
 	case ACH_CH_FLUSH:
-		KDEBUG("Got cmd ACH_CH_FLUSH\n");
+		KDEBUG("ach: Got cmd ACH_CH_FLUSH\n");
 		ret = -get_errno( ach_flush(ch_file) );
 		break;
 	case ACH_CH_CANCEL:{
 			unsigned int unsafe = (unsigned int)arg;
-			KDEBUG("Got cmd ACH_CH_CANCEL\n");
+			KDEBUG("ach: Got cmd ACH_CH_CANCEL\n");
 			ret = -get_errno(ach_cancel(ch_file, unsafe));
 			break;
 		}
@@ -602,7 +588,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 	default:
-		printk(KERN_INFO "Unknown ioctl option: %d\n", cmd);
+		printk(KERN_ERR "ach: Unknown ioctl option: %d\n", cmd);
 		ret = -ENOSYS;
 		break;
 	}
@@ -616,12 +602,12 @@ static ssize_t ach_ch_write(struct file *file, const char *buffer, size_t len,
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 	enum ach_status r;
 
-	KDEBUG1("In ach_ch_write (minor=%d)\n", ch_file->dev->minor);
+	/* KDEBUG1("In ach_ch_write (minor=%d)\n", ch_file->dev->minor); */
 
 	if ( ACH_OK != (r = ach_put(ch_file, buffer, len)) )
-		return -get_errno(r)
+		return -get_errno(r);
 
-	KDEBUG2("wrote@%d %d bytes\n", ch_file->dev->minor, len);
+	/* KDEBUG2("wrote@%d %d bytes\n", ch_file->dev->minor, len); */
 	return len;
 }
 
@@ -632,7 +618,7 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 	ssize_t retlen = -1;
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 
-	KDEBUG1("In ach_ch_read (minor=%d)\n", ch_file->dev->minor);
+	/* KDEBUG1("In ach_ch_read (minor=%d)\n", ch_file->dev->minor); */
 
 	stat = ach_get(ch_file, buffer, len, &retlen);
 	switch (stat) {
@@ -646,7 +632,7 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 		return -get_errno(stat);
 	}
 
-	KDEBUG2("read@%d %d bytes\n", ch_file->dev->minor, retlen);
+	/* KDEBUG2("read@%d %d bytes\n", ch_file->dev->minor, retlen); */
 	return retlen;
 }
 
@@ -656,7 +642,7 @@ static unsigned int ach_ch_poll(struct file *file, poll_table * wait)
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 	struct ach_header *shm = ch_file->shm;
 
-	KDEBUG1("In ach_ch_poll (minor=%d)\n", ch_file->dev->minor);
+	/* KDEBUG1("In ach_ch_poll (minor=%d)\n", ch_file->dev->minor); */
 
 	poll_wait(file, &shm->sync.readq, wait);
 	mask = POLLOUT | POLLWRNORM;
@@ -680,7 +666,7 @@ static const struct file_operations ach_ch_fops = {
 	.poll = ach_ch_poll,
 };
 
-static int ach_ch_setup_cdev(struct ach_ch_device *dev, const char *channel_name)
+static int ach_ch_device_setup(struct ach_ch_device *dev, const char *channel_name)
 {
 	int ret = 0;
 
@@ -700,36 +686,54 @@ static int ach_ch_setup_cdev(struct ach_ch_device *dev, const char *channel_name
 				    NULL, ACH_CHAR_CHAN_NAME_PREFIX_NAME "%s",
 				    channel_name);
 	if (IS_ERR(dev->device)) {
-		printk(KERN_ERR "device_create failed\n");
+		printk(KERN_ERR "ach: device_create failed\n");
 		return PTR_ERR(dev->device);
 	}
 
-	printk( KERN_INFO "created device %s\n", ach_ch_device_name(dev) );
 
 	return ret;
-}
-
-static int ach_ch_remove_cdev(struct ach_ch_device *dev)
-{
-	device_destroy(ctrl_data.ach_ch_class,
-		       MKDEV(ctrl_data.major, dev->minor));
-	cdev_del(&dev->cdev);
-
-	return 0;
-}
-
-static void
-ach_ch_dev_release( struct device *device )
-{
-	printk(KERN_INFO "Called dev release\n");
 }
 
 /**********************************************************************************
  * ach control device driver
  **********************************************************************************/
+static int
+ctrl_create (struct ach_ctrl_create_ch *arg )
+{
+	int ret;
+	struct ach_ch_device *dev;
+
+	ret = ach_ch_device_alloc(arg->name);
+	if( unlikely(ret < 0) )
+		return ret;
+	// newest is first in queue
+	dev = ctrl_data.in_use;
+
+	dev->ach_data = ach_create(arg->name, arg->frame_cnt, arg->frame_size, arg->clock);
+
+	if (unlikely(NULL == dev->ach_data)) {
+		printk(KERN_ERR "ach: Unable to allocate buffer memory\n");
+		return -ENOBUFS;
+	}
+
+	ret = ach_ch_device_setup(dev, arg->name);
+	if( unlikely(ret < 0) ) {
+		printk(KERN_ERR "ach: Failed creating char device\n");
+		kfree(dev->ach_data);
+		return ret;
+	}
+
+	printk( KERN_INFO "ach: created device %s\n", ach_ch_device_name(dev) );
+
+	return ret;
+}
+
+
+
 static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 			   unsigned long arg)
 {
+	/* TODO: Validate argument */
 	int ret = 0;
 
 	if (mutex_lock_interruptible(&ctrl_data.lock)) {
@@ -739,56 +743,39 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	switch (cmd) {
 
 	case ACH_CTRL_CREATE_CH: {
-		struct ach_ctrl_create_ch *create_arg =
-			(struct ach_ctrl_create_ch *)arg;
-		// TODO: validate argument
-		if ( 0 == (ret=ach_ch_device_alloc(create_arg->name)) ) {
-			// newest is first in queue
-			struct ach_ch_device *dev = ctrl_data.in_use;
-			if ( (ret = ach_ch_device_init(dev, create_arg)) )
-				ach_ch_device_free(dev);
-		}
+		KDEBUG("ach: Control command create\n");
+		ret = ctrl_create( (struct ach_ctrl_create_ch *)arg );
 		break;
 	}
 
 	case ACH_CTRL_UNLINK_CH:{
 			struct ach_ctrl_unlink_ch *unlink_arg =
-			    (struct ach_ctrl_unlink_ch *)arg;
-			// TODO: validate argument
+				(struct ach_ctrl_unlink_ch *)arg;
 
+			KDEBUG("ach: Control command unlink\n");
 			{
+				/* Find the device */
 				struct ach_ch_device *dev;
 				dev = ach_ch_device_find(unlink_arg->name);
 				if (!dev) {
 					ret = -ENOENT;
 					goto out_unlock;
 				}
-
-				if (mutex_lock_interruptible(&dev->lock)) {
-					ret = -ERESTARTSYS;
-					goto out_unlock;
-				}
-				//TODO: How to prevent other threads from using it afterward?
-				//TODO: Can we remove it if there are open filehandles?
+				/* Free the device.  The channel
+				 * backing memory is ref-counted, and
+				 * won't be freed until all files are
+				 * closed.*/
 				if (ach_ch_device_free(dev)) {
 					ret = -ERESTARTSYS;
-					mutex_unlock(&dev->lock);
 					goto out_unlock;
 				}
-
-				if (ach_ch_remove_cdev(dev)) {
-					ret = -ERESTARTSYS;
-					mutex_unlock(&dev->lock);
-					goto out_unlock;
-				}
-
-				mutex_unlock(&dev->lock);
+				printk( KERN_INFO "ach: unlinked channel %s\n", unlink_arg->name );
 			}
 			break;
 		}
 
 	default:
-		printk(KERN_INFO "Unknown ioctl option: %d\n", cmd);
+		printk(KERN_ERR "ach: Unknown ioctl option: %d\n", cmd);
 		ret = -ENOSYS;
 		break;
 	}
@@ -835,7 +822,7 @@ static int __init ach_init(void)
 	/* Create ctrl device */
 	misc_register(&ach_misc_device);
 	printk(KERN_INFO
-	       "ach device has been registered with a max of %u devices\n",
+	       "ach: device registered with a max of %u devices\n",
 	       max_devices);
 
 	/* Common channel device stuff */
@@ -850,7 +837,6 @@ static int __init ach_init(void)
 			printk(KERN_ERR "ach: Failed to create class\n");
 			goto out_deregister;
 		}
-		ctrl_data.ach_ch_class->dev_release = ach_ch_dev_release;
 
 		/* Allocate major */
 		dev_num = 0;
@@ -880,7 +866,7 @@ static int __init ach_init(void)
 static void __exit ach_exit(void)
 {
 	if (ach_ch_devices_free_all())
-		printk(KERN_ERR "ach failed cleaning up\n");
+		printk(KERN_ERR "ach: failed cleaning up\n");
 
 	class_destroy(ctrl_data.ach_ch_class);
 	ctrl_data.ach_ch_class = NULL;
@@ -888,7 +874,7 @@ static void __exit ach_exit(void)
 	unregister_chrdev_region(MKDEV(ctrl_data.major, 0), max_devices);
 
 	misc_deregister(&ach_misc_device);
-	printk(KERN_INFO "ach device has been unregistered\n");
+	printk(KERN_INFO "ach: device unregistered\n");
 }
 
 module_init(ach_init);
