@@ -82,7 +82,7 @@ struct ach_ch_file {
 	// Stuff from userspace ach.h: ach_channel_t
 	uint64_t seq_num;         /**< last sequence number read */
 	size_t next_index;        /**< next index entry to try get from */
-	unsigned int cancel;
+	volatile unsigned int cancel; /**< flag to cancel channel gets */
 };
 
 typedef struct ach_ch_file ach_channel_t;

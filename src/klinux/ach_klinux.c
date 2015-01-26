@@ -128,7 +128,7 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 {
 	struct ach_header *shm = chan->shm;
 	uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
-	unsigned int *cancel = &chan->cancel;
+	volatile unsigned int *cancel = &chan->cancel;
 	int res;
 
 	if( !wait ) return chan_lock(chan);
