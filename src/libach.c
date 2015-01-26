@@ -309,6 +309,16 @@ ach_cancel_attr_init( ach_cancel_attr_t *attr ) {
     memset(attr, 0, sizeof(*attr));
 }
 
+enum ach_status
+ach_cancel_attr_set_async_unsafe( ach_cancel_attr_t *attr, int asyn_unsafe )
+{
+    switch( asyn_unsafe ) {
+    case 0: attr->async_unsafe = 0; return ACH_OK;
+    case 1: attr->async_unsafe = 1; return ACH_OK;
+    default: return ACH_EINVAL;
+    }
+}
+
 static ach_cancel_attr_t default_cancel_attr = {.async_unsafe = 0};
 
 enum ach_status

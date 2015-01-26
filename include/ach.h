@@ -205,7 +205,11 @@ extern "C" {
     /** Type for header in shared memory */
     struct ach_header;
 
-    /** Attributes to pass to ach_open */
+    /** Attributes to pass to ach_open.
+     *
+     *  Library users should access this struct through the provided
+     *  functions rather than directly manipulating it.
+     */
     struct ach_attr {
         union {
             struct{
@@ -231,7 +235,11 @@ extern "C" {
 
     typedef struct ach_attr ach_attr_t;
 
-    /** Attributes to pass to ach_create  */
+    /** Attributes to pass to ach_create.
+     *
+     *  Library users should access this struct through the provided
+     *  functions rather than directly manipulating it.
+     */
     struct ach_create_attr {
         union {
             struct{
@@ -461,12 +469,17 @@ extern "C" {
     enum ach_status
     ach_unlink( const char *name );
 
-    /** Attributes parameter for ach_cancel */
+    /** Attributes parameter for ach_cancel
+     *
+     *  Library users should access this struct through the provided
+     *  functions rather than directly manipulating it.
+     */
     typedef struct ach_cancel_attr {
         union {
             struct {
-                int async_unsafe; /**< If true, permit calls that are
-                                   * unsafe in a signal handler */
+                /** If true, permit calls that are unsafe in a signal
+                 * handler. */
+                unsigned int async_unsafe : 1;
             };
             int64_t reserved[8];
         };
@@ -475,6 +488,10 @@ extern "C" {
     /** Initialize attributes */
     void
     ach_cancel_attr_init( ach_cancel_attr_t *attr );
+
+    /** Set async unsafe field. */
+    enum ach_status
+    ach_cancel_attr_set_async_unsafe( ach_cancel_attr_t *attr, int asyn_unsafe );
 
     /** Cancel a pending ach_get() on channel */
     enum ach_status
