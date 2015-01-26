@@ -110,6 +110,14 @@ static struct ach_ctrl_device ctrl_data;
  * ach module stuff - ought be comparable to user space ach.c functions
  **********************************************************************************/
 
+/* The current locking implementation only allows a single reader or
+ * writer to access the channel at a time.  For the expected use case
+ * of short messages, this is tolerable.  Still, performance could be
+ * improved by allowing multiple readers, or even better by allowing
+ * multiple readers in parallel with multiple writers operating on
+ * different index array elements and data array ranges.
+ */
+
 static enum ach_status
 chan_lock( ach_channel_t *chan )
 {
@@ -152,6 +160,7 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 static enum ach_status unrdlock(struct ach_header *shm)
 {
 	mutex_unlock(&shm->sync.mutex);
+	wake_up(&shm->sync.readq);
 	return ACH_OK;
 }
 
@@ -260,7 +269,7 @@ static enum ach_status ach_cancel(ach_channel_t * chan, unsigned int unsafe)
 	(void)unsafe;
 
 	chan->cancel = 1;
-	wake_up(&chan->shm->sync.readq);
+	wake_up_all(&chan->shm->sync.readq);
 
 	return ACH_OK;
 }
