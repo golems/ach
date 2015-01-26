@@ -75,6 +75,7 @@
 #include "ach/private_posix.h"
 #include "ach/klinux_generic.h"
 #include "libach_private.h"
+#include "libach/vtab.h"
 
 #include <sys/wait.h>
 
@@ -85,7 +86,7 @@
 
 
 static enum ach_status
-ach_filename_klinux( const char *name, char *buf, size_t n ) {
+libach_filename_klinux( const char *name, char *buf, size_t n ) {
     if( n < ACH_CHAN_NAME_MAX + 16 ) return ACH_BUG;
     strcpy( buf, ACH_CHAR_CHAN_NAME_PREFIX_PATH);
     strcat( buf, ACH_CHAR_CHAN_NAME_PREFIX_NAME);
@@ -95,10 +96,10 @@ ach_filename_klinux( const char *name, char *buf, size_t n ) {
 
 
 static enum ach_status
-ach_exists_klinux(const char* name)
+libach_exists_klinux(const char* name)
 {
     char ach_name[ACH_CHAN_NAME_MAX + 16];
-    int r = ach_filename_klinux(name, ach_name, sizeof(ach_name));
+    int r = libach_filename_klinux(name, ach_name, sizeof(ach_name));
     if (ACH_OK != r) return ACH_BUG;
 
     struct stat buf;
@@ -130,7 +131,7 @@ char_close(int fd)
 }
 
 static enum ach_status
-ach_unlink_klinux(const char* channel_name)
+libach_unlink_klinux(const char* channel_name)
 {
     int ioctl_ret;
     int fd = ctrl_open();
@@ -161,11 +162,11 @@ ach_unlink_klinux(const char* channel_name)
 
 
 static enum ach_status
-ach_create_klinux( const char *channel_name,
+libach_create_klinux( const char *channel_name,
                    size_t frame_cnt, size_t frame_size,
                    ach_create_attr_t *attr )
 {
-    if (ACH_OK == ach_vtab_user.exists(channel_name))
+    if (ACH_OK == libach_vtab_user.exists(channel_name))
         return ACH_EEXIST;
 
     int fd = ctrl_open();
@@ -194,11 +195,11 @@ ach_create_klinux( const char *channel_name,
     if( ACH_OK == ach_stat && ACH_OK == cr ) {
         int retry = 0;
         /* Wait for device to become ready */
-        enum ach_status r = ach_exists_klinux(channel_name);
+        enum ach_status r = libach_exists_klinux(channel_name);
         /* TODO: is there any point to waiting? */
         while ( (ACH_OK != r) && (retry++ < ACH_INTR_RETRY*10)) {
             usleep(1000);
-            r = ach_exists_klinux(channel_name);
+            r = libach_exists_klinux(channel_name);
         }
     }
 
@@ -207,7 +208,7 @@ ach_create_klinux( const char *channel_name,
 }
 
 static enum ach_status
-ach_get_klinux( ach_channel_t *chan,
+libach_get_klinux( ach_channel_t *chan,
                 void * buf, size_t size, size_t *frame_size,
                 const struct timespec *ACH_RESTRICT timeout,
                 int options )
@@ -273,7 +274,7 @@ ach_get_klinux( ach_channel_t *chan,
 }
 
 static enum ach_status
-ach_put_klinux( ach_channel_t *chan, const void *obj, size_t len )
+libach_put_klinux( ach_channel_t *chan, const void *obj, size_t len )
 {
     ssize_t size;
     SYSCALL_RETRY( size = write(chan->fd, obj, len),
@@ -284,7 +285,7 @@ ach_put_klinux( ach_channel_t *chan, const void *obj, size_t len )
 }
 
 static enum ach_status
-ach_flush_klinux( ach_channel_t * chan)
+libach_flush_klinux( ach_channel_t * chan)
 {
     unsigned int arg = 0;
     int r;
@@ -296,7 +297,7 @@ ach_flush_klinux( ach_channel_t * chan)
 }
 
 static enum ach_status
-ach_cancel_klinux( ach_channel_t *chan, const ach_cancel_attr_t *attr )
+libach_cancel_klinux( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 {
     unsigned int arg;
     int r;
@@ -316,7 +317,7 @@ ach_cancel_klinux( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 static int fd_for_kernel_device_channel_name(const char *name,int oflag)
 {
     char dev_name[ACH_CHAN_NAME_MAX+16];
-    int r = ach_filename_klinux(name, dev_name, sizeof(dev_name));
+    int r = libach_filename_klinux(name, dev_name, sizeof(dev_name));
     if (ACH_OK != r) return -ACH_BUG;
 
     int fd;
@@ -327,7 +328,7 @@ static int fd_for_kernel_device_channel_name(const char *name,int oflag)
 }
 
 static enum ach_status
-ach_open_klinux( ach_channel_t *chan, const char *channel_name,
+libach_open_klinux( ach_channel_t *chan, const char *channel_name,
                  ach_attr_t *attr )
 {
     (void)attr;
@@ -338,7 +339,6 @@ ach_open_klinux( ach_channel_t *chan, const char *channel_name,
 
     /* initialize struct */
     chan->fd = fd;
-    chan->map = ACH_MAP_KERNEL; /* Indicates kernel device */
 
     /* get other fields */
     {
@@ -353,8 +353,8 @@ ach_open_klinux( ach_channel_t *chan, const char *channel_name,
 }
 
 
-enum ach_status
-ach_close_klinux( ach_channel_t *chan ) {
+static enum ach_status
+libach_close_klinux( ach_channel_t *chan ) {
     int i;
     SYSCALL_RETRY( i = close(chan->fd),
                    i < 0 );
@@ -366,15 +366,16 @@ ach_close_klinux( ach_channel_t *chan ) {
 }
 
 const struct ach_channel_vtab
-ach_vtab_klinux = {
-    .create = ach_create_klinux,
-    .open = ach_open_klinux,
-    .flush = ach_flush_klinux,
-    .put = ach_put_klinux,
-    .get = ach_get_klinux,
-    .cancel = ach_cancel_klinux,
-    .close = ach_close_klinux,
-    .unlink = ach_unlink_klinux,
-    .exists = ach_exists_klinux,
-    .filename = ach_filename_klinux
+libach_vtab_klinux = {
+    .map = ACH_MAP_KERNEL,
+    .create = libach_create_klinux,
+    .open = libach_open_klinux,
+    .flush = libach_flush_klinux,
+    .put = libach_put_klinux,
+    .get = libach_get_klinux,
+    .cancel = libach_cancel_klinux,
+    .close = libach_close_klinux,
+    .unlink = libach_unlink_klinux,
+    .exists = libach_exists_klinux,
+    .filename = libach_filename_klinux
 };

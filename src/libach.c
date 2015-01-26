@@ -73,6 +73,7 @@
 
 #include "ach.h"
 #include "ach/private_posix.h"
+#include "libach/vtab.h"
 
 #include <sys/wait.h>
 
@@ -80,6 +81,19 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 
+/* Ensure order matches the enum */
+static const struct ach_channel_vtab *libach_vtabs[] = {
+    &libach_vtab_user, /* default mapping is posix shm channels */
+    &libach_vtab_anon,
+    &libach_vtab_user,
+    &libach_vtab_klinux
+};
+
+static int bad_map( enum ach_map m )
+{
+    return (m < 0) ||
+        (m >= (sizeof(libach_vtabs) / sizeof(libach_vtabs[0])));
+}
 
 
 size_t ach_channel_size = sizeof(ach_channel_t);
@@ -158,27 +172,17 @@ ach_create( const char *channel_name,
 
     if( NULL == channel_name ) return ACH_EINVAL;
     if( NULL == attr ) attr = &default_create_attr;
+    if( bad_map(attr->map) ) return ACH_EINVAL;
     if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
     if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
 
-    switch( attr->map ) {
-    case ACH_MAP_KERNEL:
-        vtab = &ach_vtab_klinux;
-        goto check_name;
-    case ACH_MAP_ANON:
-        vtab = &ach_vtab_anon;
-        goto create;
-    case ACH_MAP_USER:
-    case ACH_MAP_DEFAULT:
-        vtab = &ach_vtab_user;
-        goto check_name;
-    default:
-        return ACH_EINVAL;
+    vtab = libach_vtabs[attr->map];
+
+    if( attr->map != ACH_MAP_ANON ) {
+        r = channel_name_ok( channel_name );
+        if( ACH_OK != r ) return r;
     }
-check_name:
-    r = channel_name_ok( channel_name );
-    if( ACH_OK != r ) return r;
-create:
+
     return vtab->create( channel_name, frame_cnt, frame_size, attr );
 }
 
@@ -190,29 +194,20 @@ enum ach_status
 ach_open( ach_channel_t *chan, const char *channel_name,
           ach_attr_t *attr )
 {
-    enum ach_status r = channel_name_ok( channel_name );
+    enum ach_status r;
+
+    r = channel_name_ok( channel_name );
     if( ACH_OK != r ) return r;
-
     if( NULL == attr ) attr = &default_ach_attr;
-    enum ach_map map = attr->map;
+    if( bad_map(attr->map) ) return ACH_EINVAL;
 
-    if( ACH_MAP_DEFAULT == map ) {
-        map = (ACH_OK == ach_vtab_klinux.exists(channel_name)) ?
-            ACH_MAP_KERNEL : ACH_MAP_USER;
-    }
-
-    switch( map ) {
-    case ACH_MAP_ANON:
-        chan->vtab = &ach_vtab_anon;
-        break;
-    case ACH_MAP_USER:
-        chan->vtab = &ach_vtab_user;
-        break;
-    case ACH_MAP_KERNEL:
-        chan->vtab = &ach_vtab_klinux;
-        break;
-    default:
-        return ACH_EINVAL;
+    if( (ACH_MAP_DEFAULT == attr->map) &&
+        (ACH_OK == libach_vtab_klinux.exists(channel_name)) )
+    {
+        /* Default behavior: open kernel device if it exists */
+        chan->vtab = &libach_vtab_klinux;
+    } else {
+        chan->vtab = libach_vtabs[attr->map];
     }
 
     return chan->vtab->open( chan, channel_name, attr );
@@ -285,18 +280,18 @@ ach_unlink( const char *name ) {
     r = channel_name_ok( name );
     if( ACH_OK != r ) return r;
 
-    _Bool k_exists = (ACH_OK == ach_vtab_klinux.exists(name));
-    _Bool s_exists = (ACH_OK == ach_vtab_user.exists(name));
+    _Bool k_exists = (ACH_OK == libach_vtab_klinux.exists(name));
+    _Bool s_exists = (ACH_OK == libach_vtab_user.exists(name));
 
     if( ! (k_exists||s_exists) ) return ACH_ENOENT;
 
     if (k_exists) {
-        r = ach_vtab_klinux.unlink(name);
+        r = libach_vtab_klinux.unlink(name);
         if( ACH_OK != r ) return r;
     }
 
     if (s_exists) {
-        r = ach_vtab_user.unlink(name);
+        r = libach_vtab_user.unlink(name);
         if( ACH_OK != r ) return r;
     }
 
@@ -358,7 +353,7 @@ ach_channel_fd( const struct ach_channel *channel, int *file_descriptor )
 enum ach_status
 ach_channel_map( const struct ach_channel *channel, enum ach_map *mapping )
 {
-    *mapping = channel->map;
+    *mapping = channel->vtab->map;
     return ACH_OK;
 }
 

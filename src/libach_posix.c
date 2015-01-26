@@ -74,6 +74,7 @@
 #include "ach.h"
 #include "ach/private_posix.h"
 #include "libach_private.h"
+#include "libach/vtab.h"
 
 
 #include <sys/wait.h>
@@ -234,7 +235,7 @@ static ach_status_t unwrlock( ach_header_t *shm ) {
 
 
 static enum ach_status
-ach_filename_user(const char* channame, char *buf, size_t n) {
+libach_filename_user(const char* channame, char *buf, size_t n) {
     if (n < ACH_CHAN_NAME_MAX + 32) return ACH_BUG;
 
     strcpy(buf, ACH_SHM_CHAN_NAME_PREFIX_PATH);
@@ -244,10 +245,10 @@ ach_filename_user(const char* channame, char *buf, size_t n) {
 }
 
 static enum ach_status
-ach_exists_user(const char* name)
+libach_exists_user(const char* name)
 {
     char ach_name[ACH_CHAN_NAME_MAX + 32];
-    int r = ach_filename_user(name, ach_name, sizeof(ach_name));
+    int r = libach_filename_user(name, ach_name, sizeof(ach_name));
     if (ACH_OK != r) return ACH_BUG;
 
     struct stat buf;
@@ -309,7 +310,7 @@ static int fd_for_channel_name( const char *name, int oflag ) {
 
 
 static enum ach_status
-ach_create_posix( const char *channel_name,
+libach_create_posix( const char *channel_name,
             size_t frame_cnt, size_t frame_size,
             ach_create_attr_t *attr)
 {
@@ -478,10 +479,10 @@ ach_create_posix( const char *channel_name,
 }
 
 static enum ach_status
-ach_get_posix( ach_channel_t *chan, void *buf, size_t size,
-               size_t *frame_size,
-               const struct timespec *ACH_RESTRICT timeout,
-               int options )
+libach_get_posix( ach_channel_t *chan, void *buf, size_t size,
+                  size_t *frame_size,
+                  const struct timespec *ACH_RESTRICT timeout,
+                  int options )
 {
     const struct timespec *ptime;
     struct timespec ltime;
@@ -501,7 +502,7 @@ ach_get_posix( ach_channel_t *chan, void *buf, size_t size,
 }
 
 static enum ach_status
-ach_cancel_posix( ach_channel_t *chan, const ach_cancel_attr_t *attr )
+libach_cancel_posix( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 {
     /* The user mode ach_cancel() is really a fancy way of
      * interrupting a pthread condition wait.  If called from another
@@ -577,23 +578,19 @@ ach_cancel_posix( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 }
 
 static enum ach_status
-ach_open_posix( ach_channel_t *chan, const char *channel_name,
-                ach_attr_t *attr )
+libach_open_posix( ach_channel_t *chan, const char *channel_name,
+                   ach_attr_t *attr )
 {
     ach_header_t * shm;
     size_t len;
     int fd = -1;
-    enum ach_map map;
     clockid_t clock;
 
     if( ACH_MAP_ANON == attr->map ) {
-        map = ACH_MAP_ANON;
         shm = attr->shm;
         len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
         clock = ACH_DEFAULT_CLOCK;
     } else {
-        map = ACH_MAP_USER;
-
         /* open shm */
         if( (fd = fd_for_channel_name( channel_name, 0 )) < 0 ) {
             return check_errno();
@@ -629,7 +626,6 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
         chan->seq_num = 0;
         chan->next_index = 1;
         chan->cancel = 0;
-        chan->map = map;
         chan->clock = clock;
     }
 
@@ -637,7 +633,7 @@ ach_open_posix( ach_channel_t *chan, const char *channel_name,
 }
 
 static enum ach_status
-ach_unlink_user( const char *name )
+libach_unlink_user( const char *name )
 {
     char ach_name[ACH_CHAN_NAME_MAX + 16];
     enum ach_status r = shmfile_for_channel_name(name, ach_name, sizeof(ach_name));
@@ -650,21 +646,21 @@ ach_unlink_user( const char *name )
 }
 
 static enum ach_status
-ach_put_posix( ach_channel_t *chan, const void *buf, size_t len )
+libach_put_posix( ach_channel_t *chan, const void *buf, size_t len )
 {
     return ach_xput( chan, put_fun_posix, &len, buf, len );
 }
 
 
 static enum ach_status
-ach_flush_posix( ach_channel_t *chan )
+libach_flush_posix( ach_channel_t *chan )
 {
     return ach_flush_impl(chan);
 }
 
 
 static enum ach_status
-ach_close_anon( ach_channel_t *chan )
+libach_close_anon( ach_channel_t *chan )
 {
     (void) chan;
     /* TODO: anything here? */
@@ -673,7 +669,7 @@ ach_close_anon( ach_channel_t *chan )
 
 
 static enum ach_status
-ach_close_user( ach_channel_t *chan ) {
+libach_close_user( ach_channel_t *chan ) {
 
     enum ach_status r;
     int i;
@@ -695,50 +691,52 @@ ach_close_user( ach_channel_t *chan ) {
 }
 
 static enum ach_status
-ach_exists_anon( const char *name )
+libach_exists_anon( const char *name )
 {
     (void) name;
     return ACH_EINVAL;
 }
 
 static enum ach_status
-ach_filename_anon( const char *name, char *buf, size_t n )
+libach_filename_anon( const char *name, char *buf, size_t n )
 {
     (void) name; (void) buf; (void) n;
     return ACH_EINVAL;
 }
 
 static enum ach_status
-ach_unlink_anon( const char *name )
+libach_unlink_anon( const char *name )
 {
     (void) name;
     return ACH_EINVAL;
 }
 
 const struct ach_channel_vtab
-ach_vtab_user = {
-    .create = ach_create_posix,
-    .open = ach_open_posix,
-    .flush = ach_flush_posix,
-    .put = ach_put_posix,
-    .get = ach_get_posix,
-    .cancel = ach_cancel_posix,
-    .close = ach_close_user,
-    .unlink = ach_unlink_user,
-    .exists = ach_exists_user,
-    .filename = ach_filename_user
+libach_vtab_user = {
+    .map = ACH_MAP_USER,
+    .create = libach_create_posix,
+    .open = libach_open_posix,
+    .flush = libach_flush_posix,
+    .put = libach_put_posix,
+    .get = libach_get_posix,
+    .cancel = libach_cancel_posix,
+    .close = libach_close_user,
+    .unlink = libach_unlink_user,
+    .exists = libach_exists_user,
+    .filename = libach_filename_user
 };
 
 const struct ach_channel_vtab
-ach_vtab_anon = {
-    .create = ach_create_posix,
-    .open = ach_open_posix,
-    .flush = ach_flush_posix,
-    .put = ach_put_posix,
-    .get = ach_get_posix,
-    .cancel = ach_cancel_posix,
-    .close = ach_close_anon,
-    .unlink = ach_unlink_anon,
-    .exists = ach_exists_anon,
-    .filename = ach_filename_anon,
+libach_vtab_anon = {
+    .map = ACH_MAP_ANON,
+    .create = libach_create_posix,
+    .open = libach_open_posix,
+    .flush = libach_flush_posix,
+    .put = libach_put_posix,
+    .get = libach_get_posix,
+    .cancel = libach_cancel_posix,
+    .close = libach_close_anon,
+    .unlink = libach_unlink_anon,
+    .exists = libach_exists_anon,
+    .filename = libach_filename_anon,
 };

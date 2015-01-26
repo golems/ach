@@ -97,66 +97,6 @@ extern "C" {
 
     void ach_set_errstr( const char *str );
 
-/** Vtable for different channel mapping implementations */
-struct ach_channel_vtab {
-
-    /* Implementation of ach_create() */
-    enum ach_status
-    (*create)( const char *channel_name,
-               size_t frame_cnt, size_t frame_size,
-               ach_create_attr_t *attr);
-
-    /* Implementation of ach_open() */
-    enum ach_status
-    (*open)( ach_channel_t *chan, const char *channel_name,
-             ach_attr_t *attr );
-
-    /** Implementation of ach_flush() */
-    enum ach_status
-    (*flush)(ach_channel_t*);
-
-    /** Implementation of ach_put() */
-    enum ach_status
-    (*put)(ach_channel_t*,const void *buf, size_t len);
-
-    /** Implementation of ach_flush() */
-    enum ach_status
-    (*get)( ach_channel_t *chan, void *buf, size_t size,
-            size_t *frame_size,
-            const struct timespec *ACH_RESTRICT abstime,
-            int options );
-
-    /** Implementation of ach_cancel() */
-    enum ach_status
-    (*cancel)( ach_channel_t *chan, const ach_cancel_attr_t *attr );
-
-    /** Implementation of ach_close() */
-    enum ach_status
-    (*close)( ach_channel_t *chan );
-
-    /** Implementation of ach_unlink() */
-    enum ach_status
-    (*unlink)( const char *name );
-
-    /** Does the channel exist? */
-    enum ach_status
-    (*exists)( const char *name );
-
-    /** Get the full filename. */
-    enum ach_status
-    (*filename)( const char *name, char *buf, size_t n );
-};
-
-
-/** Virtual method table for POSIX shm backed channels */
-extern const struct ach_channel_vtab ach_vtab_user;
-
-/** Virtual method table for heap backed channels */
-extern const struct ach_channel_vtab ach_vtab_anon;
-
-/** Virtual method table for kernel backed channels */
-extern const struct ach_channel_vtab ach_vtab_klinux;
-
 #define SYSCALL_RETRY( expr, test )                     \
     {                                                   \
         int ach_intr_cnt = 0;                           \

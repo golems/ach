@@ -299,7 +299,6 @@ extern "C" {
                     achk_opt_t k_opts;                 /**< Used by kernel devices */
                 };
                 size_t next_index;                     /**< next index entry to try get from */
-                enum ach_map map;                      /**< attributes used to create this channel */
                 clockid_t clock;                       /**< attributes used to create this channel */
                 volatile sig_atomic_t cancel;          /**< cancel a waiting ach_get */
                 const struct ach_channel_vtab *vtab;   /**< virtual method table */

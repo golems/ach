@@ -20,6 +20,17 @@ pkginclude_HEADERS = \
 noinst_HEADERS = include/achutil.h include/achd.h include/ach/private_posix.h
 
 lib_LTLIBRARIES = libach.la
+libach_la_SOURCES = \
+	src/libach.c \
+	src/libach_posix.c \
+	src/libach_klinux.c \
+	src/pipe.c src/dns.c \
+	src/event.c
+# This is a libtool version -- CURRENT:REVISION:AGE
+# Is /NOT/ major.minor.patch and the relationship is nontrivial
+# Does not correspond to the package version
+# The cmake versioning needs to be updated when this line changes
+libach_la_LDFLAGS = -version-info 4:0:0 -export-symbols-regex '^ach_'
 
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
@@ -27,19 +38,6 @@ libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example robusttest
-
-libach_la_SOURCES = \
-	src/libach.c \
-	src/libach_posix.c \
-	src/libach_klinux.c \
-	src/pipe.c src/dns.c \
-	src/event.c
-
-# This is a libtool version -- CURRENT:REVISION:AGE
-# Is /NOT/ major.minor.patch and the relationship is nontrivial
-# Does not correspond to the package version
-# The cmake versioning needs to be updated when this line changes
-libach_la_LDFLAGS = -version-info 4:0:0
 
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la libachutil.la
