@@ -503,6 +503,19 @@ ach_get_posix( ach_channel_t *chan, void *buf, size_t size,
 static enum ach_status
 ach_cancel_posix( ach_channel_t *chan, const ach_cancel_attr_t *attr )
 {
+    /* The user mode ach_cancel() is really a fancy way of
+     * interrupting a pthread condition wait.  If called from another
+     * thread (async_unsafe=true), one can just take the mutex, set a
+     * flag, and broadcast the condition to wakeup the other threads.
+     * However, if called from signal handler (async_unsafe=false), we
+     * cannot issue any pthread_* calls because they are not in the
+     * list of async safe functions.  Specifically, we cannot take the
+     * mutex because if also held outside the signal handler, this
+     * will deadlock.  Updating the condition without the mutex held
+     * is racy.  The workaround is to call fork() (which is async
+     * safe) from the signal handler and then take the mutex_lock in
+     * the child process.
+     */
     if( attr->async_unsafe ) {
         /* Don't be async safe, i.e., called from another thread */
         enum ach_status r = chan_lock(chan);
