@@ -174,7 +174,7 @@ ach_create( const char *channel_name,
     /* default */
     if( NULL == attr ) attr = &default_create_attr;
     if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
-    if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
+    if( 0 == frame_size) frame_size = ACH_DEFAULT_FRAME_SIZE;
 
     /* validate */
     if( bad_map(attr->map) ) return ACH_EINVAL;
