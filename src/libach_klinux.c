@@ -166,9 +166,6 @@ libach_create_klinux( const char *channel_name,
                    size_t frame_cnt, size_t frame_size,
                    ach_create_attr_t *attr )
 {
-    if (ACH_OK == libach_vtab_user.exists(channel_name))
-        return ACH_EEXIST;
-
     int fd = ctrl_open();
 
     if (fd < 0) {
@@ -192,6 +189,7 @@ libach_create_klinux( const char *channel_name,
 
     enum ach_status cr = char_close(fd);
 
+    /* TODO: maybe use dnotify? */
     if( ACH_OK == ach_stat && ACH_OK == cr ) {
         int retry = 0;
         /* Wait for device to become ready */

@@ -65,7 +65,7 @@
 
 size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
 int opt_truncate = 0;
-int opt_kernel = 0;
+enum ach_map opt_map = ACH_MAP_DEFAULT;
 size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
 const char *opt_domain = "local";
@@ -201,10 +201,10 @@ int main( int argc, char **argv ) {
             opt_truncate++;
             break;
         case 'k':   /* kernel */
-            opt_kernel++;
+            opt_map = ACH_MAP_KERNEL;
             break;
         case 'u':   /* user */
-            opt_kernel--;
+            opt_map = ACH_MAP_USER;
             break;
         case 'v':   /* verbose  */
             opt_verbosity++;
@@ -305,8 +305,10 @@ int cmd_create(void) {
     {
         ach_create_attr_t attr;
         ach_create_attr_init(&attr);
-        if( opt_truncate ) attr.truncate = 1;
-        if( opt_kernel > 0 ) attr.map = ACH_MAP_KERNEL;
+        check_status( ach_create_attr_set_truncate( &attr, opt_truncate ),
+                      "set truncate attribute" );
+        check_status(ach_create_attr_set_map( &attr, opt_map ),
+                     "set map attribute" );
         i = ach_create( opt_chan_name, opt_msg_cnt, opt_msg_size, &attr );
     }
 

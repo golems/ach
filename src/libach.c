@@ -130,6 +130,7 @@ const char *ach_result_to_string(ach_status_t result) {
 static enum ach_status
 channel_name_ok( const char *name ) {
     size_t len;
+    if( NULL == name ) return ACH_EINVAL;
     /* check size */
     if( (len = strlen( name )) >= ACH_CHAN_NAME_MAX )
         return ACH_INVALID_NAME;
@@ -167,22 +168,48 @@ ach_create( const char *channel_name,
             size_t frame_cnt, size_t frame_size,
             ach_create_attr_t *attr)
 {
-    const struct ach_channel_vtab *vtab;
+    const struct ach_channel_vtab *vtab, *other_vtab;
     enum ach_status r;
 
-    if( NULL == channel_name ) return ACH_EINVAL;
+    /* default */
     if( NULL == attr ) attr = &default_create_attr;
-    if( bad_map(attr->map) ) return ACH_EINVAL;
     if( 0 == frame_cnt) frame_cnt = ACH_DEFAULT_FRAME_COUNT;
     if( 0 == frame_size) frame_cnt = ACH_DEFAULT_FRAME_SIZE;
 
-    vtab = libach_vtabs[attr->map];
-
+    /* validate */
+    if( bad_map(attr->map) ) return ACH_EINVAL;
     if( attr->map != ACH_MAP_ANON ) {
         r = channel_name_ok( channel_name );
         if( ACH_OK != r ) return r;
     }
 
+    vtab = libach_vtabs[attr->map];
+
+    /* Check for existence in sister namespace.  This is theoretically
+     * racy since someone else could create a channel in the sister
+     * namespace after we check but before we create ours; however,
+     * this is unlikely to be a practical problem. Either don't create
+     * the colliding channel, or explicitly specify the namespace.
+     * Still a creation lock is possible using lock files, e.g. in
+     * /tmp.
+     */
+    if( ACH_MAP_DEFAULT == attr->map ) {
+        switch( vtab->map ) {
+        case ACH_MAP_USER:
+            other_vtab = &libach_vtab_klinux;
+            break;
+        case ACH_MAP_KERNEL:
+            other_vtab = &libach_vtab_user;
+            break;
+        default:
+            other_vtab = NULL;
+        }
+        if( other_vtab && ACH_OK == other_vtab->exists(channel_name) ) {
+            return ACH_EEXIST;
+        }
+    }
+
+    /* now disptach */
     return vtab->create( channel_name, frame_cnt, frame_size, attr );
 }
 
@@ -201,15 +228,21 @@ ach_open( ach_channel_t *chan, const char *channel_name,
     if( NULL == attr ) attr = &default_ach_attr;
     if( bad_map(attr->map) ) return ACH_EINVAL;
 
-    if( (ACH_MAP_DEFAULT == attr->map) &&
-        (ACH_OK == libach_vtab_klinux.exists(channel_name)) )
-    {
+    if( ACH_MAP_DEFAULT == attr->map ) {
         /* Default behavior: open kernel device if it exists */
         chan->vtab = &libach_vtab_klinux;
-    } else {
-        chan->vtab = libach_vtabs[attr->map];
+        r = chan->vtab->open( chan, channel_name, attr );
+        switch(r) {
+        case ACH_ENOENT:
+        case ACH_EACCES: /* expected "failures", try userspace */
+            break;
+        default: /* success or unexpected failure */
+            return r;
+        }
     }
 
+    /* specific mapping requested, or no kernel channel */
+    chan->vtab = libach_vtabs[attr->map];
     return chan->vtab->open( chan, channel_name, attr );
 }
 
@@ -390,6 +423,13 @@ ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map )
             return ACH_OK;
     }
     return ACH_EINVAL;
+}
+
+enum ach_status
+ach_create_attr_set_truncate( ach_create_attr_t *attr, int truncate )
+{
+    attr->truncate = truncate ? 1 : 0;
+    return ACH_OK;
 }
 
 enum ach_status

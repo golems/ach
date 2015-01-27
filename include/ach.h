@@ -320,26 +320,51 @@ extern "C" {
     ach_channel_clock( const struct ach_channel *channel, clockid_t *clock );
 
     /** Creates a new channel.
-        \param channel_name Name of the channel
-        \param frame_cnt number of frames to hold in circular buffer
-        \param frame_size nominal size of each frame
-        \param attr options
-    */
+     *
+     *  \param name         name of the channel.  When requested mapping is
+     *                      ACH_MAP_ANON, this value is not
+     *                      referenced.
+     *
+     *  \param frame_cnt    number of frames to hold in circular buffer.
+     *                      Passing zero uses a default value.
+     *
+     *  \param frame_size   nominal size of each frame. Passing zero
+     *                      uses a default value.
+     *
+     *  \param attr         options for channel creation. Passing NULL uses
+     *                      default values.  If channel mapping is
+     *                      requested as ACH_MAP_DEFAULT, ach_create()
+     *                      will attempt to avoid name collisions with
+     *                      channels of any other mapping.  If an
+     *                      explicit mapping is requested, name
+     *                      collisions against other mappings are not
+     *                      checked.
+     */
     enum ach_status
-    ach_create( const char *channel_name,
+    ach_create( const char *name,
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr );
 
     /** Opens a handle to channel.
-
-        \post A file descriptor for the named channel is opened, and
-        chan is initialized.
-
-        \return ACH_OK on success.  Otherwise, return an error code
-        indicating the particular error.
+     *
+     *  \post A file descriptor for the named channel is opened, and
+     *  channel is initialized.
+     *
+     *  \param channel pointer to an unitialized or previously closed
+     *                 channel struct
+     *
+     *  \param name    The name of the channel.  If mapping requested
+     *                 ACH_MAP_ANON, this value is not referenced.
+     *
+     *  \param attr     options for channel opening.  If mapping requested
+     *                 ACH_MAP_DEFAULT, check all available mappings
+     *                 for channel of the passed name.
+     *
+     *  \return ACH_OK on success.  Otherwise, return an error code
+     *          indicating the particular error.
      */
     enum ach_status
-    ach_open( ach_channel_t *chan, const char *channel_name,
+    ach_open( ach_channel_t *channel, const char *name,
               ach_attr_t *attr );
 
     /** Pulls a message from the channel.
@@ -464,7 +489,10 @@ extern "C" {
     enum ach_status
     ach_chmod( ach_channel_t *chan, mode_t mode );
 
-    /** Delete an ach channel */
+    /** Delete an ach channel.
+     *
+     *  Remove the channel from all underlying mappings.
+     */
     enum ach_status
     ach_unlink( const char *name );
 
