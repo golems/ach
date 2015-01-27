@@ -23,54 +23,35 @@ AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
 
-# Checks for header files.
-dnl AC_CHECK_HEADERS([arpa/inet.h fcntl.h inttypes.h stdint.h stdlib.h string.h sys/socket.h syslog.h unistd.h time.h])
-
-# Checks for typedefs, structures, and compiler characteristics.
-dnl AC_HEADER_STDBOOL
-dnl AC_TYPE_INT32_T
-dnl AC_TYPE_MODE_T
-dnl AC_TYPE_OFF_T
-dnl AC_TYPE_PID_T
-dnl AC_TYPE_SIZE_T
-dnl AC_TYPE_SSIZE_T
-dnl AC_TYPE_UINT32_T
-dnl AC_TYPE_UINT64_T
-dnl AC_TYPE_UINT8_T
-
-dnl AC_CHECK_SIZEOF(void *)
-dnl AC_CHECK_SIZEOF(uint64_t)
-dnl AC_CHECK_SIZEOF(unsigned long)
-dnl AC_CHECK_SIZEOF(unsigned long long)
+##################
+## MISC SUPPORT ##
+##################
 
 # Check 32/64 safe format specifiers
 dnl AC_CHECK_DECLS([PRIuPTR,PRIu64,PRIx64])
 AC_CHECK_DECL([PRIuPTR],
         [],
         [AC_DEFINE([PRIuPTR], ["ul"], [Assume this is unsigned long])])
-
-# check pthread decls
-dnl AC_CHECK_DECL([PTHREAD_MUTEX_ERRORCHECK_NP],
-dnl        [], [],
-dnl        [#include<pthread.h>])
-
-dnl AC_CHECK_DECL( [PTHREAD_PRIO_INHERIT],
-dnl               [], [], [#include<pthread.h>])
-
-
-
-dnl AC_CHECK_FUNCS([ftruncate isascii memmove memset munmap socket strcasecmp strchr strdup strerror strtol])
-AC_SEARCH_LIBS([pthread_mutex_lock],[pthread])
-AC_SEARCH_LIBS([pthread_mutexattr_setpshared],[pthread])
 AC_SEARCH_LIBS([clock_gettime],[rt])
 AC_SEARCH_LIBS([shm_open],[rt])
+
+#################
+## DNS SUPPORT ##
+#################
 AC_SEARCH_LIBS([res_search],[resolv])
 AC_SEARCH_LIBS([__res_search],[resolv])
+
+######################
+## PTHREADS SUPPORT ##
+######################
+AC_SEARCH_LIBS([pthread_mutex_lock],[pthread])
+AC_SEARCH_LIBS([pthread_mutexattr_setpshared],[pthread])
 
 # check process-shared mutex
 AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED],
               [],
               [AC_MSG_ERROR([process-shared condition variables are required])])
+
 
 # CHECK_SOURCE( checking-msg, prologue, body, symbol )
 # Runs source if native compiling.  If cross-compiling, just checks that it compiles.
@@ -148,17 +129,10 @@ if( pthread_mutex_init(&mutex, &mutex_attr) )
              ],
              [AC_DEFINE([HAVE_MUTEX_ERROR_CHECK],[1],[Error Checking Mutexes])])
 
-## Checks for library functions.
 
-# If you don't have these functions, there's really no hope.
-# Also, these checks seem to complicate cross-compiling.
-# AC_FUNC_FORK
-# AC_FUNC_MALLOC
-# AC_FUNC_MMAP
-# AC_FUNC_REALLOC
-# AC_FUNC_STRTOD
-
-# Check mutex options
+####################
+## COMPILER FLAGS ##
+####################
 
 # Enable maximum warnings
 m4_ifdef([AX_CFLAGS_WARN_ALL],
@@ -226,6 +200,10 @@ AS_IF([test "x$enable_debug" = "xyes"],
       ]
 )
 
+###################
+## Documentation ##
+###################
+
 AC_ARG_ENABLE([documentation],
               [AS_HELP_STRING([--disable-documentation], [Do not build documentation])],
               [],
@@ -251,7 +229,7 @@ AC_ARG_ENABLE([docbook],
               [],
               [enable_docbook="$enable_documentation"])
 
-# Doxygen
+
 m4_ifdef([DX_INIT_DOXYGEN],
          [DX_HTML_FEATURE(ON)
           DX_PDF_FEATURE(OFF)
@@ -304,7 +282,9 @@ AM_CONDITIONAL([HAVE_MANPAGES], [test x$HELP2MAN != x -o x$FOUND_MANPAGES = xyes
 AM_CONDITIONAL([HAVE_MANHTML],  [test '(' x$HELP2MAN != x -a x$MAN2HTML != x ')' -o x$FOUND_MANHTML = xyes])
 AM_CONDITIONAL([HAVE_MANUAL],   [test x$DB2HTML != x -o x$FOUND_MANUAL = xyes])
 
-# Python
+############
+## Python ##
+############
 AC_ARG_WITH([python],
         AS_HELP_STRING([--with-python], [Enable python support]))
 
@@ -317,7 +297,9 @@ AS_IF([test "x$with_python" = "xyes"],[
 
 AM_CONDITIONAL([HAVE_PYTHON],   [test x: != x$PYTHON -a x != x$PYTHON])
 
-# Java
+##########
+## Java ##
+##########
 AC_ARG_ENABLE([java],
               [AS_HELP_STRING([--disable-java],
                               [Do not build Java support])],
@@ -381,7 +363,9 @@ AM_CONDITIONAL([INSTALL_JAVADOC],   [test "x$JAVADOC" != x -o -e "$srcdir/doc/ja
 
 
 
-# Linux
+###########
+## Linux ##
+###########
 # TODO: check if we building for linux
 AC_CHECK_PROGS([DKMS], [dkms], [false], [$PATH:/usr/sbin:/sbin])
 AS_IF([test "x$DKMS" != xfalse], [have_dkms=yes], [have_dkms=no])
@@ -458,6 +442,23 @@ AM_CONDITIONAL([INSTALL_DKMS],
 
 AM_CONDITIONAL([BUILD_DKMS],
                [test "x$enable_dkms_build" = xyes])
+
+
+
+#########
+## ZSH ##
+#########
+AS_IF([test "x$zshfdir" = "x"],
+      [zshfdir="$datarootdir/zsh/site-functions"])
+
+AC_SUBST([zshfdir])
+
+AM_CONDITIONAL([INSTALL_ZSH],
+               [test "x$zshfdir" != x])
+
+############
+## OUTPUT ##
+############
 
 AC_CONFIG_FILES([Makefile doc/Makefile src/klinux/Makefile src/klinux/Kbuild src/klinux/dkms/dkms.conf src/klinux/dkms-pre/Makefile src/klinux/dkms-post/Makefile python/setup.py ach.pc])
 

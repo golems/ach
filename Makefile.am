@@ -19,6 +19,11 @@ pkginclude_HEADERS = \
 
 noinst_HEADERS = include/achutil.h include/achd.h include/ach/private_posix.h
 
+
+###############
+## LIBRARIES ##
+###############
+
 lib_LTLIBRARIES = libach.la
 libach_la_SOURCES = \
 	src/libach.c \
@@ -35,6 +40,9 @@ libach_la_LDFLAGS = -version-info 4:0:0 -export-symbols-regex '^ach_'
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c include/achutil.h
 
+##############
+## PROGRAMS ##
+##############
 
 bin_PROGRAMS = ach achcat achbench achd achcop achlog
 noinst_PROGRAMS = achtest ach-example robusttest
@@ -51,6 +59,17 @@ achcop_LDADD = libachutil.la
 achlog_SOURCES = src/achlog.c
 achlog_LDADD = libach.la libachutil.la
 
+##########
+## DATA ##
+##########
+
+if INSTALL_ZSH
+zshf_DATA = data/zsh/_ach
+endif
+
+###########
+## Tests ##
+###########
 
 TESTS = achtooltest test-achcop
 
@@ -104,7 +123,9 @@ achbench_SOURCES = src/ach-bench.c
 achbench_LDADD = libach.la libachutil.la
 
 
+#########
 ## C++ ##
+#########
 
 lib_LTLIBRARIES += libachcpp.la
 libachcpp_la_SOURCES = cpp/achcpp.cpp
@@ -116,7 +137,9 @@ bin_PROGRAMS += cpptest
 cpptest_SOURCES = cpp/cpptest.cpp
 cpptest_LDADD = libachcpp.la libach.la
 
+############
 ## PYTHON ##
+############
 
 if HAVE_PYTHON
 
@@ -128,9 +151,9 @@ ach_py_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
 
 endif
 
-
-
+##########
 ## JAVA ##
+##########
 
 JSOURCES =                                \
 	$(top_srcdir)/java/Lib.java       \
@@ -196,6 +219,10 @@ doc/javadoc/index.html: $(JSOURCES)
 all: doc/javadoc
 endif
 
+#########################
+## Linux Kernel Module ##
+#########################
+
 # All of life's problems are solveable with recursion.
 
 # Automake's uninstall-hook runs after the files are uninstalled.
@@ -204,13 +231,12 @@ endif
 # ordering.
 SUBDIRS = src/klinux/dkms-pre . src/klinux/dkms-post doc
 
-
-# Linux Module
+## KBUILD ##
 if BUILD_KBUILD
 SUBDIRS += src/klinux
 endif
 
-# DKMS
+## DKMS ##
 if INSTALL_DKMS
 dkmsdir=@prefix@/src/ach-klinux-@PACKAGE_VERSION@
 dkmsincludedir=$(dkmsdir)
@@ -227,7 +253,9 @@ dkms_DATA = src/klinux/dkms/dkms.conf src/klinux/ach_klinux.c src/klinux/dkms/Kb
 
 endif
 
-## LOCAL CLEAN ##
+###########
+## LOCAL ##
+###########
 
 clean-local:
 	-rm -rf debian/tmp debian/files debian/libach? debian/libach-dev debian/*.log debian/*.substvars texput.log debian/*.debhelper debian/usr/* debian/DEBIAN/* *.so *.so.* org org_golems_ach_Lib.h org.golems.ach.jar $(module_builddir)
@@ -237,7 +265,6 @@ distclean-local:
 
 maintainer-clean-local:
 	-rm -rf  *.tar.gz doc/javadoc doc/.javadoc.stamp
-
 
 
 include doxygen.am
