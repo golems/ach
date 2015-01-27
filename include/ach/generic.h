@@ -95,25 +95,61 @@ typedef enum ach_status {
  * Default behavior is to retrieve the oldest unseen frame without
  * waiting.*/
 typedef enum {
-    /** Blocks until an unseen message arrives
-     *  or timeout.  If the channel already has data that this subscriber
-     *  has not seen, ach_get() immediately copies the new data.
-     *  Otherwise, it waits for some other process or thread to put data
-     *  into the channel.
+    /* default options are zero */
+
+    /** Do not block for a new messages.
+     *
+     * Exclusive with ::ACH_O_WAIT.
+     */
+    ACH_O_NONBLOCK = 0x00,
+
+    /** Retrieve the oldest unseen message.
+     *
+     *  Exclusive with ::ACH_O_LAST.
+     */
+    ACH_O_FIRST = 0x00,
+
+    /** Timeout is an absolute time.
+     *
+     *  Timeout must use the clock set during channel creation.
+     *
+     *  Exclusive with ::ACH_O_RELTIME.
+     *
+     *  \see ach_channel_clock()
+     */
+    ACH_O_ABSTIME = 0x00,
+
+    /** Block until an unseen message arrives
+     *  or timeout.
+     *
+     *  If the channel already has data that this subscriber has not
+     *  seen, ach_get() immediately copies the new data.  Otherwise,
+     *  it waits for some other process or thread to put data into the
+     *  channel.
+     *
+     *  Exclusive with ::ACH_O_NONBLOCK.
      */
     ACH_O_WAIT = 0x01,
-    /** Reads the newest message out of the channel.  If the channel
-     * contains multiple messages that this subscriber has not seen,
-     * ach_get() will return the newest of these messages.  The subscriber
-     * will skip past all older messages.
+
+    /** Read the newest message out of the channel.
+     *
+     *  If the channel contains multiple messages that this subscriber
+     *  has not seen, ach_get() will return the newest of these
+     *  messages.  The subscriber will skip past all older messages.
+     *
+     *  Exclusive with ::ACH_O_FIRST.
      */
     ACH_O_LAST = 0x02,
+
     /** Copy the message out of the channel, even if already seen.
-     *  Return code of ach_get() for successful copy will be ACH_OK.
+     *
+     *  The return code of ach_get() for successful copy is ACH_OK.
      */
     ACH_O_COPY = 0x04,
 
     /** Timeout is a relative time.
+     *
+     *  Exclusive with ::ACH_O_ABSTIME.
      */
     ACH_O_RELTIME = 0x08
 } ach_get_opts_t;

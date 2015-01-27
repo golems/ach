@@ -190,7 +190,6 @@
 extern "C" {
 #endif
 
-
      /** Options to specify the mapping for a channels backing memory
      *   buffer.
      */
@@ -200,7 +199,6 @@ extern "C" {
         ACH_MAP_USER = 2,     /**< Use shared memory for channels */
         ACH_MAP_KERNEL = 3,   /**< Use kernel memory for channels - require ach kernel module being loaded */
     };
-
 
     /** Type for header in shared memory */
     struct ach_header;
@@ -224,6 +222,7 @@ extern "C" {
         };
     };
 
+    /** Convenience typdedef of struct ach_attr */
     typedef struct ach_attr ach_attr_t;
 
     /** Initialize attributes for opening channels. */
@@ -232,8 +231,6 @@ extern "C" {
     /** Set shared memory area for anonymous channels */
     enum ach_status
     ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm );
-
-    typedef struct ach_attr ach_attr_t;
 
     /** Attributes to pass to ach_create.
      *
@@ -257,6 +254,7 @@ extern "C" {
         };
     };
 
+    /** Convenience typdedef of struct ach_create_attr */
     typedef struct ach_create_attr ach_create_attr_t;
 
     /** Initialize attributes for creating channels. */
