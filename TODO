@@ -14,7 +14,15 @@ TODO list for Ach
   - open/close seem fine
   - init (upstart) memory consumption grows with repeated device
     creation and unlinking.  Probably an upstart bug.
-
+* TODO UDP multicast support
+  - Send packets from write() syscall
+    - after writing to the kernel channel, copy_from_user() a second
+      time to the packet (so we don't contend on the kernel channel)
+  - Make ACH_MAP_UDP backend for readers to receive the packets on the
+    other size
+    - DNS-resolve channel names
+  - Run kernel task to receive UDP packets and write to kernel channel
+  - consider using netpoll
 # Local Variables:
 # mode: org
 # End:
