@@ -233,6 +233,7 @@ AC_ARG_ENABLE([docbook],
 m4_ifdef([DX_INIT_DOXYGEN],
          [DX_HTML_FEATURE(ON)
           DX_PDF_FEATURE(OFF)
+          DX_MAN_FEATURE(ON)
           DX_PS_FEATURE(OFF)
           DX_INIT_DOXYGEN(ach)],
          [AM_CONDITIONAL([DX_COND_doc],   false)
