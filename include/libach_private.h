@@ -68,7 +68,7 @@ extern "C" {
 #ifdef NDEBUG
 
 #define IFDEBUG(test, x )
-#define DEBUGF( ... )
+#define ACH_ERRF( ... )
 #define DEBUG_PERROR(a)
 
 #else /* enable debugging */
