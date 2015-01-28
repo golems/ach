@@ -282,7 +282,11 @@ int main( int argc, char **argv ) {
     ach_cancel_attr_init( &cattr );
     cattr.async_unsafe = 1;
     for( i = 0; i < n_log; i ++ ) {
-        ach_cancel( &log_desc[i].chan, &cattr );
+        enum ach_status r = ach_cancel( &log_desc[i].chan, &cattr );
+        if( ACH_OK != r ) {
+            fprintf(stderr, "Ach cancel failed\n");
+            exit(EXIT_FAILURE);
+        }
     }
 
     /* Join worker threads */

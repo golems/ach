@@ -62,6 +62,11 @@
 extern "C" {
 #endif
 
+#ifdef __GNUC__
+#define ACH_WARN_UNUSED __attribute__((warn_unused_result))
+#else
+#define ACH_WARN_UNUSED
+#endif /* __GNUC__ */
 
 /** return status codes for ach functions */
 typedef enum ach_status {

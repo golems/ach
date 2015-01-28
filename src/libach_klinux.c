@@ -191,11 +191,10 @@ libach_create_klinux( const char *channel_name,
 
     /* TODO: maybe use dnotify? */
     if( ACH_OK == ach_stat && ACH_OK == cr ) {
-        int retry = 0;
         /* Wait for device to become ready */
         enum ach_status r = libach_exists_klinux(channel_name);
         /* TODO: is there any point to waiting? */
-        while ( (ACH_OK != r) && (retry++ < ACH_INTR_RETRY*10)) {
+        while ( ACH_OK != r ) {
             usleep(1000);
             r = libach_exists_klinux(channel_name);
         }
@@ -233,7 +232,6 @@ libach_get_klinux( ach_channel_t *chan,
         opts.reltime.tv_nsec = 0;
     }
 
-    int cnt = 0;
     /* Retry loop to handle interrupts */
     for(;;) {
         /* set mode */
@@ -258,7 +256,7 @@ libach_get_klinux( ach_channel_t *chan,
         }
 
         /* Failure */
-        if( errno != EINTR || cnt++ > ACH_INTR_RETRY ) {
+        if( errno != EINTR ) {
             return check_errno();
         }
 

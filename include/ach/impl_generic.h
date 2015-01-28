@@ -57,22 +57,26 @@
 #ifndef ACH_IMPL_H
 #define ACH_IMPL_H
 
+
 /** Lock the channel for reading.
  *
  * \param[in] timeout In user-mode this is an absolute timeout.  In
  *                    kernel mode, it is a relative timeout.
  */
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 rdlock( ach_channel_t *chan, int wait, const struct timespec *timeout );
 
 /** Lock the channel for writing */
-static enum ach_status wrlock( ach_channel_t *chan );
+static enum ach_status ACH_WARN_UNUSED
+wrlock( ach_channel_t *chan );
 
 /** Unlock the channel from a read lock */
-static enum ach_status unrdlock(struct ach_header *shm);
+static enum ach_status ACH_WARN_UNUSED
+unrdlock(struct ach_header *shm);
 
 /** Unlock the channel from a write lock lock */
-static enum ach_status unwrlock(struct ach_header *shm);
+static enum ach_status ACH_WARN_UNUSED
+unwrlock(struct ach_header *shm);
 
 
 static size_t oldest_index_i( ach_header_t *shm ) {
@@ -83,7 +87,7 @@ static size_t last_index_i( ach_header_t *shm ) {
     return (shm->index_head + shm->index_cnt -1)%shm->index_cnt;
 }
 
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 ach_flush_impl( ach_channel_t *chan )
 {
     ach_header_t *shm = chan->shm;
@@ -95,7 +99,7 @@ ach_flush_impl( ach_channel_t *chan )
     return unrdlock(shm);
 }
 
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 check_guards( ach_header_t *shm )
 {
     if( ACH_SHM_MAGIC_NUM != shm->magic ||
@@ -162,7 +166,7 @@ static void ach_create_counts( ach_header_t *shm, const char *name, size_t frame
  *   are incremented. The variable pointed to by frame_size holds the
  *   frame size.
 */
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
                      ach_get_fun transfer, void *cx, void **pobj,
                      size_t * frame_size)
@@ -180,7 +184,8 @@ ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
 
     /* Is there any possibility to overflow seq_num? Probably not */
     if (chan->seq_num > idx->seq_num) {
-        ACH_ERRF("ach bug: seq_num mismatch\n");
+        /* ACH_ERRF("ach bug: seq_num mismatch, chan: %llu, idx: %llu, shm: %llu\n", */
+        /*          chan->seq_num, idx->seq_num, shm->last_seq); */
         return ACH_BUG;
     }
 
@@ -234,7 +239,7 @@ ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
  *
  *  \return ACH_OK on success.
  */
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
          size_t * frame_size,
          const struct timespec *timeout,
@@ -328,7 +333,7 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
  *  \return ACH_OK on success. If the channel is too small to hold
  *  the frame, returns ACH_OVERFLOW.
  */
-static enum ach_status
+static enum ach_status ACH_WARN_UNUSED
 ach_xput( ach_channel_t *chan,
           ach_put_fun transfer, void *cx, const void *obj, size_t len )
 {
@@ -358,7 +363,10 @@ ach_xput( ach_channel_t *chan,
     if( len > shm->data_size ) return ACH_OVERFLOW;
 
     /* take write lock */
-    wrlock( chan );
+    {
+        enum ach_status r = wrlock(chan);
+        if( ACH_OK != r) return r;
+    }
 
     /* find next index entry */
     idx = index_ar + shm->index_head;
@@ -408,8 +416,10 @@ ach_xput( ach_channel_t *chan,
     /* assert( shm->data_free >= len ); */
 
     if( shm->data_size - shm->data_head < len ) {
-        unwrlock( shm );
-        /* assert(0); */
+        enum ach_status r2 = unwrlock( shm );
+        if( r2 != ACH_OK ) {
+            ACH_ERRF("ach bug: another error on unwrlock()");
+        }
         return ACH_BUG;
     }
 
@@ -417,7 +427,10 @@ ach_xput( ach_channel_t *chan,
     {
         enum ach_status r = transfer(cx, data_ar + shm->data_head, obj);
         if( ACH_OK != r ) {
-            unwrlock(shm);
+            enum ach_status r2 = unwrlock( shm );
+            if( r2 != ACH_OK ) {
+                ACH_ERRF("ach bug: another error on unwrlock()");
+            }
             return r;
         }
     }

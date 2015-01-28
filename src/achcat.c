@@ -125,7 +125,7 @@ void *publish_loop(void* pub) {
 
 
 int publish( ach_channel_t *chan) {
-    int r=0;
+    enum ach_status r = ACH_OK;
     while(1) {
         char *fr;
         /* get size */
@@ -140,7 +140,10 @@ int publish( ach_channel_t *chan) {
 
         /*ach_dump( chan.shm );*/
     }
-    ach_close( chan );
+    enum ach_status r2 = ach_close( chan );
+    if( ACH_OK != r2 ) {
+        fprintf(stderr, "another error on ach_close(): %s\n", ach_result_to_string(r));
+    }
     /*fprintf(stderr,"end of publish\n");*/
     return r;
 }
@@ -178,7 +181,10 @@ int subscribe( ach_channel_t *chan) {
         fflush(fout);
     }
     /*fprintf(stderr,"end of subscribe\n");*/
-    ach_close( chan );
+    enum ach_status r2 = ach_close( chan );
+    if( ACH_OK != r2 ) {
+        fprintf(stderr, "another error on ach_close(): %s\n", ach_result_to_string(r));
+    }
     return r;
 }
 
@@ -251,7 +257,11 @@ int main( int argc, char **argv ) {
             ach_create_attr_t cattr;
             ach_create_attr_init( &cattr );
             cattr.map_anon = 1;
-            ach_create( opt_chan_name, 10ul, 512ul, &cattr );
+            r = ach_create( opt_chan_name, 10ul, 512ul, &cattr );
+            if( ACH_OK != r ) {
+                fprintf(stderr, "Could not create channel: %s\n", ach_result_to_string(r));
+                exit(EXIT_FAILURE);
+            }
             assert( cattr.shm );
             attr.map = ACH_MAP_ANON;
             attr.shm = cattr.shm;

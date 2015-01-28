@@ -98,15 +98,20 @@ extern "C" {
     void ach_set_errstr( const char *str );
 
 #define SYSCALL_RETRY( expr, test )                     \
-    {                                                   \
-        int ach_intr_cnt = 0;                           \
-        do { (expr); }                                  \
-        while( (test) &&                                \
-               EINTR == errno &&                        \
-               ach_intr_cnt++  < ACH_INTR_RETRY         \
-            );                                          \
-    }
+    do { (expr); }                                      \
+    while( (test) &&                                    \
+           EINTR == errno                               \
+        );                                              \
 
+/* #define SYSCALL_RETRY( expr, test )                     \ */
+/*     {                                                   \ */
+/*         int ach_intr_cnt = 0;                           \ */
+/*         do { (expr); }                                  \ */
+/*         while( (test) &&                                \ */
+/*                EINTR == errno &&                        \ */
+/*                ach_intr_cnt++  < ACH_INTR_RETRY         \ */
+/*             );                                          \ */
+/*     } */
 
 static enum ach_status
 check_errno(void) {

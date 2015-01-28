@@ -128,6 +128,11 @@ chan_lock( ach_channel_t *chan )
 		mutex_unlock(&chan->shm->sync.mutex);
 		return ACH_CANCELED;
 	}
+	if( chan->shm->sync.dirty ) {
+		mutex_unlock(&chan->shm->sync.mutex);
+		ACH_ERRF("ach bug: channel dirty on lock acquisition\n");
+		return ACH_CORRUPT;
+	}
 	return ACH_OK;
 }
 
@@ -135,32 +140,46 @@ static enum ach_status
 rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 {
 	struct ach_header *shm = chan->shm;
-	uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
+	volatile uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
 	volatile unsigned int *cancel = &chan->cancel;
 	int res;
+	enum ach_status r;
 
-	if( !wait ) return chan_lock(chan);
+	if( wait ) {
+		if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
+			res = wait_event_interruptible_timeout( shm->sync. readq,
+								((*c_seq != *s_seq) || *cancel),
+								timespec_to_jiffies (reltime) );
+			if (0 == res) return ACH_TIMEOUT;
+		} else {
+			res = wait_event_interruptible( shm->sync.readq,
+							((*c_seq != *s_seq) || *cancel) );
 
-	if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
-		res = wait_event_interruptible_timeout( shm->sync. readq,
-							((*c_seq != *s_seq) || *cancel),
-							timespec_to_jiffies (reltime) );
-		if (0 == res) return ACH_TIMEOUT;
-	} else {
-		res = wait_event_interruptible( shm->sync.readq,
-						((*c_seq != *s_seq) || *cancel) );
-
+		}
+		if (-ERESTARTSYS == res) return ACH_EINTR;
+		if( res < 0 ) return ACH_BUG;
 	}
-	if (-ERESTARTSYS == res) return ACH_EINTR;
-	if( res < 0 ) return ACH_BUG;
 
-	return chan_lock(chan);
+	r = chan_lock(chan);
+
+	if( ! ((*c_seq != *s_seq) || *cancel) ) {
+		ACH_ERRF("ach bug: condition false after wait chan seq: %llu, shm seq: %llu, cancel: %d\n",
+			 *c_seq, *s_seq, *cancel);
+		return ACH_BUG;
+	}
+
+	return r;
 }
 
 static enum ach_status unrdlock(struct ach_header *shm)
 {
+	int dirty = shm->sync.dirty;
 	mutex_unlock(&shm->sync.mutex);
 	wake_up(&shm->sync.readq);
+	if( dirty ) {
+		ACH_ERRF("ach bug: channel dirty on read unlock\n");
+		return ACH_CORRUPT;
+	}
 	return ACH_OK;
 }
 
@@ -174,9 +193,14 @@ static enum ach_status wrlock(ach_channel_t * chan)
 
 static enum ach_status unwrlock(struct ach_header *shm)
 {
+	int dirty = shm->sync.dirty;
 	shm->sync.dirty = 0;
 	mutex_unlock(&shm->sync.mutex);
 	wake_up(&shm->sync.readq);
+	if( !dirty ) {
+		ACH_ERRF("ach bug: channel not dirty on write unlock\n");
+		return ACH_CORRUPT;
+	}
 	return ACH_OK;
 }
 

@@ -198,8 +198,15 @@ void receiver_ach(int rt) {
     for( i = 0; i < 5; i ++ ) {
         ticks_t ticks;
         size_t fs;
-        ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
-                ACH_O_LAST | ACH_O_WAIT);
+        enum ach_status r = ach_get(&chan, &ticks, sizeof(ticks), &fs, NULL,
+                                    ACH_O_LAST | ACH_O_WAIT);
+        switch (r) {
+        case ACH_OK: case ACH_MISSED_FRAME: break;
+        default:
+            fprintf(stderr, "bad ach_get result: %s\n", ach_result_to_string(r));
+            exit(EXIT_FAILURE);
+        }
+
     }
     /* now the good stuff */
 

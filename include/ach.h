@@ -229,7 +229,7 @@ extern "C" {
     void ach_attr_init( ach_attr_t *attr );
 
     /** Set shared memory area for anonymous channels */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm );
 
     /** Attributes to pass to ach_create.
@@ -261,19 +261,19 @@ extern "C" {
     void ach_create_attr_init( ach_create_attr_t *attr );
 
     /** Set the clockid */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_create_attr_set_clock( ach_create_attr_t *attr, clockid_t clock );
 
     /** Set the mapping */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_create_attr_set_map( ach_create_attr_t *attr, enum ach_map map );
 
     /** Set to truncate */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_create_attr_set_truncate( ach_create_attr_t *attr, int truncate );
 
     /** Get backing memory for anonymous channel */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_create_attr_get_shm( ach_create_attr_t *attr, struct ach_header **shm );
 
     /** Virtual Method Table for handling different channel mappings */
@@ -306,15 +306,15 @@ extern "C" {
     } ach_channel_t;
 
     /** Return the file descriptor associated with this channel */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_channel_fd( const struct ach_channel *channel, int *file_descriptor );
 
     /** Return the mapping of the channel. */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_channel_map( const struct ach_channel *channel, enum ach_map *map );
 
     /** Return the clock used by the channel. */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_channel_clock( const struct ach_channel *channel, clockid_t *clock );
 
     /** Creates a new channel.
@@ -338,7 +338,7 @@ extern "C" {
      *                      collisions against other mappings are not
      *                      checked.
      */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_create( const char *name,
                 size_t frame_cnt, size_t frame_size,
                 ach_create_attr_t *attr );
@@ -361,7 +361,7 @@ extern "C" {
      *  \return ACH_OK on success.  Otherwise, return an error code
      *          indicating the particular error.
      */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_open( ach_channel_t *channel, const char *name,
               ach_attr_t *attr );
 
@@ -427,7 +427,7 @@ extern "C" {
      * \sa ach_get_opts_t, ach_status
      *
      */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_get( ach_channel_t *chan, void *buf, size_t size,
              size_t *frame_size,
              const struct timespec *ACH_RESTRICT abstime,
@@ -456,7 +456,7 @@ extern "C" {
     /** Discards all previously received messages for this handle.  Does
         not change the actual channel, just resets the sequence number in
         the handle.*/
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_flush( ach_channel_t *chan );
 
     /** Closes the shared memory block.
@@ -465,7 +465,7 @@ extern "C" {
 
         \post the shared memory file for chan is closed
     */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_close( ach_channel_t *chan );
 
     /** Converts return code from ach call to a human readable string;
@@ -491,7 +491,7 @@ extern "C" {
      *
      *  Remove the channel from all underlying mappings.
      */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_unlink( const char *name );
 
     /** Attributes parameter for ach_cancel
@@ -515,11 +515,11 @@ extern "C" {
     ach_cancel_attr_init( ach_cancel_attr_t *attr );
 
     /** Set async unsafe field. */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_cancel_attr_set_async_unsafe( ach_cancel_attr_t *attr, int asyn_unsafe );
 
     /** Cancel a pending ach_get() on channel */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_cancel( ach_channel_t *chan, const ach_cancel_attr_t *attr );
 
     /** Control structure for event handling loop
@@ -565,7 +565,7 @@ extern "C" {
      * \param[out] port    the port on host from which channel is
      *                     provided
      */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_srv_search( const char *channel, const char *domain,
                     char *host, size_t hostlen,
                     int *port );
@@ -601,7 +601,7 @@ extern "C" {
     *                              ACH_EV_O_PERIODIC_INPUT and
     *                              ACH_EV_O_PERIODIC_TIMEOUT
     */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     ach_evhandle( struct ach_evhandler *handlers,
                   size_t n,
                   const struct timespec *period,

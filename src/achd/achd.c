@@ -358,8 +358,12 @@ void achd_serve() {
         if( ACH_OK != r ) {
             cx.error( r, "Couldn't open channel %s - %s\n", conn.recv_hdr.chan_name, strerror(errno) );
             assert(0);
-        } else {
-            ach_flush(&cx.channel);
+        }
+    }
+    { /* else, channel opened */
+        enum ach_status r = ach_flush(&cx.channel);
+        if( ACH_OK != r ) {
+            ACH_LOG( LOG_ERR, "could not flush channel: %s\n", ach_result_to_string(r) );
         }
     }
 
