@@ -9,7 +9,7 @@ ach.ko: ach_klinux.c $(module_headers)
 	make -C $(KDIR) M=$(PWD) V=0 modules
 
 hdir = $(top_srcdir)/include
-module_headers = $(hdir)/ach_klinux.h $(hdir)/ach/klinux_generic.h $(hdir)/ach/private_klinux.h $(hdir)/ach/private_generic.h $(hdir)/ach/impl_generic.h
+module_headers = $(hdir)/ach_klinux.h $(hdir)/ach/generic.h $(hdir)/ach/klinux_generic.h $(hdir)/ach/private_klinux.h $(hdir)/ach/private_generic.h $(hdir)/ach/impl_generic.h
 
 # # linux kbuild can't uninstall, so we install via automake
 #

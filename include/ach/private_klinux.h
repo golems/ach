@@ -79,6 +79,7 @@ get_errno(enum ach_status r) {
     case ACH_CANCELED:        return ECANCELED;
     case ACH_EFAULT:          return EFAULT;
     case ACH_EINTR:           return EINTR;
+    case ACH_ENOTSUP:         return ENOTSUPP;
     }
     return get_errno(ACH_BUG);
 }
