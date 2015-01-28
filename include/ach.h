@@ -161,12 +161,15 @@
 # define ACH_RESTRICT restrict
 #endif
 
-#if (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+#if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5))
 /** Deprecated old symbol */
-#define ACH_DEPRECATED  __attribute__((__deprecated__))
+#define ACH_DEPRECATED(msg)  __attribute__((__deprecated__(msg)))
+#elif (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 1))
+/** Deprecated old symbol */
+#define ACH_DEPRECATED(msg)  __attribute__((__deprecated__))
 #else
 /** Deprecated old symbol */
-#define ACH_DEPRECATED
+#define ACH_DEPRECATED(msg)
 #endif /* __GNUC__ */
 
 /* Determine a default clock */
@@ -212,9 +215,16 @@ extern "C" {
         union {
             struct{
                 union {
-                    int map_anon ACH_DEPRECATED;  /**< anonymous channel (put it in process heap, not shm) */
-                    enum ach_map map;            /**< Where to put channel backing memory.
-                                                  *   Replaces map_anon */
+                    /** anonymous channel (put it in process heap, not shm).
+                     *
+                     * \deprecated This field is deprecated in favor of the map field.
+                     */
+                    int map_anon
+                    ACH_DEPRECATED("The 'map_anon' field is replaced by the 'map' field of type 'enum ach_map'")
+                        ;
+                    /** Where to put channel backing memory.  Replaces
+                     * map_anon. */
+                    enum ach_map map;
                 };
                 struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
             };
