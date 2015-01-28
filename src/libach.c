@@ -121,6 +121,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_CANCELED: return "ACH_CANCELED";
     case ACH_EFAULT: return "ACH_EFAULT";
     case ACH_EINTR: return "ACH_EINTR";
+    case ACH_ENOTSUP: return "ACH_ENOTSUP";
     }
     return "UNKNOWN";
 
@@ -385,8 +386,22 @@ const char *ach_errstr( void )
 enum ach_status
 ach_channel_fd( const struct ach_channel *channel, int *file_descriptor )
 {
+    return channel->vtab->fd( channel, file_descriptor );
+}
+
+
+enum ach_status
+libach_channel_fd_ok( const struct ach_channel *channel, int *file_descriptor )
+{
     *file_descriptor = channel->fd;
     return ACH_OK;
+}
+enum ach_status
+libach_channel_fd_notsup( const struct ach_channel *channel, int *file_descriptor )
+{
+    (void)channel;
+    *file_descriptor = -1;
+    return ACH_ENOTSUP;
 }
 
 enum ach_status

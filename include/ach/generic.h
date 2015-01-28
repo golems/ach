@@ -88,16 +88,16 @@ typedef enum ach_status {
     ACH_EACCES = 15,        /**< permission denied */
     ACH_CANCELED = 16,      /**< operation canceled */
     ACH_EFAULT = 17,        /**< bad address for data copy */
-    ACH_EINTR = 18          /**< operation interrupted.  Only used
+    ACH_EINTR = 18,          /**< operation interrupted.  Only used
                              *   internally and not returned to
                              *   library callers. */
+    ACH_ENOTSUP = 19        /**< not supported.*/
 } ach_status_t;
 
 
 #define ACH_MASK_FROM_STATUS(r) (1<<(r))
 
 enum ach_mask {
-
     ACH_MASK_OK             = ACH_MASK_FROM_STATUS(ACH_OK),
     ACH_MASK_OVERFLOW       = ACH_MASK_FROM_STATUS(ACH_OVERFLOW),
     ACH_MASK_INVALID_NAME   = ACH_MASK_FROM_STATUS(ACH_INVALID_NAME),
@@ -117,10 +117,10 @@ enum ach_mask {
     ACH_MASK_CANCELED       = ACH_MASK_FROM_STATUS(ACH_CANCELED),
     ACH_MASK_EFAULT         = ACH_MASK_FROM_STATUS(ACH_EFAULT),
     ACH_MASK_EINTR          = ACH_MASK_FROM_STATUS(ACH_EINTR),
+    ACH_MASK_ENOTSUP        = ACH_MASK_FROM_STATUS(ACH_ENOTSUP),
 
     ACH_MASK_NONE           = 0,
     ACH_MASK_ALL            = 0xffffffff
-
 };
 
 typedef enum ach_mask ach_mask_t;

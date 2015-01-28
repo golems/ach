@@ -723,7 +723,8 @@ libach_vtab_user = {
     .close = libach_close_user,
     .unlink = libach_unlink_user,
     .exists = libach_exists_user,
-    .filename = libach_filename_user
+    .filename = libach_filename_user,
+    .fd = libach_channel_fd_notsup,
 };
 
 const struct ach_channel_vtab
@@ -739,4 +740,5 @@ libach_vtab_anon = {
     .unlink = libach_unlink_anon,
     .exists = libach_exists_anon,
     .filename = libach_filename_anon,
+    .fd = libach_channel_fd_notsup,
 };
