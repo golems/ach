@@ -136,16 +136,17 @@ chan_lock( ach_channel_t *chan )
 	return ACH_OK;
 }
 
+
 static enum ach_status
-rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
+rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 {
+	int res;
 	struct ach_header *shm = chan->shm;
 	volatile uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
 	volatile unsigned int *cancel = &chan->cancel;
-	int res;
 	enum ach_status r;
-
-	if( wait ) {
+	for(;;) {
+		/* do the wait */
 		if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
 			res = wait_event_interruptible_timeout( shm->sync. readq,
 								((*c_seq != *s_seq) || *cancel),
@@ -156,19 +157,26 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 							((*c_seq != *s_seq) || *cancel) );
 
 		}
+
+		/* check what happened */
 		if (-ERESTARTSYS == res) return ACH_EINTR;
 		if( res < 0 ) return ACH_BUG;
+
+		r = chan_lock( chan );
+		/* Check condition with the lock held in case someone
+		 * else flushed the channel, or someone else unset the
+		 * cancel */
+		if( (ACH_OK != r) || (*c_seq != *s_seq) || *cancel )
+			return r;
+		mutex_unlock(&shm->sync.mutex);
 	}
+}
 
-	r = chan_lock(chan);
-
-	if( ! ((*c_seq != *s_seq) || *cancel) ) {
-		ACH_ERRF("ach bug: condition false after wait chan seq: %llu, shm seq: %llu, cancel: %d\n",
-			 *c_seq, *s_seq, *cancel);
-		return ACH_BUG;
-	}
-
-	return r;
+static enum ach_status
+rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
+{
+	if( wait ) return rdlock_wait(chan, reltime);
+	else return chan_lock(chan);
 }
 
 static enum ach_status unrdlock(struct ach_header *shm)
