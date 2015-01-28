@@ -104,6 +104,10 @@ noinst_PROGRAMS += holedigger
 holedigger_SOURCES = src/test/holedigger.c
 holedigger_LDADD = libach.la libachtest.la
 
+noinst_PROGRAMS += achstress
+achstress_SOURCES = src/test/achstress.c
+achstress_LDADD = libach.la libachtest.la
+
 robusttest_SOURCES = src/test/robusttest.c
 robusttest_LDADD = libach.la
 

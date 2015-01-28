@@ -76,3 +76,17 @@ void check_ach(const char *thing, ach_status_t r );
             exit(EXIT_FAILURE);                                         \
         }                                                               \
     }
+
+#define CHECK_ACH_MASK( thing,  allow_mask, exp )                       \
+{                                                                       \
+        enum ach_status check_ach_result = (exp);                       \
+        if( !( allow_mask & ACH_MASK_FROM_STATUS(check_ach_result)) )   \
+        {                                                               \
+            fprintf(stderr,                                             \
+                    "FAILURE:\t%s: %s, at %s:%d\n"                      \
+                    "expression:\t(" #exp ")\n",                        \
+                    thing, ach_result_to_string(check_ach_result),      \
+                    __FILE__, __LINE__ );                               \
+            exit(EXIT_FAILURE);                                         \
+        }                                                               \
+    }

@@ -1,14 +1,6 @@
 TODO list for Ach
 
 * TODO Return ACH_MISSED_FRAME from kernel-space
-* TODO Test message transmission under heavy concurrency
-  - Create c channels, p publishers, c subscribers, and i interrupters
-  - Publishers generate random messages, append a checksum, send to
-    all channels
-  - Subscribers get messages from all channels, and check the checksum
-    - Get messages via ach_get() next/last and poll()
-  - Interrupters randomly signal publishers and subscribers
-  - Test user, kernel, and anonymous channels
 * TODO Test for resource leaks
   - See kmemleak
   - open/close seem fine
