@@ -134,6 +134,34 @@ void ach_sig_dfl_unblock( const int *sig );
  */
 pid_t ach_detach( unsigned timeout );
 
+
+/** Format for ach frames sent over pipes or stored on disk */
+typedef struct {
+    char magic[8];         /**< magic number: "achpipe", null terminated */
+    uint8_t size_bytes[8]; /**< size, stored little endian for disk and network transmission */
+    uint8_t data[1];       /**< flexible array */
+} ach_pipe_frame_t;
+
+/** Malloc an ach_pipe_frame_t with room for `size' data bytes.
+ *
+ * \return a newly allocated ach_pipe_frame with its magic and
+ * size fields properly filled.
+ */
+ach_pipe_frame_t *ach_pipe_alloc(size_t size);
+
+/** Set size field in ach frame, always stored little endian.
+ * \param frame The frame struct
+ * \param size The size in native byte order
+ */
+void ach_pipe_set_size(ach_pipe_frame_t *frame, uint64_t size);
+
+/** Set size field in ach frame, always stored little endian.
+ * \param frame The frame struct
+ * \returns The size in native byte order
+ */
+uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
+
+
 /** Wait this long for notification from child.
  * A default timeout for ach_detach
  */

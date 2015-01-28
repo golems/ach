@@ -95,10 +95,6 @@ static int bad_map( enum ach_map m )
         (m >= (sizeof(libach_vtabs) / sizeof(libach_vtabs[0])));
 }
 
-
-size_t ach_channel_size = sizeof(ach_channel_t);
-size_t ach_attr_size = sizeof(ach_attr_t);
-
 const char *ach_result_to_string(ach_status_t result) {
 
     switch(result) {

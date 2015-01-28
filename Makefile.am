@@ -29,7 +29,7 @@ libach_la_SOURCES = \
 	src/libach.c \
 	src/libach_posix.c \
 	src/libach_klinux.c \
-	src/pipe.c src/dns.c \
+	src/dns.c \
 	src/event.c
 # This is a libtool version -- CURRENT:REVISION:AGE
 # Is /NOT/ major.minor.patch and the relationship is nontrivial
@@ -38,7 +38,7 @@ libach_la_SOURCES = \
 libach_la_LDFLAGS = -version-info 4:0:0 -export-symbols-regex '^ach_'
 
 noinst_LTLIBRARIES = libachutil.la
-libachutil_la_SOURCES = src/achutil.c include/achutil.h
+libachutil_la_SOURCES = src/achutil.c src/pipe.c
 
 ##############
 ## PROGRAMS ##
