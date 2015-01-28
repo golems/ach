@@ -63,12 +63,17 @@ extern "C" {
 #endif
 
 #ifdef __GNUC__
+/** Warn if result is unused */
 #define ACH_WARN_UNUSED __attribute__((warn_unused_result))
 #else
+/** Warn if result is unused */
 #define ACH_WARN_UNUSED
 #endif /* __GNUC__ */
 
-/** return status codes for ach functions */
+/** return status codes for ach functions.
+ *
+ *  \see enum ach_mask
+ */
 typedef enum ach_status {
     ACH_OK = 0,             /**< Call successful */
     ACH_OVERFLOW = 1,       /**< destination too small to hold frame */
@@ -132,14 +137,25 @@ enum ach_mask {
     ACH_MASK_ALL            = 0xffffffff
 };
 
+/** Convenience typedef for enum ach_mask */
 typedef enum ach_mask ach_mask_t;
 
+/** Return the mask value for status. */
 static inline int
 ach_status_mask( enum ach_status status )
 {
     return (enum ach_mask)ACH_STATUS_MASK(status);
 }
 
+/** Test if status is set in mask.
+ *
+ *  \param status  the status vale to check
+ *
+ *  \param mask    bitwise OR of enum ach_mask values
+ *
+ *  \return        whether the corresponding bit for status
+ *                 is set in mask
+ */
 static inline int
 ach_status_match( enum ach_status status, int mask )
 {
@@ -149,7 +165,8 @@ ach_status_match( enum ach_status status, int mask )
 /** Option flags for ach_get().
  *
  * Default behavior is to retrieve the oldest unseen frame without
- * waiting.*/
+ * waiting.
+ */
 typedef enum {
     /* default options are zero */
 

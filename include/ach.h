@@ -200,10 +200,16 @@ extern "C" {
         ACH_MAP_DEFAULT = 0,  /**< Use the default mapping for channels */
         ACH_MAP_ANON = 1,     /**< anonymous channel - use heap memory */
         ACH_MAP_USER = 2,     /**< Use shared memory for channels */
-        ACH_MAP_KERNEL = 3,   /**< Use kernel memory for channels - require ach kernel module being loaded */
+
+        ACH_MAP_KERNEL = 3,   /**< Use kernel memory for channels -
+                               *   requires ach kernel module to be
+                               *   loaded */
     };
 
-    /** Type for header in shared memory */
+    /** Type for header in shared memory.
+     *
+     *  This is not exposed to library clients.
+     */
     struct ach_header;
 
     /** Attributes to pass to ach_open.
@@ -289,7 +295,13 @@ extern "C" {
     /** Virtual Method Table for handling different channel mappings */
     struct ach_channel_vtab;
 
-    /** Handle for an Ach channel.
+    /** Descriptor for an Ach channel.
+     *
+     *  \warning This method may not be threadsafe.  If library
+     *           clients need to access the same channel from
+     *           different threads, either open the channel with
+     *           separate struct ach_channel desciptors for each
+     *           thread, or synchronize access to the same descriptor.
      *
      *  Library users are strongly discourged from directly accessing
      *  members of this structure; its fields may change in future
@@ -387,15 +399,16 @@ extern "C" {
      *  \pre chan has been opened with ach_open()
      *
      *  \post If buf is big enough to hold the next frame, buf
-     *  contains the data for the last frame and chan.seq_num is set
-     *  to the last frame.  If buf is too small to hold the next
-     *  frame, no side effects occur and ACH_OVERFLOW is returned.
-     *  The seq_num field of chan will be set to the latest sequence
-     *  number (that of the gotten frame).
+     *        contains the data for the last frame and chan.seq_num is
+     *        set to the last frame.  If buf is too small to hold the
+     *        next frame, no side effects occur and ACH_OVERFLOW is
+     *        returned.  The seq_num field of chan will be set to the
+     *        latest sequence number (that of the gotten frame).
      *
      *  \bug Linux kernel channels will return ACH_OK when they should
-     *  return ACH_MISSED_FRAME.  The data is still retrieved, but
-     *  library clients are not notified of the skipped messages.
+     *       return ACH_MISSED_FRAME.  The data is still retrieved,
+     *       but library clients are not notified of the skipped
+     *       messages.
      *
      *  \param[in,out] chan The previously opened channel handle
      *
@@ -443,24 +456,29 @@ extern "C" {
              const struct timespec *ACH_RESTRICT abstime,
              int options );
 
-    /** Writes a new message in the channel.
-
-        \pre chan has been opened with ach_open() and is large enough
-        to hold the message.
-
-        \post The contents of buf are copied into the channel and the
-        sequence number of the channel is incremented.  If the channel
-        is too small to hold the message, the message is not copied
-        into the channel as will not be seen by receivers.
-
-        \param chan (action) The channel to write to
-        \param buf The buffer containing the data to copy into the channel
-        \param len number of bytes in buf to copy, len > 0
-        \return ACH_OK on success. If the channel is too small to hold
-        the frame, returns ACH_OVERFLOW.
-    */
+    /** Copy a new message into the channel.
+     *
+     *  \pre chan has been opened with ach_open() and is large enough
+     *       to hold the message.
+     *
+     *  \post The contents of buf are copied into the channel and the
+     *        sequence number of the channel is incremented.  If the
+     *        channel is too small to hold the message, the message is
+     *        not copied into the channel as will not be seen by
+     *        receivers.
+     *
+     *  \param[in,out] channel The channel to write to
+     *
+     *  \param[in] buf         the buffer containing the data to copy into the
+     *                         channel
+     *
+     *  \param[in] len         number of bytes in buf to copy, len > 0
+     *
+     *  \return ::ACH_OK on success. If the channel is too small to hold
+     *          the frame, returns ::ACH_OVERFLOW.
+     */
     enum ach_status
-    ach_put( ach_channel_t *chan, const void *buf, size_t len );
+    ach_put( ach_channel_t *channel, const void *buf, size_t len );
 
 
     /** Discards all previously received messages for this handle.  Does
@@ -470,10 +488,11 @@ extern "C" {
     ach_flush( ach_channel_t *chan );
 
     /** Closes the shared memory block.
-
-        \pre chan is an initialized ach channel with open shared memory area
-
-        \post the shared memory file for chan is closed
+     *
+     *  \pre chan is an initialized ach channel with open shared
+     *       memory area
+     *
+     *  \post the shared memory file for chan is closed
     */
     enum ach_status ACH_WARN_UNUSED
     ach_close( ach_channel_t *chan );
