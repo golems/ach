@@ -100,6 +100,11 @@ noinst_PROGRAMS += klinuxtest
 klinuxtest_SOURCES = src/test/klinuxtest.c
 klinuxtest_LDADD = libach.la libachtest.la
 
+
+noinst_PROGRAMS += mask
+mask_SOURCES = src/test/mask.c
+mask_LDADD = libach.la libachtest.la
+
 noinst_PROGRAMS += holedigger
 holedigger_SOURCES = src/test/holedigger.c
 holedigger_LDADD = libach.la libachtest.la
