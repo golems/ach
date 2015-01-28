@@ -392,12 +392,13 @@ static void open_channels(void)
 
         for(;;) {
             enum ach_status r = ach_open( &g_chans[i], buf, NULL );
-            if( ACH_EACCES == r || ACH_ENOENT == r ) {
-            /* Race against udev */
-                usleep(1000);
-                continue;
-            } else if (ACH_OK == r) break;
-            else fail_ach("ach_open", r);
+            if( ACH_OK == r ) {
+                break;
+            } else if( ach_status_match(r, ACH_MASK_ENOENT | ACH_MASK_EACCES) ) {
+                usleep(1000);     /* Race against udev */
+            } else {
+                fail_ach("ach_open", r);
+            }
         }
     }
     CHECK_ACH( "open", ach_open(&g_chan_begin, "achtorture-begin", NULL) );

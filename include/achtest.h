@@ -78,9 +78,9 @@ void check_ach(const char *thing, ach_status_t r );
     }
 
 #define CHECK_ACH_MASK( thing,  allow_mask, exp )                       \
-{                                                                       \
+    {                                                                   \
         enum ach_status check_ach_result = (exp);                       \
-        if( !( allow_mask & ACH_MASK_FROM_STATUS(check_ach_result)) )   \
+        if( ! ach_status_match(check_ach_result, allow_mask) )          \
         {                                                               \
             fprintf(stderr,                                             \
                     "FAILURE:\t%s: %s, at %s:%d\n"                      \

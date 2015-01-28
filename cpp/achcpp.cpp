@@ -57,7 +57,7 @@ static int check_status( ach_status_t result,
                          int allow_mask,
                          int warn_mask) {
 
-    int r = ACH_MASK_FROM_STATUS(result);
+    int r = ACH_STATUS_MASK(result);
     int x;
     if (!(allow_mask & r)) {
         if (warn_mask & r) return STATUS_WARN;

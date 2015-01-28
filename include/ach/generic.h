@@ -95,35 +95,56 @@ typedef enum ach_status {
 } ach_status_t;
 
 
-#define ACH_MASK_FROM_STATUS(r) (1<<(r))
+/** Generate a bit mask from an ach status type.
+ *
+ * \see enum ach_mask
+ */
+#define ACH_STATUS_MASK(r) (1<<(r))
 
+/** Bit masks that correspond to members of enum ach_status.
+ *
+ *  These masks are useful to check whether a status code matches a
+ *  set of values.
+ */
 enum ach_mask {
-    ACH_MASK_OK             = ACH_MASK_FROM_STATUS(ACH_OK),
-    ACH_MASK_OVERFLOW       = ACH_MASK_FROM_STATUS(ACH_OVERFLOW),
-    ACH_MASK_INVALID_NAME   = ACH_MASK_FROM_STATUS(ACH_INVALID_NAME),
-    ACH_MASK_BAD_SHM_FILE   = ACH_MASK_FROM_STATUS(ACH_BAD_SHM_FILE),
-    ACH_MASK_FAILED_SYSCALL = ACH_MASK_FROM_STATUS(ACH_FAILED_SYSCALL),
-    ACH_MASK_STALE_FRAMES   = ACH_MASK_FROM_STATUS(ACH_STALE_FRAMES),
-    ACH_MASK_MISSED_FRAME   = ACH_MASK_FROM_STATUS(ACH_MISSED_FRAME),
-    ACH_MASK_TIMEOUT        = ACH_MASK_FROM_STATUS(ACH_TIMEOUT),
-    ACH_MASK_EEXIST         = ACH_MASK_FROM_STATUS(ACH_EEXIST),
-    ACH_MASK_ENOENT         = ACH_MASK_FROM_STATUS(ACH_ENOENT),
-    ACH_MASK_CLOSED         = ACH_MASK_FROM_STATUS(ACH_CLOSED),
-    ACH_MASK_BUG            = ACH_MASK_FROM_STATUS(ACH_BUG),
-    ACH_MASK_EINVAL         = ACH_MASK_FROM_STATUS(ACH_EINVAL),
-    ACH_MASK_CORRUPT        = ACH_MASK_FROM_STATUS(ACH_CORRUPT),
-    ACH_MASK_BAD_HEADER     = ACH_MASK_FROM_STATUS(ACH_BAD_HEADER),
-    ACH_MASK_EACCES         = ACH_MASK_FROM_STATUS(ACH_EACCES),
-    ACH_MASK_CANCELED       = ACH_MASK_FROM_STATUS(ACH_CANCELED),
-    ACH_MASK_EFAULT         = ACH_MASK_FROM_STATUS(ACH_EFAULT),
-    ACH_MASK_EINTR          = ACH_MASK_FROM_STATUS(ACH_EINTR),
-    ACH_MASK_ENOTSUP        = ACH_MASK_FROM_STATUS(ACH_ENOTSUP),
+    ACH_MASK_OK             = ACH_STATUS_MASK(ACH_OK),
+    ACH_MASK_OVERFLOW       = ACH_STATUS_MASK(ACH_OVERFLOW),
+    ACH_MASK_INVALID_NAME   = ACH_STATUS_MASK(ACH_INVALID_NAME),
+    ACH_MASK_BAD_SHM_FILE   = ACH_STATUS_MASK(ACH_BAD_SHM_FILE),
+    ACH_MASK_FAILED_SYSCALL = ACH_STATUS_MASK(ACH_FAILED_SYSCALL),
+    ACH_MASK_STALE_FRAMES   = ACH_STATUS_MASK(ACH_STALE_FRAMES),
+    ACH_MASK_MISSED_FRAME   = ACH_STATUS_MASK(ACH_MISSED_FRAME),
+    ACH_MASK_TIMEOUT        = ACH_STATUS_MASK(ACH_TIMEOUT),
+    ACH_MASK_EEXIST         = ACH_STATUS_MASK(ACH_EEXIST),
+    ACH_MASK_ENOENT         = ACH_STATUS_MASK(ACH_ENOENT),
+    ACH_MASK_CLOSED         = ACH_STATUS_MASK(ACH_CLOSED),
+    ACH_MASK_BUG            = ACH_STATUS_MASK(ACH_BUG),
+    ACH_MASK_EINVAL         = ACH_STATUS_MASK(ACH_EINVAL),
+    ACH_MASK_CORRUPT        = ACH_STATUS_MASK(ACH_CORRUPT),
+    ACH_MASK_BAD_HEADER     = ACH_STATUS_MASK(ACH_BAD_HEADER),
+    ACH_MASK_EACCES         = ACH_STATUS_MASK(ACH_EACCES),
+    ACH_MASK_CANCELED       = ACH_STATUS_MASK(ACH_CANCELED),
+    ACH_MASK_EFAULT         = ACH_STATUS_MASK(ACH_EFAULT),
+    ACH_MASK_EINTR          = ACH_STATUS_MASK(ACH_EINTR),
+    ACH_MASK_ENOTSUP        = ACH_STATUS_MASK(ACH_ENOTSUP),
 
     ACH_MASK_NONE           = 0,
     ACH_MASK_ALL            = 0xffffffff
 };
 
 typedef enum ach_mask ach_mask_t;
+
+static inline int
+ach_status_mask( enum ach_status status )
+{
+    return (enum ach_mask)ACH_STATUS_MASK(status);
+}
+
+static inline int
+ach_status_match( enum ach_status status, int mask )
+{
+    return (ACH_STATUS_MASK(status) & mask) ? 1 : 0;
+}
 
 /** Option flags for ach_get().
  *

@@ -149,7 +149,7 @@ int main( int argc, char **argv ){
 
     /* unlink */
     ach_status_t r = ach_unlink(OPT_CHAN);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
                 ach_result_to_string(r));
         return -1;

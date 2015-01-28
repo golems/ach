@@ -113,7 +113,7 @@ open_channel( PyObject *self, PyObject *args ) {
     /* Create channel if necessary */
     if( ACH_ENOENT == r ) {
         r = ach_create( name, (size_t)frame_count, (size_t)frame_size, NULL );
-        if( ACH_OK == r || ACH_EEXIST == r ) {
+        if( ach_status_match(r, ACH_MASK_OK | ACH_MASK_EEXIST) ) {
             r = ach_open(c, name, NULL);
         }
     }

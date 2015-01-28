@@ -77,7 +77,7 @@ double now() {
 
 /* simple integrator, x = dt * dx */
 void robot(void) {
-    int r = ach_open(&chan_feedback, "feedback", NULL);
+    enum ach_status r = ach_open(&chan_feedback, "feedback", NULL);
     if(ACH_OK != r) abort();
     r = ach_open(&chan_control, "control", NULL);
     if(ACH_OK != r) abort();
@@ -86,34 +86,36 @@ void robot(void) {
         u_t U;
         size_t fs;
         r = ach_get( &chan_control, U, sizeof(U), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
-        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(U) == fs ) ) abort();
-        double tm = now();
-        X[2] = U[0];               /*  dx = u       */
-        X[1] = (tm - X[0]) * X[2]; /*  x = dt * dx  */
-        X[0] = tm;
-        ach_put(&chan_feedback, X, sizeof(X));
+        if( ach_status_match(r, ACH_MASK_OK | ACH_MASK_MISSED_FRAME) && sizeof(U) == fs ) {
+            double tm = now();
+            X[2] = U[0];               /*  dx = u       */
+            X[1] = (tm - X[0]) * X[2]; /*  x = dt * dx  */
+            X[0] = tm;
+            ach_put(&chan_feedback, X, sizeof(X));
+        } else abort();
     }
     exit(0);
 }
 
 /* print samples periodically */
 void periodic_logger(void) {
-    int r = ach_open(&chan_feedback, "feedback", NULL);
+    enum ach_status r = ach_open(&chan_feedback, "feedback", NULL);
     if(ACH_OK != r) abort();
     while(1) {
         x_t X;
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT|ACH_O_LAST );
-        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs) ) abort();
-        printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
-        usleep((int) (1e6 * 0.1)); /* 10 Hertz */
+        if( ach_status_match(r, ACH_MASK_OK | ACH_MASK_MISSED_FRAME) && sizeof(X) == fs ) {
+            printf("%f\t%f\t%f\n", X[0], X[1], X[2]);
+            usleep((int) (1e6 * 0.1)); /* 10 Hertz */
+        } else abort();
     }
     exit(0);
 }
 
 /* log all samples to a file */
 void full_logger(void) {
-    int r = ach_open(&chan_feedback, "feedback", NULL);
+    enum ach_status r = ach_open(&chan_feedback, "feedback", NULL);
     if(ACH_OK != r) abort();
     FILE *fp = fopen("ach-example.dat", "w");
     if(NULL == fp) abort();
@@ -121,8 +123,9 @@ void full_logger(void) {
         x_t X;
         size_t fs;
         r = ach_get( &chan_feedback, X, sizeof(X), &fs, NULL, ACH_O_WAIT );
-        if( !( (ACH_OK==r || ACH_MISSED_FRAME==r) && sizeof(X) == fs) ) abort();
-        fprintf(fp,"%f\t%f\t%f\n", X[0], X[1], X[2]);
+        if( ach_status_match(r, ACH_MASK_OK | ACH_MASK_MISSED_FRAME) ) {
+            fprintf(fp,"%f\t%f\t%f\n", X[0], X[1], X[2]);
+        } else abort();
     }
     fclose(fp);
     exit(0);
@@ -143,12 +146,12 @@ void controller(void) {
 
 int main(int argc, char **argv) {
     (void) argc; (void)argv;
-    int r;
+    enum ach_status r;
     /* create channels */
     r = ach_unlink("control");               /* delete first */
-    if( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
+    if( ! ach_status_match(r, ACH_MASK_OK|ACH_MASK_ENOENT) ) abort();
     r = ach_unlink("feedback");              /* delete first */
-    if( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
+    if( ! ach_status_match(r, ACH_MASK_OK|ACH_MASK_ENOENT) ) abort();
     r = ach_create("control", 10ul, 256ul, NULL );
     if(ACH_OK != r) abort();
     r = ach_create("feedback", 10ul, 256ul, NULL );

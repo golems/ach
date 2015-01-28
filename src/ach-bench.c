@@ -137,8 +137,8 @@ void calibrate(void) {
 void init_time_chan(void) {
     /* create channel */
     ach_create_attr_t cattr;
-    int r = ach_unlink("time");               /* delete first */
-    if( !(ACH_OK == r || ACH_ENOENT == r)) abort();
+    enum ach_status r = ach_unlink("time");               /* delete first */
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) abort();
     if (KERNDEV) {
         ach_create_attr_init(&cattr);
         cattr.map = ACH_MAP_KERNEL;
@@ -235,8 +235,8 @@ void receiver_ach(int rt) {
 
 void setup_ach(void) {
     /* create channel */
-    int r = ach_unlink("bench");               /* delete first */
-    if ( !( ACH_OK == r || ACH_ENOENT == r) ) abort();
+    enum ach_status r = ach_unlink("bench");               /* delete first */
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) abort();
     ach_create_attr_t cattr;
     if (KERNDEV) {
         ach_create_attr_init(&cattr);

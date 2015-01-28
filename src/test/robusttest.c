@@ -95,7 +95,7 @@ int main( int argc, char **argv ){
 
     /* unlink */
     r = ach_unlink(OPT_CHAN);
-    test( (ACH_OK==r || ACH_ENOENT == r),
+    test( ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT),
           r, "ach_unlink");
 
     /* create */

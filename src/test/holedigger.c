@@ -77,7 +77,7 @@ int main( int argc, char **argv ){
     attr.map = ACH_MAP_KERNEL;
 
     r = ach_unlink(OPT_CHAN);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
         fail_ach( "unlink before create", r );
     }
 

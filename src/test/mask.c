@@ -88,12 +88,12 @@ int main( int argc, char **argv ){
         case ACH_ENOTSUP:
         case ACH_EEXIST:
             CHECK_TRUE("Mask values\n",
-                       ACH_MASK_FROM_STATUS(i) ==
-                       2*ACH_MASK_FROM_STATUS(i-1) );
+                       ACH_STATUS_MASK(i) ==
+                       2*ACH_STATUS_MASK(i-1) );
         case ACH_OK:
             printf("%-18s (%02d): 0x%05x\n",
                    ach_result_to_string(r),
-                   r, ACH_MASK_FROM_STATUS(r));
+                   r, ach_status_mask(r));
             i++;
             continue;
         }

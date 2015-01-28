@@ -72,7 +72,7 @@ int test_clock(clockid_t clock, enum ach_map map)
     CHECK_ACH("clock set map ", ach_create_attr_set_map( &attr, map ) );
 
     enum ach_status r = ach_unlink(OPT_CHAN);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
         fail_ach( "initial unlink", r );
     }
 

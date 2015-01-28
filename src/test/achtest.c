@@ -85,7 +85,7 @@ static void test(ach_status_t r, const char *thing) {
 int test_basic() {
     /* unlink */
     ach_status_t r = ach_unlink(opt_channel_name);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
                 ach_result_to_string(r));
         return -1;
@@ -331,7 +331,7 @@ static int subscriber( int i ) {
 int test_multi() {
 
     ach_status_t r = ach_unlink(opt_channel_name);
-    if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
         fprintf(stderr, "ach_unlink failed\n: %s",
                 ach_result_to_string(r));
         return -1;
@@ -424,7 +424,7 @@ int main( int argc, char **argv ){
 
     {
         ach_status_t r = ach_unlink(opt_channel_name);
-        if( ! (ACH_OK==r || ACH_ENOENT == r) ) {
+        if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
             fprintf(stderr, "ach_unlink failed\n: %s",
                     ach_result_to_string(r));
             return -1;
