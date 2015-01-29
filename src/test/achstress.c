@@ -59,6 +59,8 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <errno.h>
+#include <stdbool.h>
+#include <poll.h>
 #include "ach.h"
 #include "achtest.h"
 
@@ -68,6 +70,8 @@ static size_t opt_n_chan = 1;
 static size_t opt_n_sig  = 0;
 static int opt_verbosity = 0;
 static enum ach_map opt_map = ACH_MAP_DEFAULT;
+static bool opt_poll = false;
+static int opt_get_options = 0;
 
 static pid_t *g_pid_sub = NULL;
 static pid_t *g_pid_pub = NULL;
@@ -104,7 +108,7 @@ crc_16_itu_t( uint16_t crc, const uint8_t *buf, size_t n );
 int main( int argc, char **argv ){
     int c;
     sigset_t blockset, emptyset;
-    while( (c = getopt( argc, argv, "p:s:c:i:vuk")) != -1 ) {
+    while( (c = getopt( argc, argv, "p:s:c:i:vukPL")) != -1 ) {
         switch(c) {
         case 'p':
             opt_n_pub = (size_t)atoi(optarg);
@@ -127,6 +131,12 @@ int main( int argc, char **argv ){
         case 'u':
             opt_map = ACH_MAP_USER;
             break;
+        case 'P':
+            opt_poll = true;
+            break;
+        case 'L':
+            opt_get_options |= ACH_O_LAST;
+            break;
         case '?':
         case 'h':
         case 'H':
@@ -139,9 +149,12 @@ int main( int argc, char **argv ){
                   "  -p PUBLISHER-COUNT    number of publishers\n"
                   "  -s SUBSCRIBER-COUNT   number of subscribers\n"
                   "  -c CHANNEL-COUNT      number of channels\n"
-                  /* "  -i SIG-COUNT          number of interrupters\n" */
+                  "  -i SIG-COUNT          number of interrupters\n"
                   "  -k                    use kernel-mapped channels\n"
                   "  -u                    use user-space-mapped channels\n"
+                  "  -P                    multiplex channel reading with poll()\n"
+                  "                        (kernel-channels only)\n"
+                  "  -L                    get last message (default first message)\n"
                   "  -?                    display this help and exit\n"
                 );
             exit(EXIT_SUCCESS);
@@ -455,9 +468,40 @@ static void worker_pub(unsigned int seed)
     exit(EXIT_SUCCESS);
 }
 
+
+
+static void worker_sub_get(size_t i_chan, int options)
+{
+        int buf[32];
+        size_t frame_size;
+        enum ach_status r;
+
+        r = ach_get( &g_chans[i_chan], buf, sizeof(buf), &frame_size,
+                     NULL, options );
+        switch(r) {
+        case ACH_CANCELED:
+            exit(EXIT_SUCCESS);
+        case ACH_OK:
+        case ACH_MISSED_FRAME:
+        {
+            size_t n = frame_size / sizeof(int) - 1;
+            unsigned csum = crc_16_itu_t( 0, (uint8_t*)buf, n * sizeof(int) );
+            unsigned buf_cksum = (unsigned)buf[n];
+            DEBUG(2, "sub frame_size: %lu\n", frame_size);
+            DEBUG(2, "sub n:          %lu\n", n);
+            CHECK_TRUE( "get checksum", buf_cksum == csum );
+        }
+        break;
+        default:
+            fail_ach( "subscriber ach_get", r );
+        }
+
+}
+
 static void worker_sub(unsigned seed)
 {
-    DEBUG(1, "worker_sub %d\n", getpid());
+    pid_t mypid = getpid();
+    DEBUG(1, "worker_sub %d\n", mypid);
 
     sighandler_install(SIGUSR2, sighandler_nop);
     sighandler_install(SIGINT, sighandler_cancel);
@@ -467,33 +511,38 @@ static void worker_sub(unsigned seed)
 
     check_errno( "kill parent", kill(getppid(), SIGUSR1) );
 
-    for(;;) {
-        int buf[32];
-        size_t frame_size;
-        enum ach_status r;
-        size_t j = (unsigned)rand_r(&seed) % opt_n_chan;
-        r = ach_get( &g_chans[j], buf, sizeof(buf), &frame_size, NULL,
-                     ACH_O_WAIT | ACH_O_LAST );
-        switch(r) {
-        case ACH_CANCELED: exit(EXIT_SUCCESS);
-        case ACH_OK:
-        case ACH_MISSED_FRAME:
-            /* TODO: validate */
-            break;
-        default:
-            fail_ach( "subscriber ach_get", r );
+    if( opt_poll ) {
+        struct pollfd pfd[opt_n_chan];
+        size_t i;
+        for( i = 0; i < opt_n_chan; i ++ ) {
+            CHECK_ACH( "channel fd", ach_channel_fd( &g_chans[i], &pfd[i].fd) );
+            pfd[i].events = POLLIN;
         }
-
-        {
-            size_t n = frame_size / sizeof(int) - 1;
-            unsigned csum = crc_16_itu_t( 0, (uint8_t*)buf, n * sizeof(int) );
-            unsigned buf_cksum = (unsigned)buf[n];
-            DEBUG(2, "sub frame_size: %lu\n", frame_size);
-            DEBUG(2, "sub n:          %lu\n", n);
-            CHECK_TRUE( "get checksum", buf_cksum == csum );
-
+        /* run loop */
+        while(!g_cancel) {
+            int options = ACH_O_NONBLOCK | opt_get_options;
+            int r_poll = poll(pfd, opt_n_chan, -1);
+            if( r_poll < 0 ) {
+                if( EINTR == errno ) continue;
+                else fail_errno("poll");
+            }
+            for( i = 0; i < opt_n_chan; i ++ ) {
+                if( (pfd[i].revents & POLLIN) ) {
+                    DEBUG(2, "worker_sub %d: pollin on %lu\n", mypid, i)
+                    worker_sub_get(i, options);
+                }
+            }
+        }
+    } else {
+        int options = opt_get_options | ACH_O_WAIT;
+        /* run loop */
+        while(!g_cancel) {
+            size_t i = (unsigned)rand_r(&seed) % opt_n_chan;
+            worker_sub_get(i, options);
         }
     }
+
+    exit(EXIT_SUCCESS);
 }
 
 static void worker_sig_kill(pid_t *p)
