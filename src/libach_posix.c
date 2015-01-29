@@ -711,6 +711,13 @@ libach_unlink_anon( const char *name )
     return ACH_EINVAL;
 }
 
+static enum ach_status
+name_ok_always( const char *name )
+{
+    (void) name;
+    return ACH_OK;
+}
+
 const struct ach_channel_vtab
 libach_vtab_user = {
     .map = ACH_MAP_USER,
@@ -725,6 +732,7 @@ libach_vtab_user = {
     .exists = libach_exists_user,
     .filename = libach_filename_user,
     .fd = libach_channel_fd_notsup,
+    .name_ok = libach_name_ok
 };
 
 const struct ach_channel_vtab
@@ -741,4 +749,5 @@ libach_vtab_anon = {
     .exists = libach_exists_anon,
     .filename = libach_filename_anon,
     .fd = libach_channel_fd_notsup,
+    .name_ok = name_ok_always
 };

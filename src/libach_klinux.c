@@ -374,5 +374,6 @@ libach_vtab_klinux = {
     .unlink = libach_unlink_klinux,
     .exists = libach_exists_klinux,
     .filename = libach_filename_klinux,
-    .fd = libach_channel_fd_ok
+    .fd = libach_channel_fd_ok,
+    .name_ok = libach_name_ok
 };

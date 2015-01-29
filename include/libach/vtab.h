@@ -104,9 +104,13 @@ struct ach_channel_vtab {
     enum ach_status
     (*filename)( const char *name, char *buf, size_t n );
 
-    /** Get the full filename. */
+    /** Get the file descriptor. */
     enum ach_status
     (*fd)( const struct ach_channel *channel, int *file_descriptor );
+
+    /** Check for valid name */
+    enum ach_status
+    (*name_ok)( const char *name );
 
     /** The mapping for this vtab. */
     enum ach_map map;
@@ -127,6 +131,10 @@ libach_channel_fd_ok( const struct ach_channel *channel, int *file_descriptor );
 
 enum ach_status
 libach_channel_fd_notsup( const struct ach_channel *channel, int *file_descriptor );
+
+enum ach_status
+libach_name_ok( const char *name );
+
 
 #ifdef __cplusplus
 }

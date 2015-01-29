@@ -122,9 +122,9 @@ const char *ach_result_to_string(ach_status_t result) {
 
 }
 
-/* returns 0 if channel name is bad */
-static enum ach_status
-channel_name_ok( const char *name ) {
+enum ach_status
+libach_name_ok( const char *name )
+{
     size_t len;
     if( NULL == name ) return ACH_EINVAL;
     /* check size */
@@ -174,12 +174,12 @@ ach_create( const char *channel_name,
 
     /* validate */
     if( bad_map(attr->map) ) return ACH_EINVAL;
-    if( attr->map != ACH_MAP_ANON ) {
-        r = channel_name_ok( channel_name );
-        if( ACH_OK != r ) return r;
-    }
 
     vtab = libach_vtabs[attr->map];
+
+    r = vtab->name_ok( channel_name );
+    if( ACH_OK != r ) return r;
+
 
     /* Check for existence in sister namespace.  This is theoretically
      * racy since someone else could create a channel in the sister
@@ -219,10 +219,11 @@ ach_open( ach_channel_t *chan, const char *channel_name,
 {
     enum ach_status r;
 
-    r = channel_name_ok( channel_name );
-    if( ACH_OK != r ) return r;
     if( NULL == attr ) attr = &default_ach_attr;
     if( bad_map(attr->map) ) return ACH_EINVAL;
+
+    r = libach_vtabs[attr->map]->name_ok( channel_name );
+    if( ACH_OK != r ) return r;
 
     if( ACH_MAP_DEFAULT == attr->map ) {
         /* Default behavior: open kernel device if it exists */
@@ -306,7 +307,7 @@ ach_unlink( const char *name )
 {
     enum ach_status r_name, r_s, r_k;
 
-    r_name = channel_name_ok( name );
+    r_name = libach_name_ok( name );
     if( ACH_OK != r_name ) return r_name;
 
     r_s = libach_vtab_user.unlink(name);
