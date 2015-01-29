@@ -19,6 +19,8 @@ AC_C_RESTRICT
 AC_C_INLINE
 AC_C_CONST
 
+# Check POSIX
+AC_SEARCH_LIBS([mq_send],[rt])
 
 AC_ARG_WITH([lcm], AS_HELP_STRING([--without-lcm], [Disable LCM support]))
 AC_ARG_WITH([ach], AS_HELP_STRING([--without-ach], [Disable Ach support]))
@@ -102,11 +104,3 @@ AC_MSG_NOTICE([=====================])
 AC_MSG_NOTICE([LCM:      $have_lcm])
 AC_MSG_NOTICE([ACH:      $have_ach])
 AC_MSG_NOTICE([TAO:      $have_tao])
-
-
-
-
-
-
-
-
