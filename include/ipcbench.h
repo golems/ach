@@ -87,7 +87,8 @@ struct ipcbench_vtab {
 
 extern struct timespec ipcbench_period;
 
-extern struct ipcbench_vtab ipc_bench_vtab_ach;
+extern struct ipcbench_vtab ipc_bench_vtab_ach_user;
+extern struct ipcbench_vtab ipc_bench_vtab_ach_kernel;
 extern struct ipcbench_vtab ipc_bench_vtab_lcm;
 extern struct ipcbench_vtab ipc_bench_vtab_pipe;
 extern struct ipcbench_vtab ipc_bench_vtab_mq;

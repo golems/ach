@@ -51,27 +51,57 @@ static ach_channel_t channel;
 
 #define CHAN_NAME "ipcbench"
 
-static void s_init(void) {
+static void s_init(enum ach_map map) {
     ach_status_t r = ach_unlink(CHAN_NAME);               /* delete first */
 
     if( !( ACH_OK == r || ACH_ENOENT == r) ) {
         fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r) );
         abort();
     }
+
+    struct ach_create_attr attr;
+    ach_create_attr_init(&attr);
+    if( ACH_OK != (r = ach_create_attr_set_map(&attr,map)) ) {
+        fprintf(stderr, "ach_create_attr_set_map: %s\n", ach_result_to_string(r));
+        abort();
+    }
+
     if( ACH_OK != (r = ach_create(CHAN_NAME, 10,
-                                  sizeof(struct timespec), NULL)) ) {
+                                  sizeof(struct timespec), &attr)) ) {
         fprintf(stderr, "ach_create: %s\n", ach_result_to_string(r) );
         abort();
     }
 
-    if( ACH_OK != (r = ach_open(&channel, CHAN_NAME, NULL)) ) {
-        fprintf(stderr, "ach_open: %s\n", ach_result_to_string(r) );
-        abort();
+
+    for(;;) {
+        r = ach_open( &channel, CHAN_NAME, NULL );
+        if( ACH_OK == r ) {
+            break;
+        } else if( ach_status_match(r, ACH_MASK_ENOENT | ACH_MASK_EACCES) ) {
+            usleep(1000);     /* Race against udev */
+        } else {
+            fprintf(stderr, "ach_open", ach_result_to_string(r) );
+            abort();
+        }
     }
 }
 
+static void s_init_user(void)
+{
+    s_init(ACH_MAP_USER);
+}
+
+static void s_init_kernel(void)
+{
+    s_init(ACH_MAP_KERNEL);
+}
+
 static void s_destroy(void) {
-    ach_unlink(CHAN_NAME);
+    enum ach_status r = ach_unlink(CHAN_NAME);
+    if( ACH_OK != r ) {
+        fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r));
+        abort();
+    }
 }
 
 static void s_send( const struct timespec *ts ) {
@@ -95,8 +125,15 @@ static void s_recv( struct timespec *ts ) {
     }
 }
 
-struct ipcbench_vtab ipc_bench_vtab_ach = {
-    .init = s_init,
+struct ipcbench_vtab ipc_bench_vtab_ach_user = {
+    .init = s_init_user,
+    .send = s_send,
+    .recv = s_recv,
+    .destroy = s_destroy,
+};
+
+struct ipcbench_vtab ipc_bench_vtab_ach_kernel = {
+    .init = s_init_kernel,
     .send = s_send,
     .recv = s_recv,
     .destroy = s_destroy,

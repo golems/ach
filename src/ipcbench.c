@@ -175,7 +175,8 @@ int main( int argc, char **argv ) {
         int multi_receiver;
     } sym_vtabs[] = {
 #ifdef HAVE_ACH_H
-        {"ach", &ipc_bench_vtab_ach, 1},
+        {"ach_user", &ipc_bench_vtab_ach_user, 1},
+        {"ach_kernel", &ipc_bench_vtab_ach_kernel, 1},
 #endif
 #ifdef HAVE_LCM_LCM_H
         {"lcm", &ipc_bench_vtab_lcm, 1},
