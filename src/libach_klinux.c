@@ -212,7 +212,7 @@ libach_get_klinux( ach_channel_t *chan,
 {
 
     achk_opt_t opts;
-    _Bool o_rel = options & ACH_O_RELTIME;
+    bool o_rel = options & ACH_O_RELTIME;
     struct timespec t_end;
 
     opts.options = options;

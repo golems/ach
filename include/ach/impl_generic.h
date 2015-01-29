@@ -246,7 +246,7 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
          int options )
 {
     struct ach_header *shm = chan->shm;
-    bool missed_frame = 0;
+    bool missed_frame = false;
     enum ach_status retval = ACH_BUG;
     const bool o_wait = options & ACH_O_WAIT;
     const bool o_last = options & ACH_O_LAST;
@@ -289,7 +289,7 @@ ach_xget(ach_channel_t * chan, ach_get_fun transfer, void *cx, void **pobj,
         }
 
         if (index_ar[read_index].seq_num > chan->seq_num + 1) {
-            missed_frame = 1;
+            missed_frame = true;
         }
 
         /* read from the index */

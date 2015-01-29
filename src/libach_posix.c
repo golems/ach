@@ -486,7 +486,7 @@ libach_get_posix( ach_channel_t *chan, void *buf, size_t size,
 {
     const struct timespec *ptime;
     struct timespec ltime;
-    _Bool o_rel = options & ACH_O_RELTIME;
+    bool o_rel = options & ACH_O_RELTIME;
 
     if (timeout && o_rel) {
         /* timeout given as relative time */

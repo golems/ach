@@ -60,7 +60,6 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <stdbool.h>
 #include <sys/stat.h>
 
 #include <string.h>

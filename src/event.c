@@ -41,6 +41,7 @@
 #include <unistd.h>
 #include <sys/epoll.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #include "ach.h"
 
@@ -58,8 +59,8 @@ ach_evhandle( struct ach_evhandler *handlers,
     enum ach_map map[n];
     int efd = -1;
 
-    _Bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
-    _Bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
+    bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
+    bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
 
     /* Count kernel channels */
     for( size_t i = 0; i < n; i ++ ) {
@@ -186,8 +187,8 @@ ach_evhandle_epoll( struct ach_evhandler *handlers,
     enum ach_map map[n];
     int efd = -1;
 
-    _Bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
-    _Bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
+    bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
+    bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
 
     /* Count kernel channels */
     for( size_t i = 0; i < n; i ++ ) {
