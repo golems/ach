@@ -95,8 +95,8 @@ static void open_channels();
 static void start_workers(void);
 
 static void worker_pub(unsigned int seed);
-static void worker_sub(void);
-static void worker_sig(void);
+static void worker_sub(unsigned int seed);
+static void worker_sig(unsigned int seed);
 
 static uint16_t
 crc_16_itu_t( uint16_t crc, const uint8_t *buf, size_t n );
@@ -222,12 +222,21 @@ static void start_workers(void)
     unsigned int seed = 42;
     pid_t parent = getpid();
 
+    FILE *fp_rand = fopen("/dev/urandom", "r");
+    CHECK_TRUE("fopen urandom", NULL != fp_rand);
+    i = fread( &seed, sizeof(seed), 1, fp_rand );
+    CHECK_TRUE("got random seed", 1 == i);
+    fclose(fp_rand);
+
+    DEBUG(0, "random seed: %u\n", seed);
+
     /* create subscribers */
     g_pid_sub = (pid_t*)malloc( opt_n_sub * sizeof(g_pid_sub[0]) );
     for( i = 0; i < opt_n_sub; i++ ) {
+        rand_r(&seed);
         g_pid_sub[i] = fork();
         CHECK_TRUE( "fork sub", g_pid_sub[i] >= 0 );
-        if( 0 == g_pid_sub[i] ) worker_sub();
+        if( 0 == g_pid_sub[i] ) worker_sub(seed);
         else wait_ready(g_pid_sub[i]);
     }
 
@@ -248,9 +257,10 @@ static void start_workers(void)
     /* create signallers */
     g_pid_sig = (pid_t*)malloc( opt_n_sig * sizeof(g_pid_sig[0]) );
     for( i = 0; i < opt_n_sig; i++ ) {
+        rand_r(&seed);
         g_pid_sig[i] = fork();
         CHECK_TRUE( "fork sig", g_pid_sig[i] >= 0 );
-        if( 0 == g_pid_sig[i] ) worker_sig();
+        if( 0 == g_pid_sig[i] ) worker_sig(seed);
         else wait_ready(g_pid_sig[i]);
     }
 
@@ -416,13 +426,13 @@ static void worker_pub(unsigned int seed)
     sighandler_install(SIGINT,  sighandler_cancel);
     sighandler_install(SIGTERM, sighandler_cancel);
 
-    check_errno( "kill parent", kill(getppid(), SIGUSR1) );
-
     open_channels();
-
     DEBUG(1, "worker_pub %d: opened channels\n", getpid());
 
-    CHECK_ACH_MASK( "get begin create", (ACH_MASK_OK | ACH_MASK_CANCELED),
+    check_errno( "kill parent", kill(getppid(), SIGUSR1) );
+
+    /* Wait to begin */
+    CHECK_ACH_MASK( "get begin", (ACH_MASK_OK | ACH_MASK_CANCELED),
                     ach_get( &g_chan_begin, buf, sizeof(buf), &frame_size,
                              NULL, ACH_O_WAIT ) );
 
@@ -438,52 +448,50 @@ static void worker_pub(unsigned int seed)
         }
         buf[n] = crc_16_itu_t( 0, (uint8_t*)buf, n*sizeof(buf[0]) );
 
-        for( j=0; j < opt_n_chan; j++ ) {
-            CHECK_ACH_MASK( "pub put", (ACH_MASK_OK | ACH_MASK_CANCELED),
-                            ach_put( &g_chans[j], buf, (n+1)*sizeof(buf[0]) ) );
-        }
+        j = (unsigned)rand_r(&seed) % opt_n_chan;
+        CHECK_ACH_MASK( "pub put", (ACH_MASK_OK | ACH_MASK_CANCELED),
+                        ach_put( &g_chans[j], buf, (n+1)*sizeof(buf[0]) ) );
     }
     exit(EXIT_SUCCESS);
 }
 
-static void worker_sub(void)
+static void worker_sub(unsigned seed)
 {
     DEBUG(1, "worker_sub %d\n", getpid());
 
     sighandler_install(SIGUSR2, sighandler_nop);
     sighandler_install(SIGINT, sighandler_cancel);
     sighandler_install(SIGTERM, sighandler_cancel);
-    check_errno( "kill parent", kill(getppid(), SIGUSR1) );
 
     open_channels();
 
+    check_errno( "kill parent", kill(getppid(), SIGUSR1) );
+
     for(;;) {
-        size_t j;
-        for( j=0; j < opt_n_chan; j++ ) {
-            int buf[32];
-            size_t frame_size;
-            enum ach_status r;
-            r = ach_get( &g_chans[j], buf, sizeof(buf), &frame_size, NULL,
-                         ACH_O_WAIT | ACH_O_LAST );
-            switch(r) {
-            case ACH_CANCELED: exit(EXIT_SUCCESS);
-            case ACH_OK:
-            case ACH_MISSED_FRAME:
-                /* TODO: validate */
-                break;
-            default:
-                fail_ach( "subscriber ach_get", r );
-            }
+        int buf[32];
+        size_t frame_size;
+        enum ach_status r;
+        size_t j = (unsigned)rand_r(&seed) % opt_n_chan;
+        r = ach_get( &g_chans[j], buf, sizeof(buf), &frame_size, NULL,
+                     ACH_O_WAIT | ACH_O_LAST );
+        switch(r) {
+        case ACH_CANCELED: exit(EXIT_SUCCESS);
+        case ACH_OK:
+        case ACH_MISSED_FRAME:
+            /* TODO: validate */
+            break;
+        default:
+            fail_ach( "subscriber ach_get", r );
+        }
 
-            {
-                size_t n = frame_size / sizeof(int) - 1;
-                unsigned csum = crc_16_itu_t( 0, (uint8_t*)buf, n * sizeof(int) );
-                unsigned buf_cksum = (unsigned)buf[n];
-                DEBUG(2, "sub frame_size: %lu\n", frame_size);
-                DEBUG(2, "sub n:          %lu\n", n);
-                CHECK_TRUE( "get checksum", buf_cksum == csum );
+        {
+            size_t n = frame_size / sizeof(int) - 1;
+            unsigned csum = crc_16_itu_t( 0, (uint8_t*)buf, n * sizeof(int) );
+            unsigned buf_cksum = (unsigned)buf[n];
+            DEBUG(2, "sub frame_size: %lu\n", frame_size);
+            DEBUG(2, "sub n:          %lu\n", n);
+            CHECK_TRUE( "get checksum", buf_cksum == csum );
 
-            }
         }
     }
 }
@@ -501,11 +509,11 @@ static void worker_sig_kill(pid_t *p)
     }
 }
 
-static void worker_sig(void)
+static void worker_sig(unsigned int seed)
 {
     char buf[64] = {0};
     size_t frame_size;
-    size_t i;
+    pid_t mypid = getpid();
 
     sighandler_install(SIGINT, sighandler_simplecancel);
     sighandler_install(SIGTERM, sighandler_simplecancel);
@@ -517,14 +525,14 @@ static void worker_sig(void)
                     ach_get( &g_chan_begin, buf, sizeof(buf), &frame_size,
                              NULL, ACH_O_WAIT ) );
     while( !g_cancel ) {
-        i = 0;
-        while( i < opt_n_pub ) {
-            worker_sig_kill( &g_pid_pub[i++] );
-        }
-        i = 0;
-        while( i < opt_n_sub ) {
-            worker_sig_kill( &g_pid_sub[i++] );
-        }
+        unsigned r = (unsigned)rand_r(&seed);
+        unsigned a = r & 1;
+        unsigned b = r >> 1;
+        pid_t *p = a ?
+            &g_pid_pub[ b % opt_n_pub] :
+            &g_pid_sub[ b % opt_n_sub] ;
+        DEBUG(2, "worker_sig %d: signalling %d\n", mypid, *p);
+        worker_sig_kill( p );
     }
 
     exit(EXIT_SUCCESS);
