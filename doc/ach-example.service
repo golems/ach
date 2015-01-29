@@ -1,0 +1,15 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+
+<!-- This Avahi service file creates an
+     mDNS SRV record for ach the channel named 'example' -->
+
+<!-- See avahi.service(5) for more information about this configuration file -->
+
+<service-group>
+  <name>example</name>
+  <service>
+    <type>_ach._tcp</type>
+    <port>8076</port>
+  </service>
+</service-group>
