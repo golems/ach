@@ -59,57 +59,57 @@ extern "C" {
 struct ach_channel_vtab {
 
     /* Implementation of ach_create() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*create)( const char *channel_name,
                size_t frame_cnt, size_t frame_size,
                ach_create_attr_t *attr);
 
     /* Implementation of ach_open() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*open)( ach_channel_t *chan, const char *channel_name,
              ach_attr_t *attr );
 
     /** Implementation of ach_flush() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*flush)(ach_channel_t*);
 
     /** Implementation of ach_put() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*put)(ach_channel_t*,const void *buf, size_t len);
 
     /** Implementation of ach_flush() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*get)( ach_channel_t *chan, void *buf, size_t size,
             size_t *frame_size,
             const struct timespec *ACH_RESTRICT abstime,
             int options );
 
     /** Implementation of ach_cancel() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*cancel)( ach_channel_t *chan, const ach_cancel_attr_t *attr );
 
     /** Implementation of ach_close() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*close)( ach_channel_t *chan );
 
     /** Implementation of ach_unlink() */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*unlink)( const char *name );
 
     /** Does the channel exist? */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*exists)( const char *name );
 
     /** Get the full filename. */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*filename)( const char *name, char *buf, size_t n );
 
     /** Get the file descriptor. */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*fd)( const struct ach_channel *channel, int *file_descriptor );
 
     /** Check for valid name */
-    enum ach_status
+    enum ach_status ACH_WARN_UNUSED
     (*name_ok)( const char *name );
 
     /** The mapping for this vtab. */
