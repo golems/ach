@@ -50,7 +50,7 @@
 
 #include <linux/fs.h>		/* struct file_operations, struct file */
 #include <linux/miscdevice.h>	/* struct miscdevice and misc_[de]register() */
-#include <linux/mutex.h>	/* mutexes */
+#include <linux/rtmutex.h>	/* mutexes */
 #include <linux/string.h>	/* memchr() function */
 #include <linux/slab.h>		/* kzalloc() function */
 #include <linux/sched.h>	/* wait queues */
@@ -93,8 +93,7 @@ MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 
 /* The struct controlling /dev/achctrl */
 struct ach_ctrl_device {
-	wait_queue_head_t some_queue_if_needed;
-	struct mutex lock;
+	struct rt_mutex lock;
 	struct ach_ch_device *devices;   /* array of all channel devices */
 	struct ach_ch_device *free;      /* linked list of unused channel devices */
 	struct ach_ch_device *in_use;    /* linked list of currently used channel devices */
@@ -121,15 +120,15 @@ static struct ach_ctrl_device ctrl_data;
 static enum ach_status
 chan_lock( ach_channel_t *chan )
 {
-	int i = mutex_lock_interruptible(&chan->shm->sync.mutex);
+	int i = rt_mutex_lock_interruptible(&chan->shm->sync.mutex, 0);
 	if( -EINTR == i ) return ACH_EINTR;
 	if( i ) return ACH_BUG;
 	if( chan->cancel ) {
-		mutex_unlock(&chan->shm->sync.mutex);
+		rt_mutex_unlock(&chan->shm->sync.mutex);
 		return ACH_CANCELED;
 	}
 	if( chan->shm->sync.dirty ) {
-		mutex_unlock(&chan->shm->sync.mutex);
+		rt_mutex_unlock(&chan->shm->sync.mutex);
 		ACH_ERRF("ach bug: channel dirty on lock acquisition\n");
 		return ACH_CORRUPT;
 	}
@@ -145,7 +144,20 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 	volatile uint64_t *c_seq = &chan->seq_num, *s_seq = &shm->last_seq;
 	volatile unsigned int *cancel = &chan->cancel;
 	enum ach_status r;
+
 	for(;;) {
+		r = chan_lock( chan );
+		shm->rd_cnt++;
+
+		/* Check condition with the lock held in case someone
+		 * else flushed the channel, or someone else unset the
+		 * cancel */
+		if( (ACH_OK != r) || (*c_seq != *s_seq) || *cancel ) {
+			shm->rd_cnt--;
+			return r;
+		}
+		rt_mutex_unlock(&shm->sync.mutex);
+
 		/* do the wait */
 		if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
 			res = wait_event_interruptible_timeout( shm->sync. readq,
@@ -155,20 +167,12 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 		} else {
 			res = wait_event_interruptible( shm->sync.readq,
 							((*c_seq != *s_seq) || *cancel) );
-
 		}
 
 		/* check what happened */
 		if (-ERESTARTSYS == res) return ACH_EINTR;
 		if( res < 0 ) return ACH_BUG;
 
-		r = chan_lock( chan );
-		/* Check condition with the lock held in case someone
-		 * else flushed the channel, or someone else unset the
-		 * cancel */
-		if( (ACH_OK != r) || (*c_seq != *s_seq) || *cancel )
-			return r;
-		mutex_unlock(&shm->sync.mutex);
 	}
 }
 
@@ -182,8 +186,9 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 static enum ach_status unrdlock(struct ach_header *shm)
 {
 	int dirty = shm->sync.dirty;
-	mutex_unlock(&shm->sync.mutex);
-	wake_up(&shm->sync.readq);
+	unsigned wake = shm->rd_cnt;
+	rt_mutex_unlock(&shm->sync.mutex);
+	if( wake ) wake_up(&shm->sync.readq);
 	if( dirty ) {
 		ACH_ERRF("ach bug: channel dirty on read unlock\n");
 		return ACH_CORRUPT;
@@ -202,9 +207,10 @@ static enum ach_status wrlock(ach_channel_t * chan)
 static enum ach_status unwrlock(struct ach_header *shm)
 {
 	int dirty = shm->sync.dirty;
+	unsigned wake = shm->rd_cnt;
 	shm->sync.dirty = 0;
-	mutex_unlock(&shm->sync.mutex);
-	wake_up(&shm->sync.readq);
+	rt_mutex_unlock(&shm->sync.mutex);
+	if( wake ) wake_up(&shm->sync.readq);
 	if( !dirty ) {
 		ACH_ERRF("ach bug: channel not dirty on write unlock\n");
 		return ACH_CORRUPT;
@@ -238,12 +244,12 @@ static struct ach_header *ach_create(const char *name, size_t frame_cnt, size_t 
 	shm->len = len;
 
 	/* initialize mutex */
-	mutex_init(&shm->sync.mutex);
+	rt_mutex_init(&shm->sync.mutex);
 	init_waitqueue_head(&shm->sync.readq);
 
 	/* set up refcounting  */
 	kref_init(&shm->refcount);
-	mutex_init(&shm->ref_mutex);
+	rt_mutex_init(&shm->ref_mutex);
 
 	shm->clock = clock;
 
@@ -480,7 +486,7 @@ static int ach_ch_close(struct inode *inode, struct file *file)
 	KDEBUG("ach: in ach_ch_close (inode %d)\n", iminor(inode));
 
 	/* Synchronize to protect refcounting */
-	if (mutex_lock_interruptible(&ctrl_data.lock)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
 		ret = -ERESTARTSYS;
 		goto out;
 	}
@@ -489,7 +495,7 @@ static int ach_ch_close(struct inode *inode, struct file *file)
 	kref_put( &ch_file->shm->refcount, ach_shm_release );
 	kfree(ch_file);
 
-	mutex_unlock(&ctrl_data.lock);
+	rt_mutex_unlock(&ctrl_data.lock);
 
   out:
 	return ret;
@@ -501,7 +507,7 @@ static int ach_ch_open(struct inode *inode, struct file *file)
 	struct ach_ch_device *device;
 
 	/* Synchronize to protect refcounting */
-	if (mutex_lock_interruptible(&ctrl_data.lock)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
 		ret = -ERESTARTSYS;
 		goto out;
 	}
@@ -525,7 +531,7 @@ static int ach_ch_open(struct inode *inode, struct file *file)
 	KDEBUG( "ach: opened device %s\n", ach_ch_device_name(device) );
 
  out_unlock:
-	mutex_unlock(&ctrl_data.lock);
+	rt_mutex_unlock(&ctrl_data.lock);
  out:
 	return ret;
 }
@@ -573,7 +579,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ACH_CH_GET_STATUS:{
 			KDEBUG("ach: Got cmd ACH_CH_GET_STATUS\n");
-			if (mutex_lock_interruptible(&ch_file->shm->sync.mutex)) {
+			if (rt_mutex_lock_interruptible(&ch_file->shm->sync.mutex, 0)) {
 				ret = -ERESTARTSYS;
 				break;
 			}
@@ -617,7 +623,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 					ret = -EFAULT;
 				}
 			}
-			mutex_unlock(&ch_file->shm->sync.mutex);
+			rt_mutex_unlock(&ch_file->shm->sync.mutex);
 		}
 	case ACH_CH_FLUSH:
 		KDEBUG("ach: Got cmd ACH_CH_FLUSH\n");
@@ -698,11 +704,11 @@ static unsigned int ach_ch_poll(struct file *file, poll_table * wait)
 
 	poll_wait(file, &shm->sync.readq, wait);
 	mask = POLLOUT | POLLWRNORM;
-	if (!mutex_lock_interruptible(&shm->sync.mutex)) {
+	if (!rt_mutex_lock_interruptible(&shm->sync.mutex, 0)) {
 		if (ch_file->seq_num != shm->last_seq) {
 			mask |= POLLIN | POLLRDNORM;
 		}
-		mutex_unlock(&shm->sync.mutex);
+		rt_mutex_unlock(&shm->sync.mutex);
 	}
 
 	return mask;
@@ -788,7 +794,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	/* TODO: Validate argument */
 	int ret = 0;
 
-	if (mutex_lock_interruptible(&ctrl_data.lock)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
 		return -ERESTARTSYS;
 	}
 
@@ -842,7 +848,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	}
 
  out_unlock:
-	mutex_unlock(&ctrl_data.lock);
+	rt_mutex_unlock(&ctrl_data.lock);
 	return ret;
 }
 
@@ -878,7 +884,7 @@ static int __init ach_init(void)
 	ctrl_data.devices = ach_ch_devices_alloc();
 	ctrl_data.free = ctrl_data.devices;
 	ctrl_data.in_use = NULL;
-	mutex_init(&ctrl_data.lock);
+	rt_mutex_init(&ctrl_data.lock);
 
 	/* Create ctrl device */
 	misc_register(&ach_misc_device);

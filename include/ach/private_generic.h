@@ -123,14 +123,15 @@ typedef struct ach_header {
         pthread_cond_t cond;           /**< condition variable */
 #endif
 #ifdef ACH_KLINUX
-        struct mutex mutex;
+        struct rt_mutex mutex;
         wait_queue_head_t readq;
 #endif
         int dirty;
     } sync;                   /**< variables for synchronization */
 #ifdef ACH_KLINUX
     struct kref refcount;
-    struct mutex ref_mutex;
+    struct rt_mutex ref_mutex;
+    unsigned rd_cnt;
 #endif
     /* should force our alignment to 8-bytes... */
     uint64_t last_seq;        /**< last sequence number written */
