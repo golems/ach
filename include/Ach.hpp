@@ -48,10 +48,33 @@
 
 #include <ach.h>
 #include <vector>
+#include <iostream>
+#include <cstdlib>
 
 
 namespace ach {
 
+
+enum status_check_result {
+    STATUS_OK,
+    STATUS_WARN,
+    STATUS_ERR
+};
+
+
+static int check_status( ach_status_t result,
+                         int allow_mask,
+                         int warn_mask) {
+
+    int r = ACH_STATUS_MASK(result);
+    int x;
+    if (!(allow_mask & r)) {
+        if (warn_mask & r) return STATUS_WARN;
+        else return STATUS_ERR;
+    } else {
+        return STATUS_OK;
+    }
+}
 
 /** Base class for Ach channels.
  *
@@ -71,27 +94,71 @@ public:
     ach_channel_t channel;
 
     /** Do-nothing constructor. */
-    Channel();
+    Channel() {}
 
     /** Destructor closes channel if still open. */
-    virtual ~Channel();
+    virtual ~Channel() {
+        if (this->channel.shm) { close(); }
+    }
 
+    enum ach_status dispatch( enum ach_status r,
+                              int allow_mask,
+                              int warn_mask,
+                              void (Channel::*warn)(enum ach_status),
+                              void (Channel::*error)(enum ach_status) ) {
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: (*this.*warn)(r);  break;
+        case STATUS_ERR:  (*this.*error)(r); break;
+        case STATUS_OK: break;
+        }
+        return r;
+    }
 
     /** Open the channel. */
     ach_status_t open(const char* channel_name,
                       ach_attr_t* attr = NULL,
                       int allow_mask=ACH_MASK_OK,
-                      int warn_mask=ACH_MASK_NONE);
+                      int warn_mask=ACH_MASK_NONE) {
+        ach_status_t r = ach_open(&channel, channel_name, attr);
+
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: warn_open(r);  break;
+        case STATUS_ERR:  error_open(r); break;
+        case STATUS_OK: break;
+        }
+
+        return r;
+    }
 
     /** Close the channel. */
     ach_status_t close(int allow_mask=ACH_MASK_OK,
-                       int warn_mask=ACH_MASK_NONE);
+                       int warn_mask=ACH_MASK_NONE) {
+        ach_status_t r = ach_close(&channel);
+
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: warn_close(r);  break;
+        case STATUS_ERR:  error_close(r); break;
+        case STATUS_OK: break;
+        }
+
+        return r;
+    }
 
     /** Put frame to channel. */
     ach_status_t put(const void* buf,
                      size_t len,
                      int allow_mask=ACH_MASK_OK,
-                     int warn_mask=ACH_MASK_NONE);
+                     int warn_mask=ACH_MASK_NONE) {
+        ach_status_t r = ach_put(&channel, buf, len);
+
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: warn_put(r);  break;
+        case STATUS_ERR:  error_put(r); break;
+        case STATUS_OK: break;
+        }
+
+        return r;
+    }
 
     /** Get frame from channel into an STL vector.
      *
@@ -99,12 +166,27 @@ public:
      * this will malloc, so it is best ensure vec is sufficiently
      * large before beginning a real-time loop.
      */
-    ach_status_t get(::std::vector<uint8_t> *vec, size_t offset,
+    ach_status_t get(::std::vector<uint8_t> *buf, size_t offset,
                      size_t* frame_size,
                      const struct timespec *ACH_RESTRICT abstime = NULL,
                      int options = 0,
                      int allow_mask=ACH_MASK_OK,
-                     int warn_mask=ACH_MASK_NONE);
+                     int warn_mask=ACH_MASK_NONE) {
+        size_t fs = 0;
+        while(1) {
+            buf->reserve( offset + fs );
+            uint8_t *ptr = &((*buf)[0]);
+            size_t size = buf->capacity() - offset;
+            if( size > buf->capacity() ) size = 0; // check overflow
+            ach_status_t r = this->get( ptr, size, &fs,
+                                        abstime, options,
+                                        allow_mask | ACH_MASK_OVERFLOW, warn_mask );
+            if( ACH_OVERFLOW != r ) {
+                if( frame_size ) *frame_size = fs;
+                return r;
+            }
+        }
+    }
 
 
     /** Get frame from channel. */
@@ -113,29 +195,50 @@ public:
                      const struct timespec *ACH_RESTRICT abstime = NULL,
                      int options = 0,
                      int allow_mask=ACH_MASK_OK,
-                     int warn_mask=ACH_MASK_NONE);
+                     int warn_mask=ACH_MASK_NONE) {
+        ach_status_t r = ach_get(&channel, buf, size, frame_size, abstime, options);
+
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: warn_get(r);  break;
+        case STATUS_ERR:  error_get(r); break;
+        case STATUS_OK: break;
+        }
+
+        return r;
+    }
 
 
     /** Ignore old messages in channel. */
     ach_status_t flush(int allow_mask=ACH_MASK_OK,
-                       int warn_mask=ACH_MASK_NONE);
+                       int warn_mask=ACH_MASK_NONE) {
+        ach_status_t r = ach_flush(&channel);
+
+        switch(check_status(r, allow_mask, warn_mask)) {
+        case STATUS_WARN: warn_flush(r);  break;
+        case STATUS_ERR:  error_flush(r); break;
+        case STATUS_OK: break;
+        }
+
+        return r;
+    }
+
 
 protected:
 
-    virtual void warn_open( ach_status_t status );
-    virtual void error_open( ach_status_t status );
+    virtual void warn_open( ach_status_t status ) {}
+    virtual void error_open( ach_status_t status ) {}
 
-    virtual void warn_close( ach_status_t status );
-    virtual void error_close( ach_status_t status );
+    virtual void warn_close( ach_status_t status ) {}
+    virtual void error_close( ach_status_t status ) {}
 
-    virtual void warn_put( ach_status_t status );
-    virtual void error_put( ach_status_t status );
+    virtual void warn_put( ach_status_t status ) {}
+    virtual void error_put( ach_status_t status ) {}
 
-    virtual void warn_get( ach_status_t status );
-    virtual void error_get( ach_status_t status );
+    virtual void warn_get( ach_status_t status ) {}
+    virtual void error_get( ach_status_t status ) {}
 
-    virtual void warn_flush( ach_status_t status );
-    virtual void error_flush( ach_status_t status );
+    virtual void warn_flush( ach_status_t status ) {}
+    virtual void error_flush( ach_status_t status ) {}
 };
 
 /** Abstract base class for Ach channels that log errors */
@@ -144,20 +247,20 @@ protected:
     virtual void warn( const char *method, ach_status_t status ) = 0;
     virtual void error( const char *method, ach_status_t status ) = 0;
 
-    virtual void warn_open( ach_status_t status );
-    virtual void error_open( ach_status_t status );
+    virtual void warn_open( ach_status_t status )  { warn("ach_open",status); }
+    virtual void error_open( ach_status_t status ) { error("ach_open",status); }
 
-    virtual void warn_close( ach_status_t status );
-    virtual void error_close( ach_status_t status );
+    virtual void warn_close( ach_status_t status ) { warn("ach_close",status); }
+    virtual void error_close( ach_status_t status) { error("ach_close",status); }
 
-    virtual void warn_put( ach_status_t status );
-    virtual void error_put( ach_status_t status );
+    virtual void warn_put( ach_status_t status ) { warn("ach_put",status); }
+    virtual void error_put( ach_status_t status) { error("ach_put",status); }
 
-    virtual void warn_get( ach_status_t status );
-    virtual void error_get( ach_status_t status );
+    virtual void warn_get( ach_status_t status )  { warn("ach_get",status); }
+    virtual void error_get( ach_status_t status ) { error("ach_get",status); }
 
-    virtual void warn_flush( ach_status_t status );
-    virtual void error_flush( ach_status_t status );
+    virtual void warn_flush( ach_status_t status )  { warn("ach_flush",status); }
+    virtual void error_flush( ach_status_t status ) { error("ach_flush",status); }
 };
 
 /** Ach channel that logs errors to stderr.
@@ -165,9 +268,17 @@ protected:
  * Errors will terminate the process.  Warnings will not.
  */
 class CerrChannel : public LogChannel {
-    virtual void warn( const char *method, ach_status_t status );
-    virtual void error( const char *method, ach_status_t status );
-
+    virtual void warn( const char *method, ach_status_t status ) {
+        std::cerr << "warning: " << method << " "
+                  << ach_result_to_string(status)
+                  << " (" << status << ")" << std::endl;
+    }
+    virtual void error( const char *method, ach_status_t status ) {
+        std::cerr << "error: " << method << " "
+                  << ach_result_to_string(status)
+                  << " (" << status << ")" << std::endl;
+        exit(EXIT_FAILURE);
+    }
 };
 
 /** Ach channel that logs errors to syslog
