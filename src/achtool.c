@@ -179,6 +179,13 @@ static void parse_cmd( int (*cmd_fun)(void), char *arg ) {
     opt_chan_name = strdup( arg );
 }
 
+
+static void deprecate(int opt, const char *cmd )
+{
+    fprintf(stderr, "Warning: Option flag '-%c' is deprecated.  Please use command '%s' instead.\n",
+            opt, cmd );
+}
+
 int main( int argc, char **argv ) {
     /* Parse Options */
     int c, i = 0;
@@ -186,15 +193,19 @@ int main( int argc, char **argv ) {
     while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1tkuhH?V")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
+            deprecate(c, "mk");
             parse_cmd( cmd_create, optarg );
             break;
         case 'U':   /* unlink   */
+            deprecate(c, "rm");
             parse_cmd( cmd_unlink, optarg );
             break;
         case 'D':   /* dump     */
+            deprecate(c, "dump");
             parse_cmd( cmd_dump, optarg );
             break;
         case 'F':   /* file     */
+            deprecate(c, "file");
             parse_cmd( cmd_file, optarg );
             break;
         case 'n':   /* msg-size */
