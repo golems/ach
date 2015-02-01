@@ -1,50 +1,181 @@
 #compdef ach
 
-function _ach {
-    local curcontext="$curcontext" state line
-    typeset -A opt_args
+# Copyright (c) 2015, Rice University.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#     * Redistributions of source code must retain the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer.
+#     * Redistributions in binary form must reproduce the above
+#       copyright notice, this list of conditions and the following
+#       disclaimer in the documentation and/or other materials
+#       provided with the distribution.
+#     * Neither the name of the copyright holder nor the names of its
+#       contributors may be used to endorse or promote products
+#       derived from this software without specific prior written
+#       permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
+# INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+# (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+# OF THE POSSIBILITY OF SUCH DAMAGE.
 
-    _arguments \
-        '1: :->command'\
-        '*: :->args'
+(( $+functions[_ach-mk] )) ||
+_ach-mk () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
 
-    case $state in
-        command)
-            local -a commands
-            commands=(
-                'mk: create a channel'
-                'rm: remove a channel'
-                'chmod: change channel permissions'
-                'search: resolve channel host'
-            )
-            _describe -t commands 'command' commands && ret=0
-            ;;
-        args)
-            case $words[2] in
-                rm|search)
-                    local K
-                    if [ -d /dev/ach ]; then
-                        K=`ls /dev/ach/ | sed -e 's!^ach-!!'`
-                    fi
-                    compadd `ls /dev/shm/achshm-* | sed -e 's!/dev/shm/achshm-!!'` "$K"
-                    ;;
-                mk)
-                    local mks
-                    mks=(
-                        '-m size: message size'
-                        '-n count: message count'
-                        '-o mode: channel mode'
-                        '-k: kernel channel'
-                        '-u: user channel'
-                        '-1: accept created channel'
-                    )
-                    _describe -t mks 'mk' mks && ret=0
-                    ;;
-                *)
-                    ;;
-            esac
-    esac
+    _arguments -C \
+        '-m frame-size[nominal message size]' \
+        '-n frame-count[message count]' \
+        '-o mode[channel mode]' \
+        '-k[kernel channel]' \
+        '-u[user channel]' \
+        '-1[accept created channel]' \
+        '-t[truncate existing channel]' \
+        '*:: :->channel' && return
+
+    return ret
 }
 
+function list_channels {
+    if [ -d /dev/ach ]; then
+        ls /dev/ach/ | sed -e 's!^ach-!!'
+    fi
+    if [ -d /run/shm ]; then
+        find /run/shm -name 'achshm-*' | sed -e 's!^/run/shm/achshm-!!'
+    elif [ -d /dev/shm ]; then
+        find /dev/shm -name 'achshm-*' | sed -e 's!^/dev/shm/achshm-!!'
+    fi
+}
+
+(( $+functions[_ach-rm] )) ||
+_ach-rm () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-file] )) ||
+_ach-file () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-search] )) ||
+_ach-search () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-dump] )) ||
+_ach-dump () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+function _ach_commands {
+    local -a commands
+    commands=(
+        mk:'create a channel'
+        rm:'remove a channel'
+        chmod:'change channel permissions'
+        search:'resolve channel host'
+        file:'display backing file for channel'
+        dump:'display information about channel'
+    )
+
+    integer ret=1
+    _describe -t commands 'command' commands && ret=0
+    return ret
+}
+
+function _ach {
+    local curcontext="$curcontext" state line
+    declare -A opt_args
+
+    _arguments -C \
+        '-V[display version information]' \
+        '-?[display help]' \
+        '-v[increase verbosity]' \
+        '(-): :->command' \
+        '(-)*:: :->option-or-argument' && return 0
+
+    integer ret=1
+    case $state in
+        (command)
+            _ach_commands && ret=0
+            ;;
+        (option-or-argument)
+            curcontext=${curcontext%:*:*}:ach-$words[1]:
+
+            if (( $+functions[_ach-$words[1]] )); then
+                _call_function ret _ach-$words[1]
+            else
+                _message 'unknown sub-command'
+            fi
+            ;;
+    esac
+
+    return ret
+}
 
 _ach "$@"
+
+# Local Variables:
+# mode: shell-script
+# End:
