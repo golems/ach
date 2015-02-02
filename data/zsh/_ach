@@ -1,4 +1,4 @@
-#compdef ach
+#compdef ach achcop
 
 # Copyright (c) 2015, Rice University.
 # All rights reserved.
@@ -144,7 +144,7 @@ function _ach_commands {
     return ret
 }
 
-function _ach {
+function __ach {
     local curcontext="$curcontext" state line
     declare -A opt_args
 
@@ -174,7 +174,41 @@ function _ach {
     return ret
 }
 
-_ach "$@"
+
+function __achcop {
+    local curcontext="$curcontext" state line
+    declare -A opt_args
+
+
+    _arguments -C \
+        '-V[display version information]' \
+        '-?[display help]' \
+        '-v[increase verbosity]' \
+        '-P file[parent PID file]' \
+        '-p file[child PID file]' \
+        '-o file[stdout redirect file]' \
+        '-e file[stderr redirect file]' \
+        '-d [detach and run in background]' \
+        '-r [restart failed children]' \
+        '-f facility[syslog facility]' \
+        '-i ident[syslog identifier]' \
+        && return 0
+
+    integer ret=1
+
+    return ret
+}
+
+# Need the double underscore to prevent zsh from automagically calling
+# the wrong completion function.  We dispatch here:
+case "$service" in
+    ach)
+        __ach
+        ;;
+    achcop)
+        __achcop
+        ;;
+esac
 
 # Local Variables:
 # mode: shell-script
