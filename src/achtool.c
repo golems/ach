@@ -72,6 +72,7 @@ const char *opt_domain = "local";
 int opt_verbosity = 0;
 int opt_1 = 0;
 int opt_mode = -1;
+int opt_port = 8076;
 int (*opt_command)(void) = NULL;
 
 
@@ -190,7 +191,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c, i = 0;
     opterr = 0;
-    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1tkuhH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1p:tkuhH?V")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
             deprecate(c, "mk");
@@ -232,13 +233,20 @@ int main( int argc, char **argv ) {
         case '1':   /* once     */
             opt_1++;
             break;
+        case 'p':   /* port     */
+            opt_port = atoi(optarg);
+            if( 0 == opt_port ) {
+                fprintf(stderr, "Invalid port: %s\n", optarg);
+                exit(EXIT_FAILURE);
+            }
+            break;
         case 'V':   /* version     */
             ach_print_version("ach");
             exit(EXIT_SUCCESS);
         case '?':   /* help     */
         case 'h':
         case 'H':
-            puts( "Usage: ach [OPTION...] [mk|rm|chmod|dump|file] [mode] [channel-name]\n"
+            puts( "Usage: ach [OPTION...] [mk|rm|chmod|dump|file|adv|hide] [mode] [channel-name]\n"
                   "General tool to interact with ach channels\n"
                   "\n"
                   "Options:\n"
@@ -255,6 +263,7 @@ int main( int argc, char **argv ) {
                   "                            Currently using the channel.\n"
                   "  -k,                       Create kernel-mapped channel\n"
                   "  -u,                       Create user-mapped channel\n"
+                  "  -p port,                  port number to use\n"
                   "  -v,                       Make output more verbose\n"
                   "  -?,                       Give program help list\n"
                   "  -V,                       Print program version\n"
@@ -275,6 +284,9 @@ int main( int argc, char **argv ) {
                   "                            synchronize.\n"
                   "  ach chmod 666 foo         Set permissions of channel 'foo' to '666'\n"
                   "  ach search foo            Search mDNS for host and port of channel 'foo'\n"
+                  "  ach adv foo               Start advertising channel 'foo' via mDNS\n"
+                  "  ach adv -p 12345 foo     Start advertising channel 'foo' at port 12345 via mDNS\n"
+                  "  ach hide foo              Stop advertising channel 'foo' via mDNS\n"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
                 );
@@ -487,10 +499,10 @@ int cmd_adv(void)
                 "  <name>%s</name>\n"
                 "  <service>\n"
                 "    <type>_ach._tcp</type>\n"
-                "    <port>8076</port>\n"
+                "    <port>%d</port>\n"
                 "  </service>\n"
                 "</service-group>\n",
-                opt_chan_name );
+                opt_chan_name, opt_port );
     if( ferror(fp) ) {
         fprintf(stderr, "Error writing service file '%s'\n", buf);
         exit(EXIT_FAILURE);
