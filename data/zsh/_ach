@@ -42,9 +42,9 @@ _ach-mk () {
     declare -A opt_args
 
     _arguments -C \
-        '-m frame-size[nominal message size]' \
-        '-n frame-count[message count]' \
-        '-o mode[channel mode]' \
+        '-m[nominal message size]' \
+        '-n[message count]' \
+        '-o[channel mode]' \
         '-k[kernel channel]' \
         '-u[user channel]' \
         '-1[accept created channel]' \
@@ -54,7 +54,7 @@ _ach-mk () {
     return ret
 }
 
-function list_channels {
+function ach_list_channels {
     if [ -d /dev/ach ]; then
         ls /dev/ach/ | sed -e 's!^ach-!!'
     fi
@@ -64,6 +64,11 @@ function list_channels {
         find /dev/shm -name 'achshm-*' | sed -e 's!^/dev/shm/achshm-!!'
     fi
 }
+
+function ach_browse_channels {
+    avahi-browse _ach._tcp -cp | cut -d ';' -f 4 | sort | uniq
+}
+
 
 (( $+functions[_ach-rm] )) ||
 _ach-rm () {
@@ -75,7 +80,26 @@ _ach-rm () {
 
     case "$state" in
         (channel)
-            compadd `list_channels` && ret=0
+            compadd `ach_list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-chmod] )) ||
+_ach-chmod () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        ':: :->mode' \
+        ':: :->channel' \
+        && return
+
+    case "$state" in
+        (channel)
+            compadd `ach_list_channels` && ret=0
             ;;
     esac
 
@@ -92,12 +116,13 @@ _ach-file () {
 
     case "$state" in
         (channel)
-            compadd `list_channels` && ret=0
+            compadd `ach_list_channels` && ret=0
             ;;
     esac
 
     return ret
 }
+
 
 (( $+functions[_ach-search] )) ||
 _ach-search () {
@@ -109,7 +134,42 @@ _ach-search () {
 
     case "$state" in
         (channel)
-            compadd `list_channels` && ret=0
+            compadd `ach_browse_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-adv] )) ||
+_ach-adv () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '-p[port number to use]:port' \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `ach_list_channels` && ret=0
+            ;;
+    esac
+
+    return ret
+}
+
+(( $+functions[_ach-hide] )) ||
+_ach-hide () {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '*:: :->channel' && return
+
+    case "$state" in
+        (channel)
+            compadd `ach_list_channels` && ret=0
             ;;
     esac
 
@@ -126,7 +186,7 @@ _ach-dump () {
 
     case "$state" in
         (channel)
-            compadd `list_channels` && ret=0
+            compadd `ach_list_channels` && ret=0
             ;;
     esac
 
@@ -142,6 +202,8 @@ function _ach_commands {
         search:'resolve channel host'
         file:'display backing file for channel'
         dump:'display information about channel'
+        adv:'advertise channel via mDNS '
+        hide:'stop mDNS advertisement for channel'
     )
 
     integer ret=1
@@ -191,14 +253,14 @@ function __achcop {
         '-V[display version information]' \
         '-?[display help]' \
         '-v[increase verbosity]' \
-        '-P file[parent PID file]' \
-        '-p file[child PID file]' \
-        '-o file[stdout redirect file]' \
-        '-e file[stderr redirect file]' \
-        '-d [detach and run in background]' \
-        '-r [restart failed children]' \
-        '-f facility[syslog facility]' \
-        '-i ident[syslog identifier]' \
+        '-P[parent PID file]' \
+        '-p[child PID file]' \
+        '-o[stdout redirect file]' \
+        '-e[stderr redirect file]' \
+        '-d[detach and run in background]' \
+        '-r[restart failed children]' \
+        '-f[syslog facility]' \
+        '-i[syslog identifier]' \
         && return 0
 
     integer ret=1
@@ -215,10 +277,10 @@ function achd_client {
     declare -A opt_args
 
     _arguments -C \
-        '-p port[remote port to use]' \
-        '-t transport[message transport (tcp|udp)]' \
-        '-z channel[remote channel name (default: local name)]' \
-        '-u us [transmit period in microseconds]' \
+        '-p [remote port to use]' \
+        '-t [message transport (tcp|udp)]' \
+        '-z [remote channel name (default: local name)]' \
+        '-u [transmit period in microseconds]' \
         '-l [transmit latest messages]' \
         '-r [reconnect if disconnected]' \
         '*:: :->channel' && return
