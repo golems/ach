@@ -1,3 +1,5 @@
+# If this works, it's by accident
+
 cmake_minimum_required(VERSION 2.4.6)
 include(CheckIncludeFile)
 include(CheckLibraryExists)

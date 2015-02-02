@@ -4,14 +4,13 @@ CONTENTS
 ========
 
 I.   Autotools Installion
-II.  Alternative CMake Installation Summary
-III. Cross Compiling
-IV.  Language Bindings
-    1. Common Lisp
-    2. Python
-    3. C++
-    4. Java
-V.   Generic Autotools Instructions
+II.  Cross Compiling
+III. Language Bindings
+     1. Common Lisp
+     2. Python
+     3. C++
+     4. Java
+IV.  Generic Autotools Instructions
 
 I. AUTOTOOLS INSTALLATION
 =========================
@@ -24,7 +23,7 @@ Summary
    autoconf macro archive. To install these on Debian or Ubuntu
    GNU/Linux, you can do
 
-    sudo apt-get install autoconf automake libtool autoconf-archive help2man man2html docbook-utils dkms
+    sudo apt-get install autoconf automake libtool autoconf-archive
 
 Then, initialize autotools with
 
@@ -43,10 +42,11 @@ tarball which already contains the autoconf-generated configure script.
    * help2man: Needed to generate man pages for binaries
    * man2hml: Needed to generate HTML versions of man pages
    * docbook-utils: Needed to generate HTML versions of the tutorial-style manual
+   * avahi: Needed to advertise channels via mDNS
 
    On Debian or Ubuntu GNU/Linux, you can install these dependencies with:
 
-    sudo apt-get install linux-headers-generic dkms openbsd-inetd help2man man2html docbook-utils
+    sudo apt-get install linux-headers-generic dkms openbsd-inetd help2man man2html docbook-utils avahi-utils
 
 2. Configure for your system.  See the next section ("Configuration
    Options") for relevant configuration options.
@@ -108,22 +108,7 @@ given to ./configure.
 To properly set file permissions for kernel-based channels, an example
 udev rules file is included in doc/ach-klinux.rules.
 
-II. CMAKE INSTALLATION SUMMARY
-==============================
-
-Autotools is the preferred build system, but CMake is potential
-alternative.
-
-1. Configure for your system.
-
-    cmake .
-
-2. Build:
-
-    make
-
-
-III. Cross Compiling
+II. Cross Compiling
 ====================
 
 Build For Xenomai
@@ -216,8 +201,8 @@ make dist`.  Alternatively, running `./configure && make && make
 clean` will build the manpages and clean out the binaries.  Then, you
 can re- `./configure ...` for your cross-compile setup.
 
-IV. Language Bindings
-=====================
+III. Language Bindings
+======================
 
 Common Lisp
 -----------
@@ -258,8 +243,8 @@ Java bindings are provided in the ./java directory.  When the Java
 compiler is present, a JNI native library (libachj) and jarfile
 (org.golems.ach.jar) will be built and installed.
 
-V. GNU Autotools Generic Instructions
-=====================================
+IV. GNU Autotools Generic Instructions
+======================================
 
 Copyright (C) 1994, 1995, 1996, 1999, 2000, 2001, 2002, 2004, 2005,
 2006, 2007, 2008, 2009 Free Software Foundation, Inc.
