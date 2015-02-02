@@ -1,6 +1,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = CMakeLists.txt spin
+EXTRA_DIST = \
+	CMakeLists.txt \
+	spin
+
+AM_DISTCHECK_CONFIGURE_FLAGS=--enable-dkms --disable-dkms-build --disable-kbuild --with-python --with-java
+
 # dist_bin_SCRIPTS = achpipe achlog
 
 dist_noinst_SCRIPTS = achtooltest src/run-benchmarks test-achcop
@@ -15,9 +20,16 @@ pkgconfig_DATA = ach.pc
 include_HEADERS = include/ach.h include/Ach.hpp
 pkginclude_HEADERS = \
 	include/ach/generic.h \
+	include/ach/experimental.h \
 	include/ach/klinux_generic.h
 
-noinst_HEADERS = include/achutil.h include/achd.h include/ach/private_posix.h
+noinst_HEADERS = \
+	include/achutil.h \
+	include/achd.h \
+	include/ach/private_posix.h \
+	include/libach_private.h \
+	include/achtest.h \
+	include/libach/vtab.h
 
 
 ###############
@@ -67,7 +79,7 @@ achlog_LDADD = libach.la libachutil.la
 ##########
 
 if INSTALL_ZSH
-zshf_DATA = data/zsh/_ach
+dist_zshf_DATA = data/zsh/_ach
 endif
 
 ###########

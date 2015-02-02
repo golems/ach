@@ -82,7 +82,7 @@ int test_clock(clockid_t clock, enum ach_map map)
         for(;;) {
             usleep(1000); /* Race against udev */
             r = ach_open( &chan, OPT_CHAN, NULL );
-            if( ACH_EACCES == r ) continue;
+            if( ach_status_match(r, ACH_MASK_EACCES | ACH_MASK_ENOENT) ) continue;
             else if (ACH_OK == r) break;
             else fail_ach("ach_open", r);
         }
