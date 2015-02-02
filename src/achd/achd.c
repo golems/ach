@@ -4,7 +4,7 @@
  * Copyright (c) 2012-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Author(s): Neil T. Dantam <ntd@rice.edu>
  * Georgia Tech Humanoid Robotics Lab
  * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
@@ -206,7 +206,7 @@ int main(int argc, char **argv) {
                       "\n"
                       "  achd -u 100000 pull hubo state     Forward frames from remote state channel at 10 Hz\n"
                       "\n"
-                      "Report bugs to <ntd@gatech.edu>"
+                      "Report bugs to <ntd@rice.edu>"
                        );
 
                 exit(EXIT_SUCCESS);

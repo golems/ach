@@ -2,7 +2,7 @@
  * Copyright (c) 2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Author(s): Neil T. Dantam <ntd@rice.edu>
  * Georgia Tech Humanoid Robotics Lab
  * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
@@ -187,7 +187,3 @@ public class Channel
     private long frame_size = 512;
 
 }
-
-
-
-

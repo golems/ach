@@ -4,7 +4,7 @@
  * Copyright (c) 2008-2013, Georgia Tech Research Corporation
  * All rights reserved.
  *
- * Author(s): Neil T. Dantam <ntd@gatech.edu>
+ * Author(s): Neil T. Dantam <ntd@rice.edu>
  * Georgia Tech Humanoid Robotics Lab
  * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *
@@ -212,7 +212,7 @@ int main( int argc, char **argv ) {
                   "Examples:\n"
                   "  achlog foo bar       Log channels foo and bar\n"
                   "\n"
-                  "Report bugs to <ntd@gatech.edu>"
+                  "Report bugs to <ntd@rice.edu>"
                 );
             exit(EXIT_SUCCESS);
         default:
