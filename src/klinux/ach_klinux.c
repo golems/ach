@@ -145,14 +145,13 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 	volatile unsigned int *cancel = &chan->cancel;
 	enum ach_status r;
 
+	r = chan_lock( chan );
+	shm->rd_cnt++;
 	for(;;) {
-		r = chan_lock( chan );
-		shm->rd_cnt++;
-
 		/* Check condition with the lock held in case someone
 		 * else flushed the channel, or someone else unset the
 		 * cancel */
-		if( (ACH_OK != r) || (*c_seq != *s_seq) || *cancel ) {
+		if( (*c_seq != *s_seq) || (ACH_OK != r) || *cancel ) {
 			shm->rd_cnt--;
 			return r;
 		}
@@ -173,6 +172,7 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 		if (-ERESTARTSYS == res) return ACH_EINTR;
 		if( res < 0 ) return ACH_BUG;
 
+		r = chan_lock( chan );
 	}
 }
 
