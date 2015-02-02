@@ -44,6 +44,7 @@
 #include <stdbool.h>
 
 #include "ach.h"
+#include "ach/experimental.h"
 
 enum ach_status
 ach_evhandle( struct ach_evhandler *handlers,

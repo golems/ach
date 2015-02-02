@@ -167,4 +167,31 @@ uint64_t ach_pipe_get_size(const ach_pipe_frame_t *frame );
  */
 #define ACH_PARENT_TIMEOUT_SEC 3
 
+
+/** Lookup the host providing specified channel via DNS/mDNS SRV
+ *  records.
+ *
+ *
+ *
+ *  \param[in] channel Name of the channel
+ *
+ *  \param[in] domain  DNS domain, e.g., "local", "golems.org".
+ *                     The domain "local" is treated specially and
+ *                     searched via mDNS.  All other domains are
+ *                     searched via the convential hierarchical
+ *                     DNS.
+ *
+ * \param[out] host    the name of the host providing the channel.
+ *
+ * \param[out] hostlen length of the host parameter
+ *
+ * \param[out] port    the port on host from which channel is
+ *                     provided
+ */
+enum ach_status ACH_WARN_UNUSED
+ach_srv_search( const char *channel, const char *domain,
+                char *host, size_t hostlen,
+                int *port );
+
+
 #endif //ACHUTIL_H
