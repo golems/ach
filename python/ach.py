@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 ## Copyright (c) 2013, Georgia Tech Research Corporation
+## Copyright (c) 2015, Rice University
 ## All rights reserved.
 ##
 ## Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -18,6 +19,10 @@
 ##       copyright notice, this list of conditions and the following
 ##       disclaimer in the documentation and/or other materials
 ##       provided with the distribution.
+##     * Neither the name of the copyright holder nor the names of its
+##       contributors may be used to endorse or promote products derived
+##       from this software without specific prior written permission.
+##
 ##
 ## THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 ## ''AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -57,14 +62,12 @@ from ach_py import \
     ACH_CANCELED,\
     ACH_O_WAIT,\
     ACH_O_LAST, \
-    AchException, \
-    ACH_DEFAULT_FRAME_COUNT, \
-    ACH_DEFAULT_FRAME_SIZE
+    AchException
 
 class Channel:
     """ An Ach channel."""
 
-    def __init__(self, name=None, frame_count=ACH_DEFAULT_FRAME_COUNT, frame_size=ACH_DEFAULT_FRAME_SIZE):
+    def __init__(self, name=None, frame_count=0, frame_size=0):
         '''Construct a channel object.
 
         name -- if provided, the name of the channel to open or create
@@ -79,7 +82,7 @@ class Channel:
         if ach_py and self.pointer:
             self.close()
 
-    def open(self, name, frame_count=ACH_DEFAULT_FRAME_COUNT, frame_size=ACH_DEFAULT_FRAME_SIZE):
+    def open(self, name, frame_count=0, frame_size=0):
         '''Open channel with the given name.
         If channel does not exist, create it.'''
         assert( not self.pointer )

@@ -1,7 +1,8 @@
 /* -*- mode: C; c-basic-offset: 4 -*- */
 /* ex: set shiftwidth=4 tabstop=4 expandtab: */
 /*
- * Copyright (c) 2013, Georgia Tech Research Corporation
+ * Copyright (c) 2013-2014, Georgia Tech Research Corporation
+ * Copyright (c) 2015, Rice University
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@gatech.edu>
@@ -23,6 +24,10 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
+ *
+ *   * Neither the name of the copyright holder nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
  *
  *   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND
  *   CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
@@ -99,7 +104,7 @@ static PyObject *
 open_channel( PyObject *self, PyObject *args ) {
     (void)self;
     const char *name = NULL;
-    long frame_count = ACH_DEFAULT_FRAME_COUNT, frame_size = ACH_DEFAULT_FRAME_SIZE;
+    long frame_count = 0, frame_size = 0;
     if( !PyArg_ParseTuple(args, "sll", &name, &frame_count, &frame_size ) ) {
         return NULL;
     }
@@ -265,6 +270,9 @@ get_buf( PyObject *self, PyObject *args ) {
     case ACH_CORRUPT:
     case ACH_BAD_HEADER:
     case ACH_EACCES:
+    case ACH_EINTR:
+    case ACH_EFAULT:
+    case ACH_ENOTSUP:
         return raise_error(r);
     }
 
@@ -404,6 +412,6 @@ PyMODINIT_FUNC initach_py() {
     PyModule_AddObject( m, "ACH_EACCES",           PyInt_FromLong( ACH_EACCES ) );
     PyModule_AddObject( m, "ACH_O_WAIT",           PyInt_FromLong( ACH_O_WAIT ) );
     PyModule_AddObject( m, "ACH_O_LAST",           PyInt_FromLong( ACH_O_LAST ) );
-    PyModule_AddObject( m, "ACH_DEFAULT_FRAME_SIZE",   PyInt_FromLong( ACH_DEFAULT_FRAME_SIZE ) );
-    PyModule_AddObject( m, "ACH_DEFAULT_FRAME_COUNT",  PyInt_FromLong( ACH_DEFAULT_FRAME_COUNT ) );
+    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_SIZE",   PyInt_FromLong( ACH_DEFAULT_FRAME_SIZE ) ); */
+    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_COUNT",  PyInt_FromLong( ACH_DEFAULT_FRAME_COUNT ) ); */
 }
