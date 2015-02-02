@@ -1,4 +1,4 @@
-#compdef ach achcop
+#compdef ach achd achcop
 
 # Copyright (c) 2015, Rice University.
 # All rights reserved.
@@ -30,6 +30,11 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+#########
+## ACH ##
+#########
 
 (( $+functions[_ach-mk] )) ||
 _ach-mk () {
@@ -174,11 +179,13 @@ function __ach {
     return ret
 }
 
+############
+## ACHCOP ##
+############
 
 function __achcop {
     local curcontext="$curcontext" state line
     declare -A opt_args
-
 
     _arguments -C \
         '-V[display version information]' \
@@ -199,14 +206,95 @@ function __achcop {
     return ret
 }
 
+##########
+## ACHD ##
+##########
+
+function achd_client {
+    local curcontext=$curcontext state line ret=1
+    declare -A opt_args
+
+    _arguments -C \
+        '-p port[remote port to use]' \
+        '-t transport[message transport (tcp|udp)]' \
+        '-z channel[remote channel name (default: local name)]' \
+        '-u us [transmit period in microseconds]' \
+        '-l [transmit latest messages]' \
+        '-r [reconnect if disconnected]' \
+        '*:: :->channel' && return
+
+    return ret
+}
+
+(( $+functions[_achd-push] )) ||
+_achd-push () {
+    achd_client
+}
+
+(( $+functions[_achd-pull] )) ||
+_achd-pull () {
+    achd_client
+}
+
+function _achd_commands {
+    local -a commands
+    commands=(
+        push:'send frames to remote host'
+        pull:'receive frames from remote host'
+        serve:'run server on stdin/stdout'
+    )
+
+    integer ret=1
+    _describe -t commands 'command' commands && ret=0
+    return ret
+}
+
+function __achd {
+    local curcontext="$curcontext" state line
+    declare -A opt_args
+
+    _arguments -C \
+        '-V[display version information]' \
+        '-?[display help]' \
+        '-v[increase verbosity]' \
+        '-q[decrease verbosity]' \
+        '(-): :->command' \
+        '(-)*:: :->option-or-argument' && return 0
+
+    integer ret=1
+    case $state in
+        (command)
+            _achd_commands && ret=0
+            ;;
+        (option-or-argument)
+            curcontext=${curcontext%:*:*}:achd-$words[1]:
+
+            if (( $+functions[_achd-$words[1]] )); then
+                _call_function ret _achd-$words[1]
+            else
+                _message 'unknown sub-command'
+            fi
+            ;;
+    esac
+
+    return ret
+}
+
+##############
+## DISPATCH ##
+##############
+
 # Need the double underscore to prevent zsh from automagically calling
 # the wrong completion function.  We dispatch here:
 case "$service" in
     ach)
-        __ach
+        __ach "$@"
         ;;
     achcop)
-        __achcop
+        __achcop "$@"
+        ;;
+    achd)
+        __achd "$@"
         ;;
 esac
 
