@@ -49,6 +49,8 @@ _ach-mk () {
         '-u[user channel]' \
         '-1[accept created channel]' \
         '-t[truncate existing channel]' \
+        '-a[advertise channel via mDNS]' \
+        '-p[port number to advertise]' \
         '*:: :->channel' && return
 
     return ret

@@ -58,22 +58,33 @@
 #include <errno.h>
 #include <signal.h>
 #include <stdarg.h>
+#include <stdbool.h>
 #include "ach.h"
 #include "ach/private_posix.h"
 #include "achutil.h"
 #include "achd.h"
 
 size_t opt_msg_cnt = ACH_DEFAULT_FRAME_COUNT;
-int opt_truncate = 0;
+bool opt_truncate = false;
 enum ach_map opt_map = ACH_MAP_DEFAULT;
 size_t opt_msg_size = ACH_DEFAULT_FRAME_SIZE;
 char *opt_chan_name = NULL;
 const char *opt_domain = "local";
 int opt_verbosity = 0;
-int opt_1 = 0;
+bool opt_1 = false;
 int opt_mode = -1;
 int opt_port = 8076;
+bool opt_advertise = false;
 int (*opt_command)(void) = NULL;
+
+
+
+/* TODO: be smarter about this path */
+#define ADV_PATH  "/etc/avahi/services/"
+#define ADV_PREFIX "ach-"
+#define ADV_SUFFIX ".service"
+#define ADV_SIZE ( ACH_CHAN_NAME_MAX + sizeof(ADV_PATH) + sizeof(ADV_PREFIX) + sizeof(ADV_SUFFIX) + 1 )
+#define ADV_FMT ADV_PATH ADV_PREFIX "%s" ADV_SUFFIX
 
 
 static void check_status(ach_status_t r, const char fmt[], ...);
@@ -191,7 +202,7 @@ int main( int argc, char **argv ) {
     /* Parse Options */
     int c, i = 0;
     opterr = 0;
-    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1p:tkuhH?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "C:U:D:F:vn:m:o:1p:takuhH?V")) != -1 ) {
         switch(c) {
         case 'C':   /* create   */
             deprecate(c, "mk");
@@ -219,7 +230,10 @@ int main( int argc, char **argv ) {
             opt_mode = parse_mode( optarg );
             break;
         case 't':   /* truncate */
-            opt_truncate++;
+            opt_truncate = true;
+            break;
+        case 'a':   /* advertise */
+            opt_advertise = true;
             break;
         case 'k':   /* kernel */
             opt_map = ACH_MAP_KERNEL;
@@ -231,7 +245,7 @@ int main( int argc, char **argv ) {
             opt_verbosity++;
             break;
         case '1':   /* once     */
-            opt_1++;
+            opt_1 = true;
             break;
         case 'p':   /* port     */
             opt_port = atoi(optarg);
@@ -239,6 +253,7 @@ int main( int argc, char **argv ) {
                 fprintf(stderr, "Invalid port: %s\n", optarg);
                 exit(EXIT_FAILURE);
             }
+            opt_advertise = true;
             break;
         case 'V':   /* version     */
             ach_print_version("ach");
@@ -253,16 +268,17 @@ int main( int argc, char **argv ) {
                   /* "  -C CHANNEL-NAME,          Create a new channel\n" */
                   /* "  -U CHANNEL-NAME,          Unlink (delete) a channel\n" */
                   /* "  -D CHANNEL-NAME,          Dump info about channel\n" */
-                  "  -1,                       With 'mk', accept an already created channel\n"
                   /* "  -F CHANNEL-NAME,          Print filename for channel (Linux-only)\n" */
                   "  -m MSG-COUNT,             Number of messages to buffer\n"
                   "  -n MSG-SIZE,              Nominal size of a message\n"
                   "  -o OCTAL,                 Mode for created channel\n"
                   "  -t,                       Truncate and reinit newly create channel.\n"
+                  "  -1,                       With 'mk', accept an already created channel\n"
                   "                            WARNING: this will clobber processes\n"
                   "                            Currently using the channel.\n"
                   "  -k,                       Create kernel-mapped channel\n"
                   "  -u,                       Create user-mapped channel\n"
+                  "  -a,                       advertise create channel\n"
                   "  -p port,                  port number to use\n"
                   "  -v,                       Make output more verbose\n"
                   "  -?,                       Give program help list\n"
@@ -282,10 +298,11 @@ int main( int argc, char **argv ) {
                   "                            '600'. Note that r/w (6) permission necessary\n"
                   "                            for channel access in order to properly\n"
                   "                            synchronize.\n"
+                  "  ach mk -a foo             Create channel 'foo' and advertise via mDNS\n"
                   "  ach chmod 666 foo         Set permissions of channel 'foo' to '666'\n"
                   "  ach search foo            Search mDNS for host and port of channel 'foo'\n"
                   "  ach adv foo               Start advertising channel 'foo' via mDNS\n"
-                  "  ach adv -p 12345 foo     Start advertising channel 'foo' at port 12345 via mDNS\n"
+                  "  ach adv -p 12345 foo      Start advertising channel 'foo' at port 12345 via mDNS\n"
                   "  ach hide foo              Stop advertising channel 'foo' via mDNS\n"
                   "\n"
                   "Report bugs to <ntd@gatech.edu>"
@@ -333,7 +350,7 @@ int cmd_create(void) {
         fprintf(stderr, "Message size must be greater than zero, not %"PRIuPTR".\n", opt_msg_size);
         return -1;
     }
-    ach_status_t i;
+    ach_status_t i = ACH_OK;
     {
         ach_create_attr_t attr;
         ach_create_attr_init(&attr);
@@ -351,15 +368,37 @@ int cmd_create(void) {
     }
 
     if( opt_mode > 0 ) {
-        return cmd_chmod();
-    } else
-        return 0;
+        i = (enum ach_status)cmd_chmod();
+        if( ACH_OK != i ) return i;
+    }
+
+    if( opt_advertise ) {
+        i = (enum ach_status)cmd_adv();
+    }
+
+    return i;
 }
 int cmd_unlink(void) {
     if( opt_verbosity > 0 ) {
         fprintf(stderr, "Unlinking Channel %s\n", opt_chan_name);
     }
 
+    /* Unadvertise */
+    char buf[ACH_CHAN_NAME_MAX + 32];
+    int i;
+    i = snprintf(buf, sizeof(buf), ADV_FMT, opt_chan_name);
+    if( i >= (int)sizeof(buf) ) {
+        fprintf(stderr, "Channel name too long\n");
+        exit( EXIT_FAILURE );
+    }
+    if( 0 == access(buf, F_OK) ) {
+        if( unlink(buf) ) {
+            fprintf(stderr, "Could not unlink '%s': %s\n",
+                    opt_chan_name, strerror(errno));
+        }
+    }
+
+    /* Unlink */
     enum ach_status r = ach_unlink(opt_chan_name);
 
     check_status( r, "Failed to remove channel '%s'", opt_chan_name );
@@ -459,13 +498,6 @@ static void check_status(ach_status_t r, const char fmt[], ...) {
         exit( EXIT_FAILURE );
     }
 }
-
-/* TODO: be smarter about this path */
-#define ADV_PATH  "/etc/avahi/services/"
-#define ADV_PREFIX "ach-"
-#define ADV_SUFFIX ".service"
-#define ADV_SIZE ( ACH_CHAN_NAME_MAX + sizeof(ADV_PATH) + sizeof(ADV_PREFIX) + sizeof(ADV_SUFFIX) + 1 )
-#define ADV_FMT ADV_PATH ADV_PREFIX "%s" ADV_SUFFIX
 
 int cmd_adv(void)
 {
