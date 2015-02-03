@@ -12,3 +12,7 @@ http://code.golems.org/src/ach/py_ach-latest.tar.gz.
 
 You can install with
   $ sudo pip install http://code.golems.org/src/ach/py_ach-latest.tar.gz
+
+
+If you have the ach source tree, you can create the python packge with
+  $ python setup.py sdist
