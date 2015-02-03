@@ -11,20 +11,34 @@
        <othername role='mi'>T</othername>
        <affiliation>
           <!-- Valid email...spamblock/scramble if so desired -->
-          <address><email>ntd at gatech dot edu</email></address>
+          <address><email>ntd at rice dot edu</email></address>
        </affiliation>
      </author>
 
      <!-- All dates specified in ISO "YYYY-MM-DD" format -->
-     <pubdate>2013-01-21</pubdate>
+     <pubdate>2015-02-02</pubdate>
 
      <copyright>
-       <year>2012-2013</year>
+       <year>2012-2014</year>
        <holder>Georgia Tech Research Corporation</holder>
+     </copyright>
+
+     <copyright>
+       <year>2015</year>
+       <holder>Rice University</holder>
      </copyright>
 
      <!-- Most recent revision goes at the top; list in descending order -->
      <revhistory>
+       <revision>
+          <revnumber>2.0.0</revnumber>
+          <date>2015-02-02</date>
+          <authorinitials>NTD</authorinitials>
+          <revremark>
+            New Release with kernel channels and improved mDNS
+            integration
+          </revremark>
+       </revision>
        <revision>
           <revnumber>1.2.1</revnumber>
           <date>2014-04-07</date>
