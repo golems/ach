@@ -131,7 +131,6 @@ typedef struct ach_header {
 #ifdef ACH_KLINUX
     struct kref refcount;
     struct rt_mutex ref_mutex;
-    unsigned rd_cnt;
 #endif
     /* should force our alignment to 8-bytes... */
     uint64_t last_seq;        /**< last sequence number written */

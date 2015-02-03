@@ -145,18 +145,7 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 	volatile unsigned int *cancel = &chan->cancel;
 	enum ach_status r;
 
-	r = chan_lock( chan );
-	shm->rd_cnt++;
 	for(;;) {
-		/* Check condition with the lock held in case someone
-		 * else flushed the channel, or someone else unset the
-		 * cancel */
-		if( (*c_seq != *s_seq) || (ACH_OK != r) || *cancel ) {
-			shm->rd_cnt--;
-			return r;
-		}
-		rt_mutex_unlock(&shm->sync.mutex);
-
 		/* do the wait */
 		if (reltime->tv_sec != 0 || reltime->tv_nsec != 0) {
 			res = wait_event_interruptible_timeout( shm->sync. readq,
@@ -173,6 +162,13 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 		if( res < 0 ) return ACH_BUG;
 
 		r = chan_lock( chan );
+		/* Check condition with the lock held in case someone
+		 * else flushed the channel, or someone else unset the
+		 * cancel */
+		if( (*c_seq != *s_seq) || (ACH_OK != r) || *cancel ) {
+			return r;
+		}
+		rt_mutex_unlock(&shm->sync.mutex);
 	}
 }
 
@@ -186,9 +182,7 @@ rdlock(ach_channel_t * chan, int wait, const struct timespec *reltime)
 static enum ach_status unrdlock(struct ach_header *shm)
 {
 	int dirty = shm->sync.dirty;
-	unsigned wake = shm->rd_cnt;
 	rt_mutex_unlock(&shm->sync.mutex);
-	if( wake ) wake_up(&shm->sync.readq);
 	if( dirty ) {
 		ACH_ERRF("ach bug: channel dirty on read unlock\n");
 		return ACH_CORRUPT;
@@ -207,10 +201,9 @@ static enum ach_status wrlock(ach_channel_t * chan)
 static enum ach_status unwrlock(struct ach_header *shm)
 {
 	int dirty = shm->sync.dirty;
-	unsigned wake = shm->rd_cnt;
 	shm->sync.dirty = 0;
 	rt_mutex_unlock(&shm->sync.mutex);
-	if( wake ) wake_up(&shm->sync.readq);
+	wake_up_all(&shm->sync.readq);
 	if( !dirty ) {
 		ACH_ERRF("ach bug: channel not dirty on write unlock\n");
 		return ACH_CORRUPT;
@@ -696,20 +689,25 @@ static ssize_t ach_ch_read(struct file *file, char *buffer, size_t len,
 
 static unsigned int ach_ch_poll(struct file *file, poll_table * wait)
 {
-	unsigned int mask;
+	unsigned int mask = POLLOUT | POLLWRNORM;
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 	struct ach_header *shm = ch_file->shm;
+	enum ach_status r;
 
 	/* KDEBUG1("In ach_ch_poll (minor=%d)\n", ch_file->dev->minor); */
 
+	/* Add ourselves wait queue */
 	poll_wait(file, &shm->sync.readq, wait);
-	mask = POLLOUT | POLLWRNORM;
-	if (!rt_mutex_lock_interruptible(&shm->sync.mutex, 0)) {
-		if (ch_file->seq_num != shm->last_seq) {
-			mask |= POLLIN | POLLRDNORM;
-		}
-		rt_mutex_unlock(&shm->sync.mutex);
+
+	/* Lock channel and check what happened */
+	r = chan_lock(ch_file);
+	if( ACH_OK != r ) return -get_errno(r);
+
+	if (ch_file->seq_num != shm->last_seq) {
+		mask |= POLLIN | POLLRDNORM;
 	}
+
+	rt_mutex_unlock(&shm->sync.mutex);
 
 	return mask;
 }
