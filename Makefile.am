@@ -1,7 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = \
-	CMakeLists.txt \
 	spin
 
 AM_DISTCHECK_CONFIGURE_FLAGS=--enable-dkms --disable-dkms-build --disable-kbuild --with-python --with-java
