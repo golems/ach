@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Man page of ACHCOP</TITLE>
 </HEAD><BODY>
 <H1>ACHCOP</H1>
-Section: User Commands (1)<BR>Updated: September 2013<BR><A HREF="#index">Index</A>
+Section: User Commands (1)<BR>Updated: February 2015<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
@@ -36,6 +36,10 @@ Redirect stderr to this file
 Detach and run in background
 <DT><B>-r</B>,<DD>
 Restart failed children
+<DT><B>-i</B> ident<DD>
+Log identifier (default: achop)
+<DT><B>-f</B> facility<DD>
+Log facility {user|daemon} (default: user)
 <DT><B>-v</B>,<DD>
 Make output more verbose
 <DT>-?,<DD>
@@ -48,7 +52,7 @@ Print program version
 
 <DL COMPACT>
 <DT><DD>
-achcop <B>-rd</B> <B>-P</B> /var/run/myd.ppid <B>-p</B> /var/run/myd.pid <B>--</B> my-daemon <B>-xyz</B>
+achcop -rd -P /var/run/myd.ppid -p /var/run/myd.pid -- my-daemon -xyz
 </DL>
 <A NAME="lbAG">&nbsp;</A>
 <H2>AUTHOR</H2>
@@ -57,7 +61,7 @@ Written by Neil T. Dantam
 <A NAME="lbAH">&nbsp;</A>
 <H2>REPORTING BUGS</H2>
 
-Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+Report bugs to &lt;<A HREF="mailto:ntd{at}rice.edu">ntd{at}rice.edu</A>&gt;
 <A NAME="lbAI">&nbsp;</A>
 <H2>COPYRIGHT</H2>
 
@@ -84,6 +88,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 01:51:46 GMT, September 24, 2013
+Time: 02:02:43 GMT, February 03, 2015
 </BODY>
 </HTML>

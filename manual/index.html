@@ -38,18 +38,21 @@ CLASS="address"
 ><CODE
 CLASS="email"
 >&#60;<A
-HREF="mailto:ntd at gatech dot edu"
->ntd at gatech dot edu</A
+HREF="mailto:ntd at rice dot edu"
+>ntd at rice dot edu</A
 >&#62;</CODE
 ></P
 ></DIV
 ></DIV
 ><P
 CLASS="copyright"
->Copyright &copy; 2012-2013 Georgia Tech Research Corporation</P
+>Copyright &copy; 2012-2014 Georgia Tech Research Corporation</P
+><P
+CLASS="copyright"
+>Copyright &copy; 2015 Rice University</P
 ><P
 CLASS="pubdate"
->2013-01-21<BR></P
+>2015-02-02<BR></P
 ><DIV
 CLASS="revhistory"
 ><TABLE
@@ -63,6 +66,42 @@ COLSPAN="3"
 ><B
 >Revision History</B
 ></TH
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+>Revision 2.0.0</TD
+><TD
+ALIGN="LEFT"
+>2015-02-02</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>New Release with kernel channels and improved mDNS
+            integration</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+>Revision 1.2.1</TD
+><TD
+ALIGN="LEFT"
+>2014-04-07</TD
+><TD
+ALIGN="LEFT"
+>Revised by: NTD</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+COLSPAN="3"
+>New Release with achd period, SSH example,
+          ACH_OVERFLOW clarification</TD
 ></TR
 ><TR
 ><TD
@@ -123,7 +162,7 @@ CLASS="abstract"
 ><P
 ></P
 ><A
-NAME="AEN31"
+NAME="AEN44"
 ></A
 ><P
 >&#13;          This is the manual for the Ach IPC library.
@@ -150,162 +189,196 @@ CLASS="TOC"
 ></DT
 ><DT
 >1. <A
-HREF="#AEN34"
+HREF="#AEN47"
 >Introduction</A
 ></DT
 ><DT
 >2. <A
-HREF="#AEN66"
+HREF="#AEN79"
 >Libach API</A
 ></DT
 ><DD
 ><DL
 ><DT
 >2.1. <A
-HREF="#AEN68"
+HREF="#AEN81"
 >Status Codes</A
 ></DT
 ><DT
 >2.2. <A
-HREF="#AEN153"
+HREF="#AEN178"
 >Creating a channel</A
 ></DT
 ><DT
 >2.3. <A
-HREF="#AEN175"
+HREF="#AEN204"
 >Opening a channel</A
 ></DT
 ><DT
 >2.4. <A
-HREF="#AEN191"
+HREF="#AEN220"
 >Sending Data</A
 ></DT
 ><DT
 >2.5. <A
-HREF="#AEN210"
+HREF="#AEN240"
 >Receiving Data</A
 ></DT
 ><DT
 >2.6. <A
-HREF="#AEN270"
+HREF="#AEN320"
 >Cancel message wait</A
 ></DT
 ><DT
 >2.7. <A
-HREF="#AEN293"
+HREF="#AEN343"
 >Closing a channel</A
 ></DT
 ><DT
 >2.8. <A
-HREF="#AEN301"
+HREF="#AEN351"
 >Deleting a channel</A
 ></DT
 ><DT
 >2.9. <A
-HREF="#AEN309"
+HREF="#AEN359"
 >Channel Permissions</A
 ></DT
 ><DT
 >2.10. <A
-HREF="#AEN326"
+HREF="#AEN376"
 >Ignore old messages</A
 ></DT
 ></DL
 ></DD
 ><DT
 >3. <A
-HREF="#AEN335"
+HREF="#AEN385"
 >Language Bindings</A
 ></DT
 ><DD
 ><DL
 ><DT
 >3.1. <A
-HREF="#AEN337"
+HREF="#AEN387"
 >Common Lisp</A
 ></DT
 ><DT
 >3.2. <A
-HREF="#AEN340"
+HREF="#AEN390"
 >Python</A
 ></DT
 ></DL
 ></DD
 ><DT
 >4. <A
-HREF="#AEN354"
+HREF="#achtool"
 >ach Shell Tool</A
 ></DT
 ><DT
 >5. <A
-HREF="#AEN437"
->achd Network Daemon</A
+HREF="#AEN487"
+>Linux Kernel Module</A
 ></DT
 ><DD
 ><DL
 ><DT
 >5.1. <A
-HREF="#AEN441"
->Server</A
+HREF="#AEN492"
+>Kernel Module Installation</A
 ></DT
-><DD
-><DL
-><DT
->5.1.1. <A
-HREF="#AEN458"
->Traditional Inetd Configuration</A
-></DT
-><DT
->5.1.2. <A
-HREF="#AEN476"
->Xinetd Configuration</A
-></DT
-><DT
->5.1.3. <A
-HREF="#AEN498"
->Testing Server Configuration</A
-></DT
-></DL
-></DD
 ><DT
 >5.2. <A
-HREF="#AEN523"
->Client</A
+HREF="#AEN519"
+>Creating Kernel Channels</A
+></DT
+><DT
+>5.3. <A
+HREF="#AEN530"
+>Kernel Channel Permissions</A
+></DT
+><DT
+>5.4. <A
+HREF="#AEN539"
+>Waiting on Multiple Kernel Channels</A
 ></DT
 ></DL
 ></DD
 ><DT
 >6. <A
-HREF="#AEN586"
->achcop Watchdog Utility</A
+HREF="#AEN562"
+>achd Network Daemon</A
 ></DT
 ><DD
 ><DL
 ><DT
 >6.1. <A
-HREF="#AEN608"
->Features</A
+HREF="#AEN566"
+>Server</A
+></DT
+><DD
+><DL
+><DT
+>6.1.1. <A
+HREF="#AEN583"
+>Traditional Inetd Configuration</A
 ></DT
 ><DT
+>6.1.2. <A
+HREF="#AEN604"
+>Xinetd Configuration</A
+></DT
+><DT
+>6.1.3. <A
+HREF="#AEN626"
+>Testing Server Configuration</A
+></DT
+></DL
+></DD
+><DT
 >6.2. <A
-HREF="#AEN628"
->Signals</A
+HREF="#AEN651"
+>Client</A
 ></DT
 ><DT
 >6.3. <A
-HREF="#AEN666"
+HREF="#AEN745"
+>Locating Channels via mDNS</A
+></DT
+></DL
+></DD
+><DT
+>7. <A
+HREF="#AEN778"
+>achcop Watchdog Utility</A
+></DT
+><DD
+><DL
+><DT
+>7.1. <A
+HREF="#AEN800"
+>Features</A
+></DT
+><DT
+>7.2. <A
+HREF="#AEN820"
+>Signals</A
+></DT
+><DT
+>7.3. <A
+HREF="#AEN858"
 >Examples</A
 ></DT
 ><DD
 ><DL
 ><DT
->6.3.1. <A
-HREF="#AEN668"
+>7.3.1. <A
+HREF="#AEN860"
 >Shell Commands</A
 ></DT
 ><DT
->6.3.2. <A
-HREF="#AEN700"
+>7.3.2. <A
+HREF="#AEN892"
 >Signaling Achcop from Child</A
 ></DT
 ></DL
@@ -313,108 +386,108 @@ HREF="#AEN700"
 ></DL
 ></DD
 ><DT
->7. <A
-HREF="#AEN712"
+>8. <A
+HREF="#AEN904"
 >achlog Logging Utility</A
 ></DT
 ><DD
 ><DL
 ><DT
->7.1. <A
-HREF="#AEN722"
+>8.1. <A
+HREF="#AEN914"
 >Log Format</A
 ></DT
 ><DT
->7.2. <A
-HREF="#AEN730"
+>8.2. <A
+HREF="#AEN922"
 >Usage</A
 ></DT
 ></DL
 ></DD
 ><DT
->8. <A
-HREF="#AEN759"
+>9. <A
+HREF="#AEN951"
 >Performance Tuning</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.1. <A
-HREF="#AEN762"
+>9.1. <A
+HREF="#AEN954"
 >Disable CPU frequency scaling</A
 ></DT
 ><DT
->8.2. <A
-HREF="#AEN765"
+>9.2. <A
+HREF="#AEN957"
 >Use a Real-Time Operating System</A
 ></DT
 ><DD
 ><DL
 ><DT
->8.2.1. <A
-HREF="#AEN768"
+>9.2.1. <A
+HREF="#AEN960"
 >Linux PREEMPT_RT</A
 ></DT
 ><DT
->8.2.2. <A
-HREF="#AEN771"
+>9.2.2. <A
+HREF="#AEN963"
 >Linux / Xenomai</A
 ></DT
 ><DT
->8.2.3. <A
-HREF="#AEN778"
+>9.2.3. <A
+HREF="#AEN970"
 >Other Real-Time Operating Systems</A
 ></DT
 ></DL
 ></DD
 ><DT
->8.3. <A
-HREF="#AEN781"
+>9.3. <A
+HREF="#AEN973"
 >Benchmark your system</A
 ></DT
 ></DL
 ></DD
 ><DT
->9. <A
-HREF="#AEN799"
+>10. <A
+HREF="#AEN991"
 >Theory of Operation</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.1. <A
-HREF="#AEN802"
+>10.1. <A
+HREF="#AEN994"
 >Data Structure</A
 ></DT
 ><DT
->9.2. <A
-HREF="#AEN806"
+>10.2. <A
+HREF="#AEN998"
 >Core Procedures</A
 ></DT
 ><DD
 ><DL
 ><DT
->9.2.1. <A
-HREF="#AEN811"
+>10.2.1. <A
+HREF="#AEN1003"
 >ach_put</A
 ></DT
 ><DT
->9.2.2. <A
-HREF="#AEN827"
+>10.2.2. <A
+HREF="#AEN1019"
 >ach_get</A
 ></DT
 ></DL
 ></DD
 ><DT
->9.3. <A
-HREF="#AEN843"
+>10.3. <A
+HREF="#AEN1035"
 >Serialization</A
 ></DT
 ></DL
 ></DD
 ><DT
 ><A
-HREF="#AEN849"
+HREF="#AEN1041"
 >Colophon</A
 ></DT
 ></DL
@@ -424,7 +497,7 @@ CLASS="sect1"
 ><H2
 CLASS="sect1"
 ><A
-NAME="AEN34"
+NAME="AEN47"
 >1. Introduction</A
 ></H2
 ><P
@@ -501,7 +574,7 @@ CLASS="function"
       be done directly by either the reading or writing process, or it
       may be done via the shell command, <B
 CLASS="command"
->ach -C
+>ach mk
       channel_name</B
 >, before the reader or writer start. After
       the channel is created, each reader or writer must open the
@@ -513,7 +586,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN66"
+NAME="AEN79"
 >2. Libach API</A
 ></H2
 ><DIV
@@ -521,7 +594,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN68"
+NAME="AEN81"
 >2.1. Status Codes</A
 ></H3
 ><P
@@ -549,13 +622,20 @@ CLASS="constant"
 ></DT
 ><DD
 ><P
->Channel or buffer was too small.  Either the
-      channel is too small to hold the message you attempted to send,
-      or the buffer you passed to receive the message was too small to
-      hold the result.  If the channel is too small, you should
-      specify a larger nominal message size when creating the channel.
-      If the buffer is to small, pass in a bigger
-      buffer.</P
+>Destination was too small. If returned from
+      <CODE
+CLASS="function"
+>ach_put</CODE
+>, the channel is too small to hold
+      the message you attempted to send. If returned from
+      <CODE
+CLASS="function"
+>ach_get</CODE
+>, the buffer you passed to receive
+      the message was too small to hold the result.  If the channel is
+      too small, you should specify a larger nominal message size when
+      creating the channel.  If the buffer is to small, pass in a
+      bigger buffer.</P
 ></DD
 ><DT
 ><CODE
@@ -696,6 +776,27 @@ CLASS="constant"
 ><DT
 ><CODE
 CLASS="constant"
+>ACH_FAULT</CODE
+></DT
+><DD
+><P
+>Memory fault in a system call.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_EINTR</CODE
+></DT
+><DD
+><P
+>System call interrupted.  This code is only used
+      internally and not returned to library clients.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
 >ACH_BUG</CODE
 ></DT
 ><DD
@@ -713,15 +814,30 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN153"
+NAME="AEN178"
 >2.2. Creating a channel</A
 ></H3
+><P
+>&#13;      You can create a channel by directly calling the<CODE
+CLASS="function"
+>&#13;      ach_create</CODE
+>; however, it is generally preferable to
+      call the <B
+CLASS="command"
+>ach</B
+> (see <A
+HREF="#achtool"
+>also</A
+>) from the shell as this is less
+      likely to result in races between multiple processes needing to
+      access the channel.
+    </P
 ><DIV
 CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN155"
+NAME="AEN184"
 ></A
 ><P
 ><CODE
@@ -753,7 +869,7 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN171"
+NAME="AEN200"
 ></A
 ><P
 ><B
@@ -783,7 +899,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN175"
+NAME="AEN204"
 >2.3. Opening a channel</A
 ></H3
 ><DIV
@@ -791,7 +907,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN177"
+NAME="AEN206"
 ></A
 ><P
 ><CODE
@@ -809,7 +925,7 @@ CLASS="FUNCDEF"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN188"
+NAME="AEN217"
 ></A
 ><P
 ><B
@@ -831,7 +947,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN191"
+NAME="AEN220"
 >2.4. Sending Data</A
 ></H3
 ><DIV
@@ -839,7 +955,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN193"
+NAME="AEN222"
 ></A
 ><P
 ><CODE
@@ -860,11 +976,16 @@ CLASS="function"
     a new message to the channel.  This will go in the next open space
     in the circular array.  If there is insufficient unused space in
     the circular array, then the oldest entry or entries will be
-    overwritten.</P
+    overwritten.  If the entire circular array is too small for the
+    new message, the message is not written and
+    <CODE
+CLASS="constant"
+>ACH_OVERFLOW</CODE
+> is returned.</P
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN207"
+NAME="AEN237"
 ></A
 ><P
 ><B
@@ -886,7 +1007,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN210"
+NAME="AEN240"
 >2.5. Receiving Data</A
 ></H3
 ><DIV
@@ -894,7 +1015,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN212"
+NAME="AEN242"
 ></A
 ><P
 ><CODE
@@ -925,13 +1046,36 @@ CLASS="variablelist"
 ><DT
 ><CODE
 CLASS="constant"
+>ACH_O_NONBLOCK</CODE
+></DT
+><DD
+><P
+>&#13;        Return immediately with ACH_STALE_FRAMES if no new data is
+        present in the channel.  Exclusive with ACH_O_WAIT.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
 >ACH_O_WAIT</CODE
 ></DT
 ><DD
 ><P
->Wait until a new message is posted. Default
-      behavior without this flag is to return
-      immediately.</P
+>&#13;        Wait until a new message is posted. Default behavior without
+        this flag is to return immediately.  Exclusive with
+        ACH_O_NONBLOCK.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_FIRST</CODE
+></DT
+><DD
+><P
+>&#13;        Return the oldest message in the channel.  Exclusive with
+        ACH_O_LAST.
+      </P
 ></DD
 ><DT
 ><CODE
@@ -940,9 +1084,28 @@ CLASS="constant"
 ></DT
 ><DD
 ><P
->Return the newest message.  Default behavior
-      without this flag is to return the oldest unseen
-      message.</P
+>&#13;        Return the newest message.  Exclusive with ACH_O_FIRST.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_ABSTIME</CODE
+></DT
+><DD
+><P
+>&#13;        Timeout is an absolute time.  Exclusive with ACH_O_RELTIME.
+      </P
+></DD
+><DT
+><CODE
+CLASS="constant"
+>ACH_O_RELTIME</CODE
+></DT
+><DD
+><P
+>&#13;        Timeout is a relative time.  Exclusive with ACH_O_ABSTIME.
+      </P
 ></DD
 ><DT
 ><CODE
@@ -969,7 +1132,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN249"
+NAME="AEN299"
 ></A
 ><P
 ><B
@@ -980,11 +1143,13 @@ NAME="AEN249"
 ><PRE
 CLASS="programlisting"
 >&#13;size_t frame_size;
-enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, NULL, 0 );
+enum ach_status r;
+r  = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size,
+              NULL, ACH_O_NONBLOCK | ACH_O_FIRST );
 if( ACH_MISSED_FRAME == r ) {
-    fprintf(stdout, "Missed a/some messages(s)\n");
+    printf("Missed a/some messages(s)\n");
 } else if( ACH_STALE_FRAMES == r ) {
-    fprintf( stdout, "No new data\n" );
+    printf("No new data\n");
 } else if( ACH_OK != r ) {
     syslog( LOG_ERR, "Unable to get a message: %s\n", ach_result_to_string(r) );
 } else if( frame_size != sizeof(my_msg) ) {
@@ -996,7 +1161,7 @@ if( ACH_MISSED_FRAME == r ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN253"
+NAME="AEN303"
 ></A
 ><P
 ><B
@@ -1014,7 +1179,7 @@ CLASS="programlisting"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN257"
+NAME="AEN307"
 ></A
 ><P
 ><B
@@ -1027,9 +1192,21 @@ NAME="AEN257"
 ><PRE
 CLASS="programlisting"
 >&#13;struct timespec t;
-clock_gettime( ACH_DEFAULT_CLOCK, &#38;t );
+clockid_t clock;
+enum ach_status r;
+/* Get the channel clock */
+r = ach_channel_clock(&#38;channel,&#38;clock);
+if( ACH_OK != r ) {
+  fprintf(stderr, "Could not get channel clock: %s\n",
+          ach_result_to_string(r));
+  exit(EXIT_FAILURE);
+}
+/* Get current time and set the timeout. */
+clock_gettime( clock, &#38;t );
 t.tv_sec += 1;
-enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, &#38;t, ACH_O_WAIT | ACH_O_LAST );
+/* Get the message */
+enum ach_status r = ach_get( &#38;channel, &#38;my_msg, my_msg_size, &#38;frame_size, &#38;t,
+                             ACH_O_WAIT | ACH_O_LAST | ACH_O_ABSTIME );
 if( ACH_TIMEOUT == r ) {
   fprintf(stdout, "call to ach_get timed out\n");
 }
@@ -1096,7 +1273,7 @@ CLASS="emphasis"
       events as is likely for motion control.
       <CODE
 CLASS="constant"
->CLOCK_MONTONIC</CODE
+>CLOCK_MONOTONIC</CODE
 > is not discontinous, but
       even it has issues.  The NTP daemon may slew this clock,
       speeding it up or slowing it down on Linux by 0.5ms per second.
@@ -1116,7 +1293,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN270"
+NAME="AEN320"
 >2.6. Cancel message wait</A
 ></H3
 ><DIV
@@ -1124,7 +1301,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN272"
+NAME="AEN322"
 ></A
 ><P
 ><CODE
@@ -1158,7 +1335,7 @@ CLASS="constant"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN285"
+NAME="AEN335"
 ></A
 ><P
 ><B
@@ -1192,7 +1369,7 @@ void setup_sighandler_cancel ( int sig ) {
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN289"
+NAME="AEN339"
 ></A
 ><P
 ><B
@@ -1220,7 +1397,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN293"
+NAME="AEN343"
 >2.7. Closing a channel</A
 ></H3
 ><DIV
@@ -1228,7 +1405,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN295"
+NAME="AEN345"
 ></A
 ><P
 ><CODE
@@ -1246,7 +1423,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN301"
+NAME="AEN351"
 >2.8. Deleting a channel</A
 ></H3
 ><DIV
@@ -1254,7 +1431,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN303"
+NAME="AEN353"
 ></A
 ><P
 ><CODE
@@ -1272,7 +1449,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN309"
+NAME="AEN359"
 >2.9. Channel Permissions</A
 ></H3
 ><DIV
@@ -1280,7 +1457,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN311"
+NAME="AEN361"
 ></A
 ><P
 ><CODE
@@ -1304,7 +1481,7 @@ CLASS="varname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN321"
+NAME="AEN371"
 ></A
 ><P
 ><B
@@ -1328,7 +1505,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN326"
+NAME="AEN376"
 >2.10. Ignore old messages</A
 ></H3
 ><DIV
@@ -1336,7 +1513,7 @@ CLASS="funcsynopsis"
 ><P
 ></P
 ><A
-NAME="AEN328"
+NAME="AEN378"
 ></A
 ><P
 ><CODE
@@ -1358,7 +1535,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN335"
+NAME="AEN385"
 >3. Language Bindings</A
 ></H2
 ><DIV
@@ -1366,7 +1543,7 @@ CLASS="sect2"
 ><H3
 CLASS="sect2"
 ><A
-NAME="AEN337"
+NAME="AEN387"
 >3.1. Common Lisp</A
 ></H3
 ><P
@@ -1378,7 +1555,7 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN340"
+NAME="AEN390"
 >3.2. Python</A
 ></H3
 ><P
@@ -1411,7 +1588,7 @@ CLASS="classname"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN348"
+NAME="AEN398"
 ></A
 ><P
 ><B
@@ -1429,7 +1606,7 @@ c.close()
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN351"
+NAME="AEN401"
 ></A
 ><P
 ><B
@@ -1457,7 +1634,7 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN354"
+NAME="achtool"
 >4. ach Shell Tool</A
 ></H2
 ><P
@@ -1500,7 +1677,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN380"
+NAME="AEN430"
 ></A
 ><P
 ><B
@@ -1533,7 +1710,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN392"
+NAME="AEN442"
 ></A
 ><P
 ><B
@@ -1555,7 +1732,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN400"
+NAME="AEN450"
 ></A
 ><P
 ><B
@@ -1594,7 +1771,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN414"
+NAME="AEN464"
 ></A
 ><P
 ><B
@@ -1608,7 +1785,7 @@ NAME="AEN414"
 ><B
 CLASS="command"
 >ach</B
->   mk   -C <TT
+>   mk   <TT
 CLASS="replaceable"
 ><I
 >my_channel</I
@@ -1628,7 +1805,7 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN427"
+NAME="AEN477"
 ></A
 ><P
 ><B
@@ -1658,8 +1835,469 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN437"
->5. achd Network Daemon</A
+NAME="AEN487"
+>5. Linux Kernel Module</A
+></H2
+><P
+>&#13;      Ach includes a Linux kernel module which implements channels in
+      kernel-space.  This allows library clients to wait for messages
+      on multiple channels (and in combination with any other file
+      descriptors) using the <CODE
+CLASS="function"
+>poll()</CODE
+> or
+      <CODE
+CLASS="function"
+>select()</CODE
+> family of functions.
+    </P
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN492"
+>5.1. Kernel Module Installation</A
+></H3
+><P
+>&#13;      The most convenient way to build the kernel module will probably
+      be with <A
+HREF="http://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support"
+TARGET="_top"
+>DKMS</A
+>
+      (Dynamic Kernel Module System).  DKMS enables building and
+      rebuilding of out-of-tree kernel modules (such as ach, device
+      drivers, etc.) when the kernel is upgraded.  On Debian and
+      Ubuntu, the package manager automatically invokes DKMS to
+      rebuild the registered modules.  To setup ach for DKMS, call
+      configure with <B
+CLASS="command"
+>./configure
+      --enable-dkms-build</B
+>, and the module sources for will
+      be installed and built when you call <B
+CLASS="command"
+>make
+      install</B
+>.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN498"
+></A
+><P
+><B
+>Example 17. Build kernel module with dkms</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;./configure --enable-dkms-build
+make
+sudo make install
+</PRE
+></DIV
+><P
+>&#13;      Alternatively, you can build the module in the ach source tree
+      directly by calling <B
+CLASS="command"
+>./configure --enable-kbuild
+      --disable-dkms</B
+>.  If your kernel headers are not in the
+      typical location and/or do not match the currently running
+      kernel, you may to specify the kernel release and header
+      directory.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN503"
+></A
+><P
+><B
+>Example 18. Manually specifying kernel information for kbuild</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;./configure --enable-kbuild \
+            --disable-dkms \
+             KERNELRELEASE=3.13.0-44-lowlatency \
+             KDIR=/usr/src/linux-headers-3.13.0-44-lowlatency
+make
+sudo make install
+</PRE
+></DIV
+><P
+>&#13;      After the kernel module is build and installed, you need to link
+      it into the kernel.  This is done with the
+      <B
+CLASS="command"
+>modprobe</B
+> command.  The kernel module can be
+      removed with <B
+CLASS="command"
+>rmmod</B
+>.  The module takes one
+      optional parameter, <CODE
+CLASS="parameter"
+>max_devices</CODE
+> which
+      specifies the maximum number of kernel channels that can be
+      created.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN510"
+></A
+><P
+><B
+>Example 19. Load kernel module</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;sudo modprobe ach
+    </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN513"
+></A
+><P
+><B
+>Example 20. Load kernel module and specify max_devices</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;sudo modprobe ach max_devices=1024
+    </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN516"
+></A
+><P
+><B
+>Example 21. Unload kernel module</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;sudo rmmod ach
+    </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN519"
+>5.2. Creating Kernel Channels</A
+></H3
+><P
+>&#13;      Kernel channels can be created using the <B
+CLASS="command"
+>ach</B
+>
+      command by passing the <CODE
+CLASS="parameter"
+>-k</CODE
+> flag.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN524"
+></A
+><P
+><B
+>Example 22. Create kernel channel from shell</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;ach mk -k my-channel
+    </PRE
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN527"
+></A
+><P
+><B
+>Example 23. Unlink kernel channel from shell</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;ach rm my-channel
+    </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN530"
+>5.3. Kernel Channel Permissions</A
+></H3
+><P
+>&#13;      By default, kernel channels can only be created and accessed by
+      root.  However, you can use <A
+HREF="http://en.wikipedia.org/wiki/Udev"
+TARGET="_top"
+>udev</A
+> to control
+      kernel channel permissions.  The following example will set the
+      group ownership of all ach devices to the <FONT
+COLOR="RED"
+>ach</FONT
+>
+      group.  The file needs to be placed in
+      <TT
+CLASS="filename"
+>/etc/udev/rules.d/</TT
+>.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN536"
+></A
+><P
+><B
+>Example 24. udev rules file to set channel group </B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;# /etc/udev/rules.d/10-ach.rules
+# Control permissions for ach character devices
+
+# Set the permissions of the ach control device
+KERNEL=="achctrl", GROUP=="ach", MODE=="660"
+
+# Set the permissions of ach channel devices
+KERNEL=="ach-*", GROUP=="ach", MODE=="660"
+
+# Create symbolic links for ach channel devices
+KERNEL=="ach-*", SYMLINK+="ach/%k"
+    </PRE
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN539"
+>5.4. Waiting on Multiple Kernel Channels</A
+></H3
+><P
+>&#13;      Kernel channels support waiting for multiple events using the
+      <CODE
+CLASS="function"
+>poll</CODE
+>, <CODE
+CLASS="function"
+>select</CODE
+> and
+      similar functions.  These functions require the file descriptor
+      for the channel.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN544"
+></A
+><P
+><B
+>Example 25. Obtaining the channel file descriptor</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;ach_channel_t channel;
+int channel_fd;
+enum ach_status r;
+
+/* Open channel */
+/* ... */
+
+/* Get Channel File Descriptor */
+r = ach_channel_fd( &#38;channel, &#38;channel_fd );
+if( ACH_OK != r ) {
+    fprintf(stderr, "could not get file descriptor for channel '%s': %s\n",
+            names[i], ach_result_to_string(r));
+    exit(EXIT_FAILURE);
+}
+    </PRE
+></DIV
+><P
+>&#13;      The channel file descriptor can then be passed to
+      <CODE
+CLASS="function"
+>poll</CODE
+>, <CODE
+CLASS="function"
+>select</CODE
+>, etc. to
+      determine when there is new data to read.  Note that channels
+      are always ready to write.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN550"
+></A
+><P
+><B
+>Example 26. Complete poll() example</B
+></P
+><PRE
+CLASS="programlisting"
+>&#13;#include &#60;stdlib.h&#62;
+#include &#60;pthread.h&#62;
+#include &#60;inttypes.h&#62;
+#include &#60;ach.h&#62;
+
+#include &#60;stdio.h&#62;
+#include &#60;poll.h&#62;
+#include &#60;unistd.h&#62;
+
+int main(int argc, char **argv)
+{
+    const char *names[] = {"channel-0", "channel-1"};
+    const size_t n = sizeof(names) / sizeof(names[0]);
+    ach_channel_t channel[n];
+    struct pollfd pfd[n];
+
+    for( size_t i = 0; i &#60; n; i ++ ) {
+        /* Open Channel */
+        enum ach_status r = ach_open( &#38;channel[i], names[i], NULL );
+        if( ACH_OK != r ) {
+            fprintf(stderr, "could not open channel '%s': %s\n",
+                    names[i], ach_result_to_string(r));
+            exit(EXIT_FAILURE);
+        }
+        /* Get Channel File Descriptor */
+        r = ach_channel_fd( &#38;channel[i], &#38;pfd[i].fd );
+        if( ACH_OK != r ) {
+            fprintf(stderr, "could not get file descriptor for channel '%s': %s\n",
+                    names[i], ach_result_to_string(r));
+            exit(EXIT_FAILURE);
+        }
+        /* Set events to poll for */
+        pfd[i].events = POLLIN;
+    }
+
+    /* read forever */
+    for(;;) {
+        /* poll for new messages */
+        int r_poll = poll( pfd, n, -1 );
+        if( r_poll &#60; 0 ) {
+            perror("poll");
+            exit(EXIT_FAILURE);
+        }
+        /* find channels with new data */
+        for( size_t i = 0; i &#60; n &#38;&#38; r_poll &#62; 0; i++ ) {
+            if( (pfd[i].revents &#38; POLLIN) ) {
+                /* There's new data on this channel */
+                char buf[512];
+                size_t frame_size;
+                enum ach_status r = ach_get( &#38;channel[i], buf, sizeof(buf), &#38;frame_size,
+                                             NULL, ACH_O_NONBLOCK | ACH_O_FIRST );
+                switch(r) {
+                case ACH_OK:
+                case ACH_MISSED_FRAME: {
+                    /* this example just writes it to stdout */
+                    ssize_t wr = write( STDOUT_FILENO, buf, frame_size );
+                    if( wr &#60; 0 ) {
+                        perror("write");
+                        exit(EXIT_FAILURE);
+                    }
+                    break;
+                }
+                default:
+                    fprintf( stderr, "Error getting data from '%s': %s\n",
+                             names[i], ach_result_to_string(r));
+                    exit(EXIT_FAILURE);
+                }
+                r_poll--;
+            }
+        }
+    }
+    return 0;
+}
+    </PRE
+></DIV
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        The <CODE
+CLASS="function"
+>poll</CODE
+> function has an advantage over
+        <CODE
+CLASS="function"
+>select</CODE
+> in that the arguments to
+        <CODE
+CLASS="function"
+>poll</CODE
+> can be reused over multiple calls
+        while the arguments to select must be recreated for each
+        call. However <CODE
+CLASS="function"
+>poll</CODE
+> provides only
+        millisecond timing resolution.  Instead, the more recent
+        <CODE
+CLASS="function"
+>ppoll</CODE
+> supports nanosecond timing
+        resolution.  For details on these functions, consult the man
+        pages with <B
+CLASS="command"
+>man -s 2 poll</B
+> and <B
+CLASS="command"
+>man
+        -s 2 ppoll</B
+>.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="sect1"
+><HR><H2
+CLASS="sect1"
+><A
+NAME="AEN562"
+>6. achd Network Daemon</A
 ></H2
 ><P
 > While the primary design goal of Ach is low-latency, single
@@ -1673,8 +2311,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN441"
->5.1. Server</A
+NAME="AEN566"
+>6.1. Server</A
 ></H3
 ><P
 ><B
@@ -1767,7 +2405,7 @@ CLASS="userinput"
       xinetd with with <KBD
 CLASS="userinput"
 >apt-get install xinetd</KBD
->
+>.
       </P
 ></TD
 ></TR
@@ -1778,8 +2416,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN458"
->5.1.1. Traditional Inetd Configuration</A
+NAME="AEN583"
+>6.1.1. Traditional Inetd Configuration</A
 ></H4
 ><P
 >You should add the following line to
@@ -1795,7 +2433,39 @@ CLASS="filename"
 CLASS="screen"
 >&#13;#/etc/inetd.conf
 8076  stream  tcp  nowait  nobody  /usr/local/bin/achd /usr/local/bin/achd serve
-</PRE
+    </PRE
+><DIV
+CLASS="tip"
+><P
+></P
+><TABLE
+CLASS="tip"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/tip.gif"
+HSPACE="5"
+ALT="Tip"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        On Debian-based systems where you have installed ach via the
+        package manger, you can enable achd in inetd by running
+        <KBD
+CLASS="userinput"
+>dpkg-reconfigure ach-utils</KBD
+>.
+      </P
+></TD
+></TR
+></TABLE
+></DIV
 ><P
 >&#13;      You will probably need to restart inetd after editing the
       configuration file.  How to do this depends on the init system
@@ -1835,8 +2505,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN476"
->5.1.2. Xinetd Configuration</A
+NAME="AEN604"
+>6.1.2. Xinetd Configuration</A
 ></H4
 ><P
 >If xinetd is run with the with the inetd_compat flag, then
@@ -1917,8 +2587,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN498"
->5.1.3. Testing Server Configuration</A
+NAME="AEN626"
+>6.1.3. Testing Server Configuration</A
 ></H4
 ><P
 >Now, you can test this setup by telnetting to port 8076 on
@@ -2092,8 +2762,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN523"
->5.2. Client</A
+NAME="AEN651"
+>6.2. Client</A
 ></H3
 ><P
 >From the client machine, you can run achd to push or pull
@@ -2127,15 +2797,20 @@ CLASS="replaceable"
 ><I
 >remote_channel_name</I
 ></TT
+>] [-u <TT
+CLASS="replaceable"
+><I
+>microseconds</I
+></TT
 >] [-d] [-r] [-q] [-v] [-V] [-?]</P
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN547"
+NAME="AEN677"
 ></A
 ><P
 ><B
->Example 17. Pull channel from server</B
+>Example 27. Pull channel from server</B
 ></P
 ><P
 ><B
@@ -2156,11 +2831,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN556"
+NAME="AEN686"
 ></A
 ><P
 ><B
->Example 18. Push channel to server and retry dropped connections</B
+>Example 28. Push channel to server and retry dropped connections</B
 ></P
 ><P
 ><B
@@ -2181,11 +2856,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN566"
+NAME="AEN696"
 ></A
 ><P
 ><B
->Example 19. Pull channel from server via UDP</B
+>Example 29. Pull channel from server via UDP</B
 ></P
 ><P
 ><B
@@ -2206,11 +2881,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN576"
+NAME="AEN706"
 ></A
 ><P
 ><B
->Example 20. Push channel to server, running the the background</B
+>Example 30. Push channel to server, running the the background</B
 ></P
 ><P
 ><B
@@ -2228,6 +2903,199 @@ CLASS="replaceable"
 ></TT
 > </P
 ></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN716"
+></A
+><P
+><B
+>Example 31. Pull channel from server at 10Hz</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   pull   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+>   -u 100000 </P
+></DIV
+><P
+>&#13;      To add both encryption and compression, you can also forward
+      achd over SSH.  This will tunnel the achd TCP connection through
+      the encrypted and compressed SSH connection.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN727"
+></A
+><P
+><B
+>Example 32. Pull channel over compressed SSH connection</B
+></P
+><P
+><B
+CLASS="command"
+>ssh</B
+>   -f   -C   -L1234:localhost:8076   <TT
+CLASS="replaceable"
+><I
+>server_name</I
+></TT
+>   sleep 120 </P
+><P
+><B
+CLASS="command"
+>achd</B
+>   -p   1234   pull   localhost   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><HR><H3
+CLASS="sect2"
+><A
+NAME="AEN745"
+>6.3. Locating Channels via mDNS</A
+></H3
+><P
+>&#13;      Multicast DNS (mDNS) can be used to browse the Ach channels on
+      the local network and to lookup the hostname for an channel.
+      mDNS names are generally in the <SPAN
+CLASS="systemitem"
+>.local</SPAN
+> domain To advertise an
+      Ach channel, it is registered as a service with the local mDNS
+      server.
+    </P
+><DIV
+CLASS="example"
+><A
+NAME="AEN749"
+></A
+><P
+><B
+>Example 33. Create a channel and register using the Avahi mDNS server</B
+></P
+><P
+><B
+CLASS="command"
+>ach </B
+>   mk   -a   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN757"
+></A
+><P
+><B
+>Example 34. Browse local network channels using Avahi</B
+></P
+><P
+><B
+CLASS="command"
+>avahi-browse</B
+>   -t   _ach._tcp </P
+></DIV
+><DIV
+CLASS="example"
+><A
+NAME="AEN763"
+></A
+><P
+><B
+>Example 35. Lookup channel origin in achd client</B
+></P
+><P
+><B
+CLASS="command"
+>achd</B
+>   pull   <TT
+CLASS="replaceable"
+><I
+>channel_name</I
+></TT
+> </P
+><P
+>&#13;      This performs an mDNS query to determine the origin of the
+      specified channel, then connects to that host.
+    </P
+></DIV
+><DIV
+CLASS="note"
+><P
+></P
+><TABLE
+CLASS="note"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="../images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>&#13;        <A
+HREF="http://tools.ietf.org/html/rfc6762"
+TARGET="_top"
+>mDNS</A
+>
+        is a peer-to-peer variation on DNS that reduces the need for
+        prior configuration by automatically discovering services on
+        the local network.  Each peer runs an mDNS server, and
+        services, e.g., file shares, printers, Ach channels, are
+        located by sending a <A
+HREF="http://en.wikipedia.org/wiki/Multicast"
+TARGET="_top"
+>multicast</A
+>
+        query.  Popular implementations of mDNS are <A
+HREF="https://www.apple.com/support/bonjour/"
+TARGET="_top"
+>Bonjour</A
+>
+        and <A
+HREF="http://avahi.org/"
+TARGET="_top"
+>Avahi</A
+>.
+      </P
+><P
+>Some communication systems, which were generally developed
+      prior to mDNS, use specialized naming services.  For example,
+      ONC RPC uses the port mapper and CORBA has its own naming
+      service.</P
+></TD
+></TR
+></TABLE
+></DIV
 ></DIV
 ></DIV
 ><DIV
@@ -2235,8 +3103,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN586"
->6. achcop Watchdog Utility</A
+NAME="AEN778"
+>7. achcop Watchdog Utility</A
 ></H2
 ><P
 >&#13;      The <B
@@ -2275,8 +3143,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN608"
->6.1. Features</A
+NAME="AEN800"
+>7.1. Features</A
 ></H3
 ><P
 ></P
@@ -2339,8 +3207,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN628"
->6.2. Signals</A
+NAME="AEN820"
+>7.2. Signals</A
 ></H3
 ><DIV
 CLASS="note"
@@ -2480,16 +3348,16 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN666"
->6.3. Examples</A
+NAME="AEN858"
+>7.3. Examples</A
 ></H3
 ><DIV
 CLASS="sect3"
 ><H4
 CLASS="sect3"
 ><A
-NAME="AEN668"
->6.3.1. Shell Commands</A
+NAME="AEN860"
+>7.3.1. Shell Commands</A
 ></H4
 ><P
 >The following shell lines show how one might run <B
@@ -2499,11 +3367,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN672"
+NAME="AEN864"
 ></A
 ><P
 ><B
->Example 21. Run achd in the background (-d), restarting (-r) if it fails</B
+>Example 36. Run achd in the background (-d), restarting (-r) if it fails</B
 ></P
 ><P
 ><B
@@ -2524,11 +3392,11 @@ CLASS="replaceable"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN689"
+NAME="AEN881"
 ></A
 ><P
 ><B
->Example 22. Command achcop to restart achd</B
+>Example 37. Command achcop to restart achd</B
 ></P
 ><P
 ><B
@@ -2539,11 +3407,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN695"
+NAME="AEN887"
 ></A
 ><P
 ><B
->Example 23. Command achcop to terminate achd</B
+>Example 38. Command achcop to terminate achd</B
 ></P
 ><P
 ><B
@@ -2557,8 +3425,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN700"
->6.3.2. Signaling Achcop from Child</A
+NAME="AEN892"
+>7.3.2. Signaling Achcop from Child</A
 ></H4
 ><P
 >&#13;      The following C code will notify a parent
@@ -2580,11 +3448,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN706"
+NAME="AEN898"
 ></A
 ><P
 ><B
->Example 24. Signal achcop of child success or failure</B
+>Example 39. Signal achcop of child success or failure</B
 ></P
 ><PRE
 CLASS="programlisting"
@@ -2627,8 +3495,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN712"
->7. achlog Logging Utility</A
+NAME="AEN904"
+>8. achlog Logging Utility</A
 ></H2
 ><P
 >&#13;      The <B
@@ -2647,8 +3515,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN722"
->7.1. Log Format</A
+NAME="AEN914"
+>8.1. Log Format</A
 ></H3
 ><P
 >&#13;      The Log format is similar to the TCP network protocol for
@@ -2659,11 +3527,11 @@ NAME="AEN722"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN725"
+NAME="AEN917"
 ></A
 ><P
 ><B
->Example 25. achlog headers</B
+>Example 40. achlog headers</B
 ></P
 ><PRE
 CLASS="screen"
@@ -2694,17 +3562,17 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN730"
->7.2. Usage</A
+NAME="AEN922"
+>8.2. Usage</A
 ></H3
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN732"
+NAME="AEN924"
 ></A
 ><P
 ><B
->Example 26. Log channel foo</B
+>Example 41. Log channel foo</B
 ></P
 ><P
 ><B
@@ -2715,11 +3583,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN737"
+NAME="AEN929"
 ></A
 ><P
 ><B
->Example 27. Log channel foo and bar, compress with gzip</B
+>Example 42. Log channel foo and bar, compress with gzip</B
 ></P
 ><P
 ><B
@@ -2730,11 +3598,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN744"
+NAME="AEN936"
 ></A
 ><P
 ><B
->Example 28. Log channel foo in the background</B
+>Example 43. Log channel foo in the background</B
 ></P
 ><P
 ><B
@@ -2745,11 +3613,11 @@ CLASS="command"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN754"
+NAME="AEN946"
 ></A
 ><P
 ><B
->Example 29. Stop background logging</B
+>Example 44. Stop background logging</B
 ></P
 ><P
 ><B
@@ -2764,8 +3632,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN759"
->8. Performance Tuning</A
+NAME="AEN951"
+>9. Performance Tuning</A
 ></H2
 ><P
 >The performance of your real-time application will be highly
@@ -2780,8 +3648,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN762"
->8.1. Disable CPU frequency scaling</A
+NAME="AEN954"
+>9.1. Disable CPU frequency scaling</A
 ></H3
 ><P
 >&#13;      Many current CPUs will lower their frequency when idle in order
@@ -2799,8 +3667,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN765"
->8.2. Use a Real-Time Operating System</A
+NAME="AEN957"
+>9.2. Use a Real-Time Operating System</A
 ></H3
 ><P
 >&#13;      General purpose operating systems (e.g. GNU/Linux, FreeBSD) are
@@ -2816,8 +3684,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN768"
->8.2.1. Linux PREEMPT_RT</A
+NAME="AEN960"
+>9.2.1. Linux PREEMPT_RT</A
 ></H4
 ><P
 >&#13;      If using a Linux kernel, you can apply the PREEMPT_RT patch to
@@ -2833,8 +3701,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN771"
->8.2.2. Linux / Xenomai</A
+NAME="AEN963"
+>9.2.2. Linux / Xenomai</A
 ></H4
 ><P
 >&#13;      Xenomai is a dual-kernel real-time operating system.  A hard
@@ -2897,8 +3765,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN778"
->8.2.3. Other Real-Time Operating Systems</A
+NAME="AEN970"
+>9.2.3. Other Real-Time Operating Systems</A
 ></H4
 ><P
 >&#13;      While Ach development has focused on Linux, it should be
@@ -2915,8 +3783,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN781"
->8.3. Benchmark your system</A
+NAME="AEN973"
+>9.3. Benchmark your system</A
 ></H3
 ><P
 >&#13;      You can use the included <B
@@ -2934,11 +3802,11 @@ CLASS="function"
 ><DIV
 CLASS="example"
 ><A
-NAME="AEN786"
+NAME="AEN978"
 ></A
 ><P
 ><B
->Example 30. Benchmarking Latency</B
+>Example 45. Benchmarking Latency</B
 ></P
 ><P
 >Measure latency with one publisher and two subscribers over ten seconds</P
@@ -2975,8 +3843,8 @@ CLASS="sect1"
 ><HR><H2
 CLASS="sect1"
 ><A
-NAME="AEN799"
->9. Theory of Operation</A
+NAME="AEN991"
+>10. Theory of Operation</A
 ></H2
 ><P
 >&#13;      POSIX provides a rich variety of IPC mechanisms, but none of
@@ -2999,8 +3867,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN802"
->9.1. Data Structure</A
+NAME="AEN994"
+>10.1. Data Structure</A
 ></H3
 ><P
 >&#13;      The core data structure of an Ach channel is a pair of circular
@@ -3032,8 +3900,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN806"
->9.2. Core Procedures</A
+NAME="AEN998"
+>10.2. Core Procedures</A
 ></H3
 ><P
 >&#13;      Two procedures compose the core of ach:
@@ -3050,8 +3918,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN811"
->9.2.1. ach_put</A
+NAME="AEN1003"
+>10.2.1. ach_put</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -3107,8 +3975,8 @@ CLASS="sect3"
 ><HR><H4
 CLASS="sect3"
 ><A
-NAME="AEN827"
->9.2.2. ach_get</A
+NAME="AEN1019"
+>10.2.2. ach_get</A
 ></H4
 ><P
 >&#13;      The procedure <CODE
@@ -3171,8 +4039,8 @@ CLASS="sect2"
 ><HR><H3
 CLASS="sect2"
 ><A
-NAME="AEN843"
->9.3. Serialization</A
+NAME="AEN1035"
+>10.3. Serialization</A
 ></H3
 ><P
 >&#13;      Ach is orthogonal to the issue of serialization: it only handles
@@ -3202,7 +4070,7 @@ TARGET="_top"
 CLASS="colophon"
 ><HR><H1
 ><A
-NAME="AEN849"
+NAME="AEN1041"
 ></A
 >Colophon</H1
 ><P

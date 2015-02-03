@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Man page of ACHD</TITLE>
 </HEAD><BODY>
 <H1>ACHD</H1>
-Section: User Commands (1)<BR>Updated: June 2013<BR><A HREF="#index">Index</A>
+Section: User Commands (1)<BR>Updated: February 2015<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
@@ -30,6 +30,10 @@ TODO: lock FILE and write pid
 transport (default tcp)
 <DT><B>-z</B> CHANNEL_NAME,<DD>
 remote channel name
+<DT><B>-u</B> microseconds<DD>
+transmit period in microseconds (implies <B>-l</B>)
+<DT><B>-l</B><DD>
+transmit latest frames
 <DT><B>-r</B>,<DD>
 reconnect if connection is lost
 <DT><B>-q</B>,<DD>
@@ -45,10 +49,10 @@ show help
 <H2>FILES</H2>
 
 <DL COMPACT>
-<DT>/etc/inetd.conf<DD>
+<DT><I>/etc/inetd.conf</I><DD>
 Use to enable network serving of ach channels.
 Use a line like this:
-'8076  stream  tcp  nowait  nobody  /usr/bin/achd  /usr/bin/achd serve'
+'8076  stream  tcp  nowait  nobody  <I>/usr/bin/achd</I>  <I>/usr/bin/achd</I> serve'
 </DL>
 <A NAME="lbAG">&nbsp;</A>
 <H2>EXAMPLES</H2>
@@ -63,12 +67,14 @@ Forward frames via TCP from remote channel
 (a pull from the remote server).
 An achd server must be listening on the remote
 host.
-<DT>achd <B>-r</B> push golem cmd-chan<DD>
+<DT>achd -r push golem cmd-chan<DD>
 Forward frames via TCP from local channel
 'cmd-chan' to remote channel on host 'golem'
 (a push to the remote server).
 Retry dropped connections.
 An achd server must be listening the remote host.
+<DT>achd -u 100000 pull hubo state<DD>
+Forward frames from remote state channel at 10 Hz
 </DL>
 <A NAME="lbAH">&nbsp;</A>
 <H2>BUGS</H2>
@@ -83,7 +89,7 @@ Written by Neil T. Dantam
 <A NAME="lbAJ">&nbsp;</A>
 <H2>REPORTING BUGS</H2>
 
-Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+Report bugs to &lt;<A HREF="mailto:ntd{at}rice.edu">ntd{at}rice.edu</A>&gt;
 <A NAME="lbAK">&nbsp;</A>
 <H2>COPYRIGHT</H2>
 
@@ -112,6 +118,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 21:06:14 GMT, June 14, 2013
+Time: 02:49:37 GMT, February 03, 2015
 </BODY>
 </HTML>

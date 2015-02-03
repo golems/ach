@@ -2,7 +2,7 @@
 <HTML><HEAD><TITLE>Man page of ACH</TITLE>
 </HEAD><BODY>
 <H1>ACH</H1>
-Section: User Commands (1)<BR>Updated: June 2013<BR><A HREF="#index">Index</A>
+Section: User Commands (1)<BR>Updated: February 2015<BR><A HREF="#index">Index</A>
 
 <A NAME="lbAB">&nbsp;</A>
 <H2>NAME</H2>
@@ -13,7 +13,7 @@ ach - manipulate ach channels
 
 <B>ach</B>
 
-[<I>OPTION</I>...] [<I>mk|rm|chmod|dump|file</I>] [<I>mode</I>] [<I>channel-name</I>]
+[<I>OPTION</I>...] [<I>mk|rm|chmod|dump|file|adv|hide</I>] [<I>mode</I>] [<I>channel-name</I>]
 <A NAME="lbAD">&nbsp;</A>
 <H2>DESCRIPTION</H2>
 
@@ -22,8 +22,6 @@ General tool to interact with ach channels
 <H2>OPTIONS</H2>
 
 <DL COMPACT>
-<DT><B>-1</B>,<DD>
-With 'mk', accept an already created channel
 <DT><B>-m</B> MSG-COUNT,<DD>
 Number of messages to buffer
 <DT><B>-n</B> MSG-SIZE,<DD>
@@ -32,8 +30,18 @@ Nominal size of a message
 Mode for created channel
 <DT><B>-t</B>,<DD>
 Truncate and reinit newly create channel.
+<DT><B>-1</B>,<DD>
+With 'mk', accept an already created channel
 WARNING: this will clobber processes
 Currently using the channel.
+<DT><B>-k</B>,<DD>
+Create kernel-mapped channel
+<DT><B>-u</B>,<DD>
+Create user-mapped channel
+<DT><B>-a</B>,<DD>
+advertise create channel
+<DT><B>-p</B> port,<DD>
+port number to use
 <DT><B>-v</B>,<DD>
 Make output more verbose
 <DT>-?,<DD>
@@ -47,24 +55,34 @@ Print program version
 <DL COMPACT>
 <DT>ach mk foo<DD>
 Create channel 'foo' with default buffer sizes.
-<DT>ach mk foo <B>-m</B> 10 <B>-n</B> 256<DD>
+<DT>ach mk foo -m 10 -n 256<DD>
 Create channel 'foo' which can buffer up to 10
 messages of nominal size 256 bytes.
 Bigger/smaller messages are OK, up to 10*256
 bytes max (only one message of that size can be
 buffered at a time).
-<DT>ach rm foo<DD>
-Remove channel 'foo'
-<DT>ach mk <B>-1</B> foo<DD>
+<DT>ach mk -1 foo<DD>
 Create channel 'foo' unless it already exists,
 in which case leave it alone.
-<DT>ach mk foo <B>-o</B> 600<DD>
+<DT>ach mk foo -o 600<DD>
 Create channel 'foo' with octal permissions
 '600'. Note that r/w (6) permission necessary
 for channel access in order to properly
 synchronize.
+<DT>ach mk -a foo<DD>
+Create channel 'foo' and advertise via mDNS
+<DT>ach rm foo<DD>
+Remove channel 'foo' (also removes mDNS entry)
 <DT>ach chmod 666 foo<DD>
 Set permissions of channel 'foo' to '666'
+<DT>ach search foo<DD>
+Search mDNS for host and port of channel 'foo'
+<DT>ach adv foo<DD>
+Start advertising channel 'foo' via mDNS
+<DT>ach adv -p 12345 foo<DD>
+Start advertising channel 'foo' at port 12345 via mDNS
+<DT>ach hide foo<DD>
+Stop advertising channel 'foo' via mDNS
 </DL>
 <A NAME="lbAG">&nbsp;</A>
 <H2>AUTHOR</H2>
@@ -73,7 +91,7 @@ Written by Neil T. Dantam
 <A NAME="lbAH">&nbsp;</A>
 <H2>REPORTING BUGS</H2>
 
-Report bugs to &lt;<A HREF="mailto:ntd{at}gatech.edu">ntd{at}gatech.edu</A>&gt;
+Report bugs to &lt;<A HREF="mailto:ntd{at}rice.edu">ntd{at}rice.edu</A>&gt;
 <A NAME="lbAI">&nbsp;</A>
 <H2>COPYRIGHT</H2>
 
@@ -100,6 +118,6 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 This document was created by
 <A HREF="/cgi-bin/man/man2html">man2html</A>,
 using the manual pages.<BR>
-Time: 21:06:14 GMT, June 14, 2013
+Time: 02:49:37 GMT, February 03, 2015
 </BODY>
 </HTML>
