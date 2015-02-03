@@ -130,6 +130,13 @@ if( pthread_mutex_init(&mutex, &mutex_attr) )
              [AC_DEFINE([HAVE_MUTEX_ERROR_CHECK],[1],[Error Checking Mutexes])])
 
 
+#############
+## TESTING ##
+#############
+AC_ARG_ENABLE([tests],
+        AS_HELP_STRING([--disable-tests], [Disable test execution]))
+AM_CONDITIONAL([ENABLE_TESTS], [test "x$enable_tests" != xno])
+
 ####################
 ## COMPILER FLAGS ##
 ####################

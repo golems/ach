@@ -58,20 +58,46 @@ libachutil_la_SOURCES = src/achutil.c src/pipe.c src/dns.c
 ## PROGRAMS ##
 ##############
 
-bin_PROGRAMS = ach achcat achbench achd achcop achlog
-noinst_PROGRAMS = achtest ach-example robusttest
+bin_PROGRAMS = ach
 
 ach_SOURCES = src/achtool.c
 ach_LDADD = libach.la libachutil.la
 
 
+bin_PROGRAMS += achcop
 achcop_SOURCES = src/achcop.c
 achcop_LDADD = libachutil.la
 
 # achpipe_bin_SOURCES = src/achpipe-bin.c
 # achpipe_bin_LDADD = libach.la libachutil.la
+bin_PROGRAMS += achlog
 achlog_SOURCES = src/achlog.c
 achlog_LDADD = libach.la libachutil.la
+
+bin_PROGRAMS += achcat
+achcat_SOURCES = src/achcat.c
+achcat_LDADD = libach.la libachutil.la
+
+bin_PROGRAMS += achd
+achd_SOURCES = src/achd/achd.c   \
+               src/achd/client.c \
+               src/achd/io.c \
+               src/achd/transport.c
+achd_LDADD = libach.la libachutil.la
+
+
+bin_PROGRAMS += achbench
+achbench_SOURCES = src/ach-bench.c
+achbench_LDADD = libach.la libachutil.la
+
+noinst_PROGRAMS = ach-example
+ach_example_SOURCES = src/ach-example.c
+ach_example_LDADD = libach.la -lm
+
+noinst_PROGRAMS += ach-poll-example
+ach_poll_example_SOURCES = src/ach-poll-example.c
+ach_poll_example_LDADD = libach.la -lm
+
 
 ##########
 ## DATA ##
@@ -85,12 +111,16 @@ endif
 ## Tests ##
 ###########
 
+if ENABLE_TESTS
+
+
 TESTS = achtooltest test-achcop
 
 noinst_LTLIBRARIES += libachtest.la
 libachtest_la_SOURCES = src/test/test.c
 
 TESTS += achtest
+noinst_PROGRAMS += achtest
 achtest_SOURCES = src/test/achtest.c
 achtest_LDADD = libach.la libachtest.la
 
@@ -128,26 +158,10 @@ achstress_SOURCES = src/test/achstress.c
 achstress_LDADD = libach.la libachtest.la
 
 robusttest_SOURCES = src/test/robusttest.c
+noinst_PROGRAMS += robusttest
 robusttest_LDADD = libach.la
 
-achcat_SOURCES = src/achcat.c
-achcat_LDADD = libach.la libachutil.la
-
-achd_SOURCES = src/achd/achd.c   \
-               src/achd/client.c \
-               src/achd/io.c \
-               src/achd/transport.c
-achd_LDADD = libach.la libachutil.la
-
-ach_example_SOURCES = src/ach-example.c
-ach_example_LDADD = libach.la -lm
-
-noinst_PROGRAMS += ach-poll-example
-ach_poll_example_SOURCES = src/ach-poll-example.c
-ach_poll_example_LDADD = libach.la -lm
-
-achbench_SOURCES = src/ach-bench.c
-achbench_LDADD = libach.la libachutil.la
+endif
 
 
 #########
