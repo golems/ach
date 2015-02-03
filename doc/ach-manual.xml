@@ -209,6 +209,15 @@
       <listitem><para>Invalid header line in the network protocol.
       </para></listitem>
       </varlistentry>
+      <varlistentry><term><constant>ACH_FAULT</constant></term>
+      <listitem><para>Memory fault in a system call.
+      </para></listitem>
+      </varlistentry>
+      <varlistentry><term><constant>ACH_EINTR</constant></term>
+      <listitem><para>System call interrupted.  This code is only used
+      internally and not returned to library clients.
+      </para></listitem>
+      </varlistentry>
       <varlistentry><term><constant>ACH_BUG</constant></term>
       <listitem><para>An unexpected or inconsistent condition has
       occurred.  If the software is correct, you should never see this
@@ -219,6 +228,14 @@
     </sect2>
 
     <sect2><title>Creating a channel</title>
+    <para>
+      You can create a channel by directly calling the<function>
+      ach_create</function>; however, it is generally preferable to
+      call the <command>ach</command> (see <link
+      linkend='achtool'>also</link>) from the shell as this is less
+      likely to result in races between multiple processes needing to
+      access the channel.
+    </para>
     <funcsynopsis>
       <funcprototype>
         <funcdef>enum ach_status <function>ach_create</function></funcdef>
@@ -334,16 +351,49 @@ if( ACH_OK != r ) {
     following values.</para>
 
     <variablelist>
+
+      <varlistentry><term><constant>ACH_O_NONBLOCK</constant></term>
+      <listitem><para>
+        Return immediately with ACH_STALE_FRAMES if no new data is
+        present in the channel.  Exclusive with ACH_O_WAIT.
+      </para></listitem>
+      </varlistentry>
+
       <varlistentry><term><constant>ACH_O_WAIT</constant></term>
-      <listitem><para>Wait until a new message is posted. Default
-      behavior without this flag is to return
-      immediately.</para></listitem>
+      <listitem><para>
+        Wait until a new message is posted. Default behavior without
+        this flag is to return immediately.  Exclusive with
+        ACH_O_NONBLOCK.
+      </para></listitem>
       </varlistentry>
+
+
+      <varlistentry><term><constant>ACH_O_FIRST</constant></term>
+      <listitem><para>
+        Return the oldest message in the channel.  Exclusive with
+        ACH_O_LAST.
+      </para></listitem>
+      </varlistentry>
+
       <varlistentry><term><constant>ACH_O_LAST</constant></term>
-      <listitem><para>Return the newest message.  Default behavior
-      without this flag is to return the oldest unseen
-      message.</para></listitem>
+      <listitem><para>
+        Return the newest message.  Exclusive with ACH_O_FIRST.
+      </para></listitem>
       </varlistentry>
+
+      <varlistentry><term><constant>ACH_O_ABSTIME</constant></term>
+      <listitem><para>
+        Timeout is an absolute time.  Exclusive with ACH_O_RELTIME.
+      </para></listitem>
+      </varlistentry>
+
+      <varlistentry><term><constant>ACH_O_RELTIME</constant></term>
+      <listitem><para>
+        Timeout is a relative time.  Exclusive with ACH_O_ABSTIME.
+      </para></listitem>
+      </varlistentry>
+
+
       <varlistentry><term><constant>ACH_O_COPY</constant></term>
       <listitem><para>Copy the message to the buffer, even if we have
       already seen it.  Only valid when
@@ -352,17 +402,20 @@ if( ACH_OK != r ) {
       <constant>ACH_STALE_FRAMES</constant> when there are no new
       messages.</para></listitem>
       </varlistentry>
+
     </variablelist>
 
       <example><title>Poll for oldest message</title>
       <para>This will get the next unseen message from the channel.</para>
       <programlisting language="C">
 size_t frame_size;
-enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, NULL, 0 );
+enum ach_status r;
+r  = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size,
+              NULL, ACH_O_NONBLOCK | ACH_O_FIRST );
 if( ACH_MISSED_FRAME == r ) {
-    fprintf(stdout, "Missed a/some messages(s)\n");
+    printf("Missed a/some messages(s)\n");
 } else if( ACH_STALE_FRAMES == r ) {
-    fprintf( stdout, "No new data\n" );
+    printf("No new data\n");
 } else if( ACH_OK != r ) {
     syslog( LOG_ERR, "Unable to get a message: %s\n", ach_result_to_string(r) );
 } else if( frame_size != sizeof(my_msg) ) {
@@ -387,9 +440,21 @@ enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_
       one is posted. </para>
       <programlisting language="C">
 struct timespec t;
-clock_gettime( ACH_DEFAULT_CLOCK, &amp;t );
+clockid_t clock;
+enum ach_status r;
+/* Get the channel clock */
+r = ach_channel_clock(&amp;channel,&amp;clock);
+if( ACH_OK != r ) {
+  fprintf(stderr, "Could not get channel clock: %s\n",
+          ach_result_to_string(r));
+  exit(EXIT_FAILURE);
+}
+/* Get current time and set the timeout. */
+clock_gettime( clock, &amp;t );
 t.tv_sec += 1;
-enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, &amp;t, ACH_O_WAIT | ACH_O_LAST );
+/* Get the message */
+enum ach_status r = ach_get( &amp;channel, &amp;my_msg, my_msg_size, &amp;frame_size, &amp;t,
+                             ACH_O_WAIT | ACH_O_LAST | ACH_O_ABSTIME );
 if( ACH_TIMEOUT == r ) {
   fprintf(stdout, "call to ach_get timed out\n");
 }
@@ -592,7 +657,7 @@ c.close()
     </sect2>
   </sect1>
 
-  <sect1>
+  <sect1 id="achtool">
     <title>ach Shell Tool</title>
       <para>The <command>ach</command> command allows creation and
       deletion of channels from the shell.
@@ -678,6 +743,272 @@ c.close()
       </example>
 
   </sect1>
+
+  <sect1>
+    <title>Linux Kernel Module</title>
+    <para>
+      Ach includes a Linux kernel module which implements channels in
+      kernel-space.  This allows library clients to wait for messages
+      on multiple channels (and in combination with any other file
+      descriptors) using the <function>poll()</function> or
+      <function>select()</function> family of functions.
+    </para>
+
+    <sect2><title>Kernel Module Installation</title>
+
+    <para>
+      The most convenient way to build the kernel module will probably
+      be with <ulink
+      url="http://en.wikipedia.org/wiki/Dynamic_Kernel_Module_Support">DKMS</ulink>
+      (Dynamic Kernel Module System).  DKMS enables building and
+      rebuilding of out-of-tree kernel modules (such as ach, device
+      drivers, etc.) when the kernel is upgraded.  On Debian and
+      Ubuntu, the package manager automatically invokes DKMS to
+      rebuild the registered modules.  To setup ach for DKMS, call
+      configure with <command>./configure
+      --enable-dkms-build</command>, and the module sources for will
+      be installed and built when you call <command>make
+      install</command>.
+    </para>
+    <example><title>Build kernel module with dkms</title>
+    <programlisting>
+./configure --enable-dkms-build
+make
+sudo make install
+</programlisting>
+    </example>
+    <para>
+      Alternatively, you can build the module in the ach source tree
+      directly by calling <command>./configure --enable-kbuild
+      --disable-dkms</command>.  If your kernel headers are not in the
+      typical location and/or do not match the currently running
+      kernel, you may to specify the kernel release and header
+      directory.
+    </para>
+    <example><title>Manually specifying kernel information for kbuild</title>
+    <programlisting>
+./configure --enable-kbuild \
+            --disable-dkms \
+             KERNELRELEASE=3.13.0-44-lowlatency \
+             KDIR=/usr/src/linux-headers-3.13.0-44-lowlatency
+make
+sudo make install
+</programlisting>
+    </example>
+
+    <para>
+      After the kernel module is build and installed, you need to link
+      it into the kernel.  This is done with the
+      <command>modprobe</command> command.  The kernel module can be
+      removed with <command>rmmod</command>.  The module takes one
+      optional parameter, <parameter>max_devices</parameter> which
+      specifies the maximum number of kernel channels that can be
+      created.
+    </para>
+
+    <example><title>Load kernel module</title>
+    <programlisting>
+sudo modprobe ach
+    </programlisting>
+    </example>
+
+    <example><title>Load kernel module and specify max_devices</title>
+    <programlisting>
+sudo modprobe ach max_devices=1024
+    </programlisting>
+    </example>
+
+    <example><title>Unload kernel module</title>
+    <programlisting>
+sudo rmmod ach
+    </programlisting>
+    </example>
+
+    </sect2>
+
+    <sect2><title>Creating Kernel Channels</title>
+
+    <para>
+      Kernel channels can be created using the <command>ach</command>
+      command by passing the <parameter>-k</parameter> flag.
+    </para>
+
+    <example><title>Create kernel channel from shell</title>
+    <programlisting>
+ach mk -k my-channel
+    </programlisting>
+    </example>
+
+    <example><title>Unlink kernel channel from shell</title>
+    <programlisting>
+ach rm my-channel
+    </programlisting>
+    </example>
+
+    </sect2>
+
+    <sect2><title>Kernel Channel Permissions</title>
+
+    <para>
+      By default, kernel channels can only be created and accessed by
+      root.  However, you can use <ulink
+      url="http://en.wikipedia.org/wiki/Udev">udev</ulink> to control
+      kernel channel permissions.  The following example will set the
+      group ownership of all ach devices to the <code>ach</code>
+      group.  The file needs to be placed in
+      <filename>/etc/udev/rules.d/</filename>.
+    </para>
+
+    <example><title>udev rules file to set channel group </title>
+    <programlisting>
+# /etc/udev/rules.d/10-ach.rules
+# Control permissions for ach character devices
+
+# Set the permissions of the ach control device
+KERNEL=="achctrl", GROUP=="ach", MODE=="660"
+
+# Set the permissions of ach channel devices
+KERNEL=="ach-*", GROUP=="ach", MODE=="660"
+
+# Create symbolic links for ach channel devices
+KERNEL=="ach-*", SYMLINK+="ach/%k"
+    </programlisting>
+    </example>
+
+
+    </sect2>
+
+    <sect2><title>Waiting on Multiple Kernel Channels</title>
+    <para>
+      Kernel channels support waiting for multiple events using the
+      <function>poll</function>, <function>select</function> and
+      similar functions.  These functions require the file descriptor
+      for the channel.
+    </para>
+
+    <example><title>Obtaining the channel file descriptor</title>
+    <programlisting>
+ach_channel_t channel;
+int channel_fd;
+enum ach_status r;
+
+/* Open channel */
+/* ... */
+
+/* Get Channel File Descriptor */
+r = ach_channel_fd( &amp;channel, &amp;channel_fd );
+if( ACH_OK != r ) {
+    fprintf(stderr, "could not get file descriptor for channel '%s': %s\n",
+            names[i], ach_result_to_string(r));
+    exit(EXIT_FAILURE);
+}
+    </programlisting>
+    </example>
+
+    <para>
+      The channel file descriptor can then be passed to
+      <function>poll</function>, <function>select</function>, etc. to
+      determine when there is new data to read.  Note that channels
+      are always ready to write.
+    </para>
+
+    <example><title>Complete poll() example</title>
+    <programlisting>
+#include &lt;stdlib.h&gt;
+#include &lt;pthread.h&gt;
+#include &lt;inttypes.h&gt;
+#include &lt;ach.h&gt;
+
+#include &lt;stdio.h&gt;
+#include &lt;poll.h&gt;
+#include &lt;unistd.h&gt;
+
+int main(int argc, char **argv)
+{
+    const char *names[] = {"channel-0", "channel-1"};
+    const size_t n = sizeof(names) / sizeof(names[0]);
+    ach_channel_t channel[n];
+    struct pollfd pfd[n];
+
+    for( size_t i = 0; i &lt; n; i ++ ) {
+        /* Open Channel */
+        enum ach_status r = ach_open( &amp;channel[i], names[i], NULL );
+        if( ACH_OK != r ) {
+            fprintf(stderr, "could not open channel '%s': %s\n",
+                    names[i], ach_result_to_string(r));
+            exit(EXIT_FAILURE);
+        }
+        /* Get Channel File Descriptor */
+        r = ach_channel_fd( &amp;channel[i], &amp;pfd[i].fd );
+        if( ACH_OK != r ) {
+            fprintf(stderr, "could not get file descriptor for channel '%s': %s\n",
+                    names[i], ach_result_to_string(r));
+            exit(EXIT_FAILURE);
+        }
+        /* Set events to poll for */
+        pfd[i].events = POLLIN;
+    }
+
+    /* read forever */
+    for(;;) {
+        /* poll for new messages */
+        int r_poll = poll( pfd, n, -1 );
+        if( r_poll &lt; 0 ) {
+            perror("poll");
+            exit(EXIT_FAILURE);
+        }
+        /* find channels with new data */
+        for( size_t i = 0; i &lt; n &amp;&amp; r_poll > 0; i++ ) {
+            if( (pfd[i].revents &amp; POLLIN) ) {
+                /* There's new data on this channel */
+                char buf[512];
+                size_t frame_size;
+                enum ach_status r = ach_get( &amp;channel[i], buf, sizeof(buf), &amp;frame_size,
+                                             NULL, ACH_O_NONBLOCK | ACH_O_FIRST );
+                switch(r) {
+                case ACH_OK:
+                case ACH_MISSED_FRAME: {
+                    /* this example just writes it to stdout */
+                    ssize_t wr = write( STDOUT_FILENO, buf, frame_size );
+                    if( wr &lt; 0 ) {
+                        perror("write");
+                        exit(EXIT_FAILURE);
+                    }
+                    break;
+                }
+                default:
+                    fprintf( stderr, "Error getting data from '%s': %s\n",
+                             names[i], ach_result_to_string(r));
+                    exit(EXIT_FAILURE);
+                }
+                r_poll--;
+            }
+        }
+    }
+    return 0;
+}
+    </programlisting>
+    </example>
+
+    <tip>
+      <para>
+        The <function>poll</function> function has an advantage over
+        <function>select</function> in that the arguments to
+        <function>poll</function> can be reused over multiple calls
+        while the arguments to select must be recreated for each
+        call. However <function>poll</function> provides only
+        millisecond timing resolution.  Instead, the more recent
+        <function>ppoll</function> supports nanosecond timing
+        resolution.  For details on these functions, consult the man
+        pages with <command>man -s 2 poll</command> and <command>man
+        -s 2 ppoll</command>.
+      </para>
+    </tip>
+
+    </sect2>
+
+  </sect1>
+
 
   <sect1>
     <title>
