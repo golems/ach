@@ -18,7 +18,9 @@ override_dh_auto_configure:
 	dh_auto_configure -- \
 		--disable-kbuild \
 		--enable-dkms \
-		--disable-dkms-build
+		--disable-dkms-build \
+		--with-java \
+		--without-python
 
 override_dh_auto_install:
 	dh_auto_install

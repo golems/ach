@@ -1,3 +1,14 @@
+ach (2.0.0) unstable; urgency=low
+  * Feature: In-kernel channel backend on Linux
+  * Feature: DNS/mDNS integration
+  * Feature: Zsh completions for achtool, achd, achcop
+  * Deprecate: Old option flags to achtool (-C, -F, -D, -U)
+  * Deprecate: CMake build
+  * Change: Accessor functions for setting attributes
+  * Change: C++ bindings are header-only
+
+ -- Neil Dantam <ntd@rice.edu>  Mon, 02 Feb 2015 20:00:00 -0500
+
 ach (1.2.1) unstable; urgency=low
 
   * Add rate limit option for achd
