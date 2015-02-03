@@ -20,7 +20,8 @@ override_dh_auto_configure:
 		--enable-dkms \
 		--disable-dkms-build \
 		--with-java \
-		--without-python
+		--without-python \
+		zshfdir=/usr/share/zsh/vendor-completions
 
 override_dh_auto_install:
 	dh_auto_install

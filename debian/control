@@ -11,7 +11,7 @@ Vcs-Browser: https://github.com/golems/ach
 Package: libach-dev
 Section: libdevel
 Architecture: any
-Depends: libach1 (= ${binary:Version}), ${misc:Depends}
+Depends: libach4 (= ${binary:Version}), ${misc:Depends}
 Description: Realtime message bus IPC library, development files
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control
@@ -23,7 +23,7 @@ Description: Realtime message bus IPC library, development files
  systems. Finally, the source code for Ach is available under an Open
  Source BSD-style license.
 
-Package: libach1
+Package: libach4
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
@@ -44,7 +44,7 @@ Package: libachj0
 Section: libs
 Architecture: any
 Pre-Depends: multiarch-support
-Depends: ${shlibs:Depends}, ${misc:Depends}, ${misc:Pre-Depends}, libach1
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${misc:Pre-Depends}, libach4
 Suggests: ach-utils
 Description: Realtime message bus IPC library, library files
  Ach is a new Inter-Process Communication (IPC) mechanism and
@@ -61,7 +61,7 @@ Package: libachj0-java
 Section: java
 Architecture: all
 Pre-Depends: multiarch-support
-Depends: ${misc:Depends}, libach1
+Depends: ${misc:Depends}, libach4
 Suggests: ach-utils
 Description: Realtime message bus IPC library, library files
  Ach is a new Inter-Process Communication (IPC) mechanism and
@@ -77,7 +77,7 @@ Description: Realtime message bus IPC library, library files
 Package: ach-utils
 Section: libs
 Architecture: any
-Depends: libach1, ${shlibs:Depends}, ${misc:Depends}, openbsd-inetd | inet-superserver
+Depends: libach4, ${shlibs:Depends}, ${misc:Depends}, openbsd-inetd | inet-superserver
 Description: Realtime message bus IPC library, utility programs
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control
@@ -92,7 +92,7 @@ Description: Realtime message bus IPC library, utility programs
 Package: ach-dkms
 Section: libs
 Architecture: any
-Depends: libach1, ${misc:Depends}, dkms
+Depends: ${misc:Depends}, dkms
 Description: Realtime message bus IPC library, utility programs
  Ach is a new Inter-Process Communication (IPC) mechanism and
  library. It is uniquely suited for coordinating perception, control

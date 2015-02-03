@@ -4,3 +4,4 @@ usr/bin/achbench
 usr/bin/achd
 usr/bin/achcop
 usr/share/man/man1/*.1
+usr/share/zsh/vendor-completions/_ach
