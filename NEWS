@@ -1,3 +1,18 @@
+Ach 2.0.0
+=========
+* Feature: In-kernel channel backend on Linux
+  - Enables multiplexing via select()/poll()
+  - Experimental event loop in "ach/experimental.h"
+* Feature: DNS/mDNS integration
+  - mDNS and DNS lookup of channel hosts
+  - Integration with Avahi to advertise channels
+* Feature: Zsh completions for achtool, achd, achcop
+* Deprecate: Old option flags to achtool (-C, -F, -D, -U)
+  - Will be removed in the future
+* Deprecate: CMake build
+* Change: Accessor functions for setting attributes
+* Change: C++ bindings are header-only
+
 Ach 1.2.1
 =========
 * Add experimental C++ and Java bindings
