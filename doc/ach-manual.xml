@@ -1316,35 +1316,19 @@ Connection closed by foreign host.
       server.
     </para>
 
-    <note>
-      <para>
-        <ulink url="http://tools.ietf.org/html/rfc6762">mDNS</ulink>
-        is a peer-to-peer variation on DNS that reduces the need for
-        prior configuration by automatically discovering services on
-        the local network.  Each peer runs an mDNS server, and
-        services, e.g., file shares, printers, Ach channels, are
-        located by sending a <ulink
-        url="http://en.wikipedia.org/wiki/Multicast">multicast</ulink>
-        query.  Popular implementations of mDNS are <ulink
-        url="https://www.apple.com/support/bonjour/">Bonjour</ulink>
-        and <ulink url="http://avahi.org/">Avahi</ulink>.
-      </para>
-    </note>
-
-    <example><title>Register a channel using the Avahi mDNS server</title>
+    <example><title>Create a channel and register using the Avahi mDNS server</title>
     <cmdsynopsis>
-      <command>avahi-publish </command>
-      <arg choice="plain">-s</arg>
+      <command>ach </command>
+      <arg choice="plain">mk</arg>
+      <arg choice="plain">-a</arg>
       <arg choice="plain"><replaceable>channel_name</replaceable></arg>
-      <arg choice="plain">_ach._tcp</arg>
-      <arg choice="plain">8076</arg>
     </cmdsynopsis>
     </example>
 
     <example><title>Browse local network channels using Avahi</title>
     <cmdsynopsis>
       <command>avahi-browse</command>
-      <arg choice="plain">-r</arg>
+      <arg choice="plain">-t</arg>
       <arg choice="plain">_ach._tcp</arg>
     </cmdsynopsis>
     </example>
@@ -1361,7 +1345,21 @@ Connection closed by foreign host.
     </para>
     </example>
 
+
+
     <note>
+      <para>
+        <ulink url="http://tools.ietf.org/html/rfc6762">mDNS</ulink>
+        is a peer-to-peer variation on DNS that reduces the need for
+        prior configuration by automatically discovering services on
+        the local network.  Each peer runs an mDNS server, and
+        services, e.g., file shares, printers, Ach channels, are
+        located by sending a <ulink
+        url="http://en.wikipedia.org/wiki/Multicast">multicast</ulink>
+        query.  Popular implementations of mDNS are <ulink
+        url="https://www.apple.com/support/bonjour/">Bonjour</ulink>
+        and <ulink url="http://avahi.org/">Avahi</ulink>.
+      </para>
       <para>Some communication systems, which were generally developed
       prior to mDNS, use specialized naming services.  For example,
       ONC RPC uses the port mapper and CORBA has its own naming
