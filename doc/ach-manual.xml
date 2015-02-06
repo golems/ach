@@ -1809,22 +1809,21 @@ struct {
     <sect2><title>Data Structure</title>
     <para>
       The core data structure of an Ach channel is a pair of circular
-      arrays located in the POSIX shared memory file.  There is a data
-      array and an index array.  The data array contains variable
-      sized entries which store the actual message frames sent through
-      the Ach channel.  The index array contains fixed size entries
-      where each entry has both an offset into the data array and the
-      length of that data entry.  A head offset into each array
-      indicates both the place to insert the next data and the
-      location of the most recent message frame.  This pair of
+      arrays: a data array and an index array.  The data array
+      contains variable sized entries which store the actual message
+      frames sent through the Ach channel.  The index array contains
+      fixed size entries where each entry has both an offset into the
+      data array and the length of that data entry.  A head offset
+      into each array indicates both the place to insert the next data
+      and the location of the most recent message frame.  This pair of
       circular arrays allows us to find the variable sized message
       frames by first looking at a known offset in the fixed-sized
       index array.
     </para>
 
     <para>
-      Access to the channel is synchronized using a mutex and
-      condition variable.  This allows readers to either periodically
+      Access to the channel is synchronized using a mutex and a queue
+      of waiting readers.  This allows readers to either periodically
       poll the channel for new data or to wait on the condition
       variable until a writer has posted a new message.  Using a
       read/write lock instead would have allowed only polling.
@@ -1895,6 +1894,65 @@ struct {
       entry offset for this receiver.</para></listitem>
     </orderedlist>
     </sect3>
+
+    </sect2>
+
+
+    <sect2><title>Channel Mappings</title>
+    <para>
+      Ach supports multiple back-end mappings for the channel data
+      structure: (1) the process-local heap, (2) a shared-memory file,
+      and (3) a kernel-space buffer on Linux.
+    </para>
+
+    <sect3><title>Anonymous Channels</title>
+    <para>Process-local channel allocation stores the channel data
+    structure in the heap (<constant>ACH_MAP_ANON</constant>).  Access
+    to anonymous channels is synchronized using a mutex and condition
+    variable.</para>
+    </sect3>
+
+    <sect3><title>User Channels</title>
+    <para>Channels can also be allocated in POSIX shared memory
+    (<constant>ACH_MAP_USER</constant>). Access to user channels is
+    synchronized using a process-shared mutex and condition
+    variable.</para>
+    </sect3>
+
+    <sect3><title>Kernel Channels</title>
+
+    <para>
+      Under Linux, channels can created in-kernel
+      (<constant>ACH_MAP_KERNEL</constant>).  Access to kernel
+      channels synchronized an in-kernel rt_mutex and wait_queue.
+    </para>
+
+    <para>
+      Kernel channels are implemented as virtual devices.  There is a
+      control device, <filename>/dev/achctrl</filename> use to create
+      and unlink channels via <function>ioctl</function>'s.  Each
+      channel is exposed to userspace as a separate virtual device,
+      <filename>/dev/ach-CHANNEL_NAME</filename>.  Putting and getting
+      frames on the channel is done through <function>write</function>
+      and <function>read</function> calls on the device. This is
+      handled internally in the <function>ach_put</function> and
+      <function>ach_get</function> functions, which also handle
+      retrying transfers after signal interrupts.  Additional
+      operations, e.g., canceling and flushing, are implented as
+      <function>ioctl</function>'s on the device file, also called
+      internally in the Ach library.
+    </para>
+
+    <para>
+      There are two advantages to creating channels in kernel-space.
+      First, rogue processes cannot corrupt or deadlock kernel-space
+      channels as they could with channels in shared memory.  Second,
+      readers can wait for messages on multiple channels using the
+      <function>poll</function>/<function>select</function> family of
+      calls.
+    </para>
+    </sect3>
+
 
     </sect2>
 

@@ -50,6 +50,7 @@ libach_la_LDFLAGS = -version-info 4:0:0 -export-symbols-regex '^ach_'
 lib_LTLIBRARIES += libach-experimental.la
 libach_experimental_la_SOURCES = src/event.c
 libach_experimental_la_LDFLAGS = -version-info 0:0:0 -export-symbols-regex '^ach_'
+libach_experimental_la_LIBADD = libach.la
 
 noinst_LTLIBRARIES = libachutil.la
 libachutil_la_SOURCES = src/achutil.c src/pipe.c src/dns.c
