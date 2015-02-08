@@ -212,7 +212,7 @@ int main( int argc, char **argv ) {
                   "Examples:\n"
                   "  achlog foo bar       Log channels foo and bar\n"
                   "\n"
-                  "Report bugs to <ntd@rice.edu>"
+                  "Report bugs to " PACKAGE_BUGREPORT "\n"
                 );
             exit(EXIT_SUCCESS);
         default:

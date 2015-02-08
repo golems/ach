@@ -75,11 +75,11 @@ int ach_verbosity = 0;
 void ach_print_version( const char *name ) {
     printf( "%s " PACKAGE_VERSION "\n"
             "\n"
-            "Copyright (c) 2008-2013, Georgia Tech Research Corporation\n"
+            "Copyright (c) 2008-2014, Georgia Tech Research Corporation\n"
+            "Copyright (c) 2013-2014, Prevas A/S\n"
+            "Copyright (c) 2015, Rice University\n"
             "This is free software; see the source for copying conditions.  There is NO\n"
-            "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
-            "\n"
-            "Written by Neil T. Dantam\n",
+            "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n",
             name
         );
 }

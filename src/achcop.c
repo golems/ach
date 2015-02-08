@@ -265,7 +265,7 @@ int main( int argc, char **argv ) {
                   "Examples:\n"
                   "  achcop -rd -P /var/run/myd.ppid -p /var/run/myd.pid -- my-daemon -xyz"
                   "\n"
-                  "Report bugs to <ntd@rice.edu>"
+                  "Report bugs to " PACKAGE_BUGREPORT "\n"
                 );
             exit(EXIT_SUCCESS);
         default:

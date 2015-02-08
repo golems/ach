@@ -40,6 +40,10 @@
  *
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <unistd.h>
 #include <stdint.h>
 #include <inttypes.h>
@@ -206,7 +210,7 @@ int main(int argc, char **argv) {
                       "\n"
                       "  achd -u 100000 pull hubo state     Forward frames from remote state channel at 10 Hz\n"
                       "\n"
-                      "Report bugs to <ntd@rice.edu>"
+                      "Report bugs to " PACKAGE_BUGREPORT "\n"
                        );
 
                 exit(EXIT_SUCCESS);

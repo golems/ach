@@ -310,7 +310,7 @@ int main( int argc, char **argv ) {
                   "  ach adv -p 12345 foo      Start advertising channel 'foo' at port 12345 via mDNS\n"
                   "  ach hide foo              Stop advertising channel 'foo' via mDNS\n"
                   "\n"
-                  "Report bugs to <ntd@rice.edu>"
+                  "Report bugs to " PACKAGE_BUGREPORT "\n"
                 );
             exit(EXIT_SUCCESS);
         default:
