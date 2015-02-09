@@ -42,8 +42,8 @@ _ach-mk () {
     declare -A opt_args
 
     _arguments -C \
-        '-m[nominal message size]' \
-        '-n[message count]' \
+        '-m[message count]' \
+        '-n[nominal message size]' \
         '-o[channel mode]' \
         '-k[kernel channel]' \
         '-u[user channel]' \
