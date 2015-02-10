@@ -242,6 +242,12 @@ extern "C" {
                     enum ach_map map;
                 };
                 struct ach_header *shm;   /**< the memory buffer used by anonymous channels */
+                union {
+                    uint64_t reserve_bits;           /**< reserve space for bit flags */
+                    struct {
+                        unsigned int lock_source : 1;   /**< if true, take the source lock when opening or fail */
+                    };
+                };
             };
             uint64_t reserved_size[8]; /**< Reserve space to compatibly add future options */
         };
@@ -256,6 +262,10 @@ extern "C" {
     /** Set shared memory area for anonymous channels */
     enum ach_status ACH_WARN_UNUSED
     ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm );
+
+    /** Set lock source value */
+    enum ach_status
+    ach_attr_set_lock_source( ach_attr_t *attr, int lock_source );
 
     /** Attributes to pass to ach_create.
      *
@@ -272,8 +282,13 @@ extern "C" {
                 struct ach_header *shm;      /**< pointer to channel, set on output of create iff map_anon */
                 clockid_t clock;             /**< Which clock to use if set_clock is true.
                                               *   The default is defined by ACH_DEFAULT_CLOCK. */
-                unsigned int truncate  : 1;  /**< remove and recreate an existing shm file */
-                unsigned int set_clock : 1;  /**< if true, set the clock of the condition variable */
+                union {
+                    uint64_t reserve_bits;           /**< reserve space for bit flags */
+                    struct {
+                        unsigned int truncate  : 1;   /**< remove and recreate an existing shm file */
+                        unsigned int set_clock : 1;   /**< if true, set the clock of the condition variable */
+                    };
+                };
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };
@@ -331,6 +346,7 @@ extern "C" {
                 clockid_t clock;                       /**< attributes used to create this channel */
                 volatile sig_atomic_t cancel;          /**< cancel a waiting ach_get */
                 const struct ach_channel_vtab *vtab;   /**< virtual method table */
+                int fd_source_lock;                    /**< file descriptor for source lock */
             };
             uint64_t reserved[16]; /**< Reserve space to compatibly add future options */
         };

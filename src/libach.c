@@ -102,7 +102,7 @@ const char *ach_result_to_string(ach_status_t result) {
     case ACH_INVALID_NAME: return "ACH_INVALID_NAME";
     case ACH_BAD_SHM_FILE: return "ACH_BAD_SHM_FILE";
     case ACH_FAILED_SYSCALL: return "ACH_FAILED_SYSCALL";
-    case ACH_STALE_FRAMES: return "ACH_STALE_FRAMES";
+    case ACH_EAGAIN: return "ACH_EAGAIN";
     case ACH_MISSED_FRAME: return "ACH_MISSED_FRAME";
     case ACH_TIMEOUT: return "ACH_TIMEOUT";
     case ACH_CLOSED: return "ACH_CLOSED";
@@ -213,17 +213,44 @@ static ach_attr_t default_ach_attr = {
     .map = ACH_MAP_DEFAULT
 };
 
+static enum ach_status
+open_source_lock( const char *channel_name, int *fd )
+{
+    char lockname[ACH_CHAN_NAME_MAX + 32];
+    int n;
+    if( 0 == access("/run/lock", F_OK) )  {
+        n = snprintf(lockname, sizeof(lockname), "/run/lock/ach-%s", channel_name );
+    }  else {
+        n = snprintf(lockname, sizeof(lockname), "/tmp/.ach-lock-%s", channel_name );
+    }
+    if( n >= (int)sizeof(lockname) ) return ACH_BUG;
+
+    *fd = open( lockname, O_RDWR | O_CREAT, 0664 );
+
+    if( *fd < 0 ) return check_errno();
+    else return ACH_OK;
+}
+
 enum ach_status
 ach_open( ach_channel_t *chan, const char *channel_name,
           ach_attr_t *attr )
 {
     enum ach_status r;
+    int lockfd = -1;
 
     if( NULL == attr ) attr = &default_ach_attr;
     if( bad_map(attr->map) ) return ACH_EINVAL;
 
     r = libach_vtabs[attr->map]->name_ok( channel_name );
     if( ACH_OK != r ) return r;
+
+    if( attr->lock_source ) {
+        open_source_lock( channel_name, &lockfd );
+        if( lockf(lockfd, F_TLOCK, 0) ) {
+            if( EACCES == errno ) errno = EAGAIN; /* some systems set errno strangely */
+            return check_errno();
+        }
+    }
 
     if( ACH_MAP_DEFAULT == attr->map ) {
         /* Default behavior: open kernel device if it exists */
@@ -234,13 +261,20 @@ ach_open( ach_channel_t *chan, const char *channel_name,
         case ACH_EACCES: /* expected "failures", try userspace */
             break;
         default: /* success or unexpected failure */
-            return r;
+            goto END;
         }
     }
 
     /* specific mapping requested, or no kernel channel */
     chan->vtab = libach_vtabs[attr->map];
-    return chan->vtab->open( chan, channel_name, attr );
+    r = chan->vtab->open( chan, channel_name, attr );
+
+END:
+    if( ACH_OK != r && attr->lock_source ) {
+        lockf( lockfd, F_ULOCK, 0 );
+    }
+    chan->fd_source_lock = lockfd;
+    return r;
 }
 
 enum ach_status
@@ -268,7 +302,19 @@ ach_put( ach_channel_t *chan, const void *buf, size_t len )
 enum ach_status
 ach_close( ach_channel_t *chan )
 {
-    return chan->vtab->close(chan);
+    enum ach_status r = chan->vtab->close(chan);
+    enum ach_status r_lock = ACH_OK;
+
+    if( chan->fd_source_lock >= 0 ) {
+        /* TODO: unlink the lock file */
+        if( lockf( chan->fd_source_lock, F_ULOCK, 0 ) ) {
+            r_lock = check_errno();
+        }
+    }
+
+    /* If something went wrong, return the first failure code */
+    if( ACH_OK != r ) return r;
+    else return r_lock;
 }
 
 void ach_dump( ach_header_t *shm ) {
@@ -449,5 +495,12 @@ ach_attr_set_shm( ach_attr_t *attr, struct ach_header *shm )
 {
     attr->map = ACH_MAP_ANON;
     attr->shm = shm;
+    return ACH_OK;
+}
+
+enum ach_status
+ach_attr_set_lock_source( ach_attr_t *attr, int lock_source )
+{
+    attr->lock_source = lock_source ? 1 : 0;
     return ACH_OK;
 }

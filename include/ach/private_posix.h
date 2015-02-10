@@ -95,7 +95,7 @@ check_errno(void) {
     case ENAMETOOLONG:        return ACH_INVALID_NAME;
     case EBADSLT:             return ACH_BAD_SHM_FILE;
     case EIO:                 return ACH_FAILED_SYSCALL;
-    case EAGAIN:              return ACH_STALE_FRAMES;
+    case EAGAIN:              return ACH_EAGAIN;
     case EREMOTEIO:           return ACH_MISSED_FRAME;
     case ETIME:               return ACH_TIMEOUT;
     case EEXIST:              return ACH_EEXIST;

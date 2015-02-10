@@ -81,7 +81,7 @@ typedef enum ach_status {
     ACH_INVALID_NAME = 2,   /**< invalid channel name */
     ACH_BAD_SHM_FILE = 3,   /**< channel file didn't look right */
     ACH_FAILED_SYSCALL = 4, /**< a system call failed */
-    ACH_STALE_FRAMES = 5,   /**< no new data in the channel */
+    ACH_EAGAIN = 5,         /**< no new data in the channel */
     ACH_MISSED_FRAME = 6,   /**< we missed the next frame */
     ACH_TIMEOUT = 7,        /**< timeout before frame received */
     ACH_EEXIST = 8,         /**< channel file already exists */
@@ -97,9 +97,11 @@ typedef enum ach_status {
     ACH_EINTR = 18,          /**< operation interrupted.  Only used
                              *   internally and not returned to
                              *   library callers. */
-    ACH_ENOTSUP = 19        /**< not supported.*/
+    ACH_ENOTSUP = 19,        /**< not supported.*/
 } ach_status_t;
 
+#define ACH_STALE_FRAMES ACH_EAGAIN
+#define ACH_LOCKED ACH_EAGAIN
 
 /** Generate a bit mask from an ach status type.
  *
@@ -118,7 +120,7 @@ enum ach_mask {
     ACH_MASK_INVALID_NAME   = ACH_STATUS_MASK(ACH_INVALID_NAME),
     ACH_MASK_BAD_SHM_FILE   = ACH_STATUS_MASK(ACH_BAD_SHM_FILE),
     ACH_MASK_FAILED_SYSCALL = ACH_STATUS_MASK(ACH_FAILED_SYSCALL),
-    ACH_MASK_STALE_FRAMES   = ACH_STATUS_MASK(ACH_STALE_FRAMES),
+    ACH_MASK_EAGAIN         = ACH_STATUS_MASK(ACH_EAGAIN),
     ACH_MASK_MISSED_FRAME   = ACH_STATUS_MASK(ACH_MISSED_FRAME),
     ACH_MASK_TIMEOUT        = ACH_STATUS_MASK(ACH_TIMEOUT),
     ACH_MASK_EEXIST         = ACH_STATUS_MASK(ACH_EEXIST),
@@ -133,10 +135,14 @@ enum ach_mask {
     ACH_MASK_EFAULT         = ACH_STATUS_MASK(ACH_EFAULT),
     ACH_MASK_EINTR          = ACH_STATUS_MASK(ACH_EINTR),
     ACH_MASK_ENOTSUP        = ACH_STATUS_MASK(ACH_ENOTSUP),
+    ACH_MASK_LOCKED         = ACH_STATUS_MASK(ACH_LOCKED),
 
     ACH_MASK_NONE           = 0,
     ACH_MASK_ALL            = 0xffffffff
 };
+
+#define ACH_MASK_STALE_FRAMES ACH_MASK_EAGAIN
+#define ACH_MASK_LOCKED ACH_MASK_EAGAIN
 
 /** Convenience typedef for enum ach_mask */
 typedef enum ach_mask ach_mask_t;

@@ -399,6 +399,8 @@ PyMODINIT_FUNC initach_py() {
     PyModule_AddObject( m, "ACH_BAD_SHM_FILE",     PyInt_FromLong( ACH_BAD_SHM_FILE ) );
     PyModule_AddObject( m, "ACH_FAILED_SYSCALL",   PyInt_FromLong( ACH_FAILED_SYSCALL ) );
     PyModule_AddObject( m, "ACH_STALE_FRAMES",     PyInt_FromLong( ACH_STALE_FRAMES ) );
+    PyModule_AddObject( m, "ACH_EAGAIN"      ,     PyInt_FromLong( ACH_EAGAIN ) );
+    PyModule_AddObject( m, "ACH_LOCKED"      ,     PyInt_FromLong( ACH_LOCKED ) );
     PyModule_AddObject( m, "ACH_MISSED_FRAME",     PyInt_FromLong( ACH_MISSED_FRAME ) );
     PyModule_AddObject( m, "ACH_TIMEOUT",          PyInt_FromLong( ACH_TIMEOUT ) );
     PyModule_AddObject( m, "ACH_EEXIST",           PyInt_FromLong( ACH_EEXIST ) );

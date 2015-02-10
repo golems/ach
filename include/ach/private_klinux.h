@@ -65,7 +65,7 @@ get_errno(enum ach_status r) {
     case ACH_INVALID_NAME:    return ENAMETOOLONG;
     case ACH_BAD_SHM_FILE:    return EBADSLT;
     case ACH_FAILED_SYSCALL:  return EIO;
-    case ACH_STALE_FRAMES:    return EAGAIN;
+    case ACH_EAGAIN:          return EAGAIN;
     case ACH_MISSED_FRAME:    return EREMOTEIO;
     case ACH_TIMEOUT:         return ETIME;
     case ACH_EEXIST:          return EEXIST;
