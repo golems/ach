@@ -112,6 +112,7 @@ parse_dns_srv ( unsigned char *buf, size_t len,
 
     struct dns_packet *pkt = (struct dns_packet*) buf;
     uint8_t *msgend =  buf + len;
+    size_t i;
 
     /* decode header */
     /* uint16_t id = ntohs(pkt->id); */
@@ -124,7 +125,7 @@ parse_dns_srv ( unsigned char *buf, size_t len,
     /* TODO: maybe validate question? */
     uint8_t *pkt_question = pkt->data;
     uint8_t *pkt_answer = pkt_question;
-    for (size_t i = qdcount; i > 0; --i) {
+    for (i = qdcount; i > 0; --i) {
         int size;
         if ((size = dn_skipname(pkt_answer, msgend)) < 0)
             return ACH_BAD_HEADER;
@@ -134,7 +135,7 @@ parse_dns_srv ( unsigned char *buf, size_t len,
     /* Process Answer */
     uint8_t *rr_ans = pkt_answer;
     int minpri = INT_MAX;
-    for( size_t i = ancount; i > 0; --i ) {
+    for( i = ancount; i > 0; --i ) {
         char name[host_len-1];
         int size = dn_expand(buf, msgend, rr_ans, name, (int)host_len-1);
         if (size < 0) {

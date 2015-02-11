@@ -62,9 +62,10 @@ ach_evhandle( struct ach_evhandler *handlers,
 
     bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
     bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
+    size_t i,j;
 
     /* Count kernel channels */
-    for( size_t i = 0; i < n; i ++ ) {
+    for( i = 0; i < n; i ++ ) {
         if( ACH_OK != (r = ach_channel_map(handlers[i].channel, map+i)) )
             return r;
         if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
@@ -77,7 +78,7 @@ ach_evhandle( struct ach_evhandler *handlers,
     struct pollfd pfd[n_kernel];
     errno = 0;
     if( n_kernel ) {
-        for( size_t i = 0; i < n; i ++ ) {
+        for( i = 0; i < n; i ++ ) {
             if( ACH_MAP_KERNEL == map[i] ) {
                 if( ACH_OK != (r = ach_channel_fd(handlers[i].channel, &pfd[i].fd))) goto END;
                 pfd[i].events = POLLIN;
@@ -123,7 +124,7 @@ ach_evhandle( struct ach_evhandler *handlers,
 
         /* get the input */
         int updated = 0;
-        for( size_t i=0, j=0;  i < n; i++ ) {
+        for( i=0, j=0;  i < n; i++ ) {
             struct ach_evhandler *handler = handlers+i;
             if( (ACH_MAP_USER == map[i] || ACH_MAP_ANON == map[i]) ||
                 (r_poll > 0 && ACH_MAP_KERNEL == map[i] && pfd[j++].revents & POLLIN) )
@@ -187,12 +188,13 @@ ach_evhandle_epoll( struct ach_evhandler *handlers,
     size_t n_kernel = 0;
     enum ach_map map[n];
     int efd = -1;
+    size_t i;
 
     bool periodic_input = options & ACH_EV_O_PERIODIC_INPUT;
     bool periodic_timeout = options & ACH_EV_O_PERIODIC_TIMEOUT;
 
     /* Count kernel channels */
-    for( size_t i = 0; i < n; i ++ ) {
+    for( i = 0; i < n; i ++ ) {
         if( ACH_OK != (r = ach_channel_map(handlers[i].channel, map+i)) )
             return r;
         if( ACH_MAP_KERNEL == map[i] ) n_kernel++;
@@ -205,7 +207,7 @@ ach_evhandle_epoll( struct ach_evhandler *handlers,
     if( n_kernel ) {
         errno = 0;
         if( 0 > (efd = epoll_create1(EPOLL_CLOEXEC)) ) goto END;
-        for( size_t i = 0; i < n; i ++ ) {
+        for( i = 0; i < n; i ++ ) {
             if( ACH_MAP_KERNEL == map[i] ) {
                 struct epoll_event event = {0};
                 int fd;

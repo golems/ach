@@ -47,8 +47,9 @@ int main(int argc, char **argv)
     const size_t n = sizeof(names) / sizeof(names[0]);
     ach_channel_t channel[n];
     struct pollfd pfd[n];
+    size_t i;
 
-    for( size_t i = 0; i < n; i ++ ) {
+    for( i = 0; i < n; i ++ ) {
         /* Open Channel */
         enum ach_status r = ach_open( &channel[i], names[i], NULL );
         if( ACH_OK != r ) {
@@ -76,7 +77,7 @@ int main(int argc, char **argv)
             exit(EXIT_FAILURE);
         }
         /* find channels with new data */
-        for( size_t i = 0; i < n && r_poll > 0; i++ ) {
+        for( i = 0; i < n && r_poll > 0; i++ ) {
             if( (pfd[i].revents & POLLIN) ) {
                 /* There's new data on this channel */
                 char buf[512];
