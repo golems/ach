@@ -151,7 +151,7 @@ typedef enum ach_mask ach_mask_t;
 static inline int
 ach_status_mask( enum ach_status status )
 {
-    return (enum ach_mask)ACH_STATUS_MASK(status);
+    return ACH_STATUS_MASK(status);
 }
 
 /** Test if status is set in mask.
