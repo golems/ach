@@ -371,7 +371,31 @@ AM_CONDITIONAL([INSTALL_JAVADOC],   [test "x$JAVADOC" != x -o -e "$srcdir/doc/ja
 ###########
 ## Linux ##
 ###########
-# TODO: check if we building for linux
+AC_MSG_CHECKING([whether host is Linux])
+AS_CASE([$host],
+        [*linux*],
+        [
+          AC_MSG_RESULT([yes])
+          host_linux=yes
+        ],
+        [
+          AC_MSG_RESULT([no])
+          host_linux=no
+        ])
+
+
+AC_ARG_VAR([KERNELRELEASE],
+           [Linux kernel release version. [default=`uname -r`]])
+AC_ARG_VAR([KDIR],
+           [Linux kernel headers directory.  [default searches common
+            locations for headers of $KERNELRELEASE]])
+
+AC_ARG_ENABLE([kbuild],
+              [AS_HELP_STRING([--enable-kbuild],
+                              [Build Linux kernel module with Kbuild])],
+              [enable_kbuild_force="$enable_kbuild"],
+              [enable_kbuild=no])
+
 AC_CHECK_PROGS([DKMS], [dkms], [false], [$PATH:/usr/sbin:/sbin])
 AS_IF([test "x$DKMS" != xfalse], [have_dkms=yes], [have_dkms=no])
 
@@ -379,7 +403,8 @@ AC_ARG_ENABLE([dkms],
               [AS_HELP_STRING([--disable-dkms],
                               [Do not install DKMS sources])],
               [enable_dkms_force="$enable_dkms"],
-              [AS_IF([test "x$DKMS" != xfalse], [enable_dkms=yes], [enable_dkms=no])])
+              [AS_IF([test "x$DKMS" != x -a "x$host_linux" = xyes -a "x$enable_kbuild" != xyes],
+                     [enable_dkms=yes], [enable_dkms=no])])
 
 AC_ARG_ENABLE([dkms-build],
               [AS_HELP_STRING([--enable-dkms-build],
@@ -391,30 +416,15 @@ AC_ARG_ENABLE([dkms-build],
               ],
               [enable_dkms_build="$enable_dkms"])
 
-AC_ARG_ENABLE([kbuild],
-              [AS_HELP_STRING([--enable-kbuild],
-                              [Build Linux kernel module with Kbuild])],
-              [enable_kbuild_force="$enable_kbuild"],
-              [AS_IF([test "x$enable_dkms" != "xyes"],
-                     [enable_kbuild="yes"],
-                     [enable_kbuild="no"])])
-
-AC_ARG_VAR([KERNELRELEASE],
-           [Linux kernel release version. [default=`uname -r`]])
-AC_ARG_VAR([KDIR],
-           [Linux kernel headers directory.  [default searches common
-            locations for headers of $KERNELRELEASE]])
 
 AS_IF([test "x$enable_kbuild" = xyes],
 [
 
 AS_IF([test "x$KERNELRELEASE" = "x"],
-      [AC_MSG_CHECKING([Linux kernel release])
+      [AC_MSG_CHECKING([for running Linux kernel release])
        KERNELRELEASE=`uname -r`
        AC_MSG_RESULT([$KERNELRELEASE])
-       ],
-       [enable_kbuild_force="yes"])
-
+       ])
 
 AC_DEFUN([CHECK_KDIR],
         [
@@ -439,13 +449,15 @@ AS_IF([test "x$KDIR" = "x"],
       ])
 
 AS_IF([test "x$KDIR" = "x" ],
-      [AS_IF([test "x$enable_kbuild_force" = xyes],
+      [
+       enable_kbuild=no
+       AS_IF([test "x$enable_kbuild_force" = xyes],
              [AC_MSG_ERROR([Linux kernel headers not found])])])
 ])
 
-
 AC_SUBST([KDIR])
 AC_SUBST([KERNELRELEASE])
+
 AM_CONDITIONAL([BUILD_KBUILD],
                [test "x$enable_kbuild" = xyes])
 
@@ -506,4 +518,5 @@ AC_MSG_NOTICE([KBUILD LINUX MODULE: $enable_kbuild])
 AS_IF([test "x$enable_kbuild" = xyes],
       [
 AC_MSG_NOTICE([KERNEL RELEASE:      $KERNELRELEASE])
+AC_MSG_NOTICE([KDIR:                $KDIR])
       ])
