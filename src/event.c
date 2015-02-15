@@ -72,7 +72,7 @@ ach_evhandle( struct ach_evhandler *handlers,
     }
 
     /* Need a polling period if handling userspace channels */
-    if( !(n_kernel == n || period) ) return ACH_EINVAL;
+    if( !(n_kernel == n || period) ) return ACH_ENOTSUP;
 
     /* Initialize poll */
     struct pollfd pfd[n_kernel];
