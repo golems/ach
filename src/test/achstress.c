@@ -108,7 +108,7 @@ crc_16_itu_t( uint16_t crc, const uint8_t *buf, size_t n );
 int main( int argc, char **argv ){
     int c;
     sigset_t blockset, emptyset;
-    while( (c = getopt( argc, argv, "p:s:c:i:vukPL")) != -1 ) {
+    while( (c = getopt( argc, argv, "p:s:c:i:vukP")) != -1 ) {
         switch(c) {
         case 'p':
             opt_n_pub = (size_t)atoi(optarg);
@@ -134,9 +134,6 @@ int main( int argc, char **argv ){
         case 'P':
             opt_poll = true;
             break;
-        case 'L':
-            opt_get_options |= ACH_O_LAST;
-            break;
         case '?':
         case 'h':
         case 'H':
@@ -154,7 +151,6 @@ int main( int argc, char **argv ){
                   "  -u                    use user-space-mapped channels\n"
                   "  -P                    multiplex channel reading with poll()\n"
                   "                        (kernel-channels only)\n"
-                  "  -L                    get last message (default first message)\n"
                   "  -?                    display this help and exit\n"
                 );
             exit(EXIT_SUCCESS);
@@ -470,14 +466,15 @@ static void worker_pub(unsigned int seed)
 
 
 
-static void worker_sub_get(size_t i_chan, int options)
+static void worker_sub_get(size_t i_chan, int options, struct timespec *ts)
 {
         int buf[32];
         size_t frame_size;
         enum ach_status r;
 
+
         r = ach_get( &g_chans[i_chan], buf, sizeof(buf), &frame_size,
-                     NULL, options );
+                     ts, options );
         switch(r) {
         case ACH_CANCELED:
             exit(EXIT_SUCCESS);
@@ -491,8 +488,22 @@ static void worker_sub_get(size_t i_chan, int options)
             DEBUG(2, "sub n:          %lu\n", n);
             CHECK_TRUE( "get checksum", buf_cksum == csum );
         }
+        case ACH_TIMEOUT:
+        case ACH_STALE_FRAMES:
         break;
         default:
+            fprintf(stderr,
+                    "options: last:  %d\n"
+                    "         wait:  %d\n"
+                    "         reltm: %d\n"
+                    "         sec:   %lu\n"
+                    "         nsec:  %d\n",
+                    options & ACH_O_LAST,
+                    options & ACH_O_WAIT,
+                    options & ACH_O_RELTIME,
+                    (ts ? ts->tv_sec : -1),
+                    (ts ? ts->tv_nsec : -1) );
+            fflush(stderr);
             fail_ach( "subscriber ach_get", r );
         }
 
@@ -528,17 +539,35 @@ static void worker_sub(unsigned seed)
             }
             for( i = 0; i < opt_n_chan; i ++ ) {
                 if( (pfd[i].revents & POLLIN) ) {
-                    DEBUG(2, "worker_sub %d: pollin on %lu\n", mypid, i)
-                    worker_sub_get(i, options);
+                    DEBUG(2, "worker_sub %d: pollin on %lu\n", mypid, i);
+                    worker_sub_get(i, options, NULL);
                 }
             }
         }
     } else {
-        int options = opt_get_options | ACH_O_WAIT;
+        int options = opt_get_options;
         /* run loop */
         while(!g_cancel) {
+            int bits = rand_r(&seed);
+            struct timespec ts;
+            bool send_ts;
+
+            if( (bits & 0x1) ) options |= ACH_O_NONBLOCK;
+            else options |= ACH_O_WAIT;
+
+            if( (bits & 0x2) ) options |= ACH_O_FIRST;
+            else options |= ACH_O_LAST;
+
+            if( (bits & 0x4) ) options |= ACH_O_RELTIME;
+            else options |= ACH_O_ABSTIME;
+
+            send_ts = (bits & 0x08);
+
+            ts.tv_sec = 0;
+            ts.tv_nsec = bits >> 0x08;
+
             size_t i = (unsigned)rand_r(&seed) % opt_n_chan;
-            worker_sub_get(i, options);
+            worker_sub_get(i, options, (send_ts ? &ts : NULL));
         }
     }
 

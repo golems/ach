@@ -159,7 +159,13 @@ rdlock_wait(ach_channel_t * chan, const struct timespec *reltime)
 
 		/* check what happened */
 		if (-ERESTARTSYS == res) return ACH_EINTR;
-		if( res < 0 ) return ACH_BUG;
+		if( res < 0 ) {
+			ACH_ERRF("ach bug: rdlock_wait(), "
+				 "could not wait for event, "
+				 "timeout: (%lu,%ld), result=%d\n",
+				 reltime->tv_sec, reltime->tv_nsec, res);
+			return ACH_BUG;
+		}
 
 		r = chan_lock( chan );
 		/* Check condition with the lock held in case someone

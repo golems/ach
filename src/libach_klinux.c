@@ -210,7 +210,6 @@ libach_get_klinux( ach_channel_t *chan,
                 const struct timespec *ACH_RESTRICT timeout,
                 int options )
 {
-
     achk_opt_t opts;
     bool o_rel = options & ACH_O_RELTIME;
     struct timespec t_end;
@@ -236,18 +235,14 @@ libach_get_klinux( ach_channel_t *chan,
     for(;;) {
         /* set mode */
         if (memcmp(&opts, &chan->k_opts, sizeof(achk_opt_t))) {
-            struct achk_opt mode;
             int ioctl_ret;
-            memset(&mode, 0, sizeof(mode));
-            mode.options = options;
-            mode.reltime = opts.reltime;
-
-            SYSCALL_RETRY( ioctl_ret = ioctl(chan->fd, ACH_CH_SET_MODE, &mode),
+            SYSCALL_RETRY( ioctl_ret = ioctl(chan->fd, ACH_CH_SET_MODE, &opts),
                            ioctl_ret < 0 );
             if ( ioctl_ret < 0 ) return check_errno();
             chan->k_opts = opts;
         }
-
+        assert( timeout || (0 == opts.reltime.tv_sec &&
+                            0 == opts.reltime.tv_nsec) );
         ssize_t ret = read(chan->fd, buf, size);
 
         if( ret >= 0 ) { /* Success! */
@@ -259,6 +254,8 @@ libach_get_klinux( ach_channel_t *chan,
         if( errno != EINTR ) {
             return check_errno();
         }
+
+        assert( EINTR == errno );
 
         /* We were interrupted, lets go again */
         if(timeout) { /* recompute the relative timeout */
