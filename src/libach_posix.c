@@ -137,6 +137,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
         /* Shouldn't actually get this because we always mark the
          * mutex as consistent. */
         /* We do not hold the mutex at this point */
+        ACH_ERRF("ach corrupt: mutex not recoverable\n");
         return ACH_CORRUPT;
     case EOWNERDEAD: /* mutex holder died */
         /* We use the dirty bit to detect unrecoverable (for now)
@@ -149,6 +150,7 @@ check_lock( int lock_result, ach_channel_t *chan, int is_cond_check ) {
     case 0: /* ok */
         if( chan->shm->sync.dirty ) {
             pthread_mutex_unlock( &chan->shm->sync.mutex );
+            ACH_ERRF("ach corrupt: channel is dirty\n");
             return ACH_CORRUPT;
         } else return ACH_OK; /* it's ok, channel is consistent */
     default:

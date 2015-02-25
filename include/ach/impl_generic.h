@@ -107,6 +107,7 @@ check_guards( ach_header_t *shm )
         ACH_SHM_GUARD_INDEX_NUM != *ACH_SHM_GUARD_INDEX(shm) ||
         ACH_SHM_GUARD_DATA_NUM != *ACH_SHM_GUARD_DATA(shm)  )
     {
+        ACH_ERRF("ach corrupt: Invalid guard bytes\n");
         return ACH_CORRUPT;
     } else {
         return ACH_OK;
@@ -189,7 +190,12 @@ ach_xget_from_offset(ach_channel_t * chan, size_t index_offset,
         return ACH_BUG;
     }
 
+
     if (idx->offset + idx->size > shm->data_size) {
+        ACH_ERRF("ach corrupt: frame extends past data array, "
+                 " offset: %lu, size: %lu, data size: %lu\n",
+                 idx->offset, idx->size, shm->data_size
+            );
         return ACH_CORRUPT;
     }
 
