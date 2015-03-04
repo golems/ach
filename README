@@ -33,10 +33,13 @@ DOCUMENTATION
 * Manual: http://code.golems.org/pkg/ach/manual
           and `./doc/manual/ach-manual.html`
 * API docs: http://code.golems.org/pkg/ach/api
+            and `./doc/html`
 * Man Pages: http://code.golems.org/pkg/ach/man
              and `./doc/man`
 * Papers: http://www.golems.org/projects/ach.html
 * Example Code: `./src/ach-example.c`
+
+See `./INSTALL` for details on generating the documentation.
 
 MAILING LISTS
 =============
@@ -62,7 +65,6 @@ Language bindings are included for Common Lisp, Python, and Java.
        http://code.golems.org/pkg/ach/javadoc/
 
 See the INSTALL file for details.
-
 
 FORMAL MODEL
 ============
