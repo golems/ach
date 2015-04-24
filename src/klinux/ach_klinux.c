@@ -80,7 +80,7 @@ static unsigned max_devices = ACH_MAX_DEVICES;
 module_param(max_devices, uint, (S_IRUSR | S_IRGRP | S_IROTH));
 MODULE_PARM_DESC(max_devices, "Max number of ach kernel devices");
 
-//#define KDEBUG_ENABLED
+#define KDEBUG_ENABLED
 
 #ifdef KDEBUG_ENABLED
 
@@ -542,6 +542,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	struct ach_ch_file *ch_file = (struct ach_ch_file *)file->private_data;
 
 	KDEBUG("ach: In ach_ch_ioctl\n");
+
 	switch (cmd) {
 
 	case ACH_CH_SET_MODE: {
@@ -653,6 +654,109 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
+
+static long ach_ch_set_mode_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct achk_opt_32 *arg32 = (struct achk_opt_32 *)arg;
+	struct achk_opt arg64;
+	struct achk_opt *p = compat_alloc_user_space(sizeof(arg64));
+	int err;
+	memset(&arg64, 0, sizeof(arg64));
+	err = 0;
+	err |= copy_from_user(&arg64.options, &arg32->options, sizeof(arg64.options));
+	err |= compat_get_timespec(&arg64.reltime, &arg32->reltime);
+	err |= copy_to_user(p, &arg64, sizeof(arg64));
+	if (err)
+		return -EFAULT;
+	return ach_ch_ioctl(file, ACH_CH_SET_MODE, (unsigned long)p);
+}
+
+static long ach_ch_get_mode_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct achk_opt_32 *arg32 = (struct achk_opt_32 *)arg;
+	struct achk_opt arg64;
+	struct achk_opt *p = compat_alloc_user_space(sizeof(arg64));
+	int err;
+	err = ach_ch_ioctl(file, ACH_CH_GET_MODE, (unsigned long)p);
+	if (err)
+		return err;
+	err = 0;
+	err |= copy_from_user(&arg64, p, sizeof(arg64));
+	err |= copy_to_user(&arg32->options, &arg64.options, sizeof(arg64.options));
+	err |= compat_put_timespec(&arg64.reltime, &arg32->reltime);
+	if (err)
+		return -EFAULT;
+	return 0;
+}
+
+static long ach_ch_get_status_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct ach_ch_status_32 *arg32 = (struct ach_ch_status_32 *)arg;
+	struct ach_ch_status arg64;
+	struct ach_ch_status *p = compat_alloc_user_space(sizeof(arg64));
+	s32 i;
+	u32 u;
+	int err;
+	err = ach_ch_ioctl(file, ACH_CH_GET_STATUS, (unsigned long)p);
+	if (err)
+		return err;
+	err |= copy_from_user(&arg64, p, sizeof(arg64));
+	i = (s32)arg64.size;
+	err |= copy_to_user(&i, &arg32->size, sizeof(s32));
+	i = (s32)arg64.count;
+	err |= copy_to_user(&i, &arg32->count, sizeof(s32));
+	i = (s32)arg64.new_msgs;
+	err |= copy_to_user(&i, &arg32->new_msgs, sizeof(s32));
+	u = (u32)arg64.last_seq;
+	err |= copy_to_user(&u, &arg32->last_seq, sizeof(u32));
+	u = (u32)arg64.last_seq_read;
+	err |= copy_to_user(&u, &arg32->last_seq_read, sizeof(u32));
+	if (err)
+		return -EFAULT;
+	return 0;
+}
+
+static long ach_ch_get_options_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct ach_ch_options_32 *arg32 = (struct ach_ch_options_32 *)arg;
+	struct ach_ch_options arg64;
+	struct ach_ch_options *p = compat_alloc_user_space(sizeof(arg64));
+	int err;
+	err = ach_ch_ioctl(file, ACH_CH_GET_OPTIONS, (unsigned long)p);
+	if (err)
+		return err;
+	err = 0;
+	err |= copy_from_user(&arg64, p, sizeof(arg64));
+	err |= copy_to_user(&arg32->mode.options, &arg64.mode.options, sizeof(arg64.mode.options));
+	err |= copy_to_user(&arg32->clock, &arg64.clock, sizeof(arg64.clock));
+	err |= compat_put_timespec(&arg64.mode.reltime, &arg32->mode.reltime);
+	if (err)
+		return -EFAULT;
+	return 0;
+}
+
+static long ach_ch_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case ACH_CH_FLUSH:
+	case ACH_CH_CANCEL:
+		return ach_ch_ioctl(file, cmd, arg);
+	case ACH_CH_SET_MODE_COMPAT:
+		return ach_ch_set_mode_compat_ioctl(file, cmd, arg);
+	case ACH_CH_GET_MODE_COMPAT:
+		return ach_ch_get_mode_compat_ioctl(file, cmd, arg);
+	case ACH_CH_GET_STATUS_COMPAT:
+		return ach_ch_get_status_compat_ioctl(file, cmd, arg);
+	case ACH_CH_GET_OPTIONS_COMPAT:
+		return ach_ch_get_options_compat_ioctl(file, cmd, arg);
+	default:
+		return -ENOIOCTLCMD;
+	}
+}
+
+#endif /* CONFIG_COMPAT */
+
 static ssize_t ach_ch_write(struct file *file, const char *buffer, size_t len,
 			    loff_t * offset)
 {
@@ -725,6 +829,9 @@ static const struct file_operations ach_ch_fops = {
 	.write = ach_ch_write,
 	.read = ach_ch_read,
 	.unlocked_ioctl = ach_ch_ioctl,
+#ifdef CONFIG_COMPAT
+    .compat_ioctl = ach_ch_compat_ioctl,
+#endif /* CONFIG_COMPAT */
 	.poll = ach_ch_poll,
 };
 
@@ -856,9 +963,49 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	return ret;
 }
 
+#ifdef CONFIG_COMPAT
+
+static long ach_ctrl_create_ch_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	struct ach_ctrl_create_ch_32 *arg32 = (struct ach_ctrl_create_ch_32 *)arg;
+	struct ach_ctrl_create_ch arg64;
+	struct ach_ctrl_create_ch *p = compat_alloc_user_space(sizeof(arg64));
+	int err;
+	u32 u;
+	memset(&arg64, 0, sizeof(arg64));
+	err = 0;
+	err |= copy_from_user(&u, &arg32->frame_cnt, sizeof(u32));
+	arg64.frame_cnt = (size_t)u;
+	err |= copy_from_user(&u, &arg32->frame_size, sizeof(u32));
+	arg64.frame_size = (size_t)u;
+	err |= copy_from_user(&arg64.clock, &arg32->clock, sizeof(arg64.clock));
+	err |= copy_from_user(arg64.name, arg32->name, ACH_CHAN_NAME_MAX + 1);
+	err |= copy_to_user(p, &arg64, sizeof(arg64));
+	if (err)
+		return -EFAULT;
+	return ach_ctrl_ioctl(file, ACH_CTRL_CREATE_CH, (unsigned long)p);
+}
+
+static long ach_ctrl_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case ACH_CTRL_UNLINK_CH:
+		return ach_ctrl_ioctl(file, cmd, arg);		
+	case ACH_CTRL_CREATE_CH_COMPAT:
+		return ach_ctrl_create_ch_compat_ioctl(file, cmd, arg);
+	default:
+		return -ENOIOCTLCMD;
+	}
+}
+
+#endif /* CONFIG_COMPAT */
+
 static struct file_operations ach_ctrl_fops = {
 	.owner = THIS_MODULE,
 	.unlocked_ioctl = ach_ctrl_ioctl,
+#ifdef CONFIG_COMPAT
+	.compat_ioctl = ach_ctrl_compat_ioctl,
+#endif /* CONFIG_COMPAT */
 	.open = NULL,
 	.release = NULL,
 	.read = NULL,

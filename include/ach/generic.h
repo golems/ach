@@ -71,6 +71,10 @@ extern "C" {
 #define ACH_WARN_UNUSED
 #endif /* __GNUC__ */
 
+#ifdef CONFIG_COMPAT
+#include <linux/compat.h>
+#endif /* CONFIG_COMPAT */
+
 /** return status codes for ach functions.
  *
  *  \see enum ach_mask
@@ -265,6 +269,15 @@ typedef struct achk_opt {
     struct timespec reltime;   /**< kernel use relative time */
 } achk_opt_t;
 
+#ifdef CONFIG_COMPAT
+
+/** Compat struct for achk_opt */
+typedef struct achk_opt_32 {
+    int options;                      /**< get options used by the kernel */
+    struct compat_timespec reltime;   /**< kernel use relative time */
+} achk_opt_t_32;
+
+#endif /* CONFIG_COMPAT */
 
 #ifdef __cplusplus
 }

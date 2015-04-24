@@ -74,6 +74,19 @@
 /** ioctl request cancel channel reads */
 #define ACH_CH_GET_OPTIONS              _IOW(ACH_IOCTL, 8, struct ach_ch_options)
 
+#ifdef CONFIG_COMPAT
+
+#include <linux/types.h>
+
+/** compat ioctl requests */
+#define ACH_CTRL_CREATE_CH_COMPAT       _IOW(ACH_IOCTL, 1, struct ach_ctrl_create_ch_32)
+#define ACH_CH_SET_MODE_COMPAT          _IOW(ACH_IOCTL, 3, struct achk_opt_32)
+#define ACH_CH_GET_MODE_COMPAT          _IOR(ACH_IOCTL, 4, struct achk_opt_32)
+#define ACH_CH_GET_STATUS_COMPAT        _IOR(ACH_IOCTL, 5, struct ach_ch_status_32)
+#define ACH_CH_GET_OPTIONS_COMPAT       _IOW(ACH_IOCTL, 8, struct ach_ch_options_32)
+
+#endif /* CONFIG_COMPAT */
+
 /** ioctl argument to create channel */
 struct ach_ctrl_create_ch {
 	size_t frame_cnt;                   /**< Number of entries in index array */
@@ -102,6 +115,34 @@ struct ach_ch_options {
 	struct achk_opt mode; /* channel mode */
 	clockid_t clock;         /* channel clock */
 };
+
+#ifdef CONFIG_COMPAT
+
+/** Compat struct for ach_ctrl_create_ch */
+struct ach_ctrl_create_ch_32 {
+	u32 frame_cnt;                    /**< Number of entries in index array */
+	u32 frame_size;                   /**< Nominal size of each message */
+	clockid_t clock;                    /**< Clock to use for the channel */
+	char name[ACH_CHAN_NAME_MAX + 1];   /**< Name of the channel */
+};
+
+/** Compat struct for ach_ch_status_32 */
+struct ach_ch_status_32 {
+	int mode;               /**< Get options for the channel */
+	s32 size;             /**< Size of queue */
+	s32 count;            /**< Messages in queue */
+	s32 new_msgs;         /**< Unread messages in queue */
+	u32 last_seq;         /**< Last sequence in queue */
+	u32 last_seq_read;    /**< Sequence of last read message */
+};
+
+/** Compat struct for ach_ch_options */
+struct ach_ch_options_32 {
+	struct achk_opt_32 mode; /* channel mode */
+	clockid_t clock;         /* channel clock */
+};
+
+#endif /* CONFIG_COMPAT */
 
 #endif
 
