@@ -3,9 +3,11 @@
 /*
  * Copyright (c) 2008-2014, Georgia Tech Research Corporation
  * Copyright (c) 2015, Rice University
+ * Copyright (c) 2015, Atlas Copco Rock Drills AB
  * All rights reserved.
  *
  * Author(s): Neil T. Dantam <ntd@rice.edu>
+ *            Mattias <matjo75@gmail.com>
  * Georgia Tech Humanoid Robotics Lab
  * Under Direction of Prof. Mike Stilman <mstilman@cc.gatech.edu>
  *

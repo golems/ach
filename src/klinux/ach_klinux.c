@@ -3,10 +3,12 @@
  *
  * Copyright (C) 2013, Prevas A/S
  * Copyright (C) 2015, Rice University
+ * Copyright (c) 2015, Atlas Copco Rock Drills AB
  * All rights reserved.
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
  *          Neil T. Dantam <ntd@rice.edu>
+ *          Mattias <matjo75@gmail.com>
  *
  * This file is provided under the following "BSD-style" License:
  *
@@ -990,7 +992,7 @@ static long ach_ctrl_compat_ioctl(struct file *file, unsigned int cmd, unsigned 
 {
 	switch (cmd) {
 	case ACH_CTRL_UNLINK_CH:
-		return ach_ctrl_ioctl(file, cmd, arg);		
+		return ach_ctrl_ioctl(file, cmd, arg);
 	case ACH_CTRL_CREATE_CH_COMPAT:
 		return ach_ctrl_create_ch_compat_ioctl(file, cmd, arg);
 	default:

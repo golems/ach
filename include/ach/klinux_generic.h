@@ -4,8 +4,10 @@
  * Header file for ach_ipc kernel driver
  *
  * Copyright (C) 2013, Prevas A/S
+ * Copyright (c) 2015, Atlas Copco Rock Drills AB
  *
  * Authors: Kim Boendergaard Poulsen <kibo@prevas.dk>
+ *          Mattias <matjo75@gmail.com>
  *
  * This file is provided under the following "BSD-style" License:
  *
