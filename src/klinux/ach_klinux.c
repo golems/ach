@@ -974,6 +974,14 @@ static long ach_ctrl_create_ch_compat_ioctl(struct file *file, unsigned int cmd,
 	struct ach_ctrl_create_ch *p = compat_alloc_user_space(sizeof(arg64));
 	int err;
 	u32 u;
+
+	/* ensure that clockid_t is an int and ints are 4 bytes.  This
+	 * means the ints and clockid_ts are the same size for the
+	 * 64-bit kernel and 32-bit userspace */
+
+	BUILD_BUG_ON( sizeof(int) != sizeof(clockid_t) );
+	BUILD_BUG_ON( sizeof(int) != 4 );
+
 	memset(&arg64, 0, sizeof(arg64));
 	err = 0;
 	err |= copy_from_user(&u, &arg32->frame_cnt, sizeof(u32));
