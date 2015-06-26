@@ -52,11 +52,11 @@ AC_CHECK_DECL([_POSIX_THREAD_PROCESS_SHARED],
 AC_DEFUN([CHECK_SOURCE],
          [AC_MSG_CHECKING([$1])
           AC_RUN_IFELSE([AC_LANG_PROGRAM([$2], [$3])],
-                        [echo [yes]; $4],
-                        [echo [no]],
+                        [AC_MSG_RESULT([yes]); $4],
+                        [AC_MSG_RESULT([no])],
                         [AC_TRY_COMPILE([$2],[$3],
-                                        [echo [yes]; $4],
-                                        [echo [no]])])])
+                                        [AC_MSG_RESULT([yes]); $4],
+                                        [AC_MSG_RESULT([no])])])])
 
 # check priority inheritance mutex
 CHECK_SOURCE([for priority-inherit mutex],
