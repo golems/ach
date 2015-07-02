@@ -48,17 +48,27 @@
 #include <sys/fcntl.h>
 #include <mqueue.h>
 
-static mqd_t fd;
+static mqd_t *fd;
 
 #define NAME "/ipcbench"
 
 static void s_open(int flag) {
-    struct mq_attr attr = {.mq_maxmsg = 10,
-                           .mq_msgsize = sizeof(struct timespec),
-                           .mq_flags = 0};
-    if( (fd = mq_open(NAME, O_CREAT|flag, 0666, &attr )) < 0 ) {
-        perror( "could not open mq" );
-        abort();
+    char buf[64];
+    fd = (mqd_t*)calloc(ipcbench_cnt,sizeof(mqd_t));
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        snprintf(buf, sizeof(buf), NAME "-%d");
+        struct mq_attr attr = {.mq_maxmsg = 10,
+                               .mq_msgsize = sizeof(struct timespec),
+                               .mq_flags = 0};
+        if( (fd[i] = mq_open(buf, O_CREAT|flag, 0666, &attr )) < 0 ) {
+            perror( "could not open mq" );
+            abort();
+        }
+        /* POLLING MESSAGE QUEUE DESCRIPTORS: */
+        /* On Linux, a message queue descriptor is actually a file descriptor, */
+        /* and can be monitored using select(2), poll(2), or epoll(7).  This is */
+        /* not portable. */
+        ipcbench_pfd[i].fd = fd[i];
     }
 }
 
@@ -71,14 +81,16 @@ static void s_init_recv(void) {
 }
 
 static void s_send( const struct timespec *ts ) {
-    if( mq_send(fd, (char*)ts, sizeof(*ts), 0) ) {
+    size_t i = pubnext();
+    if( mq_send(fd[i], (char*)ts, sizeof(*ts), 0) ) {
         perror( "could not send data mq" );
         abort();
     }
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = mq_receive( fd, (char*)ts, sizeof(*ts), NULL );
+    size_t i = pollin();
+    ssize_t r = mq_receive( fd[i], (char*)ts, sizeof(*ts), NULL );
     if( 0 > r ) {
         perror( "could not receive data mq" );
         abort();
