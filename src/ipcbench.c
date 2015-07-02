@@ -55,6 +55,7 @@ double opt_sec = 1;
 size_t opt_subscribers = 1;
 size_t opt_nonrt_subscribers = 0;
 size_t opt_discard = 10;
+size_t opt_channels = 1;
 
 struct timespec ipcbench_period;
 double overhead = 0;
@@ -87,7 +88,7 @@ static void send(struct ipcbench_vtab *vtab) {
     register_handler();
 
     usleep(0.25e6);
-    if( vtab->init_send ) vtab->init_send();
+    if( vtab->init_send ) vtab->init_send(opt_channels);
 
     while( !sig_canceled ) {
         struct timespec ts = get_ticks();
@@ -116,7 +117,7 @@ static void kill_wait(pid_t pid) {
 static void recv(struct ipcbench_vtab *vtab, int emit) {
     register_handler();
     //make_realtime(99);
-    if( vtab->init_recv ) vtab->init_recv();
+    if( vtab->init_recv ) vtab->init_recv(opt_channels);
 
     mqd_t mq;
     if( (mq = mq_open(MQ, O_CREAT | O_WRONLY | O_NONBLOCK, 0600, &mq_lat_attr )) < 0 ) {
@@ -200,7 +201,7 @@ int main( int argc, char **argv ) {
     const char *type = "ach";
     char *endptr = 0;
     int c;
-    while( (c = getopt( argc, argv, "lt:f:s:S:d:v?V")) != -1 ) {
+    while( (c = getopt( argc, argv, "lt:f:s:S:c:d:v?V")) != -1 ) {
         switch(c) {
         case 'f':
             opt_freq = strtod(optarg, &endptr);
@@ -230,6 +231,9 @@ int main( int argc, char **argv ) {
         case 'd':
             opt_discard = (size_t)atoi(optarg);
             break;
+        case 'c':
+            opt_channels = (size_t)atoi(optarg);
+            break;
         case 'V':   /* version     */
             puts("ipcbench " PACKAGE_VERSION);
             exit(EXIT_SUCCESS);
@@ -243,6 +247,7 @@ int main( int argc, char **argv ) {
                  "  -s COUNT,         Number of subscribers (1)\n"
                  "  -S COUNT,         Number of non-real-time subscribers (0)\n"
                  "  -d COUNT,         Initial messages to discard (10)\n"
+                 "  -c COUNT,         Number of channels (1)\n"
                  "  -l                List supported IPC methods\n"
                  "  -V                Version\n"
                  "  -?                Help\n"
@@ -309,7 +314,7 @@ int main( int argc, char **argv ) {
     fprintf(stderr, "overhead: %f us\n", overhead * 1e6);
 
     /* Execute */
-    if( vtab->init ) vtab->init();
+    if( vtab->init ) vtab->init(opt_channels);
 
     /* Fork subscribers */
     pid_t pid_listen[opt_subscribers + opt_nonrt_subscribers];
@@ -354,5 +359,35 @@ int main( int argc, char **argv ) {
     if( vtab->destroy ) vtab->destroy();
 
     return 0;
+
+}
+
+
+size_t pollin(struct pollfd *pfd, size_t n)
+{
+    size_t i_fd = 0;
+    if( n > 1 ) {
+        int k = poll( pfd, n, -1);
+        if( k < 0 ) {
+            perror("poll");
+            abort();
+        }
+        for( i_fd=0;  i_fd < n; i_fd++ ) {
+            if(pfd[i_fd].revents & POLLIN) {
+                return i_fd;
+            }
+
+        }
+        fprintf(stderr, "Poll succeeded, but nothing is ready\n");
+        abort();
+    }
+    return i_fd;
+}
+
+size_t pubnext(size_t n) {
+    static size_t i = 0;
+    size_t j = i;
+    i = (i+1) % n;
+    return j;
 
 }

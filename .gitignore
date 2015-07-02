@@ -54,3 +54,6 @@
 /ros/gtest
 /ros/cmake/ipcbench-genmsg.cmake
 /ros/cmake_install.cmake
+*.o
+.deps
+/compile

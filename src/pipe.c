@@ -45,15 +45,28 @@
 #endif //HAVE_CONFIG
 
 #include <ipcbench.h>
+#include <poll.h>
 #include <ach.h>
 
-static int fd[2];
+static int *fd;
+static size_t cnt;
+struct pollfd *pfd;
 
+static void s_init(size_t channel_count) {
+    printf("pipe\n");
+    fd = (int*) malloc( 2 * sizeof(int) * channel_count );
+    cnt = channel_count;
+    for( size_t i = 0; i < channel_count; i ++ ) {
+        if( pipe(fd + 2*i) ) {
+            perror( "could not create pipe" );
+            abort();
+        }
+    }
 
-static void s_init(void) {
-    if( pipe(fd) ) {
-        perror( "could not create pipe" );
-        abort();
+    pfd = (struct pollfd*)calloc(cnt, sizeof(struct pollfd));
+    for( size_t i = 0; i < cnt; i ++ ) {
+        pfd[i].fd = fd[2*i];
+        pfd[i].events = POLLIN;
     }
 }
 
@@ -64,7 +77,9 @@ static void s_destroy(void) {
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = write(fd[1], ts, sizeof(*ts));
+    size_t i = pubnext(cnt);
+    size_t j = 2*i + 1;
+    ssize_t r = write(fd[j], ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
         perror( "could not send data on pipe" );
         abort();
@@ -72,7 +87,8 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = read(fd[0], ts, sizeof(*ts));
+    size_t i = 2*pollin( pfd, cnt );
+    ssize_t r = read(fd[i], ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
         perror( "could not receive data on pipe" );
         abort();

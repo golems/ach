@@ -54,17 +54,18 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <poll.h>
 
 
 struct ipcbench_vtab {
 
     /** Init global structures */
-    void (*init)(void);
+    void (*init)(size_t channel_count);
 
     /** Initialize sending process data */
-    void (*init_send)(void);
+    void (*init_send)(size_t channel_count);
     /** Initialize receiving process data */
-    void (*init_recv)(void);
+    void (*init_recv)(size_t channel_count);
 
     /** Send a timespec */
     void (*send)(const struct timespec *ts);
@@ -103,5 +104,9 @@ extern struct ipcbench_vtab ipc_bench_vtab_cos;
 
 #define MQ "/ipcbench.latency"
 extern struct mq_attr mq_lat_attr;
+
+size_t pollin(struct pollfd *pfd, size_t n);
+
+size_t pubnext(size_t n);
 
 #endif // IPCBENCH_H
