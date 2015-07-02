@@ -70,19 +70,6 @@
       (incf i))
     x))
 
-(defun median (data)
-  (let* ((n (length data))
-         (n/2 (truncate (/ n 2))))
-    (if (oddp n)
-        (elt data  n/2)
-        (/ (+ (elt data n/2)
-              (elt data (1- n/2)))
-           2))))
-
-(defun mean (data)
-  (/ (reduce #'+ data)
-     (length data)))
-
 (defun nine-frac (n)
   (loop
      for i from 1 upto n
@@ -103,8 +90,8 @@
          (n (length data)))
     (let ((min (aref data 0))
           (max (aref data (1- n)))
-          (median (median data))
-          (mean (mean data))
+          (median (alexandria:median data))
+          (mean (alexandria:mean data))
           (nine-2 (nines-value 2 data))
           (nine-3 (nines-value 3 data))
           (nine-4 (nines-value 4 data))
