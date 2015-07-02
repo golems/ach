@@ -50,7 +50,7 @@
 
 static int *fd;
 static size_t cnt;
-struct pollfd *pfd;
+static struct pollfd *pfd;
 
 static void s_init(size_t channel_count) {
     printf("pipe\n");

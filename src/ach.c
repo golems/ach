@@ -47,65 +47,96 @@
 #include <ipcbench.h>
 #include <ach.h>
 
-static ach_channel_t channel;
+static ach_channel_t *channel;
+static size_t cnt;
+static struct pollfd *pfd;
 
 #define CHAN_NAME "ipcbench"
 
-static void s_init(enum ach_map map) {
-    ach_status_t r = ach_unlink(CHAN_NAME);               /* delete first */
+static void s_init(enum ach_map map, size_t channel_cnt) {
+    cnt = channel_cnt;
 
-    if( !( ACH_OK == r || ACH_ENOENT == r) ) {
-        fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r) );
-        abort();
+    channel = (struct ach_channel*)calloc(cnt, sizeof(struct ach_channel));
+
+    for( size_t i = 0; i < cnt; i ++ ) {
+        char buf[64];
+        snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
+
+        ach_status_t r = ach_unlink(buf);               /* delete first */
+
+        if( !( ACH_OK == r || ACH_ENOENT == r) ) {
+            fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r) );
+            abort();
+        }
+
+        struct ach_create_attr attr;
+        ach_create_attr_init(&attr);
+        if( ACH_OK != (r = ach_create_attr_set_map(&attr,map)) ) {
+            fprintf(stderr, "ach_create_attr_set_map: %s\n", ach_result_to_string(r));
+            abort();
+        }
+
+        if( ACH_OK != (r = ach_create(buf, 10,
+                                      sizeof(struct timespec), &attr)) ) {
+            fprintf(stderr, "ach_create: %s\n", ach_result_to_string(r) );
+            abort();
+        }
+
+
+        for(;;) {
+            r = ach_open( &channel[i], buf, NULL );
+            if( ACH_OK == r ) {
+                break;
+            } else if( ach_status_match(r, ACH_MASK_ENOENT | ACH_MASK_EACCES) ) {
+                usleep(1000);     /* Race against udev */
+            } else {
+                fprintf(stderr, "ach_open", ach_result_to_string(r) );
+                abort();
+            }
+        }
     }
 
-    struct ach_create_attr attr;
-    ach_create_attr_init(&attr);
-    if( ACH_OK != (r = ach_create_attr_set_map(&attr,map)) ) {
-        fprintf(stderr, "ach_create_attr_set_map: %s\n", ach_result_to_string(r));
-        abort();
+    if( cnt > 1 ) {
+        assert( ACH_MAP_KERNEL == map );
+        pfd = (struct pollfd*)calloc(cnt, sizeof(struct pollfd));
+        for( size_t i = 0; i < cnt; i ++ ) {
+            enum ach_status r = ach_channel_fd(&channel[i], &pfd[i].fd);
+            if( ACH_OK != r ) {
+                fprintf(stderr, "ach_channel_fd: %s\n", ach_result_to_string(r));
+                abort();
+            }
+            pfd[i].events = POLLIN;
+        }
     }
-
-    if( ACH_OK != (r = ach_create(CHAN_NAME, 10,
-                                  sizeof(struct timespec), &attr)) ) {
-        fprintf(stderr, "ach_create: %s\n", ach_result_to_string(r) );
-        abort();
-    }
+}
 
 
-    for(;;) {
-        r = ach_open( &channel, CHAN_NAME, NULL );
-        if( ACH_OK == r ) {
-            break;
-        } else if( ach_status_match(r, ACH_MASK_ENOENT | ACH_MASK_EACCES) ) {
-            usleep(1000);     /* Race against udev */
-        } else {
-            fprintf(stderr, "ach_open", ach_result_to_string(r) );
+static void s_init_user(size_t n)
+{
+    s_init(ACH_MAP_USER, n);
+}
+
+static void s_init_kernel(size_t n)
+{
+    s_init(ACH_MAP_KERNEL, n);
+}
+
+static void s_destroy(void) {
+    for( size_t i = 0; i < cnt; i ++ ) {
+        char buf[64];
+        snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
+
+        enum ach_status r = ach_unlink(buf);
+        if( ACH_OK != r ) {
+            fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r));
             abort();
         }
     }
 }
 
-static void s_init_user(void)
-{
-    s_init(ACH_MAP_USER);
-}
-
-static void s_init_kernel(void)
-{
-    s_init(ACH_MAP_KERNEL);
-}
-
-static void s_destroy(void) {
-    enum ach_status r = ach_unlink(CHAN_NAME);
-    if( ACH_OK != r ) {
-        fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r));
-        abort();
-    }
-}
-
 static void s_send( const struct timespec *ts ) {
-    ach_status_t r = ach_put( &channel, ts, sizeof(*ts) );
+    size_t i = pubnext(cnt);
+    ach_status_t r = ach_put( &channel[i], ts, sizeof(*ts) );
     if( ACH_OK != r ) {
         fprintf(stderr, "ach_put: %s\n", ach_result_to_string(r) );
         abort();
@@ -113,8 +144,9 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
+    size_t i = pollin( pfd, cnt );
     size_t fs;
-    ach_status_t r = ach_get( &channel, ts, sizeof(*ts),
+    ach_status_t r = ach_get( &channel[i], ts, sizeof(*ts),
                               &fs, NULL, ACH_O_WAIT | ACH_O_LAST );
     if( ! (ACH_OK==r || ACH_MISSED_FRAME == r) ) {
         fprintf(stderr, "ach_get: %s\n", ach_result_to_string(r) );
