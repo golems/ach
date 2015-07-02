@@ -55,7 +55,6 @@ double opt_sec = 1;
 size_t opt_subscribers = 1;
 size_t opt_nonrt_subscribers = 0;
 size_t opt_discard = 10;
-size_t opt_channels = 1;
 
 struct timespec ipcbench_period;
 double overhead = 0;
@@ -88,7 +87,7 @@ static void send(struct ipcbench_vtab *vtab) {
     register_handler();
 
     usleep(0.25e6);
-    if( vtab->init_send ) vtab->init_send(opt_channels);
+    if( vtab->init_send ) vtab->init_send(ipcbench_cnt);
 
     while( !sig_canceled ) {
         struct timespec ts = get_ticks();
@@ -117,7 +116,7 @@ static void kill_wait(pid_t pid) {
 static void recv(struct ipcbench_vtab *vtab, int emit) {
     register_handler();
     //make_realtime(99);
-    if( vtab->init_recv ) vtab->init_recv(opt_channels);
+    if( vtab->init_recv ) vtab->init_recv(ipcbench_cnt);
 
     mqd_t mq;
     if( (mq = mq_open(MQ, O_CREAT | O_WRONLY | O_NONBLOCK, 0600, &mq_lat_attr )) < 0 ) {
@@ -232,7 +231,7 @@ int main( int argc, char **argv ) {
             opt_discard = (size_t)atoi(optarg);
             break;
         case 'c':
-            opt_channels = (size_t)atoi(optarg);
+            ipcbench_cnt = (size_t)atoi(optarg);
             break;
         case 'V':   /* version     */
             puts("ipcbench " PACKAGE_VERSION);
@@ -314,7 +313,11 @@ int main( int argc, char **argv ) {
     fprintf(stderr, "overhead: %f us\n", overhead * 1e6);
 
     /* Execute */
-    if( vtab->init ) vtab->init(opt_channels);
+    ipcbench_pfd = (struct pollfd*)calloc(ipcbench_cnt, sizeof(struct pollfd));
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        ipcbench_pfd[i].events = POLLIN;
+    }
+    if( vtab->init ) vtab->init();
 
     /* Fork subscribers */
     pid_t pid_listen[opt_subscribers + opt_nonrt_subscribers];
@@ -362,18 +365,20 @@ int main( int argc, char **argv ) {
 
 }
 
+size_t ipcbench_cnt = 1;
+struct pollfd *ipcbench_pfd = NULL;
 
-size_t pollin(struct pollfd *pfd, size_t n)
+size_t pollin()
 {
     size_t i_fd = 0;
-    if( n > 1 ) {
-        int k = poll( pfd, n, -1);
+    if( ipcbench_cnt > 1 ) {
+        int k = poll( ipcbench_pfd, ipcbench_cnt, -1);
         if( k < 0 ) {
             perror("poll");
             abort();
         }
-        for( i_fd=0;  i_fd < n; i_fd++ ) {
-            if(pfd[i_fd].revents & POLLIN) {
+        for( i_fd=0;  i_fd < ipcbench_cnt; i_fd++ ) {
+            if(ipcbench_pfd[i_fd].revents & POLLIN) {
                 return i_fd;
             }
 
@@ -384,10 +389,10 @@ size_t pollin(struct pollfd *pfd, size_t n)
     return i_fd;
 }
 
-size_t pubnext(size_t n) {
+size_t pubnext() {
     static size_t i = 0;
     size_t j = i;
-    i = (i+1) % n;
+    i = (i+1) % ipcbench_cnt;
     return j;
 
 }

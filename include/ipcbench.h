@@ -60,12 +60,12 @@
 struct ipcbench_vtab {
 
     /** Init global structures */
-    void (*init)(size_t channel_count);
+    void (*init)();
 
     /** Initialize sending process data */
-    void (*init_send)(size_t channel_count);
+    void (*init_send)();
     /** Initialize receiving process data */
-    void (*init_recv)(size_t channel_count);
+    void (*init_recv)();
 
     /** Send a timespec */
     void (*send)(const struct timespec *ts);
@@ -105,8 +105,10 @@ extern struct ipcbench_vtab ipc_bench_vtab_cos;
 #define MQ "/ipcbench.latency"
 extern struct mq_attr mq_lat_attr;
 
-size_t pollin(struct pollfd *pfd, size_t n);
 
-size_t pubnext(size_t n);
+extern size_t ipcbench_cnt;
+extern struct pollfd *ipcbench_pfd;
+size_t pollin();
+size_t pubnext();
 
 #endif // IPCBENCH_H

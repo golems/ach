@@ -48,17 +48,14 @@
 #include <ach.h>
 
 static ach_channel_t *channel;
-static size_t cnt;
-static struct pollfd *pfd;
 
 #define CHAN_NAME "ipcbench"
 
-static void s_init(enum ach_map map, size_t channel_cnt) {
-    cnt = channel_cnt;
+static void s_init(enum ach_map map)
+{
+    channel = (struct ach_channel*)calloc(ipcbench_cnt, sizeof(struct ach_channel));
 
-    channel = (struct ach_channel*)calloc(cnt, sizeof(struct ach_channel));
-
-    for( size_t i = 0; i < cnt; i ++ ) {
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
         char buf[64];
         snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
 
@@ -94,35 +91,31 @@ static void s_init(enum ach_map map, size_t channel_cnt) {
                 abort();
             }
         }
-    }
 
-    if( cnt > 1 ) {
-        assert( ACH_MAP_KERNEL == map );
-        pfd = (struct pollfd*)calloc(cnt, sizeof(struct pollfd));
-        for( size_t i = 0; i < cnt; i ++ ) {
-            enum ach_status r = ach_channel_fd(&channel[i], &pfd[i].fd);
+        if( ipcbench_cnt > 1 ) {
+            enum ach_status r = ach_channel_fd(&channel[i], &ipcbench_pfd[i].fd);
             if( ACH_OK != r ) {
                 fprintf(stderr, "ach_channel_fd: %s\n", ach_result_to_string(r));
                 abort();
             }
-            pfd[i].events = POLLIN;
+
         }
     }
 }
 
 
-static void s_init_user(size_t n)
+static void s_init_user()
 {
-    s_init(ACH_MAP_USER, n);
+    s_init(ACH_MAP_USER);
 }
 
-static void s_init_kernel(size_t n)
+static void s_init_kernel()
 {
-    s_init(ACH_MAP_KERNEL, n);
+    s_init(ACH_MAP_KERNEL);
 }
 
 static void s_destroy(void) {
-    for( size_t i = 0; i < cnt; i ++ ) {
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
         char buf[64];
         snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
 
@@ -135,7 +128,7 @@ static void s_destroy(void) {
 }
 
 static void s_send( const struct timespec *ts ) {
-    size_t i = pubnext(cnt);
+    size_t i = pubnext();
     ach_status_t r = ach_put( &channel[i], ts, sizeof(*ts) );
     if( ACH_OK != r ) {
         fprintf(stderr, "ach_put: %s\n", ach_result_to_string(r) );
@@ -144,7 +137,7 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
-    size_t i = pollin( pfd, cnt );
+    size_t i = pollin();
     size_t fs;
     ach_status_t r = ach_get( &channel[i], ts, sizeof(*ts),
                               &fs, NULL, ACH_O_WAIT | ACH_O_LAST );
