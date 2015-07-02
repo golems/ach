@@ -54,34 +54,52 @@
 
 #define PORT 8070
 
-static int sock;
-static struct sockaddr_in addr = {0};
+static int *sock;
+static struct sockaddr_in *addr;
 
+
+static void s_init(void) {
+    sock = (int*)calloc(ipcbench_cnt, sizeof(int));
+    addr = (struct sockaddr_in*)calloc(ipcbench_cnt, sizeof(struct sockaddr_in));
+}
 
 static void s_init_send(void) {
-    sock = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        sock[i] = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
+        if( sock[i] < 0 ) {
+            perror( "Could not create socket");
+            abort();
+        }
 
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    addr.sin_port = htons(PORT);
+        addr[i].sin_family = AF_INET;
+        addr[i].sin_addr.s_addr = inet_addr("127.0.0.1");
+        addr[i].sin_port = htons(PORT+i);
+    }
 }
 
 static void s_init_recv(void) {
     s_init_send();
 
-    if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("Failed to bind the socket");
-        abort();
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+
+        u_int yes = 1;
+        if( setsockopt(sock[i], SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) {
+            perror("setsockopt for receiver failed\n");
+        }
+
+        if (bind(sock[i], (struct sockaddr *) &addr[i], sizeof(addr[i])) < 0) {
+            perror("Failed to bind the socket");
+            abort();
+        }
+
+        ipcbench_pfd[i].fd = sock[i];
     }
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = sendto( sock, ts, sizeof(*ts), 0,
-                        (struct sockaddr *) &addr, sizeof(addr) );
+    int i = pubnext();
+    ssize_t r = sendto( sock[i], ts, sizeof(*ts), 0,
+                        (struct sockaddr *) &addr[i], sizeof(addr[i]) );
     if( sizeof(*ts) != r ) {
         perror( "could not send data on pipe" );
         abort();
@@ -89,7 +107,8 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = recvfrom( sock, ts, sizeof(*ts), 0,
+    int i = pollin();
+    ssize_t r = recvfrom( sock[i], ts, sizeof(*ts), 0,
                           NULL, 0 );
     if( sizeof(*ts) != r ) {
         perror( "could not receive data on pipe" );
@@ -98,6 +117,7 @@ static void s_recv( struct timespec *ts ) {
 }
 
 struct ipcbench_vtab ipc_bench_vtab_udp = {
+    .init = s_init,
     .init_send = s_init_send,
     .init_recv = s_init_recv,
     .send = s_send,
