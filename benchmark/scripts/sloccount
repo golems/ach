@@ -1,0 +1,36 @@
+#!/bin/sh
+
+
+disp () {
+    echo "($1  $2)"
+}
+
+count() {
+    sloccount $@ | grep '^Total Physical.*SLOC' | sed 's/.*= //'
+}
+
+wccount() {
+    cat $@ | grep . | wc -l
+}
+
+srccount() {
+    NAME=$1
+    shift
+    COUNT=`count $@`
+    disp $NAME $COUNT
+}
+
+srccount pipe src/pipe.c
+srccount mq src/mq.c
+srccount ach src/ach.c
+srccount udp src/udp.c
+srccount udp_mcast src/udp_multicast.c
+srccount local_dgram src/localdgram.c
+srccount tcp src/tcp.c
+srccount local_stream src/unix.c
+
+disp lcm $(( `count src/lcm.c` + `wccount src/lcm_msg.lcm` ))
+
+disp corba $(( `count src/corba/corba.cpp` + `wccount src/corba/ipcbench.idl` ))
+disp cos $(( `count src/corba/cos.cpp` + `wccount src/corba/ipcbench.idl` ))
+disp ros $(( `count ros/src/rosbench.cpp` + `wccount ros/msg/ros_timespec.msg` ))

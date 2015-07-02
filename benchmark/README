@@ -1,0 +1,84 @@
+OVERVIEW
+========
+This package benchmarks latency for several IPC and networking
+mechanisms.
+
+BENCHMARKED MECHANISMS
+======================
+* POSIX Pipes
+* POSIX Message Queues
+* TCP Sockets
+* UDP Sockets
+* Local Domain Stream Sockets
+* Local Domain Datagram Sockets
+* Ach: https://github.com/golems/ach
+* LCM: https://code.google.com/p/lcm/
+* CORBA/TAO: http://www.cs.wustl.edu/~schmidt/TAO.html
+* ROS TCP/UDP: http://www.ros.org
+
+USAGE
+=====
+
+Examples
+--------
+* Benchmark Ach at 1000 hertz for 60 seconds with 2 subscribers:
+    ./ipcbench -f 1000 -t 60 -s 2 ach
+
+* Benchmark CORBA COS:
+    $TAO_ROOT/orbsvcs/Naming_Service/tao_cosnaming -m 1
+    $TAO_ROOT/orbsvcs/CosEvent_Service/tao_cosevent
+    ./ipcbench -f 1000 -t 60 -s 2 cos
+
+* List available methods:
+    ./ipcbench -l
+
+* Benchmark ROS TCP:
+    roscore
+    ./ros/devel/lib/ipcbench/rosbench -f 1000 -t 60 tcp
+
+* Benchmark ROS UDP:
+    roscore
+    ./ros/devel/lib/ipcbench/rosbench -f 1000 -t 60 tcp
+
+
+Real-Time Priority
+------------------
+You may need to run as root to enable real-time priority.  Under
+Linux, you can also edit `/etc/security/limits.conf` to permit regular
+users or groups to run with real-time priority:
+
+    gpburdell         -       memlock         51200
+    gpburdell         -       rtprio          80
+
+
+BUILD REQUIREMENTS
+==================
+
+    ./configure && make
+
+POSIX IPC
+---------
+No special action is necessary.  These should be available on all
+systems.
+
+Ach/LCM
+-------
+No special action is necessary.  If the headers for Ach and LCM are
+detected by the ./configure script, support for benchmarking these
+methods will automatically be included.
+
+ACE/TAO
+-------
+If ACE and TAO are not installed to the system directories (e.g.,
+/usr/{lib,include}), you may need to set the ACE_ROOT environment
+variable.  The ./configure script will check this variable and add the
+appropriate subdirectories to the library and include
+paths.
+
+ROS
+---
+Due to ROS's unusual build system, the ROS benchmarks are entirely
+separate from rest.  The ./ros subdirectory contains a ROS package for
+the ROS benchmarks.
+
+    cd ./ros && cmake . && make
