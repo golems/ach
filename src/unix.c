@@ -52,36 +52,50 @@
 
 #define UNIX_PATH_MAX    108
 
-static int sock;
-static int csock;
-static int fd;
-static struct sockaddr_un addr = {0};
-static struct sockaddr_un caddr = {0};
+static int *sock;
+static int *csock;
+static int *fd;
+static struct sockaddr_un *addr;
+static struct sockaddr_un *caddr;
 unsigned clen;
 
-#define NAME "/tmp/ipcbench.sock"
+#define NAME "/tmp/ipcbench-%d.sock"
 
 static void s_init(void) {
-    unlink( NAME );
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), NAME, i);
+        unlink( buf );
+    }
+    sock = (int*)calloc(ipcbench_cnt, sizeof(int));
+    csock = (int*)calloc(ipcbench_cnt, sizeof(int));
+    addr = (struct sockaddr_un*)calloc(ipcbench_cnt, sizeof(struct sockaddr_un));
+    caddr = (struct sockaddr_un*)calloc(ipcbench_cnt, sizeof(struct sockaddr_un));
 }
 
 static void s_sock(void) {
-    sock = socket( PF_UNIX, SOCK_STREAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        sock[i] = socket( PF_UNIX, SOCK_STREAM, 0 );
+        if( sock[i] < 0 ) {
+            perror( "Could not create socket");
+            abort();
+        }
 
-    addr.sun_family = AF_UNIX;
-    snprintf( addr.sun_path, UNIX_PATH_MAX, NAME );
+        char buf[64];
+        snprintf(buf, sizeof(buf), NAME, i);
+        addr[i].sun_family = AF_UNIX;
+        snprintf( addr[i].sun_path, UNIX_PATH_MAX, buf );
+    }
 }
 
 static void s_init_send(void) {
     s_sock();
 
-    if (connect(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("failed to connect");
-        abort();
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        if (connect(sock[i], (struct sockaddr *) &addr[i], sizeof(addr[i])) < 0) {
+            perror("failed to connect");
+            abort();
+        }
     }
 
     fd = sock;
@@ -90,26 +104,32 @@ static void s_init_send(void) {
 static void s_init_recv(void) {
     s_sock();
 
-    if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("Failed to bind the server socket");
-        abort();
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        if (bind(sock[i], (struct sockaddr *) &addr[i], sizeof(addr[i])) < 0) {
+            perror("Failed to bind the server socket");
+            abort();
+        }
+
+        if (listen(sock[i], 1) < 0) {
+            perror("Failed to listen on server socket");
+            abort();
+        }
     }
 
-    if (listen(sock, 1) < 0) {
-        perror("Failed to listen on server socket");
-        abort();
-    }
-
-    if ((csock = accept(sock, (struct sockaddr *) &caddr, &clen)) < 0) {
-        perror(" failed to accept connection");
-        abort();
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        if ((csock[i] = accept(sock[i], (struct sockaddr *) &caddr[i], &clen)) < 0) {
+            perror(" failed to accept connection");
+            abort();
+        }
+        ipcbench_pfd[i].fd = csock[i];
     }
 
     fd = csock;
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = write(fd, ts, sizeof(*ts));
+    size_t i = pubnext();
+    ssize_t r = write(fd[i], ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
         perror( "could not send data" );
         abort();
@@ -117,7 +137,8 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = read(fd, ts, sizeof(*ts));
+    size_t i = pollin();
+    ssize_t r = read(fd[i], ts, sizeof(*ts));
     if( sizeof(*ts) != r ) {
         perror( "could not receive data" );
         abort();
