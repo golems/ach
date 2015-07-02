@@ -64,7 +64,8 @@ static void s_init(void) {
 }
 
 static void s_init_send(void) {
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         sock[i] = socket( PF_INET, SOCK_DGRAM, IPPROTO_UDP );
         if( sock[i] < 0 ) {
             perror( "Could not create socket");
@@ -80,7 +81,8 @@ static void s_init_send(void) {
 static void s_init_recv(void) {
     s_init_send();
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
 
         u_int yes = 1;
         if( setsockopt(sock[i], SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) {
@@ -97,7 +99,7 @@ static void s_init_recv(void) {
 }
 
 static void s_send( const struct timespec *ts ) {
-    int i = pubnext();
+    size_t i = pubnext();
     ssize_t r = sendto( sock[i], ts, sizeof(*ts), 0,
                         (struct sockaddr *) &addr[i], sizeof(addr[i]) );
     if( sizeof(*ts) != r ) {
@@ -107,7 +109,7 @@ static void s_send( const struct timespec *ts ) {
 }
 
 static void s_recv( struct timespec *ts ) {
-    int i = pollin();
+    size_t i = pollin();
     ssize_t r = recvfrom( sock[i], ts, sizeof(*ts), 0,
                           NULL, 0 );
     if( sizeof(*ts) != r ) {

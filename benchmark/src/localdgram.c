@@ -58,11 +58,12 @@
 static int *sock;
 static struct sockaddr_un *addr;
 
-#define NAME "/tmp/ipcbench-%d.dsock"
+#define NAME "/tmp/ipcbench-%lu.dsock"
 
 
 static void s_init(void) {
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         char buf[64];
         snprintf(buf, sizeof(buf), NAME, i);
         unlink( buf );
@@ -72,7 +73,8 @@ static void s_init(void) {
 }
 
 static void s_init_send(void) {
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         sock[i] = socket( PF_UNIX, SOCK_DGRAM, 0 );
         if( sock[i] < 0 ) {
             perror( "Could not create socket");
@@ -89,7 +91,8 @@ static void s_init_send(void) {
 static void s_init_recv(void) {
     s_init_send();
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         if (bind(sock[i], (struct sockaddr *) &addr[i], sizeof(struct sockaddr_un)) < 0) {
             perror("Failed to bind the socket");
             abort();

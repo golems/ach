@@ -70,7 +70,8 @@ static void s_init(void) {
 }
 
 static void s_sock(void) {
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         sock[i] = socket( PF_INET, SOCK_STREAM, IPPROTO_TCP );
         if( sock[i] < 0 ) {
             perror( "Could not create socket");
@@ -86,7 +87,8 @@ static void s_sock(void) {
 static void s_init_send(void) {
     s_sock();
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         if (connect(sock[i], (struct sockaddr *) &addr[i], sizeof(addr[i])) < 0) {
             perror("failed to connect");
             abort();
@@ -99,7 +101,8 @@ static void s_init_send(void) {
 static void s_init_recv(void) {
     s_sock();
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
 
         u_int yes = 1;
         if( setsockopt(sock[i], SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) ) {
@@ -117,7 +120,7 @@ static void s_init_recv(void) {
         }
     }
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         if ((csock[i] = accept(sock[i], (struct sockaddr *) &caddr[i], &clen)) < 0) {
             perror(" failed to accept connection");
             abort();

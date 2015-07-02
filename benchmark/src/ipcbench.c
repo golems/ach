@@ -45,6 +45,7 @@
 #endif //HAVE_CONFIG
 
 #include <signal.h>
+#include <math.h>
 #include <sys/wait.h>
 #include "ipcbench.h"
 #include "util.h"
@@ -125,7 +126,8 @@ static void recv(struct ipcbench_vtab *vtab, int emit) {
     }
 
     /* warm up */
-    for( size_t i = 0; i < opt_discard; i ++ ) {
+    size_t i;
+    for( i = 0; i < opt_discard; i ++ ) {
         struct timespec ts;
         vtab->recv(&ts );
     }
@@ -197,7 +199,7 @@ int main( int argc, char **argv ) {
 
 
     /* Parse args */
-    const char *type = "ach";
+    const char *type = sym_vtabs[0].name;
     char *endptr = 0;
     int c;
     while( (c = getopt( argc, argv, "lt:f:s:S:c:d:v?V")) != -1 ) {
@@ -217,10 +219,13 @@ int main( int argc, char **argv ) {
             }
             break;
         case 'l':
-            for( size_t i = 0; NULL != sym_vtabs[i].name; i++ ) {
+        {
+            size_t i;
+            for( i = 0; NULL != sym_vtabs[i].name; i++ ) {
                 puts( sym_vtabs[i].name );
             }
             exit(EXIT_SUCCESS);
+        }
         case 's':
             opt_subscribers = (size_t)atoi(optarg);
             break;
@@ -292,8 +297,8 @@ int main( int argc, char **argv ) {
     /* Compute period */
     {
         double period = 1.0 / opt_freq;
-        ipcbench_period.tv_sec = period;
-        ipcbench_period.tv_nsec = (period - (time_t)period) * 1e9;
+        ipcbench_period.tv_sec = (time_t)period;
+        ipcbench_period.tv_nsec = (long) ((period - floor(period)) * 1e9);
     }
 
     /* Setup message queue */
@@ -314,27 +319,33 @@ int main( int argc, char **argv ) {
 
     /* Execute */
     ipcbench_pfd = (struct pollfd*)calloc(ipcbench_cnt, sizeof(struct pollfd));
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
-        ipcbench_pfd[i].events = POLLIN;
+    {
+        size_t i;
+        for( i = 0; i < ipcbench_cnt; i ++ ) {
+            ipcbench_pfd[i].events = POLLIN;
+        }
     }
     if( vtab->init ) vtab->init();
 
     /* Fork subscribers */
     pid_t pid_listen[opt_subscribers + opt_nonrt_subscribers];
-    for( size_t i = 0; i < opt_subscribers + opt_nonrt_subscribers; i ++ ) {
-        pid_listen[i] = fork();
-        if( 0 == pid_listen[i] ) {
-            int emit = 1;
-            if( i >= opt_subscribers ) {
-                make_realtime(0);
-                emit=0;
+    {
+        size_t i;
+        for( i = 0; i < opt_subscribers + opt_nonrt_subscribers; i ++ ) {
+            pid_listen[i] = fork();
+            if( 0 == pid_listen[i] ) {
+                int emit = 1;
+                if( i >= opt_subscribers ) {
+                    make_realtime(0);
+                    emit=0;
+                }
+                if( vtab->recv_loop ) vtab->recv_loop(emit);
+                else recv(vtab, emit);
+                return 0;
+            } else if ( pid_listen[i] < 0 ) {
+                perror("Couldn't fork\n");
+                abort();
             }
-            if( vtab->recv_loop ) vtab->recv_loop(emit);
-            else recv(vtab, emit);
-            return 0;
-        } else if ( pid_listen[i] < 0 ) {
-            perror("Couldn't fork\n");
-            abort();
         }
     }
 
@@ -350,9 +361,12 @@ int main( int argc, char **argv ) {
     }
 
     /* Wait */
-    sleep(opt_sec);
-    for( size_t i = 0; i < opt_subscribers; i ++ ) {
-        kill_wait(pid_listen[i]);
+    sleep((unsigned)opt_sec);
+    {
+        size_t i;
+        for( i = 0; i < opt_subscribers; i ++ ) {
+            kill_wait(pid_listen[i]);
+        }
     }
     kill_wait(pid_send);
 
@@ -361,6 +375,8 @@ int main( int argc, char **argv ) {
 
     if( vtab->destroy ) vtab->destroy();
 
+    /* remove mq */
+    //mq_unlink(MQ);
     return 0;
 
 }

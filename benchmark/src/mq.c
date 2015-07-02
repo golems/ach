@@ -55,8 +55,9 @@ static mqd_t *fd;
 static void s_open(int flag) {
     char buf[64];
     fd = (mqd_t*)calloc(ipcbench_cnt,sizeof(mqd_t));
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
-        snprintf(buf, sizeof(buf), NAME "-%d");
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
+        snprintf(buf, sizeof(buf), NAME "-%lu", i);
         struct mq_attr attr = {.mq_maxmsg = 10,
                                .mq_msgsize = sizeof(struct timespec),
                                .mq_flags = 0};

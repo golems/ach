@@ -15,13 +15,14 @@ static struct timespec get_ticks() {
 
 static void calibrate(void) {
     /* warm up */
-    for( size_t i = 0; i < 10; i++) get_ticks();
+    size_t i;
+    for( i = 0; i < 10; i++) get_ticks();
 
     /* Average tick time */
     double a = 0;
     struct timespec r0,r1;
     overhead = 0;
-    for( size_t i = 0; i<1000; i++ ) {
+    for( i = 0; i<1000; i++ ) {
         r0 = get_ticks();
         r1 = get_ticks();
         a += ticks_delta(r0,r1);

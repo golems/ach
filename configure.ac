@@ -494,6 +494,50 @@ AC_SUBST([zshfdir])
 AM_CONDITIONAL([INSTALL_ZSH],
                [test "x$zshfdir" != x])
 
+
+###############
+## BENCHMARK ##
+###############
+AC_ARG_WITH([lcm], AS_HELP_STRING([--without-lcm], [Disable LCM support]))
+AC_ARG_WITH([tao], AS_HELP_STRING([--without-tao], [Disable TAO support]))
+
+AS_IF( [test "x$with_lcm" != xno],
+       [AC_CHECK_HEADERS( [lcm/lcm.h], [have_lcm=yes] )] )
+
+AS_IF( [test "x$with_ach" != xno], [
+AC_CHECK_HEADERS( [ach.h], [have_ach=yes], [],
+[
+#include <time.h>
+#include <stdint.h>
+#include <signal.h>
+#include <sys/stat.h>
+] )
+])
+
+
+# Check CORBA
+
+# Apply ACE_ROOT Variable
+AS_IF( [test "x$with_tao" != xno], [
+AC_LANG([C++])
+
+AS_IF([test "x$ACE_ROOT" != "x"],
+      [
+       AC_MSG_NOTICE([Detected ACE_ROOT=$ACE_ROOT])
+       CPPFLAGS="$CPPFLAGS -I$ACE_ROOT -I$ACE_ROOT/TAO -I$ACE_ROOT/TAO/orbsvcs"
+       LDFLAGS="-L$ACE_ROOT/lib"
+      ])
+
+AC_SUBST([ACE_ROOT])
+AC_CHECK_HEADERS( [tao/ORB.h],[have_tao=yes] )
+])
+
+AC_LANG([C])
+
+AM_CONDITIONAL([HAVE_ACH], [test x$have_ach = xyes])
+AM_CONDITIONAL([HAVE_LCM], [test x$have_lcm = xyes])
+AM_CONDITIONAL([HAVE_TAO], [test x$have_tao = xyes])
+
 ############
 ## OUTPUT ##
 ############

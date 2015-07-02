@@ -53,7 +53,8 @@ static int *fd;
 static void s_init() {
     printf("pipe\n");
     fd = (int*) malloc( 2 * sizeof(int) * ipcbench_cnt );
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         if( pipe(fd + 2*i) ) {
             perror( "could not create pipe" );
             abort();

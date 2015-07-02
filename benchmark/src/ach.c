@@ -55,12 +55,13 @@ static void s_init(enum ach_map map)
 {
     channel = (struct ach_channel*)calloc(ipcbench_cnt, sizeof(struct ach_channel));
 
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    enum ach_status r;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         char buf[64];
-        snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
+        snprintf( buf, sizeof(buf), CHAN_NAME "-%lu", i );
 
-        ach_status_t r = ach_unlink(buf);               /* delete first */
-
+        r = ach_unlink(buf);               /* delete first */
         if( !( ACH_OK == r || ACH_ENOENT == r) ) {
             fprintf(stderr, "ach_unlink: %s\n", ach_result_to_string(r) );
             abort();
@@ -87,13 +88,13 @@ static void s_init(enum ach_map map)
             } else if( ach_status_match(r, ACH_MASK_ENOENT | ACH_MASK_EACCES) ) {
                 usleep(1000);     /* Race against udev */
             } else {
-                fprintf(stderr, "ach_open", ach_result_to_string(r) );
+                fprintf(stderr, "ach_open: %s", ach_result_to_string(r) );
                 abort();
             }
         }
 
         if( ipcbench_cnt > 1 ) {
-            enum ach_status r = ach_channel_fd(&channel[i], &ipcbench_pfd[i].fd);
+            r = ach_channel_fd(&channel[i], &ipcbench_pfd[i].fd);
             if( ACH_OK != r ) {
                 fprintf(stderr, "ach_channel_fd: %s\n", ach_result_to_string(r));
                 abort();
@@ -115,9 +116,10 @@ static void s_init_kernel()
 }
 
 static void s_destroy(void) {
-    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+    size_t i;
+    for( i = 0; i < ipcbench_cnt; i ++ ) {
         char buf[64];
-        snprintf( buf, sizeof(buf), CHAN_NAME "-%d", i );
+        snprintf( buf, sizeof(buf), CHAN_NAME "-%lu", i );
 
         enum ach_status r = ach_unlink(buf);
         if( ACH_OK != r ) {
