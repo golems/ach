@@ -55,46 +55,63 @@
 #define PORT 8070
 #define UNIX_PATH_MAX    108
 
-static int sock;
-static struct sockaddr_un addr = {0};
+static int *sock;
+static struct sockaddr_un *addr;
 
-#define NAME "/tmp/ipcbench.dsock"
+#define NAME "/tmp/ipcbench-%d.dsock"
+
 
 static void s_init(void) {
-    unlink( NAME );
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), NAME, i);
+        unlink( buf );
+    }
+    sock = (int*)calloc(ipcbench_cnt, sizeof(int));
+    addr = (struct sockaddr_un*)calloc(ipcbench_cnt, sizeof(struct sockaddr_un));
 }
 
 static void s_init_send(void) {
-    sock = socket( PF_UNIX, SOCK_DGRAM, 0 );
-    if( sock < 0 ) {
-        perror( "Could not create socket");
-        abort();
-    }
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        sock[i] = socket( PF_UNIX, SOCK_DGRAM, 0 );
+        if( sock[i] < 0 ) {
+            perror( "Could not create socket");
+            abort();
+        }
 
-    addr.sun_family = AF_UNIX;
-    snprintf(addr.sun_path, UNIX_PATH_MAX, NAME );
+        char buf[64];
+        snprintf(buf, sizeof(buf), NAME, i);
+        addr[i].sun_family = AF_UNIX;
+        snprintf(addr[i].sun_path, UNIX_PATH_MAX, buf );
+    }
 }
 
 static void s_init_recv(void) {
     s_init_send();
 
-    if (bind(sock, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
-        perror("Failed to bind the socket");
-        abort();
+    for( size_t i = 0; i < ipcbench_cnt; i ++ ) {
+        if (bind(sock[i], (struct sockaddr *) &addr[i], sizeof(struct sockaddr_un)) < 0) {
+            perror("Failed to bind the socket");
+            abort();
+        }
+        ipcbench_pfd[i].fd = sock[i];
     }
 }
 
 static void s_send( const struct timespec *ts ) {
-    ssize_t r = sendto( sock, ts, sizeof(*ts), 0,
-                        (struct sockaddr *) &addr, sizeof(addr) );
+    size_t i = pubnext();
+    ssize_t r = sendto( sock[i], ts, sizeof(*ts), 0,
+                        (struct sockaddr *) &addr[i], sizeof(struct sockaddr_un) );
     if( sizeof(*ts) != r ) {
+        fprintf(stderr, "error on socket %lu\n", i);
         perror( "could not send data " );
         abort();
     }
 }
 
 static void s_recv( struct timespec *ts ) {
-    ssize_t r = recvfrom( sock, ts, sizeof(*ts), 0,
+    size_t i = pollin();
+    ssize_t r = recvfrom( sock[i], ts, sizeof(*ts), 0,
                           NULL, 0 );
     if( sizeof(*ts) != r ) {
         perror( "could not receive data on pipe" );
