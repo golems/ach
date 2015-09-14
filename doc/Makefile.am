@@ -5,8 +5,8 @@ if HAVE_HELP2MAN
 man/ach.1: $(top_srcdir)/src/achtool.c $(top_srcdir)/configure.ac
 	$(HELP2MAN) -h -h -v -V --no-info -n "manipulate ach channels" $(top_builddir)/ach$(EXEEXT) -o $@
 
-man/achbench.1: $(top_srcdir)/src/ach-bench.c $(top_srcdir)/configure.ac
-	$(HELP2MAN) -h -h -v -V --no-info -n "benchmark and tune ach" $(top_builddir)/achbench$(EXEEXT) -o $@
+man/ipcbench.1: $(top_srcdir)/benchmark/src/ipcbench.c $(top_srcdir)/configure.ac
+	$(HELP2MAN) -h -h -v -V --no-info -n "benchmark and tune ach" $(top_builddir)/ipcbench$(EXEEXT) -o $@
 
 man/achcat.1: $(top_srcdir)/src/achcat.c $(top_srcdir)/configure.ac
 	$(HELP2MAN) -h -h -v -V --no-info -n "ach debugging tool" $(top_builddir)/achcat$(EXEEXT) -o $@
@@ -33,7 +33,7 @@ endif
 
 # test what to install
 if HAVE_MANPAGES
-dist_man_MANS = man/ach.1 man/achbench.1 man/achcat.1 man/achlog.1 man/achd.1 man/achcop.1
+dist_man_MANS = man/ach.1 man/ipcbench.1 man/achcat.1 man/achlog.1 man/achd.1 man/achcop.1
 endif
 
 if HAVE_MANHTML
