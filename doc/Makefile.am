@@ -37,9 +37,10 @@ if HAVE_MANPAGES
 dist_man_MANS = man/ach.1 man/ipcbench.1 man/achcat.1 man/achlog.1 man/achd.1 man/achcop.1
 endif
 
-#if HAVE_MANHTML
-#MAN_HTML = man/ach.html man/achbench.html man/achcat.html man/achlog.html man/achd.html man/achcop.html
-#endif
+if HAVE_MANHTML
+MAN_HTML = man/ach.html man/ipcbench.html man/achcat.html man/achlog.html man/achd.html man/achcop.html
+endif
+
 
 if HAVE_MANUAL
 DOCBOOK_HTML =  manual/ach-manual.html
