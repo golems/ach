@@ -312,6 +312,17 @@ if( ACH_OK != r ) {
       </programlisting>
 
       </example>
+
+      <warning>
+        <para>
+          Channels, of type <type>ach_channel_t</type>, should always
+          be passed by reference.  Copying or passing by value types
+          of <type>ach_channel_t</type> may result in undefined
+          behavior (and will probably not do what you want).  Always
+          pass the pointer to <type>ach_channel_t</type> instead.
+        </para>
+      </warning>
+
     </sect2>
 
     <sect2><title>Sending Data</title>
