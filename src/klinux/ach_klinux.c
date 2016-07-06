@@ -122,7 +122,7 @@ static struct ach_ctrl_device ctrl_data;
 static enum ach_status
 chan_lock( ach_channel_t *chan )
 {
-	int i = rt_mutex_lock_interruptible(&chan->shm->sync.mutex, 0);
+	int i = rt_mutex_lock_interruptible(&chan->shm->sync.mutex);
 	if( -EINTR == i ) return ACH_EINTR;
 	if( i ) return ACH_BUG;
 	if( chan->cancel ) {
@@ -487,7 +487,7 @@ static int ach_ch_close(struct inode *inode, struct file *file)
 	KDEBUG("ach: in ach_ch_close (inode %d)\n", iminor(inode));
 
 	/* Synchronize to protect refcounting */
-	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock)) {
 		ret = -ERESTARTSYS;
 		goto out;
 	}
@@ -508,7 +508,7 @@ static int ach_ch_open(struct inode *inode, struct file *file)
 	struct ach_ch_device *device;
 
 	/* Synchronize to protect refcounting */
-	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock)) {
 		ret = -ERESTARTSYS;
 		goto out;
 	}
@@ -581,7 +581,7 @@ static long ach_ch_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	case ACH_CH_GET_STATUS:{
 			KDEBUG("ach: Got cmd ACH_CH_GET_STATUS\n");
-			if (rt_mutex_lock_interruptible(&ch_file->shm->sync.mutex, 0)) {
+			if (rt_mutex_lock_interruptible(&ch_file->shm->sync.mutex)) {
 				ret = -ERESTARTSYS;
 				break;
 			}
@@ -907,7 +907,7 @@ static long ach_ctrl_ioctl(struct file *file, unsigned int cmd,
 	/* TODO: Validate argument */
 	int ret = 0;
 
-	if (rt_mutex_lock_interruptible(&ctrl_data.lock, 1)) {
+	if (rt_mutex_lock_interruptible(&ctrl_data.lock)) {
 		return -ERESTARTSYS;
 	}
 
