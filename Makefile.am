@@ -275,8 +275,9 @@ if HAVE_PYTHON
 python_PYTHON = python/ach.py
 pyexec_LTLIBRARIES = ach_py.la
 ach_py_la_SOURCES = python/ach_py.c
-ach_py_la_LDFLAGS = -avoid-version -module -lach
-ach_py_la_CPPFLAGS = $(PYTHON_CPPFLAGS)
+ach_py_la_LDFLAGS = -avoid-version -module
+ach_py_la_LIBFADD = libach.la
+ach_py_la_CPPFLAGS = $(AM_CPPFLAGS) $(PYTHON_CPPFLAGS)
 
 endif
 
