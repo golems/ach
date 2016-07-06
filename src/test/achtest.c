@@ -86,7 +86,7 @@ int test_basic() {
     /* unlink */
     ach_status_t r = ach_unlink(opt_channel_name);
     if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
-        fprintf(stderr, "ach_unlink failed\n: %s",
+        fprintf(stderr, "ach_unlink failed: %s\n",
                 ach_result_to_string(r));
         return -1;
     }
