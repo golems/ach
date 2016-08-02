@@ -30,22 +30,49 @@ Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT
 
 DOCUMENTATION
 =============
-* Manual: http://code.golems.org/pkg/ach/manual
-          and `./doc/manual/ach-manual.html`
-* API docs: http://code.golems.org/pkg/ach/api
-            and `./doc/html`
-* Man Pages: http://code.golems.org/pkg/ach/man
-             and `./doc/man`
-* Papers: http://www.golems.org/projects/ach.html
+* [Manual] (http://code.golems.org/pkg/ach/manual)
+   and `./doc/manual/ach-manual.html`
+* [API docs] (http://code.golems.org/pkg/ach/api)
+   and `./doc/html`
+* [Man Pages] (http://code.golems.org/pkg/ach/man)
+   and `./doc/man`
 * Example Code: `./src/ach-example.c`
 
 See `./INSTALL` for details on generating the documentation.
 
+PUBLICATIONS
+============
+The following publications describe Ach's design.
+
+* N. Dantam, K. Bøndergaard, M. Johansson, T. Furuholm, and L. Kavraki.
+  [Unix Philosophy and the Real World: Control Software for Humanoid Robots]
+  (http://journal.frontiersin.org/article/10.3389/frobt.2016.00006). Frontiers
+  in Robotics and Artificial Intelligence. 2016.
+
+* N. Dantam, D. Lofaro, A. Hereid, P. Oh, A. Ames, and M. Stilman.
+  [The Ach IPC Library: A New Framework for Real-Time Communication]
+  (http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=7012101).
+  Robotics and Automation Magazine, IEEE. 2015.
+
+  - [submitted version]
+    (http://www.neil.dantam.name/papers/dantam2014multiprocess.pdf)
+
+* N. Dantam and M. Stilman. [Robust and efficient communication for
+  real-time multi-process robot software]
+  (http://ieeexplore.ieee.org/xpl/articleDetails.jsp?reload=true&arnumber=6651538).
+  International Conference on Humanoid Robots (Humanoids), IEEE. 2012.
+
+  - [submitted version]
+    (http://www.neil.dantam.name/papers/dantam2012robust.pdf)
+
 MAILING LISTS
 =============
-* Announcements: http://groups.google.com/group/ach-announce
-* General Help: http://groups.google.com/group/ach-help
-* Development: http://groups.google.com/group/ach-devel
+* [Announcements]
+  (http://groups.google.com/group/ach-announce)
+* [General Help]
+  (http://groups.google.com/group/ach-help)
+* [Development]
+  (http://groups.google.com/group/ach-devel)
 
 LANGUAGE BINDINGS
 =================
