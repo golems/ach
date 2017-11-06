@@ -1,0 +1,12 @@
+Alternatively, if you are using Debian or Ubuntu, you can use the golems.org APT repo.
+
+1. Add the following to /etc/apt/sources:
+
+    deb http://code.golems.org/debian squeeze golems.org
+
+  (substitute the codename for your distribution in place of squeeze,
+  e.g. wheezy, precise)
+
+2. `sudo apt-get update && sudo apt-get install libach-dev ach-utils ach-dkms`
+
+3. `sudo dpkg-reconfigure ach-utils`
