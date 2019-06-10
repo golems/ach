@@ -403,5 +403,5 @@ distclean-local:
 maintainer-clean-local:
 	-rm -rf  *.tar.gz doc/javadoc doc/.javadoc.stamp
 
-
-include doxygen.am
+# incldue doxygen rules
+@DX_RULES@

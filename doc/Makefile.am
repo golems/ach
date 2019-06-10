@@ -22,7 +22,7 @@ man/achcop.1: $(top_srcdir)/src/achcop.c
 
 if HAVE_MAN2HTML
 .1.html:
-	$(MAN2HTML) -r $< | sed -e '1d;2d;8d;s/@\|&amp;/{at}/g' > $@
+	$(MAN2HTML) < $< | sed -e '1d;2d;8d;s/@\|&amp;/{at}/g' > $@
 endif
 endif
 
