@@ -23,7 +23,15 @@ DOCUMENTATION
             and `./doc/html`
 * Man Pages: http://code.golems.org/pkg/ach/man
              and `./doc/man`
-* Papers: http://www.golems.org/projects/ach.html
+* Papers:
+  * [Unix Philosophy and the Real World: Control Software for Humanoid Robots](http://dx.doi.org/10.3389/frobt.2016.00006).
+    Frontiers in Robotics and Artificial Intelligence. 2016.
+  * [The Ach Library](http://dx.doi.org/10.1109/MRA.2014.2356937).
+    IEEE RAM. 2015.
+  * [Multi-Process Control Software for HUBO2 Plus robot](http://dx.doi.org/10.1109/TePRA.2013.6556374).
+    TEPRA. 2013.
+  * [Robust and Efficient Communication for Real-Time Multi-Process Robot Software](http://dx.doi.org/10.1109/HUMANOIDS.2012.6651538).
+    HUMANOIDS. 2012.
 * Example Code: `./src/ach-example.c`
 
 See `./INSTALL` for details on generating the documentation.
@@ -58,3 +66,60 @@ FORMAL MODEL
 Ach has been formally verified using the SPIN model checker.  This
 formal model is included in the source distribution under the `./spin/`
 directory.
+
+CITATION
+========
+If you find Ach useful for your research, we hope you will consider
+citing our relevant publications.
+
+
+    @ARTICLE{10.3389/frobt.2016.00006,
+        author={Dantam, Neil T. and Bøndergaard, Kim and Johansson, Mattias A. and Furuholm, Tobias and Kavraki, Lydia E.},
+        title={Unix Philosophy and the Real World: Control Software for Humanoid Robots},
+        journal={Frontiers in Robotics and AI},
+        volume={3},
+        pages={6},
+        year={2016},
+        url={https://www.frontiersin.org/article/10.3389/frobt.2016.00006},
+        doi={10.3389/frobt.2016.00006},
+        issn={2296-9144},
+    }
+
+    @ARTICLE{7012101,
+          author={N. T. {Dantam} and D. M. {Lofaro} and A. {Hereid} and P. Y. {Oh} and A. D. {Ames} and M. {Stilman}},
+          journal={IEEE Robotics Automation Magazine},
+          title={The Ach Library: A New Framework for Real-Time Communication},
+          year={2015},
+          volume={22},
+          number={1},
+          pages={76-85},
+          doi={10.1109/MRA.2014.2356937},
+          issn={1070-9932},
+          month={March},
+    }
+
+    @INPROCEEDINGS{6556374,
+        author={M. X. {Grey} and N. {Dantam} and D. M. {Lofaro} and A. {Bobick} and M. {Egerstedt} and P. {Oh} and M. {Stilman}},
+        booktitle={2013 IEEE Conference on Technologies for Practical Robot Applications (TePRA)},
+        title={Multi-process control software for HUBO2 Plus robot},
+        year={2013},
+        volume={},
+        number={},
+        pages={1-6},
+        doi={10.1109/TePRA.2013.6556374},
+        ISSN={2325-0534},
+        month={April},
+    }
+
+    @INPROCEEDINGS{6651538,
+        author={N. {Dantam} and M. {Stilman}},
+        booktitle={2012 12th IEEE-RAS International Conference on Humanoid Robots (Humanoids 2012)},
+        title={Robust and efficient communication for real-time multi-process robot software},
+        year={2012},
+        volume={},
+        number={},
+        pages={316-322},
+        doi={10.1109/HUMANOIDS.2012.6651538},
+        ISSN={2164-0572},
+        month={Nov},
+    }
