@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([ach], [2.0.0], [ntd@rice.edu])
+AC_INIT([ach], [2.0.0], [ndantam@mines.edu])
 AM_INIT_AUTOMAKE([-Wall subdir-objects])
 AC_CONFIG_SRCDIR([include/ach.h])
 AC_CONFIG_HEADERS([config.h])
