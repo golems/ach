@@ -100,7 +100,7 @@ ts_sub(struct timespec t1, struct timespec t0)
     /* bound at zero */
     if (t0.tv_sec > t1.tv_sec)
         return delta;
-    if (t0.tv_sec == t0.tv_sec &&
+    if (t0.tv_sec == t1.tv_sec &&
         t0.tv_nsec > t1.tv_nsec)
         return delta;
 
