@@ -51,6 +51,7 @@
 #endif
 
 #include <Python.h>
+#include <bytesobject.h> // 2.6+ bytes/unicode compat
 
 #include <time.h>
 #include <stdlib.h>
@@ -70,14 +71,31 @@
 
 #include "ach.h"
 
-PyMODINIT_FUNC initach_py(void);
+// python 2/3 compatibility:
+// https://docs.python.org/3/howto/cporting.html
+// https://docs.python.org/3/extending/extending.html
 
-static PyObject *ach_py_error;
+#define ACH_PY_DOCSTRING "Python extension module for the Ach IPC Library"
+
+struct module_state {
+    PyObject *ach_py_error;
+    // NOTE: if you change this, update ach_py_traverse() and ach_py_clear()
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#else
+#define GETSTATE(m) (&_state)
+static struct module_state _state;
+#endif
 
 static ach_channel_t *parse_channel_pointer( PyObject *i ) {
+#if PY_MAJOR_VERSION < 3
     if( PyInt_Check(i) ) {
         return (ach_channel_t*)PyInt_AsLong(i);
-    } else if ( PyLong_Check(i) ) {
+    } else
+#endif
+    if ( PyLong_Check(i) ) {
         return (ach_channel_t*)PyLong_AsVoidPtr(i);
     } else {
         PyErr_SetString( PyExc_TypeError, "invalid channel pointer" );
@@ -85,8 +103,8 @@ static ach_channel_t *parse_channel_pointer( PyObject *i ) {
     }
 }
 
-static PyObject  *raise_error( ach_status_t r ) {
-    PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+static PyObject  *raise_error( PyObject *self, ach_status_t r ) {
+    PyErr_SetString( GETSTATE(self)->ach_py_error, ach_result_to_string(r) );
     return NULL;
 }
 
@@ -97,7 +115,7 @@ ach_error( PyObject *self, PyObject *args ) {
     if( !PyArg_ParseTuple(args, "i", &r ) ) {
         return NULL;
     }
-    return raise_error((ach_status_t)r);
+    return raise_error(self, (ach_status_t)r);
 }
 
 static PyObject *
@@ -124,7 +142,7 @@ open_channel( PyObject *self, PyObject *args ) {
 
     /* Check result */
     if( ACH_OK != r ) {
-        return raise_error(r);
+        return raise_error(self, r);
     }
 
     return PyLong_FromVoidPtr(c);
@@ -146,7 +164,7 @@ close_channel( PyObject *self, PyObject *args ) {
 
     ach_status_t r = ach_close(c);
     if( ACH_OK != r ) {
-        return raise_error(r);
+        return raise_error(self, r);
     }
 
     free(c);
@@ -161,7 +179,7 @@ result_string( PyObject *self, PyObject *args ) {
     if( !PyArg_ParseTuple(args, "i", &r ) ) {
         return NULL;
     }
-    return PyString_FromString( ach_result_to_string((enum ach_status)r) );
+    return PyUnicode_FromString( ach_result_to_string((enum ach_status)r) );
 }
 
 static PyObject *
@@ -198,7 +216,7 @@ put_buf( PyObject *self, PyObject *args ) {
 
     // check the result
     if( ACH_OK != r ) {
-        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        PyErr_SetString( GETSTATE(self)->ach_py_error, ach_result_to_string(r) );
         return NULL;
     }
 
@@ -273,7 +291,7 @@ get_buf( PyObject *self, PyObject *args ) {
     case ACH_EINTR:
     case ACH_EFAULT:
     case ACH_ENOTSUP:
-        return raise_error(r);
+        return raise_error(self, r);
     }
 
     return NULL;
@@ -301,7 +319,7 @@ flush_channel( PyObject *self, PyObject *args ) {
 
     // check the result
     if( ACH_OK != r ) {
-        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        PyErr_SetString( GETSTATE(self)->ach_py_error, ach_result_to_string(r) );
         return NULL;
     }
 
@@ -331,7 +349,7 @@ chmod_channel( PyObject *self, PyObject *args ) {
 
     // check the result
     if( ACH_OK != r ) {
-        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        PyErr_SetString( GETSTATE(self)->ach_py_error, ach_result_to_string(r) );
         return NULL;
     }
 
@@ -354,7 +372,7 @@ unlink_channel( PyObject *self, PyObject *args ) {
 
     // check the result
     if( ACH_OK != r ) {
-        PyErr_SetString( ach_py_error, ach_result_to_string(r) );
+        PyErr_SetString( GETSTATE(self)->ach_py_error, ach_result_to_string(r) );
         return NULL;
     }
 
@@ -363,7 +381,7 @@ unlink_channel( PyObject *self, PyObject *args ) {
 }
 
 
-static PyMethodDef module_methods[] = {
+static PyMethodDef ach_py_methods[] = {
    { "open_channel", (PyCFunction)open_channel, METH_VARARGS, NULL },
    { "close_channel", (PyCFunction)close_channel, METH_VARARGS, NULL },
    { "put_buf", (PyCFunction)put_buf, METH_VARARGS, NULL },
@@ -376,44 +394,99 @@ static PyMethodDef module_methods[] = {
    { NULL, NULL, 0, NULL }
 };
 
+#if PY_MAJOR_VERSION >= 3
 
-PyMODINIT_FUNC initach_py() {
-    PyObject *m;
+static int ach_py_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->ach_py_error);
+    return 0;
+}
+
+static int ach_py_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->ach_py_error);
+    return 0;
+}
+
+// https://docs.python.org/3/c-api/module.html#c.PyModuleDef
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "ach_py",
+        ACH_PY_DOCSTRING,
+        sizeof(struct module_state),
+        ach_py_methods,
+        NULL,
+        ach_py_traverse,
+        ach_py_clear,
+        NULL
+};
+
+#define INITERROR return NULL
+// The initialization function must be named PyInit_name(), where name is the name of the module, and should be the only non-static item defined in the module file
+PyMODINIT_FUNC
+PyInit_ach_py(void)
+#else
+#define INITERROR return
+// The initialization function must be named initname(), where name is the name of the module, and should be the only non-static item defined in the module file
+void
+initach_py(void)
+#endif
+{
+    PyObject *module;
 
     // methods
-    m = Py_InitModule3("ach_py", module_methods, "Python extension module for the Ach IPC Library");
-    if( NULL == m ) {
-        return;
-    }
+#if PY_MAJOR_VERSION >= 3
+    module = PyModule_Create(&moduledef);
+#else
+    module = Py_InitModule3("ach_py", ach_py_methods, ACH_PY_DOCSTRING);
+#endif
+
+    if(module == NULL)
+        INITERROR;
+
+    struct module_state *st = GETSTATE(module);
 
     // error object
-    static char errname[] =  "ach_py.AchException";
-    ach_py_error = PyErr_NewException( errname, NULL, NULL);
-    Py_INCREF( ach_py_error ); // Reference counts?  Get with the program python!
-    PyModule_AddObject(m, "AchException", ach_py_error);
+    st->ach_py_error = PyErr_NewException("ach_py.AchException", NULL, NULL);
+    if (st->ach_py_error == NULL) {
+        Py_DECREF(module);
+        INITERROR;
+    }
+    // https://docs.python.org/3/extending/extending.html#intermezzo-errors-and-exceptions
+    // https://docs.python.org/3/extending/extending.html#ownership-rules
+    Py_INCREF(st->ach_py_error);
+    PyModule_AddObject(module, "AchException", st->ach_py_error);
+
+    #if PY_MAJOR_VERSION < 3
+        #define PyIntOrLong_FromLong PyInt_FromLong
+    #else // python 3+
+        #define PyIntOrLong_FromLong PyLong_FromLong
+    #endif
 
     // keyword/const objects
-    PyModule_AddObject( m, "ACH_OK",               PyInt_FromLong( ACH_OK ) );
-    PyModule_AddObject( m, "ACH_OVERFLOW",         PyInt_FromLong( ACH_OVERFLOW ) );
-    PyModule_AddObject( m, "ACH_INVALID_NAME",     PyInt_FromLong( ACH_INVALID_NAME ) );
-    PyModule_AddObject( m, "ACH_BAD_SHM_FILE",     PyInt_FromLong( ACH_BAD_SHM_FILE ) );
-    PyModule_AddObject( m, "ACH_FAILED_SYSCALL",   PyInt_FromLong( ACH_FAILED_SYSCALL ) );
-    PyModule_AddObject( m, "ACH_STALE_FRAMES",     PyInt_FromLong( ACH_STALE_FRAMES ) );
-    PyModule_AddObject( m, "ACH_EAGAIN"      ,     PyInt_FromLong( ACH_EAGAIN ) );
-    PyModule_AddObject( m, "ACH_LOCKED"      ,     PyInt_FromLong( ACH_LOCKED ) );
-    PyModule_AddObject( m, "ACH_MISSED_FRAME",     PyInt_FromLong( ACH_MISSED_FRAME ) );
-    PyModule_AddObject( m, "ACH_TIMEOUT",          PyInt_FromLong( ACH_TIMEOUT ) );
-    PyModule_AddObject( m, "ACH_EEXIST",           PyInt_FromLong( ACH_EEXIST ) );
-    PyModule_AddObject( m, "ACH_ENOENT",           PyInt_FromLong( ACH_ENOENT ) );
-    PyModule_AddObject( m, "ACH_CLOSED",           PyInt_FromLong( ACH_CLOSED ) );
-    PyModule_AddObject( m, "ACH_BUG",              PyInt_FromLong( ACH_BUG ) );
-    PyModule_AddObject( m, "ACH_EINVAL",           PyInt_FromLong( ACH_EINVAL ) );
-    PyModule_AddObject( m, "ACH_CORRUPT",          PyInt_FromLong( ACH_CORRUPT ) );
-    PyModule_AddObject( m, "ACH_CANCELED",         PyInt_FromLong( ACH_CANCELED ) );
-    PyModule_AddObject( m, "ACH_BAD_HEADER",       PyInt_FromLong( ACH_BAD_HEADER ) );
-    PyModule_AddObject( m, "ACH_EACCES",           PyInt_FromLong( ACH_EACCES ) );
-    PyModule_AddObject( m, "ACH_O_WAIT",           PyInt_FromLong( ACH_O_WAIT ) );
-    PyModule_AddObject( m, "ACH_O_LAST",           PyInt_FromLong( ACH_O_LAST ) );
-    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_SIZE",   PyInt_FromLong( ACH_DEFAULT_FRAME_SIZE ) ); */
-    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_COUNT",  PyInt_FromLong( ACH_DEFAULT_FRAME_COUNT ) ); */
+    PyModule_AddObject( module, "ACH_OK",               PyIntOrLong_FromLong( ACH_OK ) );
+    PyModule_AddObject( module, "ACH_OVERFLOW",         PyIntOrLong_FromLong( ACH_OVERFLOW ) );
+    PyModule_AddObject( module, "ACH_INVALID_NAME",     PyIntOrLong_FromLong( ACH_INVALID_NAME ) );
+    PyModule_AddObject( module, "ACH_BAD_SHM_FILE",     PyIntOrLong_FromLong( ACH_BAD_SHM_FILE ) );
+    PyModule_AddObject( module, "ACH_FAILED_SYSCALL",   PyIntOrLong_FromLong( ACH_FAILED_SYSCALL ) );
+    PyModule_AddObject( module, "ACH_STALE_FRAMES",     PyIntOrLong_FromLong( ACH_STALE_FRAMES ) );
+    PyModule_AddObject( module, "ACH_EAGAIN"      ,     PyIntOrLong_FromLong( ACH_EAGAIN ) );
+    PyModule_AddObject( module, "ACH_LOCKED"      ,     PyIntOrLong_FromLong( ACH_LOCKED ) );
+    PyModule_AddObject( module, "ACH_MISSED_FRAME",     PyIntOrLong_FromLong( ACH_MISSED_FRAME ) );
+    PyModule_AddObject( module, "ACH_TIMEOUT",          PyIntOrLong_FromLong( ACH_TIMEOUT ) );
+    PyModule_AddObject( module, "ACH_EEXIST",           PyIntOrLong_FromLong( ACH_EEXIST ) );
+    PyModule_AddObject( module, "ACH_ENOENT",           PyIntOrLong_FromLong( ACH_ENOENT ) );
+    PyModule_AddObject( module, "ACH_CLOSED",           PyIntOrLong_FromLong( ACH_CLOSED ) );
+    PyModule_AddObject( module, "ACH_BUG",              PyIntOrLong_FromLong( ACH_BUG ) );
+    PyModule_AddObject( module, "ACH_EINVAL",           PyIntOrLong_FromLong( ACH_EINVAL ) );
+    PyModule_AddObject( module, "ACH_CORRUPT",          PyIntOrLong_FromLong( ACH_CORRUPT ) );
+    PyModule_AddObject( module, "ACH_CANCELED",         PyIntOrLong_FromLong( ACH_CANCELED ) );
+    PyModule_AddObject( module, "ACH_BAD_HEADER",       PyIntOrLong_FromLong( ACH_BAD_HEADER ) );
+    PyModule_AddObject( module, "ACH_EACCES",           PyIntOrLong_FromLong( ACH_EACCES ) );
+    PyModule_AddObject( module, "ACH_O_WAIT",           PyIntOrLong_FromLong( ACH_O_WAIT ) );
+    PyModule_AddObject( module, "ACH_O_LAST",           PyIntOrLong_FromLong( ACH_O_LAST ) );
+    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_SIZE",   PyIntOrLong_FromLong( ACH_DEFAULT_FRAME_SIZE ) ); */
+    /* PyModule_AddObject( m, "ACH_DEFAULT_FRAME_COUNT",  PyIntOrLong_FromLong( ACH_DEFAULT_FRAME_COUNT ) ); */
+
+#if PY_MAJOR_VERSION >= 3
+    return module;
+#endif
 }
