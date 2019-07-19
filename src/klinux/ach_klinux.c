@@ -232,10 +232,6 @@ static struct ach_header *ach_create(const char *name, size_t frame_cnt, size_t 
 	struct ach_header *shm;
 	int len = ach_create_len(frame_cnt, frame_size);
 
-	len = sizeof(struct ach_header) +
-	    frame_cnt * sizeof(ach_index_t) +
-	    frame_cnt * frame_size + 3 * sizeof(uint64_t);
-
 	shm = (struct ach_header *)kzalloc(len, GFP_KERNEL);
 	if (unlikely(!shm)) {
 		printk(KERN_ERR "ach: Unable to allocate buffer memory\n");
