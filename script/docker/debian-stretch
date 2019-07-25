@@ -1,0 +1,34 @@
+FROM debian:stretch
+
+# Debian's httpredir servers are too flaky,
+# retry a few times if it fails
+COPY ./script/install /root/ach/script/install
+RUN /root/ach/script/install/apt-retry.sh \
+    build-essential \
+    autoconf \
+    automake \
+    libtool \
+    autotools-dev \
+    autoconf-archive \
+    openbsd-inetd \
+    help2man \
+    man2html \
+    docbook-utils \
+    avahi-utils \
+    ;
+
+RUN /root/ach/script/install/apt-retry.sh \
+   doxygen \
+   python-dev \
+   ;
+
+
+RUN /root/ach/script/install/apt-retry.sh \
+   default-jdk \
+   ;
+
+COPY . /root/ach
+
+# Local Variables:
+# mode: dockerfile
+# End:

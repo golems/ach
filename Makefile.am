@@ -279,12 +279,12 @@ cpptest_LDADD = libach.la
 
 if HAVE_PYTHON
 
-python_PYTHON = python/ach.py
-pyexec_LTLIBRARIES = ach_py.la
-ach_py_la_SOURCES = python/ach_py.c
-ach_py_la_LDFLAGS = -avoid-version -module
-ach_py_la_LIBFADD = libach.la
-ach_py_la_CPPFLAGS = $(AM_CPPFLAGS) $(PYTHON_CPPFLAGS)
+# python_PYTHON = python/ach.py
+# pyexec_LTLIBRARIES = ach_py.la
+# ach_py_la_SOURCES = python/ach_py.c
+# ach_py_la_LDFLAGS = -avoid-version -module
+# ach_py_la_LIBFADD = libach.la
+# ach_py_la_CPPFLAGS = $(AM_CPPFLAGS) $(PYTHON_CPPFLAGS)
 
 endif
 

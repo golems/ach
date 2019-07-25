@@ -102,7 +102,8 @@ int main(int argc, char **argv)
 {
     (void) argc; (void) argv;
     clockid_t clock[] = {ACH_DEFAULT_CLOCK, CLOCK_MONOTONIC, CLOCK_REALTIME};
-    enum ach_map map[] = {ACH_MAP_USER, ACH_MAP_KERNEL};
+    //enum ach_map map[] = {ACH_MAP_USER, ACH_MAP_KERNEL};
+    enum ach_map map[] = {ACH_MAP_USER };
     size_t i,j;
 
     for( i = 0; i < sizeof(clock)/sizeof(clock[0]); i++ )
