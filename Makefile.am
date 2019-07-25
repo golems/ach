@@ -333,7 +333,7 @@ libachj_la_CPPFLAGS = $(AM_CPPFLAGS) $(CPPFLAGS) $(JNICPPFLAGS)
 libachj_la_SOURCES = java/achj.c
 libachj_la_LIBADD = libach.la
 
-endif
+endif # BUILD_JAVA
 
 if INSTALL_JAVADOC
 EXTRA_DIST += doc/javadoc
@@ -349,11 +349,14 @@ endif
 
 if HAVE_JAVADOC
 # Javadocs
-doc/javadoc/index.html: $(JSOURCES)
+doc/.javadoc.stamp: $(JSOURCES)
 	javadoc -d doc/javadoc $(JSOURCES)
 	touch $@
 
-all: doc/javadoc
+doc/javadoc: doc/.javadoc.stamp
+
+all: doc/.javadoc.stamp
+
 endif
 
 #########################

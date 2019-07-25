@@ -15,17 +15,10 @@ RUN /root/ach/script/install/apt-retry.sh \
     man2html \
     docbook-utils \
     avahi-utils \
+    doxygen \
+    python-dev \
+    default-jdk \
     ;
-
-RUN /root/ach/script/install/apt-retry.sh \
-   doxygen \
-   python-dev \
-   ;
-
-
-RUN /root/ach/script/install/apt-retry.sh \
-   default-jdk \
-   ;
 
 COPY . /root/ach
 

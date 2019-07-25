@@ -135,3 +135,5 @@ modules.order
 /ach-poll-example
 /debian/libach4
 /ipcbench
+/doc/man/.stamp
+doc/javadoc

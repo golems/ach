@@ -21,4 +21,8 @@ build-*
 **/*.lo
 **/*.mod
 *.f90
-
+doc/html
+doc/man
+doc/manual
+doc/javadoc
+doc/.javadoc.stamp
