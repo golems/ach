@@ -626,7 +626,7 @@ libach_open_posix( ach_channel_t *chan, const char *channel_name,
         chan->len = len;
         chan->shm = shm;
         chan->seq_num = 0;
-        chan->next_index = 1;
+        chan->next_index = 0;
         chan->cancel = 0;
         chan->clock = clock;
     }
