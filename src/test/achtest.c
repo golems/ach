@@ -254,9 +254,9 @@ int test_guard() {
         r = ach_open(&chan, opt_channel_name, NULL);
         test(r, "ach_open");
 
-	/* close */
-	r = ach_close(&chan);
-	test(r, "ach_close");
+        /* close */
+        r = ach_close(&chan);
+        test(r, "ach_close");
 
         /* unlink */
         r = ach_unlink(opt_channel_name);
