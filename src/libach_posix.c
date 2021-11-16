@@ -605,7 +605,11 @@ libach_open_posix( ach_channel_t *chan, const char *channel_name,
             return ACH_BAD_SHM_FILE;
 
         /* calculate mmaping size */
-        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt + shm->data_size;
+        len = sizeof(ach_header_t) + sizeof(ach_index_t)*shm->index_cnt +
+            shm->data_size + 3 * sizeof(uint64_t);
+        if( len != shm->len )
+            return ACH_BAD_SHM_FILE;
+
 
         /* remap */
         if( -1 ==  munmap( shm, sizeof(ach_header_t) ) )

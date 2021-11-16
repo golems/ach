@@ -228,6 +228,44 @@ int test_basic() {
     return 0;
 }
 
+/*
+ * Test opening channel immediately after creating it which may fail if
+ * size of trailing guard isn't properly accounted for while opening channel.
+ */
+int test_guard() {
+    /* unlink */
+    ach_status_t r = ach_unlink(opt_channel_name);
+    if( ! ach_status_match(r, ACH_MASK_OK | ACH_MASK_ENOENT) ) {
+        fprintf(stderr, "ach_unlink failed: %s\n",
+                ach_result_to_string(r));
+        return -1;
+    }
+
+    size_t frame_size;
+
+    for (frame_size = 1; frame_size < 4096; ++ frame_size) {
+        /* create */
+        r = ach_create(opt_channel_name, 1ul, frame_size, NULL );
+        test(r, "ach_create");
+
+        ach_channel_t chan;
+
+        /* open */
+        r = ach_open(&chan, opt_channel_name, NULL);
+        test(r, "ach_open");
+
+        /* close */
+        r = ach_close(&chan);
+        test(r, "ach_close");
+
+        /* unlink */
+        r = ach_unlink(opt_channel_name);
+        test(r, "ach_unlink");
+    }
+
+    fprintf(stderr, "guard ok\n");
+    return 0;
+}
 
 static int publisher( int32_t i ) {
     ach_channel_t chan;
@@ -415,6 +453,9 @@ int main( int argc, char **argv ){
         int r;
 
         r = test_basic();
+        if( 0 != r ) return r;
+
+        r = test_guard();
         if( 0 != r ) return r;
 
         r = test_multi();
